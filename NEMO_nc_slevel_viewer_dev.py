@@ -11,7 +11,7 @@ import xarray
 import glob
 import cftime
 import matplotlib
-
+#from matplotlib.transforms import Bbox
 
 sys.path.append('/net/home/h01/hadjt/workspace/python3/')
 #sys.path.append('/home/d05/hadjt/scripts/python/')
@@ -33,13 +33,16 @@ from rotated_pole_grid import rotated_grid_from_amm15,rotated_grid_to_amm15, red
 letter_mat = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
 
 
+import argparse
+import textwrap
 
 import socket
 computername = socket.gethostname()
 comp = 'linux'
 if computername in ['xcel00','xcfl00']: comp = 'hpc'
 
-if comp == 'linux': sys.path.append('/home/d05/hadjt/scripts/python/')
+if comp == 'linux': sys.path.append('/home/h01/hadjt/workspace/python3/')
+if computername in ['xcel00','xcfl00']: sys.path.append('/home/d05/hadjt/scripts/python/')
 
 
 
@@ -91,7 +94,9 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
     zlim_max = None,xlim = None, ylim = None, tlim = None, clim = None,
     ii = None, jj = None, ti = None, zz = None,
     clim_sym = None, use_cmocean = False,
-    U_flist = None,V_flist = None):
+    U_flist = None,V_flist = None,
+    fig_dir = '/home/h01/hadjt/workspace/python3/NEMO_nc_slevel_viewer/tmpfigs',
+    fig_lab = 'figs',fig_cutout = True):
 
 
     if use_cmocean:
@@ -170,9 +175,40 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
         #moo ls moose:/devfc/rosie_OS45_LBC_amm15_control/field.nc.file/prodm_op_am-dm.gridT_20220824_00.-36.nc
         #nbind_tmp,tmask_tmp = nearbed_index('/scratch/hadjt/SSF/LBC/amm15/OS45_LBC_amm15_control/prodm_op_am-dm.gridT_20220824_00.-36.nc', 'votemper',nemo_nb_i_filename = '/data/cr1/hadjt/data/reffiles/SSF/nemo_nb_i_OpSys_AMM15_NEMO36.nc')
 
+        #nbind_tmp,tmask_tmp = nearbed_index('/scratch/orca12/g18trial/control/prodm_op_gf-dm.gridT_20211203_00.-36.nc', 'votemper',nemo_nb_i_filename = '/data/cr1/hadjt/data/reffiles/SSF/nemo_nb_i_OpSys_GULF18_NEMO36.nc')
+
         nbind,tmask = load_nearbed_index(nemo_nb_i_filename = nemo_nb_i_filename)
         z_meth_default = 'z_slice'
         z_meth = z_meth_default
+
+
+    elif config.upper() == 'GULF18':
+        # depth grid file
+        if comp == 'hpc': 
+            print('GULF18 files not copeid onto Cray')
+            #amm7_mesh_file = '/data/d02/frpk/amm15ps45mesh/amm7/amm7.mesh_mask.nc'
+            #nemo_nb_i_filename = '/data/d05/hadjt/reffiles/NEMO_nc_viewer/nemo_nb_i_CMEMS_BGC_Reanalysis_14112017.nc'
+        else:
+            GULF18_mesh_file = '/data/cr1/hadjt/data/reffiles/SSF/mesh_mask_gulf18_ps45.nc'
+            nemo_nb_i_filename = '/data/cr1/hadjt/data/reffiles/SSF/nemo_nb_i_OpSys_GULF18_NEMO36.nc'
+
+             #nbind_tmp,tmask_tmp = nearbed_index('/scratch/orca12/g18trial/control/prodm_op_gf-dm.gridT_20211203_00.-36.nc', 'votemper',nemo_nb_i_filename = '/scratch/orca12/nemo_nb_i_OpSys_GULF18_NEMO36.nc')
+            #pdb.set_trace()
+   
+        rootgrp_gdept = Dataset(GULF18_mesh_file, 'r', format='NETCDF4')
+        # depth grid variable name
+        zss = 'gdept'
+
+        #grid lat lon
+        #pdb.set_trace()
+        lon = rootgrp_gdept.variables['glamt'][:,0,:].ravel()
+        lat = rootgrp_gdept.variables['gphit'][:,:,0].ravel()
+        nbind,tmask = load_nearbed_index(nemo_nb_i_filename = nemo_nb_i_filename)
+        z_meth_default = 'z_slice'
+        z_meth = z_meth_default
+
+
+
 
 
     elif config.upper() in ['ORCA025','ORCA025EXT']:
@@ -216,7 +252,7 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
 
     # open file list with xarray
     tmp_data = xarray.open_mfdataset(fname_lst ,combine='by_coords') # , decode_cf=False)
-    
+
     UV_vec = False
     if (U_flist is not None) & (V_flist is not None):
         UV_vec = True
@@ -347,14 +383,21 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
         nc_calendar = 'gregorian'
     pdb.set_trace()
     '''
-
+    '''
     if comp == 'hpc':
-        pdb.set_trace()
-        
-    nc_time_origin = nctime[0].attrs['time_origin']
+        #pdb.set_trace()
+        rootgrp_hpc_time = Dataset(fname_lst[0], 'r', format='NETCDF4')
+        nc_time_origin = rootgrp_hpc_time.variables['time_counter'].time_origin
+        rootgrp_hpc_time.close()
+    else:        
+        nc_time_origin = nctime[0].attrs['time_origin']
+    '''
+    rootgrp_hpc_time = Dataset(fname_lst[0], 'r', format='NETCDF4')
+    nc_time_origin = rootgrp_hpc_time.variables['time_counter'].time_origin
+    rootgrp_hpc_time.close()
         
     #different treatment for 360 days and gregorian calendars... needs time_datetime for plotting, and time_datetime_since_1970 for index selection
-    if type(nctime.to_numpy()[0]) is type(cftime._cftime.Datetime360Day(1980,1,1)):
+    if type(np.array(nctime)[0]) is type(cftime._cftime.Datetime360Day(1980,1,1)):
         nctime_calendar_type = '360'
     else:
         nctime_calendar_type = 'greg'
@@ -364,18 +407,18 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
     """
 
     #different treatment for 360 days and gregorian calendars... needs time_datetime for plotting, and time_datetime_since_1970 for index selection
-    #if type(nctime.to_numpy()[0]) is type(cftime._cftime.Datetime360Day(1980,1,1)):
+    #if type(np.array(nctime)[0]) is type(cftime._cftime.Datetime360Day(1980,1,1)):
     if  nctime_calendar_type == '360':
         # if 360 days
 
-        time_datetime_since_1970 = [ss.year + (ss.month-1)/12 + (ss.day-1)/360 for ss in nctime.to_numpy()]   
+        time_datetime_since_1970 = [ss.year + (ss.month-1)/12 + (ss.day-1)/360 for ss in np.array(nctime)]   
         time_datetime = time_datetime_since_1970
     else:
         # if gregorian
 
         
         sec_since_origin = [float(ii.data - np.datetime64(nc_time_origin))/1e9 for ii in nctime]
-        time_datetime_cft = num2date(sec_since_origin,units = 'seconds since ' + nctime[0].attrs['time_origin'],calendar = 'gregorian') #nctime.calendar)
+        time_datetime_cft = num2date(sec_since_origin,units = 'seconds since ' + nc_time_origin,calendar = 'gregorian') #nctime.calendar)
 
         time_datetime = np.array([datetime(ss.year, ss.month,ss.day,ss.hour,ss.minute) for ss in time_datetime_cft])
         time_datetime_since_1970 = np.array([(ss - datetime(1970,1,1,0,0)).total_seconds()/86400 for ss in time_datetime])
@@ -391,19 +434,27 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
         nav_lon_diff = np.ma.masked_invalid(tmp_data.variables['nav_lon'][::thin,::thin].load())
 
         nctime_diff = tmp_data_diff.variables['time_counter']
+        #nc_time_origin_diff = nctime_diff[0].attrs['time_origin']
 
-        nc_time_origin_diff = nctime_diff[0].attrs['time_origin']
+
+        rootgrp_hpc_time = Dataset(subtracted_flist[0], 'r', format='NETCDF4')
+        nc_time_origin_diff = rootgrp_hpc_time.variables['time_counter'].time_origin
+        rootgrp_hpc_time.close()
 
         sec_since_origin_diff = [float(ii.data - np.datetime64(nc_time_origin_diff))/1e9 for ii in nctime_diff]
-        time_datetime_cft_diff = num2date(sec_since_origin_diff,units = 'seconds since ' + nctime_diff[0].attrs['time_origin'],calendar = 'gregorian') #nctime.calendar)
+        time_datetime_cft_diff = num2date(sec_since_origin_diff,units = 'seconds since ' + nc_time_origin_diff,calendar = 'gregorian') #nctime.calendar)
 
         time_datetime_diff = np.array([datetime(ss.year, ss.month,ss.day,ss.hour,ss.minute) for ss in time_datetime_cft_diff])
         time_datetime_since_1970_diff = np.array([(ss - datetime(1970,1,1,0,0)).total_seconds()/86400 for ss in time_datetime_diff])
         
         # check both filessets have the same times
-        if (time_datetime_since_1970_diff != time_datetime_since_1970).any():   
-            print('Diff Times dont match')
-            pdb.set_trace()
+        if len(time_datetime_since_1970_diff) != len(time_datetime_since_1970):     
+            print('Diff Times have different number of files')
+            pdb.set_trace() 
+        else:
+            if (time_datetime_since_1970_diff != time_datetime_since_1970).any():   
+                print('Diff Times dont match')
+                pdb.set_trace()
         if (nav_lat != nav_lat_diff).any():
             print('Diff nav_lat_diff dont match')
             pdb.set_trace()
@@ -535,10 +586,10 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
                 if ai == 0:
                     
                     loni,latj= xlocval,ylocval
-                    if config == 'amm7':
+                    if config.upper() in ['AMM7','GULF18']:
                         sel_ii = (np.abs(lon - loni)).argmin()
                         sel_jj = (np.abs(lat - latj)).argmin()
-                    elif config == 'amm15':
+                    elif config == 'AMM15':
                         lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(loni,latj)
                         sel_ii = np.minimum(np.maximum(np.round((lon_mat_rot - lon_rotamm15.min())/dlon_rotamm15).astype('int'),0),nlon_rotamm15-1)
                         sel_jj = np.minimum(np.maximum(np.round((lat_mat_rot - lat_rotamm15.min())/dlat_rotamm15).astype('int'),0),nlat_rotamm15-1)
@@ -1426,7 +1477,7 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
                             fig.canvas.draw()
 
                             #pdb.set_trace()
-                    elif but_name in [' ']:
+                    elif but_name in ['Depth level']:
                         func_but_text_han['Depth level'].set_color('k')
                         func_but_text_han['Surface'].set_color('k')
                         func_but_text_han['Near-Bed'].set_color('k')
@@ -1436,7 +1487,15 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
                         reload_map = True
                         reload_ts = True
                     elif but_name in 'Save Figure':                        
-                        fig.savefig('/home/h01/hadjt/workspace/python3/tmpfig_%i%i_%i_%i.png'%(ii,jj,ti,zz))
+                        #fig.savefig('/home/h01/hadjt/workspace/python3/tmpfig_%i%i_%i_%i_%s.png'%(ii,jj,ti,zz))
+                        if not os.path.exists(fig_dir):
+                            os.makedirs(directory)
+
+                        if fig_cutout:
+                            bbox_inches =  matplotlib.transforms.Bbox([[fig.get_figwidth()*(but_x1+0.01), fig.get_figheight()*(0.05-0.01)],[fig.get_figwidth()*(func_but_x0-0.01),fig.get_figheight()*0.95]])
+                            fig.savefig('%s/output_%s_%s_%i_%i_%i_%i_%s.png'%(fig_dir,fig_lab,var,ii,jj,ti,zz,z_meth),bbox_inches = bbox_inches)
+                        else:
+                            fig.savefig('%s/output_%s_%s_%i_%i_%i_%i_%s.png'%(fig_dir,fig_lab,var,ii,jj,ti,zz,z_meth))
                     elif but_name in 'Quit':
                         return
                     else:
@@ -1493,415 +1552,232 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
         '''
 
 
-"""
 
-
-def nemo_slice_slev(fname_lst, subtracted_flist = None,var = 'votemper',config = 'amm7', thin = 1,
-    zlim_max = None,xlim = None, ylim = None, tlim = None, clim = None,
-    ii = None, jj = None, ti = None, zi = None ):
-
-    # default color map to use
-    curr_cmap = None
-    diff_cmap = cmocean.cm.balance
-
-    # default initial indices
-    if ii is None: ii = 120
-    if jj is None: jj = 120
-    if ti is None: ti = 0
-    if zi is None: zi = 0
-
-
-    #config version specific info - mainly grid, and lat/lon info
-    if config == 'amm7':
-        # depth grid file
-        rootgrp_gdept = Dataset('/data/cr1/hadjt/data/reffiles/SSF/amm7.mesh_mask.nc', 'r', format='NETCDF4')
-        # depth grid variable name
-        zss = 'gdept'
-
-        #grid lat lon
-        lon = np.arange(-19.888889,12.99967+1/9.,1/9.)
-        lat = np.arange(40.066669,65+1/15.,1/15.)
-        
-    elif config == 'amm15':
-
-        # depth grid file
-        rootgrp_gdept = Dataset('/data/cr1/hadjt/data/reffiles/SSF/amm15.mesh_mask.nc', 'r', format='NETCDF4')
-        # depth grid variable name
-        zss = 'gdept_0'
-        
-        # grid lat lon rotation information
-        lon_rotamm15,lat_rotamm15 = reduce_rotamm15_grid()
-
-        dlon_rotamm15 = (np.diff(lon_rotamm15)).mean()
-        dlat_rotamm15 = (np.diff(lat_rotamm15)).mean()
-        nlon_rotamm15 = lon_rotamm15.size
-        nlat_rotamm15 = lat_rotamm15.size
-
-    # open file list with xarray
-    tmp_data = xarray.open_mfdataset(fname_lst ,combine='by_coords') # , decode_cf=False)
-    # load nav_lat and nav_lon
-    nav_lat = np.ma.masked_invalid(tmp_data.variables['nav_lat'][::thin,::thin].load())
-    nav_lon = np.ma.masked_invalid(tmp_data.variables['nav_lon'][::thin,::thin].load())
-    
-    # what are the4d variable names, and how many are there?
-    var_4d_mat = np.array([ss for ss in tmp_data.variables.keys() if len(tmp_data.variables[ss].dims) == 4])
-    nvar4d = var_4d_mat.size
-
-
-    # extract time information from xarray.
-    # needs to work for gregorian and 360 day calendars.
-    # needs to work for as x values in a plot, or pcolormesh
-    # needs work, xarray time is tricky
-    nctime = tmp_data.variables['time_counter']
-
-    '''
-    if 'calendar' in nctime[0].attrs.keys():
-        nc_calendar = nctime[0].attrs['calendar']
-    else:
-        nc_calendar = 'gregorian'
-    pdb.set_trace()
-    '''
-
-
-    nc_time_origin = nctime[0].attrs['time_origin']
-
-
-    #different treatment for 360 days and gregorian calendars... needs time_datetime for plotting, and time_datetime_since_1970 for index selection
-    if type(nctime.to_numpy()[0]) is type(cftime._cftime.Datetime360Day(1980,1,1)):
-        # if 360 days
-
-        time_datetime_since_1970 = [ss.year + (ss.month-1)/12 + (ss.day-1)/360 for ss in nctime.to_numpy()]   
-        time_datetime = time_datetime_since_1970
-    else:
-        # if gregorian
-
-
-        sec_since_origin = [float(ii.data - np.datetime64(nc_time_origin))/1e9 for ii in nctime]
-        time_datetime_cft = num2date(sec_since_origin,units = 'seconds since ' + nctime[0].attrs['time_origin'],calendar = 'gregorian') #nctime.calendar)
-
-        time_datetime = np.array([datetime(ss.year, ss.month,ss.day,ss.hour,ss.minute) for ss in time_datetime_cft])
-        time_datetime_since_1970 = np.array([(ss - datetime(1970,1,1,0,0)).total_seconds()/86400 for ss in time_datetime])
-
-    load_diff_files = False
-    # repeat if comparing two time series. 
-    if subtracted_flist is not None:
-        
-        load_diff_files = True
-        tmp_data_diff = xarray.open_mfdataset(subtracted_flist ,combine='by_coords' )
-        #pdb.set_trace()
-        nav_lat_diff = np.ma.masked_invalid(tmp_data.variables['nav_lat'][::thin,::thin].load())
-        nav_lon_diff = np.ma.masked_invalid(tmp_data.variables['nav_lon'][::thin,::thin].load())
-
-        nctime_diff = tmp_data_diff.variables['time_counter']
-
-        nc_time_origin_diff = nctime_diff[0].attrs['time_origin']
-
-        sec_since_origin_diff = [float(ii.data - np.datetime64(nc_time_origin_diff))/1e9 for ii in nctime_diff]
-        time_datetime_cft_diff = num2date(sec_since_origin_diff,units = 'seconds since ' + nctime_diff[0].attrs['time_origin'],calendar = 'gregorian') #nctime.calendar)
-
-        time_datetime_diff = np.array([datetime(ss.year, ss.month,ss.day,ss.hour,ss.minute) for ss in time_datetime_cft_diff])
-        time_datetime_since_1970_diff = np.array([(ss - datetime(1970,1,1,0,0)).total_seconds()/86400 for ss in time_datetime_diff])
-        
-        # check both filessets have the same times
-        if (time_datetime_since_1970_diff != time_datetime_since_1970).any():   
-            print('Diff Times dont match')
-            pdb.set_trace()
-        if (nav_lat != nav_lat_diff).any():
-            print('Diff nav_lat_diff dont match')
-            pdb.set_trace()
-        if (nav_lon != nav_lon_diff).any():
-            print('Diff nav_lon_diff dont match')
-            pdb.set_trace()
-        # use a difference colormap if comparing files
-        curr_cmap = diff_cmap
-
-
-    # set up figure.
-    #   set up default figure, and then and and delete plots when you change indices.
-    #   change indices with mouse click, detected with ginput
-    #   ginput only works on one axes, so add a hidden fill screen axes, and then convert figure indices to an axes, and then using axes position and x/ylims into axes index. 
-    #   create boxes with variable names as buttons to change variables. 
-   
-
-    ax = []
-    pax = []
-
-    fig = plt.figure()
-    fig.suptitle('Interactive figure, click outside axes to quit', fontsize=20)
-    fig.set_figheight(12)
-    fig.set_figwidth(18) 
-    # add axes
-    ax.append(plt.subplot(1,2,1))
-    ax.append(plt.subplot(4,2,2))
-    ax.append(plt.subplot(4,2,4))
-    ax.append(plt.subplot(4,2,6))
-    ax.append(plt.subplot(4,2,8))
-
-    #flip depth axes
-    for tmpax in ax[1:]: tmpax.invert_yaxis()
-    #use log depth scale, setiched off as often causes problems (clashes with hidden axes etc).
-    #for tmpax in ax[1:]: tmpax.set_yscale('log')
-
-    # add hidden fill screen axes 
-    clickax = fig.add_axes([0,0,1,1], frameon=False)
-    clickax.axis('off')
-    
-    #add "buttons"
-    but_x0 = 0.01
-    but_x1 = 0.05
-    but_dy = 0.04
-    but_ysp = 0.01 
-    but_line_han,but_text_han = {},{}
-    #add button box
-    for vi,var_4d in enumerate(var_4d_mat): but_line_han[var_4d] = clickax.plot([but_x0,but_x1,but_x1,but_x0,but_x0],0.9 - (np.array([0,0,but_dy,but_dy,0]) + vi*0.05),'k')
-    #add button names
-    for vi,var_4d in enumerate(var_4d_mat): but_text_han[var_4d] = clickax.text((but_x0+but_x1)/2,0.9 - ((but_dy/2) + vi*0.05),var_4d, ha = 'center', va = 'center')
-    clickax.axis([0,1,0,1])
-    
-    #note button extends (as in position.x0,x1, y0, y1)
-    but_extent = {}
-    for vi,var_4d in enumerate(var_4d_mat): but_extent[var_4d] = [but_x0,but_x1,0.9 - (but_dy + vi*0.05),0.9 - (0 + vi*0.05)]
-    #pdb.set_trace()  
-
-    #get the current xlim (default to None??)
-    cur_xlim = xlim
-    cur_ylim = ylim
-
-    # only load data when needed
-    reload_map, reload_ew, reload_ns, reload_hov, reload_ts = True,True,True,True,True
-
-    # loop
-    while ii is not None:
-        # try, exit on error
-        try:
-        #if True: 
-            # extract plotting data (when needed), and subtract off difference files if necessary.
-            if reload_map:
-                map_dat = np.ma.masked_invalid(tmp_data.variables[var][ti,zi,::thin,::thin].load())
-                if load_diff_files: map_dat -= np.ma.masked_invalid(tmp_data_diff.variables[var][ti,zi,::thin,::thin].load())
-                map_x = nav_lon
-                map_y = nav_lat
-                reload_map = False
-            if reload_ew:
-                ew_slice_dat = np.ma.masked_invalid(tmp_data.variables[var][ti,:,jj,:].load())
-                if load_diff_files: ew_slice_dat -= np.ma.masked_invalid(tmp_data_diff.variables[var][ti,:,jj,:].load())
-                ew_slice_x =  nav_lon[jj,:]
-                ew_slice_y =  rootgrp_gdept.variables['gdept_0'][0,:,jj,:]
-                reload_ew = False
-            if reload_ns:
-                ns_slice_dat = np.ma.masked_invalid(tmp_data.variables[var][ti,:,:,ii].load())
-                if load_diff_files: ns_slice_dat -= np.ma.masked_invalid(tmp_data_diff.variables[var][ti,:,:,ii].load())
-                ns_slice_x =  nav_lat[:,ii]
-                ns_slice_y =  rootgrp_gdept.variables['gdept_0'][0,:,:,ii]
-                reload_ns = False
-            if reload_hov:
-                hov_dat = np.ma.masked_invalid(tmp_data.variables[var][:,:,jj,ii].load()).T
-                if load_diff_files: hov_dat -= np.ma.masked_invalid(tmp_data_diff.variables[var][:,:,jj,ii].load()).T
-                hov_x = time_datetime
-                hov_y =  rootgrp_gdept.variables['gdept_0'][0,:,jj,ii]
-                reload_hov = False
-            if reload_ts:
-                ts_dat = hov_dat[zi,:]
-                if load_diff_files:
-                    ts_dat_1 = np.ma.masked_invalid(tmp_data.variables[var][:,zi,jj,ii].load())
-                    ts_dat_2 = np.ma.masked_invalid(tmp_data_diff.variables[var][:,zi,jj,ii].load())
-                ts_x = time_datetime
-                reload_ts = False
-            
-            
-            #plot data
-            pax = []
-            pax.append(ax[0].pcolormesh(map_x,map_y,map_dat,cmap = curr_cmap))
-            pax.append(ax[1].pcolormesh(ew_slice_x,ew_slice_y,ew_slice_dat,cmap = curr_cmap))
-            pax.append(ax[2].pcolormesh(ns_slice_x,ns_slice_y,ns_slice_dat,cmap = curr_cmap))
-            pax.append(ax[3].pcolormesh(hov_x,hov_y,hov_dat,cmap = curr_cmap))
-            tsax = ax[4].plot(ts_x,ts_dat,'r')
-            # add variable name as title - maybe better as a button color chnage?
-            ax[0].set_title(var)
-            
-            # add colorbars
-            cax = []        
-            for ai in [0,1,2,3]: cax.append(plt.colorbar(pax[ai], ax = ax[ai]))
-            
-            # set minimum depth if keyword set
-            xlim_min = 1
-            if zlim_max == None:
-                ax[1].set_ylim([ew_slice_y.max(),xlim_min])
-                ax[2].set_ylim([ns_slice_y.max(),xlim_min])
-                ax[3].set_ylim([hov_y.max(),xlim_min])
-            else:
-                ax[1].set_ylim([zlim_max,xlim_min])
-                ax[2].set_ylim([zlim_max,xlim_min])
-                ax[3].set_ylim([np.minimum(zlim_max,hov_y.max()),xlim_min])
-
-            # apply xlim/ylim if keyword set
-            if xlim is not None:ax[0].set_xlim(cur_xlim)
-            if ylim is not None:ax[0].set_ylim(cur_ylim)
-            if ylim is not None:ax[1].set_xlim(cur_xlim)
-            if xlim is not None:ax[2].set_xlim(cur_ylim)
-            if tlim is not None:ax[3].set_xlim(tlim)
-            if tlim is not None:ax[4].set_xlim(tlim)
-            
-            #reset ylim to time series to data min max
-            ax[4].set_ylim(ts_dat.min(),ts_dat.max())
-
-            # if no keyword clim, use 5th and 95th percentile of data
-            if clim is None:
-                for tmpax in ax[:-1]:set_perc_clim_pcolor_in_region(5,95, ax = tmpax)
-            else:
-                for tmpax in ax[:-1]:set_clim_pcolor((clim), ax = tmpax)
-        
-            
-            ## add lines to show current point. 
-            # currently using axhline, axvline, not idea of rotated grid (amm15)
-            cs_line = []
-            cs_line.append(ax[0].axhline(nav_lat[jj,ii],color = '0.5', alpha = 0.5))
-            cs_line.append(ax[0].axvline(nav_lon[jj,ii],color = '0.5', alpha = 0.5))
-            cs_line.append(ax[1].axvline(nav_lon[jj,ii],color = '0.5', alpha = 0.5))
-            cs_line.append(ax[2].axvline(nav_lat[jj,ii],color = '0.5', alpha = 0.5))
-            cs_line.append(ax[3].axvline(time_datetime_since_1970[ti],color = '0.5', alpha = 0.5))
-            cs_line.append(ax[4].axvline(time_datetime_since_1970[ti],color = '0.5', alpha = 0.5))
-
-            # set current axes to hidden full screen axes for click interpretation
-            plt.sca(clickax)
-            
-            #await click with ginput
-            tmp = plt.ginput(1)
-            if len(tmp) == 0: continue
-            clii,cljj = tmp[0][0],tmp[0][1]
-
-            #get click location, and current axis limits for ax[0], and set them
-            # defunct? was trying to allow zooming
-            cur_xlim = np.array(ax[0].get_xlim())
-            cur_ylim = np.array(ax[0].get_ylim())
-
-            ax[0].set_xlim(cur_xlim)
-            ax[0].set_ylim(cur_ylim)
-
-            #find clicked axes:
-            is_in_axes = False
-            
-            #cycle through plotting axes, and see if clicked.
-            for ai,tmpax in enumerate(ax): 
-                #axes position (extent)
-                tmppos =  tmpax.get_position()
-                # was click within extent
-                if (clii >= tmppos.x0) & (clii <= tmppos.x1) & (cljj >= tmppos.y0) & (cljj <= tmppos.y1):
-                    #if so:
-                    is_in_axes = True
-
-                    #convert figure coordinate of click, into location with the axes, using data coordinates
-                    clxlim = np.array(tmpax.get_xlim())
-                    clylim = np.array(tmpax.get_ylim())
-                    normxloc = (clii - tmppos.x0 ) / (tmppos.x1 - tmppos.x0)
-                    normyloc = (cljj - tmppos.y0 ) / (tmppos.y1 - tmppos.y0)
-                    xlocval = normxloc*clxlim.ptp() + clxlim.min()
-                    ylocval = normyloc*clylim.ptp() + clylim.min()
-                    #print(clii,clxlim,normxloc,xlocval)
-                    #print(cljj,clylim,normyloc,ylocval)
-
-
-                    # what do the local coordiantes of the click mean in terms of the data to plot.
-                    # if on the map, or the slices, need to covert from lon and lat to ii and jj, which is complex for amm15.
-
-                    # if in map, covert lon lat to ii,jj
-                    if ai == 0:
-                        loni,latj= xlocval,ylocval
-                        if config == 'amm7':
-                            ii = (np.abs(lon - loni)).argmin()
-                            jj = (np.abs(lat - latj)).argmin()
-                        elif config == 'amm15':
-                            lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(loni,latj)
-                            ii = np.minimum(np.maximum(np.round((lon_mat_rot - lon_rotamm15.min())/dlon_rotamm15).astype('int'),0),nlon_rotamm15-1)
-                            jj = np.minimum(np.maximum(np.round((lat_mat_rot - lat_rotamm15.min())/dlat_rotamm15).astype('int'),0),nlat_rotamm15-1)
-                        # and reload slices, and hovmuller/time series
-                        reload_ew = True
-                        reload_ns = True
-                        reload_hov = True
-                        reload_ts = True
-
-                    elif ai in [1]: 
-                        # if in ew slice, change ns slice, and hov/time series
-                        loni= xlocval
-                        if config == 'amm7':
-                            ii = (np.abs(lon - loni)).argmin()
-                        elif config == 'amm15':
-                            lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(loni,latj)
-                            ii = np.minimum(np.maximum(np.round((lon_mat_rot - lon_rotamm15.min())/dlon_rotamm15).astype('int'),0),nlon_rotamm15-1)
-                        
-                        reload_ns = True
-                        reload_hov = True
-                        reload_ts = True
-                        
-                    elif ai in [2]:
-                        # if in ns slice, change ew slice, and hov/time series
-                        latj= xlocval
-                        if config == 'amm7':
-                            jj = (np.abs(lat - latj)).argmin()
-                        elif config == 'amm15':
-                            lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(loni,latj)
-                            jj = np.minimum(np.maximum(np.round((lat_mat_rot - lat_rotamm15.min())/dlat_rotamm15).astype('int'),0),nlat_rotamm15-1)
-
-                        reload_ew = True
-                        reload_hov = True
-                        reload_ts = True
-
-                    elif ai in [3,4]:
-                        # if in hov/time series, change map, and slices
-                        ti = np.abs(xlocval - time_datetime_since_1970).argmin()
-                        
-                        reload_map = True
-                        reload_ew = True
-                        reload_ns = True
-                    else:
-                        return
-                        pdb.set_trace()
-
-            # if in button, change variables. 
-
-            for but_name in but_extent.keys():
-                
-                but_pos_x0,but_pos_x1,but_pos_y0,but_pos_y1 = but_extent[but_name]
-                if (clii >= but_pos_x0) & (clii <= but_pos_x1) & (cljj >= but_pos_y0) & (cljj <= but_pos_y1):
-                    is_in_axes = True
-                    if but_name in var_4d_mat:
-                        var = but_name
-                        reload_map = True
-                        reload_ew = True
-                        reload_ns = True
-                        reload_hov = True
-                        reload_ts = True
-                        
-                        
-                    
-            # if no axes, or buttons pressed, quite. 
-            if is_in_axes == False:
-                print('Clicked outside axes')
-                return
-                pdb.set_trace()
-                    
-            
-            plt.sca(ax[0])
-                    
-
-
-            print("selected ii = %i,jj = %i,ti = %i,zi = %i, var = '%s'"%(ii,jj, ti, zi,var))
-            # after selected indices and vareiabels, delete plots, ready for next cycle
-        
-            for tmp_cax in cax:tmp_cax.remove()
-            for tmp_pax in pax:tmp_pax.remove()
-            for tmp_cs_line in cs_line:tmp_cs_line.remove()
-            rem_loc = tsax.pop(0)
-            rem_loc.remove()
-        except:
-            print('excepted',ii,jj,ti,zi)
-            tmp_data.close()
-            rootgrp_gdept.close()
-            return
-"""
 def main():
+    
+
+    nemo_slice_zlev_helptext=textwrap.dedent('''\
+    Interactive NEMO ncfile viewer.
+    ===============================
+    Developed by Jonathan Tinker Met Office, UK, December 2023
+    ==========================================================
+    
+    When calling from the command line, it uses a mix of positional values, and keyword value pairs, via argparse.
+
+    The first two positional keywords are the NEMO configuration "config", 
+    and the second is the list of input file names "fname_lst"
+    
+    config: should be AMM7, AMM15, ORCA025, ORCA025EXT or ORCA12. Other configurations will be supported soon. 
+    fname_lst: supports wild cards, but should be  enclosed in quotes.
+
+    e.g.
+    python NEMO_nc_slevel_viewer_dev.py amm15 "/scratch/frpk/a15ps46trial/control/prodm_op_am-dm.gridT*-36.nc" 
 
 
+    Optional arguments are give as keyword value pairs, with the keyword following a double hypen.
+    We will list the most useful options first.
+
+    --zlim_max - maximum depth to show, often set to 200. Default is None
+    
+    --subtracted_flist - secondary file list, to show the different between two sets of files. 
+        Enclose in quotes. Make sure this has the same number of files, with the same dates as 
+        fname_lst. This will be checked in later upgrades, but will currently fail if the files
+        are inconsistent
+    --U_flist - specify a consistent set of U and V files, to calculate a drived variable current magintude. 
+        assumes the variable vozocrtx is present. Later upgrade will allow the plotting of vectors, 
+        and to handle other current variable names. Must have both U_flist and V_flist.
+    --V_flist - specify a consistent set of U and V files, to calculate a drived variable current magintude. 
+        assumes the variable vomecrty is present. Later upgrade will allow the plotting of vectors, 
+        and to handle other current variable names. Must have both U_flist and V_flist.
+
+
+    --fig_dir - directory for figure output
+    --fig_lab - label to add to filesnames, so can compare runs.
+    --fig_cutout - save full screen, or cut off the buttons - this is the defaulted to True
+
+    --clim_sym use a symetrical colourbar -defaulted to False
+    --use_cmocean - use cmocean colormaps -defaulted to False
+
+
+    --ii    initial ii value
+    --jj    initial jj value
+    --ti    initial ti value
+    --zz    initial zz value
+
+    Planned upgrades:
+    =================
+    Additional derived variables (PEA)
+    Button to switch between flist, subtracted_flist and their difference.
+    Plot current vectors.
+    Improve meaningfulness of the figure title. State level being plotted (zlev, ss, df etc.)
+    Allow colorbar to be specified
+    Allow the keyword thin, to think the data before plotting, to speed up large datasets like amm15
+    Work on CRAY
+
+
+    Using NEMO_nc_slevel_viewer.
+    ============================
+
+    BUG
+    ===
+    BUG: You seem to need to click twice. Or once to chose the location, and once outside on white space of the figures, outside of any button or subplot.
+    BUG: sometimes additional colorbars start to appear. Clicking somewhere tends to remove them, although sometimes you get additional cross-hairs.
+        it maybe easiest to quit and start again. 
+
+    
+    Overview
+    ========
+    When the viewer loads, there is a series of variable buttons on the left hand side, fuction buttons on the right hand side, and subplots.
+    The main subplot is on the left, which is  2d lon lat surface plot. The right hand plots (top to bottom) show a zonal and meridonial slice, 
+    a hovmoller plot and a timeseries. The active location is showns as crosshairs on each subplot. 
+
+    Changing the current location
+    =============================
+    You can change the horizontal location by clicking on the map, or the either of the slices. YOu can change the depth by clicking on the hovmuller plots, 
+    and change the time by clicking on the time series. 
+
+    The viewer initially shows the surface slice, and the viewer is in depth level mode (Note the Depth Level button is red on the right hand side). 
+    When you change the depth by clicking on the hovmuller diagram, you take a z slice though AMM scoorinates, therefore the coastline 
+    changes when you go deeper. If you want to see the surface, the bed, or the surface minus bed, you can click the buttons on the right hand side.
+    these will change to red depending on your choice - remembering to click twice.  When you wnat to go back to the depth level, click back on depth level.
+    
+    
+    Changing variables
+    ==================
+    You can change variables by clicking (twice) on the variable buttons on the left hand side. the current variable is in red. 3d variables are have black boxes
+    2d variables have green boxes, derived variables have blue boxes
+    
+    Zooming
+    =======
+
+    You can zoom, by .
+        1) clicking on the zoom button, 
+        2) clicking on the map at the bottom left hand point of your area of interest, 
+        3) clicking on the map at the top right hand point of your area of interest, 
+        4) clicking on some white space.
+
+    You can reset the zoom by clicking Reset zoom, and the white space
+    
+
+    Colour Zooming
+    ==============
+    The default colormap limits are based on the 5th and 95th percentile value that occurs within the subplot.
+    If you can want tighter colour limits you can zoom the colorbar, reset to the original default values, or zoom out.
+    
+    To zoom in on the colourbar
+        1)  Click Clim: Zoom
+        2)  Click on the colorbar of the map (left hand subplot) at the desired lower colour limit
+        3)  Click on the desired upper colour limit of the colorbar.
+        4)  Click on white space.
+
+    To zoom out of the colorbar (double the colorbar range, with the same middle value)
+        1) Click Clim: Expand
+        2) Click whitespace
+    
+    To reset the default colorbar limits
+        1) Click Clim: Reset
+    
+    Colourmap scaling
+    =================
+    You can set the colorbar to logarithmic or normal.
+    However there appears to be a matplotlib bug with logarithmic colorbars
+        All the colorbars share the same colour limits when in log scale. 
+
+    It doesn't appear to work when comparing two sets of files.
+    It doens't handle negative values very well. 
+
+
+    Saving figures
+    ==============
+    You can take snap shots of the screen by clicking Save Figure, and then clicking white space. 
+    Files will be saved in the dirertory given with the --fig_dir option.
+    Figures will be named based on the variable, ii,jj, ti and zz location, and with a figure label
+    given with the --fig_lab option. By default, the savedfigure will exclude the buttons. If you want
+    the full screen (or the cut out is not optimised) use  the --fig_cutout False option.
+
+    Quit
+    ====
+    Click quit, then white space. The figure should close. 
+
+
+    Developed by Jonathan Tinker Met Office, UK, December 2023
+    ==========================================================
+    
+    ''')
+
+    if sys.argv.__len__() > 1:
+
+        #https://towardsdatascience.com/a-simple-guide-to-command-line-arguments-with-argparse-6824c30ab1c3
+        parser = argparse.ArgumentParser(description='An interactive tool for plotting NEMO data',
+            formatter_class=argparse.RawDescriptionHelpFormatter,  
+            epilog=nemo_slice_zlev_helptext)
+
+
+        parser.add_argument('config', type=str, help="AMM7, AMM15, ORCA025, ORCA025EXT or ORCA12")# Parse the argument
+        parser.add_argument('fname_lst', type=str, help='Input file list, enclose in "" more than simple wild card')
+        parser.add_argument('--zlim_max', type=int, required=False)
+        parser.add_argument('--subtracted_flist', type=str, required=False, help='Input file list, enclose in "" more than simple wild card, Check this has the same number of files as the fname_lst')
+        parser.add_argument('--U_flist', type=str, required=False, help='Input U file list for current magnitude. Assumes file contains vozocrtx, enclose in "" more than simple wild card')
+        parser.add_argument('--V_flist', type=str, required=False, help='Input U file list for current magnitude. Assumes file contains vomecrty, enclose in "" more than simple wild card')
+        parser.add_argument('--fig_dir', type=str, required=False, help = 'if absent, will default to /home/h01/hadjt/workspace/python3/NEMO_nc_slevel_viewer/tmpfigs')
+        parser.add_argument('--fig_lab', type=str, required=False, help = 'if absent, will default to figs')
+        parser.add_argument('--fig_cutout', type=bool, required=False)
+
+        parser.add_argument('--ii', type=int, required=False)
+        parser.add_argument('--jj', type=int, required=False)
+        parser.add_argument('--ti', type=int, required=False)
+        parser.add_argument('--zz', type=int, required=False)
+        parser.add_argument('--clim_sym', type=bool, required=False)
+        parser.add_argument('--use_cmocean', type=bool, required=False)
+        
+
+        #thin = 1,
+        #xlim = None, ylim = None, tlim = None, clim = None,
+
+        args = parser.parse_args()# Print "Hello" + the user input argument
+
+        if args.fig_dir is None: args.fig_dir='/home/h01/hadjt/workspace/python3/NEMO_nc_slevel_viewer/tmpfigs'
+        if args.fig_lab is None: args.fig_lab='figs'
+        if args.fig_cutout is None: args.fig_cutout=True
+        
+
+        #Deal with file lists
+
+        fname_lst = glob.glob(args.fname_lst)
+        fname_lst.sort()
+        subtracted_flist = None
+        U_flist = None
+        V_flist = None
+
+        if args.subtracted_flist is not None:subtracted_flist = glob.glob(args.subtracted_flist)
+        if args.U_flist is not None:U_flist = glob.glob(args.U_flist)
+        if args.V_flist is not None:V_flist = glob.glob(args.V_flist)
+
+        if subtracted_flist is not None:subtracted_flist.sort()
+        if U_flist is not None:U_flist.sort()
+        if V_flist is not None:V_flist.sort()
+
+
+        nemo_slice_zlev(fname_lst,zlim_max = args.zlim_max, config = args.config,
+            subtracted_flist = subtracted_flist, U_flist = U_flist, V_flist = V_flist,
+            clim_sym = args.clim_sym, use_cmocean = args.use_cmocean,
+            ii = args.ii, jj = args.jj, ti = args.ti, zz = args.zz, 
+            fig_dir = args.fig_dir, fig_lab = args.fig_lab,fig_cutout = args.fig_cutout
+            )
+
+
+        exit()
+    '''
+    if sys.argv.__len__() > 1:
+        nvargin = sys.argv.__len__()
+        python_code = sys.argv[0]
+        print('nvargin',nvargin)
+
+        config = sys.argv[1]
+        zlim_max = sys.argv[2]
+        pdb.set_trace()
+
+        print('Hello,', args.subtracted_flist)
 
 
     if sys.argv.__len__() > 1:
@@ -1921,7 +1797,7 @@ def main():
     
         exit()
 
-
+    '''
 
 
     '''
@@ -1957,8 +1833,54 @@ def main():
          fname_lst = glob.glob('/critical/opfc/suites-oper/foam_amm7/share/cycle/20231*T0000Z/level0/prodm_op_am-dm.gridT_*_00.-36.nc')
          nemo_slice_zlev(fname_lst, config = 'amm7',zlim_max = 200) # , xlim = [-5,10], ylim = [50,60]) 
    
-    
+    ###Porting PS46
+    #AMM15
+    fname_lst_cont = glob.glob('/scratch/frpk/a15ps46trial/control/prodm_op_am-dm.gridT*-36.nc')
+    fname_lst_port = glob.glob('/scratch/frpk/a15ps46trial/trial/prodm_op_am-dm.gridT*-36.nc')
+    fname_lst_cont.sort()
+    fname_lst_port.sort()
+    #fname_lst_cont = fname_lst_cont[:6]
+    #fname_lst_port = fname_lst_port[:6]
+    nemo_slice_zlev(fname_lst_cont, subtracted_flist = fname_lst_port, config = 'amm15',zlim_max = 200,fig_lab = 'AMM15_PS46_trials') 
+    exit()
 
+    #AMM7
+    fname_lst_cont = glob.glob('/scratch/frnm/PS46/control/prodm_op_am-dm.gridT*nc')
+    fname_lst_port = glob.glob('/scratch/frnm/PS46/porting/prodm_op_am-dm.gridT*nc')
+    fname_lst_cont.sort()
+    fname_lst_port.sort()
+    fname_lst_cont = fname_lst_cont[:6]
+    fname_lst_port = fname_lst_port[:6]
+    nemo_slice_zlev(fname_lst_cont, subtracted_flist = fname_lst_port, config = 'amm7',zlim_max = 200,fig_lab = 'AMM7_PS46_trials') 
+    exit()
+
+    #module load scitools/default-current
+
+    # python NEMO_nc_slevel_viewer_dev.py amm15 "/scratch/frpk/a15ps46trial/control/prodm_op_am-dm.gridT*-36.nc" --zlim_max 200 --subtracted_flist "/scratch/frpk/a15ps46trial/trial/prodm_op_am-dm.gridT*-36.nc" --fig_lab AMM15_PS46_trials --fig_dir '/home/h01/hadjt/workspace/python3/NEMO_nc_slevel_viewer/tmpfigs'
+
+    # python NEMO_nc_slevel_viewer_dev.py amm7 "/scratch/frnm/PS46/control/prodm_op_am-dm.gridT_20210[345678]*-36.nc" --subtracted_flist "/scratch/frnm/PS46/porting/prodm_op_am-dm.gridT_20210[345678]*-36.nc"  --zlim_max 200 --fig_lab AMM7_PS46_trials --fig_dir '/home/h01/hadjt/workspace/python3/NEMO_nc_slevel_viewer/tmpfigs'
+
+
+    #python NEMO_nc_slevel_viewer_dev.py GULF18  "/scratch/orca12/g18trial/control/prodm_op_gf-dm.gridT_*-36.nc" --subtracted_flist "/scratch/orca12/g18trial/trial/prodm_op_gf-dm.gridT_*-36.nc"  --zlim_max 200 --fig_lab GULF18_PS46_trials --fig_dir '/home/h01/hadjt/workspace/python3/NEMO_nc_slevel_viewer/tmpfigs'
+
+
+
+
+
+
+
+
+
+
+
+    '''
+
+    module load scitools/default-current
+    python NEMO_nc_slevel_viewer_dev.py amm15 200 '/scratch/frpk/a15ps46trial/control/prodm_op_am-dm.gridT*-36.nc' --subtracted_flist '/scratch/frpk/a15ps46trial/trial/prodm_op_am-dm.gridT*-36.nc'
+
+
+
+    '''
     '''
 
 
@@ -1987,8 +1909,9 @@ drwxr-xr-x.  2 hadjt users 2048 Dec 13 09:51 mi-bc710_preorca
     fname_lst_amm15_trial = glob.glob('/scratch/hadjt/SSF/tmp/LBC_implementation_shock/mi-bc710_preorca/prodm_op_%s.gridT_*_00.-36.nc'%fname_type)
 
 
-    pdb.set_trace()
+    #pdb.set_trace()
 
+    nemo_slice_zlev(fname_lst_amm7_opsys, config = 'amm7',zlim_max = 200) # , xlim = [-5,10], ylim = [50,60]) 
 
     #nemo_slice_zlev(fname_lst_amm7_opsys, config = 'amm7',zlim_max = 200) # , xlim = [-5,10], ylim = [50,60]) 
     #nemo_slice_zlev(fname_lst_amm7_trial, config = 'amm7',zlim_max = 200) # , xlim = [-5,10], ylim = [50,60]) 
