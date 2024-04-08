@@ -481,6 +481,10 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
     # add hidden fill screen axes 
     clickax = fig.add_axes([0,0,1,1], frameon=False)
     clickax.axis('off')
+
+
+    if verbose_debugging: print('Created figure', datetime.now())
+
     
     #add "buttons"
     but_x0 = 0.01
@@ -514,7 +518,8 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
 
 
     clickax.axis([0,1,0,1])
-
+    
+    if verbose_debugging: print('Added variable boxes', datetime.now())
 
 
     func_names_lst = ['Reset zoom', 'Zoom', 'Clim: Reset','Clim: Zoom','Clim: Expand','Clim: perc','Clim: normal', 'Clim: log','Surface', 'Near-Bed', 'Surface-Bed','Depth level','Save Figure', 'Quit']
@@ -536,12 +541,16 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
     func_but_text_han['Clim: normal'].set_color('b')
     but_text_han[var].set_color('r')
 
+    if verbose_debugging: print('Added functions boxes', datetime.now())
 
 
     ###########################################################################
     # Define inner functions
     ###########################################################################
 
+
+
+    if verbose_debugging: print('Create inner functions', datetime.now())
     def indices_from_ginput_ax(clii,cljj,thin=thin):
         
         '''
@@ -884,6 +893,7 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
         return map_dat
   
     def reload_map_data():
+        #pdb.set_trace()
         if var_dim[var] == 3:
             map_dat = np.ma.masked_invalid(curr_tmp_data.variables[var][ti,::thin,::thin].load())
             if load_diff_files: map_dat -= np.ma.masked_invalid(curr_tmp_data_diff.variables[var][ti,::thin,::thin].load())
@@ -935,18 +945,22 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
     ###########################################################################
     # Inner functions defined
     ###########################################################################
+    
+    if verbose_debugging: print('Inner functions created ', datetime.now())
 
-
-
+    #pdb.set_trace()
     #get the current xlim (default to None??)
     cur_xlim = xlim
     cur_ylim = ylim
     # only load data when needed
     reload_map, reload_ew, reload_ns, reload_hov, reload_ts = True,True,True,True,True
+
+
+    if verbose_debugging: print('Create interpolation weights ', datetime.now())
     if z_meth_default == 'z_slice':
         interp1d_wgtT = {}
         interp1d_wgtT[0] = interp1dmat_create_weight(rootgrp_gdept.variables['gdept_0'][0,:,::thin,::thin],0)
-    #pdb.set_trace()
+    if verbose_debugging: print('Interpolation weights created', datetime.now())
     # loop
 
 
@@ -992,6 +1006,7 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
                 else:
                     map_dat,map_x,map_y = reload_map_data()
                 reload_map = False
+            if verbose_debugging: print('Reloaded map data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now())
             if reload_ew:
                 if var_dim[var] == 4:
                     
@@ -1001,6 +1016,7 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
                         ew_slice_dat,ew_slice_x, ew_slice_y = reload_ew_data()
 
                 reload_ew = False
+            if verbose_debugging: print('Reloaded ew data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now())
             if reload_ns:
                 if var_dim[var] == 4:
                     if var in deriv_var:
@@ -1008,6 +1024,7 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
                     else:
                         ns_slice_dat,ns_slice_x, ns_slice_y = reload_ns_data()                    
                 reload_ns = False
+            if verbose_debugging: print('Reloaded ns data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now())
             if reload_hov:
                 if var_dim[var] == 4:
                     if var in deriv_var:
@@ -1017,6 +1034,7 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
 
 
                 reload_hov = False
+            if verbose_debugging: print('Reloaded hov data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now())
             if reload_ts:
                 #if var_grid[var] != 'UV':
                 
@@ -1057,6 +1075,7 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
                             if z_meth == 'df':ts_dat_2 = df_ts_dat_2
                 reload_ts = False
                 
+            if verbose_debugging: print('Reloaded ts data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now())
                 
                 
             if verbose_debugging: print('Reloaded data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now())
@@ -1120,15 +1139,19 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
             #print('About to reset colour limits')
             # if no keyword clim, use 5th and 95th percentile of data        
             #for tmpax in ax[:-1]:print('current clim',get_clim_pcolor(ax = tmpax))    
-            
-            if clim is None:
-                for tmpax in ax[:-1]:set_perc_clim_pcolor_in_region(5,95, ax = tmpax,sym = clim_sym)
-                #When using the log scale, the colour set_clim seems linked, so all panels get set to the limits of the final set_perc_clim_pcolor call..
-                #   therefore repeat set_perc_clim_pcolor of the map, so the hovmuller colour limit is not the final one. 
-                set_perc_clim_pcolor_in_region(5,95, ax = ax[0],sym = clim_sym)
+            #pdb.set_trace()
+            try:
+                if clim is None:
+                    for tmpax in ax[:-1]:set_perc_clim_pcolor_in_region(5,95, ax = tmpax,sym = clim_sym)
+                    #When using the log scale, the colour set_clim seems linked, so all panels get set to the limits of the final set_perc_clim_pcolor call..
+                    #   therefore repeat set_perc_clim_pcolor of the map, so the hovmuller colour limit is not the final one. 
+                    set_perc_clim_pcolor_in_region(5,95, ax = ax[0],sym = clim_sym)
 
-            else:
-                for tmpax in ax[:-1]:set_clim_pcolor((clim), ax = tmpax)
+                else:
+                    for tmpax in ax[:-1]:set_clim_pcolor((clim), ax = tmpax)
+            except:
+                print("An exception occured - probably 'IndexError: cannot do a non-empty take from an empty axes.'")
+                pdb.set_trace()
         
             #for tmpax in ax[:-1]:print('updated clim',get_clim_pcolor(ax = tmpax))    
         

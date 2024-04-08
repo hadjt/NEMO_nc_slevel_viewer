@@ -281,21 +281,39 @@ def interp1dmat_wgt(indata, wgt_tuple):
     return outdata
 
 def interp1dmat_create_weight(gdept,z_lev):
+
+
+    import socket
+    computername = socket.gethostname()
+    comp = 'linux'
+    if computername in ['xcel00','xcfl00']: comp = 'hpc'
+
+    ## Trouble shooting HPC seg fault
+    verbose_debugging = False
+    if verbose_debugging: from datetime import datetime
+    if verbose_debugging: import pdb
     nz,nlon,nlat = gdept.shape
 
+
+    
+    if verbose_debugging: print('gdept_ma', datetime.now())
     gdept_ma = gdept
     gdept_ma_min = gdept_ma.min(axis = 0)
     gdept_ma_max = gdept_ma.max(axis = 0)
     gdept_ma_ptp = gdept_ma.ptp(axis = 0)
-    #zind_mat = np.zeros(gdept.shape, dtype = 'int')
+
+    if verbose_debugging: print('x_mat, y_mat', datetime.now())
+
     xind_mat = np.zeros(gdept.shape[1:], dtype = 'int')
     yind_mat = np.zeros(gdept.shape[1:], dtype = 'int')
     #for zi in range(nz): zind_mat[zi,:,:] = zi
     for xi in range(nlon): xind_mat[xi,:] = xi
     for yi in range(nlat): yind_mat[:,yi] = yi
 
+    if verbose_debugging: print('ind1', datetime.now())
     ind1 = (gdept_ma<z_lev).sum(axis = 0).data.astype('int')
     ind1[ind1 == nz] = 0
+    if verbose_debugging: print('ind2', datetime.now())
     ind2 = (nz-1)-(gdept_ma>z_lev).sum(axis = 0).data.astype('int')
     #tmpind2 = (gdept_ma>z_lev).sum(axis = 0).data.astype('int')
     #ind2 = (nz-1)-tmpind2
@@ -303,19 +321,35 @@ def interp1dmat_create_weight(gdept,z_lev):
     #plt.pcolormesh(gdept_ma[ind1,xind_mat,yind_mat]) ; plt.colorbar() ; plt.show()
     #plt.pcolormesh(gdept_ma[ind2,xind_mat,yind_mat]) ; plt.colorbar() ; plt.show()
 
+    if verbose_debugging: print('z_ind1', datetime.now())
     z_ind1 = gdept_ma[ind1,xind_mat,yind_mat]
+    if verbose_debugging: print('z_ind2', datetime.now())
     z_ind2 = gdept_ma[ind2,xind_mat,yind_mat]
     dz_ind = z_ind1-z_ind2
 
+    if verbose_debugging: print('zdist', datetime.now())
     zdist1 = z_ind1 - z_lev
     zdist2 = z_lev - z_ind2
 
-    zdist1_norm = zdist1/dz_ind
-    zdist2_norm = zdist2/dz_ind
+    if verbose_debugging: print('zdist_norm', datetime.now())
+    if comp == 'hpc':
+        zdist1_norm = zdist1.copy()
+        zdist2_norm = zdist1.copy()
 
+        for xi in range(nlon):
+            for yi in range(nlat): zdist1_norm[xi,yi] = zdist1[xi,yi]/dz_ind[xi,yi]
+            for yi in range(nlat): zdist2_norm[xi,yi] = zdist2[xi,yi]/dz_ind[xi,yi]
+            
+    else:
+        zdist1_norm = zdist1/dz_ind
+        zdist2_norm = zdist2/dz_ind
+
+
+    if verbose_debugging: print('wgt', datetime.now())
     wgt1 = zdist2_norm
     wgt2 = zdist1_norm
 
+    if verbose_debugging: print('wgt_mask', datetime.now())
 
     wgt_mask = (z_lev > gdept_ma_max) | (z_lev < gdept_ma_min) | (gdept_ma_ptp<1)
 
