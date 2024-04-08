@@ -614,5 +614,189 @@ def mask_stats(data,mask,sparse=False):
 
 
 
+
+def sw_dens(tdata,sdata):
+    #function sw_dens,tdata,sdata,unesco=unesco
+    #; Consistent with the ukmo routine calc_dens
+    #; tdata = potential temperature i.e. stash 101
+    #; sdata = salinity, not stash 102 (stash 102*1000 + 35)
+
+    #is_cube = True if (hasattr(tdata,"units")) else False
+
+    #;pm,sw_dens(15,30),sw_dens(25,33.4038),sw_dens((15+25)/2,(30+33.4038)/2)
+
+    #to_test = 0
+    #
+    #if to_test eq 1 then begin
+    #  restore,filename = '/home/h01/hadjt/Work/Programming/Scripts/reffiles/get_input_data_TS.sav'
+    #
+    #  dens_test = calc_dens(fieldt,fields)
+    #
+    #  tdata = fieldt.data
+    #  sdata = (1000*fields.data) + 35
+    #  tmp = where(fieldt.data eq fieldt(0).bmdi)
+    #  tdata(tmp) = !values.f_nan
+    #  sdata(tmp) = !values.f_nan
+    #
+    #endif
+
+    TO=13.4992332
+    SO=-0.0022500
+    SIGO=24.573651
+    #    C=[-.2017283E-03,0.7710054E+00,-.4918879E-05,-.2008622E-02,$
+    #      0.4495550E+00,0.3656148E-07,0.4729278E-02,0.3770145E-04,$
+    #      0.6552727E+01]
+    C=[-.2017283E-03,0.7710054E+00,-.4918879E-05,-.2008622E-02,0.4495550E+00,0.3656148E-07,0.4729278E-02,0.3770145E-04,0.6552727E+01]
+
+
+#    unesco = 0
+#    #  ;
+#    #  ;  UNESCO values
+#    #  ;
+#    if unesco == 1:
+#        TO=13.4993292
+#        SO=-0.0022500
+#        SIGO=24.573975
+#        #    C=[-0.2016022E-03,0.7730564E+00,-0.4919295E-05,-0.2022079E-02,$
+#        #      0.3168986E+00,0.3610338E-07, 0.3777372E-02, 0.3603786E-04,$
+#        #      0.1609520E+01]
+#        C=[-0.2016022E-03,0.7730564E+00,-0.4919295E-05,-0.2022079E-02,0.3168986E+00,0.3610338E-07, 0.3777372E-02, 0.3603786E-04,0.1609520E+01]
+
+
+    TQ=tdata-TO
+    #;            SQ=(salt.data(index)-35.0)/1000.-SO
+    SQ=(sdata-35.)/1000-SO
+    #SQ=sdata-SO
+
+    #if is_cube :
+    #dens_out =  ( C[0] + (C[3] + C[6]*SQ)*SQ+(C[2] + C[7]*SQ + C[5]*TQ )*TQ ) * TQ+( C[1] + (C[4] + C[8]*SQ)*SQ ) * SQ * 1000. + SIGO
+    #dens_out =  (( C[0] + (C[3] + C[6]*SQ)*SQ+(C[2] + C[7]*SQ + C[5]*TQ )*TQ )* TQ   +  ( C[1] + (C[4] + C[8]*SQ)*SQ )   )     * SQ * 1000. + SIGO
+
+    #dens_out =  ( C[0] + (C[3] + C[6]*SQ.data)*SQ.data+(C[2] + C[7]*SQ.data + C[5]*TQ.data )*TQ.data ) * TQ.data+( C[1] + (C[4] + C[8]*SQ.data)*SQ.data ) * SQ.data * 1000. + SIGO
+
+
+    part1 = (C[0] + (C[3] + C[6]*SQ)*SQ + (C[2] + C[7]*SQ + C[5]*TQ)*TQ)*TQ
+    #if is_cube :
+    #
+    part2 = ( C[1] + (C[4] + C[8]*SQ)*SQ)*SQ
+    #if is_cube :
+    dens_out =  (part1  +  part2)   * 1000. + SIGO
+    #dens_out =  ( C[0] + (C[3] + C[6]*SQ.data)*SQ.data+(C[2] + C[7]*SQ.data + C[5]*TQ.data )*TQ.data ) * TQ.data+( C[1] + (C[4] + C[8]*SQ.data)*SQ.data ) * SQ.data * 1000. + SIGO
+    #if is_cube :
+    #dens_out.units='kg/m^3'
+
+
+
+    #
+    #    if to_test eq 1 then begin
+    #
+    #
+    #      dens_test.lbfc=639
+    #      dens_test.lbuser(3)=0
+    #
+    #      help,dens_out,dens_test
+    #
+    #      !p.multi = [0,2,2]
+    #      plot,dens_out,dens_test.data
+    #      plot,dens_out - dens_test.data
+    #
+    #      pm0
+    #    endif
+
+    return dens_out
+
+
+
+
+def pea_TS(T_in,S_in,gdept,e3t_in,tmask,calc_TS_comp = False, zcutoff = 400.):
+    #from call_eos import calc_sigma0, calc_sigmai#, calc_albet
+
+    # Create potential energy anomaly.
+
+    nt,nz = T_in.shape[:2]
+    # if t and s are not masked arrays turn them into them
+    if np.ma.isMA(T_in):
+        T = T_in.copy()
+        S = S_in.copy()
+    else:
+
+        T = np.ma.array(T_in,mask = tmask==False)
+        S = np.ma.array(S_in,mask = tmask==False)
+
+    #create masked array of dz mat (e3t)
+    e3t = np.ma.array(e3t_in,mask = tmask==False)
+    #make index arrays
+    ind_0_mat = gdept.data.astype('int').copy() * 0
+    ind_1_mat = gdept.data.astype('int').copy() * 0
+    ind_2_mat = gdept.data.astype('int').copy() * 0
+    ind_3_mat = gdept.data.astype('int').copy() * 0
+
+    for i in range(ind_0_mat.shape[0]):ind_0_mat[i,:,:,:] = i
+    for i in range(ind_1_mat.shape[1]):ind_1_mat[:,i,:,:] = i
+    for i in range(ind_2_mat.shape[2]):ind_2_mat[:,:,i,:] = i
+    for i in range(ind_3_mat.shape[3]):ind_3_mat[:,:,:,i] = i
+
+    #make a weighting array, being the proportion of the grid box begin above a threshold depth (400m)
+
+    gb_zcut_int = (gdept < zcutoff) + 0
+    gb_zcut_ind = gb_zcut_int.sum(axis = 1)[0,:,:] # index of box shallower than threshold depth
+    gb_zcut_ind = np.minimum(gb_zcut_ind,nz-1)
+    weight_mat = gb_zcut_int.copy() + 0.
+
+    gdept_sh_zcut = gdept[ind_0_mat[:,0,:,:],gb_zcut_ind-1,ind_2_mat[:,0,:,:],ind_3_mat[:,0,:,:]]
+    gdept_de_zcut = gdept[ind_0_mat[:,0,:,:],np.minimum(gb_zcut_ind,nz)-0,ind_2_mat[:,0,:,:],ind_3_mat[:,0,:,:]]
+    prop_ab_zcut = (zcutoff- gdept_sh_zcut) / (gdept_de_zcut - gdept_sh_zcut)
+
+    weight_mat[ind_0_mat[:,0,:,:],gb_zcut_ind,ind_2_mat[:,0,:,:],ind_3_mat[:,0,:,:]] = prop_ab_zcut
+
+
+    # depth mean T and S above the threshold depth
+
+    T_mn_zcut = (T*e3t*weight_mat).sum(axis = 1)/(e3t*weight_mat).sum(axis = 1)
+    S_mn_zcut = (S*e3t*weight_mat).sum(axis = 1)/(e3t*weight_mat).sum(axis = 1)
+
+    #3d density field
+    #rho = calc_sigma0(T,S)
+    rho = sw_dens(T,S)
+
+
+
+
+    #Density field from depth average T and S
+    #rho_mn_lay_zcut = calc_sigma0(T_mn_zcut,S_mn_zcut)
+    rho_mn_lay_zcut = sw_dens(T_mn_zcut,S_mn_zcut)
+    rho_mn_zcut = rho.copy()
+    for zi in range(rho.shape[1]): rho_mn_zcut[:,zi,:,:] = rho_mn_lay_zcut
+    drho_zcut = (rho - rho_mn_zcut)
+
+
+
+    #3d density field with depth average salinity
+    if calc_TS_comp:
+        S_mn_zcut_mat = np.tile(S_mn_zcut,(nz,1,1,1)).transpose((1,0,2,3))
+        S_mn_zcut_mat.mask = tmask==False
+        #rho_mn_zcut_T = calc_sigma0(T,S_mn_zcut_mat)
+        rho_mn_zcut_T = sw_dens(T,S_mn_zcut_mat)
+        drho_zcut_T = (rho - rho_mn_zcut_T)
+
+
+    #potential energy anomaly - depth integrated to depth threshold (400m)
+    pea =  9.81*(drho_zcut*gdept*e3t*weight_mat).sum(axis = 1)/(gdept*weight_mat).max(axis = 1)
+
+
+    if calc_TS_comp:
+        pea_T  =         9.81*(drho_zcut_T*gdept*e3t*weight_mat).sum(axis = 1)/(gdept*weight_mat).max(axis = 1)
+        pea_S = pea*(1-pea_T/pea)
+
+    if calc_TS_comp:
+        return pea,pea_T,pea_S
+    else:
+        return pea
+
+
+
+
+
+
 if __name__ == "__main__":
     main()

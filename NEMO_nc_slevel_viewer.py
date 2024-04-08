@@ -559,6 +559,16 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
     but_text_han[var].set_color('r')
 
     def indices_from_ginput_ax(clii,cljj):
+        '''
+        ginput doesn't tell you which subplot you are clicking, only the position within that subplot.
+        we need which axis is clicked as well as the cooridinates within that axis
+        
+        we therefore trick ginput to give use figure coordinate (with a dummy, invisible full figure size subplot
+        in front of everything, and then use this function to turn those coordinates into the coordinates within the 
+        the subplot, and the which axis/subplot it is
+
+
+        '''
         sel_ii,sel_jj,sel_ti ,sel_zz = None,None,None,None
         sel_ax = None
     
@@ -651,6 +661,10 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
 
 
     def indices_from_ginput_cax(cclii,ccljj):
+        '''
+        I think this is no longer called
+
+        '''
         sel_cii,sel_cjj= None,None
         sel_cax = None
     
@@ -675,7 +689,10 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
         return sel_cax,sel_cii,sel_cjj
 
     def reload_ew_data():
-        
+        '''
+        reload the data for the E-W cross-section
+
+        '''
         ew_slice_dat = np.ma.masked_invalid(curr_tmp_data.variables[var][ti,:,jj,:].load())
         if load_diff_files: ew_slice_dat -= np.ma.masked_invalid(curr_tmp_data_diff.variables[var][ti,:,jj,:].load())
         ew_slice_x =  nav_lon[jj,:]
@@ -683,6 +700,10 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
         return ew_slice_dat,ew_slice_x, ew_slice_y
 
     def reload_ns_data():              
+        '''
+        reload the data for the N-S cross-section
+
+        '''
         ns_slice_dat = np.ma.masked_invalid(curr_tmp_data.variables[var][ti,:,:,ii].load())
         if load_diff_files: ns_slice_dat -= np.ma.masked_invalid(curr_tmp_data_diff.variables[var][ti,:,:,ii].load())
         ns_slice_x =  nav_lat[:,ii]
@@ -690,6 +711,9 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
         return ns_slice_dat,ns_slice_x, ns_slice_y
                     
     def reload_hov_data():                
+        '''
+        reload the data for the Hovmuller plot
+        '''
         hov_dat = np.ma.masked_invalid(curr_tmp_data.variables[var][:,:,jj,ii].load()).T
         if load_diff_files: hov_dat -= np.ma.masked_invalid(curr_tmp_data_diff.variables[var][:,:,jj,ii].load()).T
         hov_x = time_datetime
