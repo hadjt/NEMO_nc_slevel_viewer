@@ -536,6 +536,12 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
     func_but_text_han['Clim: normal'].set_color('b')
     but_text_han[var].set_color('r')
 
+
+
+    ###########################################################################
+    # Define inner functions
+    ###########################################################################
+
     def indices_from_ginput_ax(clii,cljj,thin=thin):
         
         '''
@@ -924,6 +930,11 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
     def reload_map_data_zmeth_zindex():
         map_dat = np.ma.masked_invalid(curr_tmp_data.variables[var][ti,zz,::thin,::thin].load())
         return map_dat
+
+    
+    ###########################################################################
+    # Inner functions defined
+    ###########################################################################
 
 
 
