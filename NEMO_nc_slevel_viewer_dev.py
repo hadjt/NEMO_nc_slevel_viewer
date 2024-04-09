@@ -1331,6 +1331,13 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
                         
                         plt.sca(clickax)
                         tmpzoom = plt.ginput(2)
+
+                        # sort the zoom clicks, so that the x and y lims are the right way around. 
+                        tmpzoom_array = tmp = np.array(tmpzoom)     
+                        tmpzoom_array.sort(axis = 0)
+                        tmpzoom_sorted = [tuple(tmp[0,:]), tuple(tmp[1,:])]
+                        tmpzoom = tmpzoom_sorted
+                        #pdb.set_trace()
                         
                         #convert clicks to data indices
                         zoom0_ax,zoom0_ii,zoom0_jj,zoom0_ti,zoom0_zz = indices_from_ginput_ax(tmpzoom[0][0],tmpzoom[0][1], thin = thin)
