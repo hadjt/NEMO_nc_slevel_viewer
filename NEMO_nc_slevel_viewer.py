@@ -969,6 +969,8 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
     if verbose_debugging: print('')
     if verbose_debugging: print('')
 
+    # initialise button press location
+    tmp_press = [(0.5,0.5,)]
 
     while ii is not None:
         # try, exit on error
@@ -1096,13 +1098,13 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
             
             if verbose_debugging: print('Set limits ', datetime.now())
             # add colorbars
-            #print('add colorbars')
+            if verbose_debugging: print('add colorbars', datetime.now(), 'len(ax):',len(ax))            
             cax = []      
             if var_dim[var] == 4:  
                 for ai in [0,1,2,3]: cax.append(plt.colorbar(pax[ai], ax = ax[ai]))
             elif var_dim[var] == 3:
                 for ai in [0]: cax.append(plt.colorbar(pax[ai], ax = ax[ai]))
-            #print('added colorbars')
+            if verbose_debugging: print('added colorbars', datetime.now(), 'len(ax):',len(ax),'len(cax):',len(cax))
             
             # apply xlim/ylim if keyword set
             if cur_xlim is not None:ax[0].set_xlim(cur_xlim)
@@ -1188,14 +1190,19 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
             
             #await click with ginput
             if verbose_debugging: print('Waiting for button press', datetime.now())
-            tmp = plt.ginput(1)
+            tmp_press = plt.ginput(1)
+            # if tmp_press is empty (button press detected from another window, persist previous location. 
+            #    Previously a empty array led to a continue, which led to the bug where additional colorbar were added
+            if len(tmp_press) == 0:
+                press_ginput = press_ginput
+            else:
+                press_ginput = tmp_press
             if verbose_debugging: print('')
             if verbose_debugging: print('')
             if verbose_debugging: print('')
             if verbose_debugging: print('Button pressed!', datetime.now())
-            if len(tmp) == 0: continue
-            clii,cljj = tmp[0][0],tmp[0][1]
 
+            clii,cljj = press_ginput[0][0],press_ginput[0][1]
 
             if verbose_debugging: print("selected clii = %f,cljj = %f"%(clii,cljj))
 
