@@ -150,8 +150,7 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
 
     load_2nd_files = False
     # repeat if comparing two time series. 
-    if subtracted_flist is not None:
-        
+    if subtracted_flist is not None:        
         load_2nd_files = True
 
 
@@ -211,6 +210,43 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
         #nbind_tmp,tmask_tmp = nearbed_index('/scratch/hadjt/SSF/LBC/amm15/OS45_LBC_amm15_control/prodm_op_am-dm.gridT_20220824_00.-36.nc', 'votemper',nemo_nb_i_filename = '/data/cr1/hadjt/data/reffiles/SSF/nemo_nb_i_OpSys_AMM15_NEMO36.nc')
 
         #nbind_tmp,tmask_tmp = nearbed_index('/scratch/orca12/g18trial/control/prodm_op_gf-dm.gridT_20211203_00.-36.nc', 'votemper',nemo_nb_i_filename = '/data/cr1/hadjt/data/reffiles/SSF/nemo_nb_i_OpSys_GULF18_NEMO36.nc')
+
+        nbind,tmask = load_nearbed_index(nemo_nb_i_filename = nemo_nb_i_filename)
+        z_meth_default = 'z_slice'
+        z_meth = z_meth_default
+
+
+
+        
+    elif config.upper() == 'CO9P2':
+
+        # depth grid file
+        if comp == 'hpc':
+            amm15_mesh_file = '/projects/ofrd/NEMO/ancil/amm15_CO9/mesh_mask.nc'
+            nemo_nb_i_filename = '/data/d05/hadjt/reffiles/NEMO_nc_viewer/nemo_nb_i_OpSys_AMM15_CO9p2.nc'
+        else:
+            amm15_mesh_file = '/data/cr1/hadjt/data/reffiles/SSF/CO9p2/mesh_mask.nc'
+            nemo_nb_i_filename = '/data/cr1/hadjt/data/reffiles/SSF/CO9p2/nemo_nb_i_OpSys_AMM15_CO9p2.nc'
+        rootgrp_gdept = Dataset(amm15_mesh_file, 'r', format='NETCDF4')
+        # depth grid variable name
+        zss = 'gdept_0'
+        
+        # grid lat lon rotation information
+        lon_rotamm15,lat_rotamm15 = reduce_rotamm15_grid()
+
+        dlon_rotamm15 = (np.diff(lon_rotamm15)).mean()
+        dlat_rotamm15 = (np.diff(lat_rotamm15)).mean()
+        nlon_rotamm15 = lon_rotamm15.size
+        nlat_rotamm15 = lat_rotamm15.size
+
+
+
+        #mkdir /scratch/hadjt/SSF/CO9p2
+        #moo get :/devfc/rosie_amm15_to_CO9p2_addDA_FreeRun_TideFix_continuation_r277221_frwe/field.nc.file/2022122?T0000Z_25hourm.grid_T.nc /scratch/hadjt/SSF/CO9p2/.
+        #pdb.set_trace()
+        #nbind_tmp,tmask_tmp = nearbed_index('/scratch/hadjt/SSF/CO9p2/20221226T0000Z_25hourm.grid_T.nc', 'votemper',nemo_nb_i_filename = '/data/cr1/hadjt/data/reffiles/SSF/CO9p2/nemo_nb_i_OpSys_AMM15_CO9p2.nc')
+        
+        #scp -pr /data/cr1/hadjt/data/reffiles/SSF/CO9p2/nemo_nb_i_OpSys_AMM15_CO9p2.nc hadjt@xcel00:/data/d05/hadjt/reffiles/NEMO_nc_viewer/.
 
         nbind,tmask = load_nearbed_index(nemo_nb_i_filename = nemo_nb_i_filename)
         z_meth_default = 'z_slice'
@@ -314,6 +350,14 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
         nav_lat = np.ma.array(nav_lat[thin_y0:thin_y1:thin,thin_x0:thin_x1:thin])
         nav_lon = np.ma.array(nav_lon[thin_y0:thin_y1:thin,thin_x0:thin_x1:thin])
         
+        
+    elif config.upper() in ['CO9P2']: 
+
+        nav_lon = np.ma.masked_invalid(rootgrp_gdept.variables['glamt'][0])
+        nav_lat = np.ma.masked_invalid(rootgrp_gdept.variables['gphit'][0])
+
+        nav_lat = np.ma.array(nav_lat[thin_y0:thin_y1:thin,thin_x0:thin_x1:thin])
+        nav_lon = np.ma.array(nav_lon[thin_y0:thin_y1:thin,thin_x0:thin_x1:thin])
         
     else:
         nav_lat = np.ma.masked_invalid(tmp_data.variables['nav_lat'][thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
@@ -643,11 +687,16 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
     # Define inner functions
     ###########################################################################
 
-
+    #global map_x,map_y,map_dat,ew_slice_x,ew_slice_y,ew_slice_dat,ns_slice_x,ns_slice_y,ns_slice_dat,hov_x,hov_y,hov_dat,ts_x,ts_dat
+    #global ii,jj
 
     if verbose_debugging: print('Create inner functions', datetime.now())
-    def indices_from_ginput_ax(clii,cljj,thin=thin):
-        
+    def indices_from_ginput_ax(clii,cljj,thin=thin,ew_line_x = None,ew_line_y = None,ns_line_x = None,ns_line_y = None):
+        #global ii,jj
+
+        #global map_x,map_y,map_dat,ew_slice_x,ew_slice_y,ew_slice_dat,ns_slice_x,ns_slice_y,ns_slice_dat,hov_x,hov_y,hov_dat,ts_x,ts_dat
+
+
         '''
         ginput doesn't tell you which subplot you are clicking, only the position within that subplot.
         we need which axis is clicked as well as the cooridinates within that axis
@@ -678,7 +727,7 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
                 #print(cljj,clylim,normyloc,ylocval)
 
                 if (thin != 1):
-                    if config.upper() not in ['AMM7','AMM15', 'ORCA025','ORCA025EXT']:
+                    if config.upper() not in ['AMM7','AMM15', 'CO9P2', 'ORCA025','ORCA025EXT']:
                         print('Thinning lon lat selection not programmed for ', config.upper())
                         pdb.set_trace()
 
@@ -693,7 +742,7 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
                     if config.upper() in ['AMM7','GULF18']:
                         sel_ii = (np.abs(lon[thin_x0:thin_x1:thin] - loni)).argmin()
                         sel_jj = (np.abs(lat[thin_y0:thin_y1:thin] - latj)).argmin()
-                    elif config.upper() == 'AMM15':
+                    elif config.upper() in ['AMM15','CO9P2']:
                         lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(loni,latj)
                         #sel_ii = np.minimum(np.maximum( np.round((lon_mat_rot - lon_rotamm15.min())/dlon_rotamm15).astype('int') ,0),nlon_rotamm15-1)
                         #sel_jj = np.minimum(np.maximum( np.round((lat_mat_rot - lat_rotamm15.min())/dlat_rotamm15).astype('int') ,0),nlat_rotamm15-1)
@@ -714,8 +763,14 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
                     loni= xlocval
                     if config.upper() == 'AMM7':
                         sel_ii = (np.abs(lon[thin_x0:thin_x1:thin] - loni)).argmin()
-                    elif config.upper() == 'AMM15':
-                        lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(loni,latj)
+                    elif config.upper() in ['AMM15','CO9P2']:
+                        
+                        #latj = nav_lat.mean() 
+                        # fudge, really need to get the latj from the nav_lat
+                        #
+                        #           cs_plot_1 = ax[0].plot(nav_lon[jj,:],nav_lat[jj,:],color = '0.5', alpha = 0.5) 
+                        #           cs_plot_2 = ax[0].plot(nav_lon[:,ii],nav_lat[:,ii],color = '0.5', alpha = 0.5)
+                        latj =  ew_line_y[(np.abs(ew_line_x - loni)).argmin()] 
                         #sel_ii = np.minimum(np.maximum(np.round((lon_mat_rot - lon_rotamm15.min())/dlon_rotamm15).astype('int'),0),nlon_rotamm15-1)
                         sel_ii = np.minimum(np.maximum(np.round((lon_mat_rot - lon_rotamm15[thin_x0:thin_x1:thin].min())/(dlon_rotamm15*thin)).astype('int'),0),nlon_rotamm15//thin-1)
                     else:
@@ -728,8 +783,15 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
                     latj= xlocval
                     if config.upper() == 'AMM7':
                         sel_jj = (np.abs(lat[thin_y0:thin_y1:thin] - latj)).argmin()
-                    elif config.upper() == 'AMM15':
-                        lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(loni,latj)
+                    elif config.upper() in ['AMM15','CO9P2']:
+                        
+                        loni= nav_lon.mean()
+                        # fudge, really need to get the loni from the nav_lon
+                        #
+                        #           cs_plot_1 = ax[0].plot(nav_lon[jj,:],nav_lat[jj,:],color = '0.5', alpha = 0.5) 
+                        #           cs_plot_2 = ax[0].plot(nav_lon[:,ii],nav_lat[:,ii],color = '0.5', alpha = 0.5)
+                        #pdb.set_trace()
+                        loni =  ns_line_x[(np.abs(ns_line_y - latj)).argmin()]
                         #sel_jj = np.minimum(np.maximum(np.round((lat_mat_rot - lat_rotamm15.min())/dlat_rotamm15).astype('int'),0),nlat_rotamm15-1)
                         sel_jj = np.minimum(np.maximum(np.round((lat_mat_rot - lat_rotamm15[thin_y0:thin_y1:thin].min())/(dlat_rotamm15*thin)).astype('int'),0),nlat_rotamm15//thin-1)
                     else:
@@ -1170,6 +1232,7 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
 
     # initialise button press location
     tmp_press = [(0.5,0.5,)]
+    press_ginput = [(0.5,0.5,)]
 
     while ii is not None:
         # try, exit on error
@@ -1444,7 +1507,7 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
             is_in_axes = False
             
             # convert the mouse click into data indices, and report which axes was clicked
-            sel_ax,sel_ii,sel_jj,sel_ti,sel_zz = indices_from_ginput_ax(clii,cljj, thin = thin)
+            sel_ax,sel_ii,sel_jj,sel_ti,sel_zz = indices_from_ginput_ax(clii,cljj, thin = thin,ew_line_x = nav_lon[jj,:],ew_line_y = nav_lat[jj,:],ns_line_x = nav_lon[:,ii],ns_line_y = nav_lat[:,ii])
 
             
                 
@@ -1968,7 +2031,7 @@ def main():
             epilog=nemo_slice_zlev_helptext)
 
 
-        parser.add_argument('config', type=str, help="AMM7, AMM15, ORCA025, ORCA025EXT or ORCA12")# Parse the argument
+        parser.add_argument('config', type=str, help="AMM7, AMM15, CO9P2, ORCA025, ORCA025EXT or ORCA12")# Parse the argument
         parser.add_argument('fname_lst', type=str, help='Input file list, enclose in "" more than simple wild card')
         parser.add_argument('--zlim_max', type=int, required=False)
         parser.add_argument('--subtracted_flist', type=str, required=False, help='Input file list, enclose in "" more than simple wild card, Check this has the same number of files as the fname_lst')
