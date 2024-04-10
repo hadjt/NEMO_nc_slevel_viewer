@@ -13,12 +13,13 @@ import cftime
 import matplotlib
 #from matplotlib.transforms import Bbox
 
-sys.path.append('/net/home/h01/hadjt/workspace/python3/')
+#sys.path.append('/net/home/h01/hadjt/workspace/python3/')
 #sys.path.append('/home/d05/hadjt/scripts/python/')
 
 #from matplotlib.backend_bases import MouseButton
 
-from NEMO_nc_slevel_viewer_lib import set_perc_clim_pcolor, get_clim_pcolor, set_clim_pcolor,set_perc_clim_pcolor_in_region,interp1dmat_wgt, interp1dmat_create_weight, nearbed_index,extract_nb,mask_stats,load_nearbed_index,pea_TS
+from NEMO_nc_slevel_viewer_lib import set_perc_clim_pcolor, get_clim_pcolor, set_clim_pcolor,set_perc_clim_pcolor_in_region,interp1dmat_wgt, interp1dmat_create_weight, nearbed_index,extract_nb,mask_stats,load_nearbed_index,pea_TS,rotated_grid_from_amm15,rotated_grid_to_amm15, reduce_rotamm15_grid
+
 
 # my tools to change the colorbar limits, mainly to set to the 5th and 95th percentile of the plotted data.
 #from python3_plotting_function import set_perc_clim_pcolor, get_clim_pcolor, set_clim_pcolor,set_perc_clim_pcolor_in_region
@@ -27,7 +28,8 @@ from NEMO_nc_slevel_viewer_lib import set_perc_clim_pcolor, get_clim_pcolor, set
 # indices to quickly extract near bed values.
 #from nemo_forcings_functions import  nearbed_index,extract_nb,mask_stats,load_nearbed_index
 # Allow the amm15 grid to be unrotated, to allow efficient coversion between lon, lats to ii,jj's. 
-from rotated_pole_grid import rotated_grid_from_amm15,rotated_grid_to_amm15, reduce_rotamm15_grid
+#
+#from rotated_pole_grid import rotated_grid_from_amm15,rotated_grid_to_amm15, reduce_rotamm15_grid
 
 #scp -pr  NEMO_nc_slevel_viewer*.py ../rotated_pole_grid*  hadjt@xcel00:/home/d05/hadjt/scripts/python/.
 

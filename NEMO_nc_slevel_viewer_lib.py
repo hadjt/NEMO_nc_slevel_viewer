@@ -1,35 +1,204 @@
 
+import pdb,sys,os
+
+#sys.path.append('/net/home/h01/hadjt/workspace/python3')
+#sys.path.append('/net/home/h01/hadjt/workspace/python3/UKCP')
+
+
+from datetime import datetime, timedelta
+
+from netCDF4 import Dataset,num2date
+
+
 import numpy as np
-from netCDF4 import Dataset
-
-import sys
-
-"""
-slurm = True
-#slurm = False
-if sys.stdin.isatty():slurm = False
 
 
-if slurm == False:
 
-
-    import matplotlib.gridspec as gridspec
-    import matplotlib
-    import matplotlib.pyplot as plt
-    from matplotlib import ticker
-    import iris.plot as iplt
-    import iris.quickplot as qplt
-    import matplotlib.pyplot as plt
-    #from rotate_wind_vectors import *
-else:
-    import matplotlib as mpl
-    mpl.use('Agg')
-    import matplotlib.pyplot as plt
-
-"""
 import matplotlib.pyplot as plt
 
 #from python3_plotting_function import set_perc_clim_pcolor, get_clim_pcolor, set_clim_pcolor,set_perc_clim_pcolor_in_region
+
+
+
+
+import socket
+computername = socket.gethostname()
+comp = 'linux'
+if computername in ['xcel00','xcfl00']: comp = 'hpc'
+
+if comp == 'hpc':
+    amm15_mesh_file = '/data/d02/frpk/amm15ps45mesh/amm15.mesh_mask.nc'
+else:
+    amm15_mesh_file = '/data/cr1/hadjt/data/reffiles/SSF/amm15.mesh_mask.nc'
+
+rootgrp = Dataset(amm15_mesh_file, 'r', format='NETCDF4')
+nav_lon = rootgrp.variables['nav_lon'][:]
+nav_lat = rootgrp.variables['nav_lat'][:]
+
+rootgrp.close()
+nlat,nlon = nav_lon.shape
+
+
+
+"""
+https://gmd.copernicus.org/articles/16/2515/2023/
+
+
+
+ter depth (Saulter et al., 2017; Valiente
+et al., 2021b). The grid resolution is of 3 km for water
+depths larger than 40 m and 1.5 km for coastal cells with
+water depths of less than 40 m (Fig. 2). The SMC grid is
+based on a rotated North Pole at 37.5◦ N, 177.5◦ E, achieving
+an evenly spaced mesh around the UK
+
+
+"""
+#from math import *
+
+
+RotNPole_lon = 177.5
+RotNPole_lat = 37.5
+RotSPole_lon = RotNPole_lon-180
+RotSPole_lat = RotNPole_lat*-1
+NP_coor = np.array([RotNPole_lon,RotNPole_lat])
+SP_coor = np.array([RotSPole_lon,RotSPole_lat])
+
+
+
+
+def rotated_grid_transform(grid_in, option, SP_coor):
+
+    #https://gis.stackexchange.com/questions/10808/manually-transforming-rotated-lat-lon-to-regular-lat-lon/14445#14445
+
+
+    lon = grid_in[0]
+    lat = grid_in[1];
+
+    lon = (lon*np.pi)/180; # Convert degrees to radians
+    lat = (lat*np.pi)/180;
+
+    SP_lon = SP_coor[0];
+    SP_lat = SP_coor[1];
+
+    theta = 90+SP_lat; # Rotation around y-axis
+    phi = SP_lon; # Rotation around z-axis
+
+    theta = (theta*np.pi)/180;
+    phi = (phi*np.pi)/180; # Convert degrees to radians
+
+    x = np.cos(lon)*np.cos(lat); # Convert from spherical to cartesian coordinates
+    y = np.sin(lon)*np.cos(lat);
+    z = np.sin(lat);
+
+    if option == 1: # Regular -> Rotated
+
+        x_new = np.cos(theta)*np.cos(phi)*x + np.cos(theta)*np.sin(phi)*y + np.sin(theta)*z;
+        y_new = -np.sin(phi)*x + np.cos(phi)*y;
+        z_new = -np.sin(theta)*np.cos(phi)*x - np.sin(theta)*np.sin(phi)*y + np.cos(theta)*z;
+
+    else:  # Rotated -> Regular
+
+        phi = -phi;
+        theta = -theta;
+
+        x_new = np.cos(theta)*np.cos(phi)*x + np.sin(phi)*y + np.sin(theta)*np.cos(phi)*z;
+        y_new = -np.cos(theta)*np.sin(phi)*x + np.cos(phi)*y - np.sin(theta)*np.sin(phi)*z;
+        z_new = -np.sin(theta)*x + np.cos(theta)*z;
+
+
+
+    lon_new = np.arctan2(y_new,x_new); # Convert cartesian back to spherical coordinates
+    lat_new = np.arcsin(z_new);
+
+    lon_new = (lon_new*180)/np.pi; # Convert radians back to degrees
+    lat_new = (lat_new*180)/np.pi;
+
+    return lon_new,lat_new
+
+
+def rotated_grid_from_amm15(lon_in,lat_in, SP_coor = np.array([ -2.5, -37.5])):
+    lon_new,lat_new = rotated_grid_transform((lon_in.copy(),lat_in.copy()), 1, SP_coor)
+    return lon_new,lat_new
+
+def rotated_grid_to_amm15(lon_in,lat_in, SP_coor = np.array([ -2.5, -37.5])):
+    lon_old,lat_old = rotated_grid_transform((lon_in.copy(),lat_in.copy()), 0, SP_coor)
+    return lon_old,lat_old
+
+
+def reduce_rotamm15_grid():
+    lon_orig = nav_lon
+    lat_orig = nav_lat
+    lon_new,lat_new = rotated_grid_from_amm15(lon_orig.copy(),lat_orig.copy(),  SP_coor)
+
+    rot_lon_axis = lon_new.mean(axis = 0)
+    rot_lat_axis = lat_new.mean(axis = 1)
+
+    return rot_lon_axis,rot_lat_axis
+
+def testing_rot_pole():
+    import matplotlib.pyplot as plt
+    lon_orig = nav_lon[::4,::4]
+    lat_orig = nav_lat[::4,::4]
+    #SP_coor = np.array([177.5-180.,-37.5,])
+    lon_new,lat_new = rotated_grid_transform((lon_orig.copy(),lat_orig.copy()), 1, SP_coor)
+    lon_old,lat_old = rotated_grid_transform((lon_new.copy(),lat_new.copy()), 0, SP_coor)
+    ii,jj = 0,0
+    print (RotNPole_lon,RotNPole_lat)
+    print (lon_orig[jj,ii],lat_orig[jj,ii])
+    print (lon_new[jj,ii]+360,lat_new[jj,ii])
+    print (lon_old[jj,ii],lat_old[jj,ii])
+    print('Tested with: https://agrimetsoft.com/Cordex%20Coordinate%20Rotation.aspx')
+    print('Converted Longitude = 349.11')
+    print('Converted Latitude = -7.29')
+
+    lon_new,lat_new = rotated_grid_from_amm15(lon_orig.copy(),lat_orig.copy(),  SP_coor)
+    lon_old,lat_old = rotated_grid_to_amm15(lon_new.copy(),lat_new.copy(),  SP_coor)
+
+    plt.figure()
+    plt.subplot(2,3,1)
+    plt.pcolormesh(lon_orig)
+    plt.colorbar()
+    plt.contour(lon_orig,colors = 'k')
+    plt.subplot(2,3,2)
+    plt.pcolormesh(lon_new)
+    plt.colorbar()
+    plt.contour(lon_new,colors = 'k')
+    plt.subplot(2,3,3)
+    plt.pcolormesh(lon_old)
+    plt.colorbar()
+    plt.contour(lon_old,colors = 'k')
+    plt.subplot(2,3,4)
+    plt.pcolormesh(lat_orig)
+    plt.colorbar()
+    plt.contour(lat_orig,colors = 'k')
+    plt.subplot(2,3,5)
+    plt.pcolormesh(lat_new)
+    plt.colorbar()
+    plt.contour(lat_new,colors = 'k')
+    plt.subplot(2,3,6)
+    plt.pcolormesh(lat_old)
+    plt.colorbar()
+    plt.contour(lat_old,colors = 'k')
+
+
+    plt.figure()
+    plt.subplot(2,2,1)
+    plt.plot(lon_new.T)
+    plt.plot(lon_new.mean(axis = 0),'k', lw = 2)
+    plt.subplot(2,2,2)
+    plt.plot(lat_new)
+    plt.plot(lat_new.mean(axis = 1),'k', lw = 2)
+    plt.subplot(2,2,3)
+    plt.plot(lon_new.T-lon_new.mean(axis = 0).reshape(365,1))
+    plt.subplot(2,2,4)
+    plt.plot(lat_new-lat_new.mean(axis = 1).reshape(337,1))
+    plt.show()
+
+
+
+    pdb.set_trace()
+
 
 
 
