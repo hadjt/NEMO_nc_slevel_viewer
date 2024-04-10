@@ -763,15 +763,9 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
                     loni= xlocval
                     if config.upper() == 'AMM7':
                         sel_ii = (np.abs(lon[thin_x0:thin_x1:thin] - loni)).argmin()
-                    elif config.upper() in ['AMM15','CO9P2']:
-                        
-                        #latj = nav_lat.mean() 
-                        # fudge, really need to get the latj from the nav_lat
-                        #
-                        #           cs_plot_1 = ax[0].plot(nav_lon[jj,:],nav_lat[jj,:],color = '0.5', alpha = 0.5) 
-                        #           cs_plot_2 = ax[0].plot(nav_lon[:,ii],nav_lat[:,ii],color = '0.5', alpha = 0.5)
+                    elif config.upper() in ['AMM15','CO9P2']:                        
                         latj =  ew_line_y[(np.abs(ew_line_x - loni)).argmin()] 
-                        #sel_ii = np.minimum(np.maximum(np.round((lon_mat_rot - lon_rotamm15.min())/dlon_rotamm15).astype('int'),0),nlon_rotamm15-1)
+                        lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(loni,latj)
                         sel_ii = np.minimum(np.maximum(np.round((lon_mat_rot - lon_rotamm15[thin_x0:thin_x1:thin].min())/(dlon_rotamm15*thin)).astype('int'),0),nlon_rotamm15//thin-1)
                     else:
                         print('config not supported:', config)
@@ -783,16 +777,9 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
                     latj= xlocval
                     if config.upper() == 'AMM7':
                         sel_jj = (np.abs(lat[thin_y0:thin_y1:thin] - latj)).argmin()
-                    elif config.upper() in ['AMM15','CO9P2']:
-                        
-                        loni= nav_lon.mean()
-                        # fudge, really need to get the loni from the nav_lon
-                        #
-                        #           cs_plot_1 = ax[0].plot(nav_lon[jj,:],nav_lat[jj,:],color = '0.5', alpha = 0.5) 
-                        #           cs_plot_2 = ax[0].plot(nav_lon[:,ii],nav_lat[:,ii],color = '0.5', alpha = 0.5)
-                        #pdb.set_trace()
+                    elif config.upper() in ['AMM15','CO9P2']:                        
                         loni =  ns_line_x[(np.abs(ns_line_y - latj)).argmin()]
-                        #sel_jj = np.minimum(np.maximum(np.round((lat_mat_rot - lat_rotamm15.min())/dlat_rotamm15).astype('int'),0),nlat_rotamm15-1)
+                        lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(loni,latj)
                         sel_jj = np.minimum(np.maximum(np.round((lat_mat_rot - lat_rotamm15[thin_y0:thin_y1:thin].min())/(dlat_rotamm15*thin)).astype('int'),0),nlat_rotamm15//thin-1)
                     else:
                         print('config not supported:', config)
