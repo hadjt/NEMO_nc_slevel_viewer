@@ -16,6 +16,7 @@ import matplotlib
 sys.path.append('/net/home/h01/hadjt/workspace/python3/')
 #sys.path.append('/home/d05/hadjt/scripts/python/')
 
+#from matplotlib.backend_bases import MouseButton
 
 from NEMO_nc_slevel_viewer_lib import set_perc_clim_pcolor, get_clim_pcolor, set_clim_pcolor,set_perc_clim_pcolor_in_region,interp1dmat_wgt, interp1dmat_create_weight, nearbed_index,extract_nb,mask_stats,load_nearbed_index,pea_TS
 
@@ -114,6 +115,9 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
     tmp_var_U, tmp_var_V = 'vozocrtx','vomecrty'
 
 
+
+
+
     if use_cmocean:
         
         import cmocean
@@ -135,6 +139,9 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
     if zz is None: zz = 0
     if zz == 0: zi = 0
 
+    # Set mode: Click or Loop
+    mode = 'Click'
+    loop_sleep = 0.01
 
     load_2nd_files = False
     # repeat if comparing two time series. 
@@ -291,6 +298,11 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
         fixed_nav_lon[fixed_nav_lon>73] -=360
         #pdb.set_trace()
         nav_lon = fixed_nav_lon.copy()
+
+        #pdb.set_trace()
+
+        nav_lat = np.ma.array(nav_lat[::thin,::thin])
+        nav_lon = np.ma.array(nav_lon[::thin,::thin])
         
         
     else:
@@ -409,6 +421,9 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
         time_datetime = np.array([datetime(ss.year, ss.month,ss.day,ss.hour,ss.minute) for ss in time_datetime_cft])
         time_datetime_since_1970 = np.array([(ss - datetime(1970,1,1,0,0)).total_seconds()/86400 for ss in time_datetime])
 
+
+    ntime = time_datetime_since_1970.size
+
     #pdb.set_trace()
     # repeat if comparing two time series. 
     if subtracted_flist is not None:
@@ -432,9 +447,10 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
 
         time_datetime_diff = np.array([datetime(ss.year, ss.month,ss.day,ss.hour,ss.minute) for ss in time_datetime_cft_diff])
         time_datetime_since_1970_diff = np.array([(ss - datetime(1970,1,1,0,0)).total_seconds()/86400 for ss in time_datetime_diff])
+        ntime_diff = time_datetime_since_1970_diff.size
         
         # check both filessets have the same times
-        if len(time_datetime_since_1970_diff) != len(time_datetime_since_1970):     
+        if ntime_diff != ntime:     
             print('Diff Times have different number of files')
             pdb.set_trace() 
         else:
@@ -477,6 +493,8 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
     ax.append(plt.subplot(4,2,4))
     ax.append(plt.subplot(4,2,6))
     ax.append(plt.subplot(4,2,8))
+
+
 
     labi,labj = 0.05, 0.95
     for ai,tmpax in enumerate(ax): tmpax.text(labi,labj,'%s)'%letter_mat[ai], transform=tmpax.transAxes, ha = 'left', va = 'top', fontsize = 12,bbox=dict(facecolor='white', alpha=0.75, pad=1, edgecolor='none'))
@@ -530,9 +548,11 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
     
     if verbose_debugging: print('Added variable boxes', datetime.now())
 
+    mode_name_lst = ['Click','Loop']
 
     func_names_lst = ['Reset zoom', 'Zoom', 'Clim: Reset','Clim: Zoom','Clim: Expand','Clim: perc','Clim: normal', 'Clim: log','Surface', 'Near-Bed', 'Surface-Bed','Depth level','Save Figure', 'Quit']
-
+    
+    func_names_lst = func_names_lst + mode_name_lst
 
     # if a secondary data set, give ability to change data sets. 
     if load_2nd_files:
@@ -542,32 +562,20 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
     func_but_extent = {}
 
 
-    '''
-    #add button box
-    for vi,funcname in enumerate(func_names_lst): 
-
-
-        func_but_line_han[funcname] = clickax.plot([func_but_x0,func_but_x1,func_but_x1,func_but_x0,func_but_x0],0.9 - (np.array([0,0,but_dy,but_dy,0]) + vi*0.05),'k')
-         #add button names
-        func_but_text_han[funcname] = clickax.text((func_but_x0+func_but_x1)/2,0.9 - ((but_dy/2) + vi*0.05),funcname, ha = 'center', va = 'center')
-    
-        #note button extends (as in position.x0,x1, y0, y1)
-        func_but_extent[funcname] = [func_but_x0,func_but_x1,0.9 - (but_dy + vi*0.05),0.9 - (0 + vi*0.05)]
-    #pdb.set_trace()  
-
-    '''
-    #add button box
-    for vi,funcname in enumerate(func_names_lst): 
-
-        #note button extends (as in position.x0,x1, y0, y1)
-        func_but_extent[funcname] = [func_but_x0,func_but_x1,0.9 - (but_dy + vi*0.05),0.9 - (0 + vi*0.05)]
-
+    mode_name_secdataset_proc_list = mode_name_lst
 
     if load_2nd_files: 
-        func_but_extent['Dataset 1'] = [0.15, 0.15+func_but_dx1,                                0.025,  0.025 + but_dy]
-        func_but_extent['Dataset 2'] = [0.15 + func_but_dx1 + 0.01 ,0.15+2*func_but_dx1+ 0.01,   0.025 , 0.025 + but_dy]
-        func_but_extent['Dat2-Dat1'] = [0.15 + 2*func_but_dx1 + 0.02 ,0.15+3*func_but_dx1 + 0.02,0.025, 0.025 + but_dy]
-	
+        mode_name_secdataset_proc_list = mode_name_secdataset_proc_list + secdataset_proc_list
+
+    #add button box
+    for vi,funcname in enumerate(func_names_lst): 
+
+        #note button extends (as in position.x0,x1, y0, y1)
+        func_but_extent[funcname] = [func_but_x0,func_but_x1,0.9 - (but_dy + vi*0.05),0.9 - (0 + vi*0.05)]
+
+
+    for vi, tmp_funcname in enumerate(mode_name_secdataset_proc_list):
+        func_but_extent[tmp_funcname] = [0.15 + vi*(func_but_dx1+0.01), 0.15 + vi*(func_but_dx1+0.01) + func_but_dx1, 0.025,  0.025 + but_dy]
 
     for vi,funcname in enumerate(func_names_lst): 
 
@@ -579,6 +587,38 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
     
     # if a secondary data set, det default behaviour. 
     if load_2nd_files: func_but_text_han[secdataset_proc].set_color('darkgreen')
+
+
+    # Set intial mode to be Click
+    func_but_text_han['Click'].set_color('gold')
+
+    # When we move to loop mode, we stop checking for button presses, 
+    #   so need another way to end the loop... 
+    #       could just wait till the end of the loop, but could be ages
+    #   therefore see if the mouse points to the "Click" button and change the mode.
+    #
+    # this could be an alternate method to the plt.ginput method.
+    # Therefore define a global variable "mouse_in_Click" and use the matplotlib 
+    # Connect, 'motion_notify_event', on_move method:
+    #   https://matplotlib.org/stable/gallery/event_handling/coords_demo.html
+    #
+    global mouse_in_Click
+    mouse_in_Click = False
+
+    def on_move(event):
+        global mouse_in_Click
+        if event.inaxes:
+
+
+            if (event.xdata>func_but_extent['Click'][0]) & (event.xdata<func_but_extent['Click'][1]) & (event.ydata>func_but_extent['Click'][2]) & (event.ydata<func_but_extent['Click'][3]):
+                mouse_in_Click = True
+                if verbose_debugging: print('Mouse in Click',datetime.now())
+            else:
+                mouse_in_Click = False
+
+
+    binding_id = plt.connect('motion_notify_event', on_move)
+
 
 
 
@@ -628,8 +668,8 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
                 #print(cljj,clylim,normyloc,ylocval)
 
                 if (thin != 1):
-                    if config.upper() not in ['AMM7','AMM15']:
-                        print('Thinning lon lat selection only programmed for AMM7')
+                    if config.upper() not in ['AMM7','AMM15', 'ORCA025','ORCA025EXT']:
+                        print('Thinning lon lat selection not programmed for ', config)
                         pdb.set_trace()
 
 
@@ -1352,7 +1392,21 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
             
             #await click with ginput
             if verbose_debugging: print('Waiting for button press', datetime.now())
-            tmp_press = plt.ginput(1)
+            if verbose_debugging: print('mode', mode,'mouse_in_Click',mouse_in_Click,datetime.now())
+            
+
+            #if mouse_in_Click:
+            #    pdb.set_trace()
+
+            if mode == 'Loop':
+                if mouse_in_Click:
+                    mode = 'Click'
+                    but_name = 'Click'
+                    func_but_text_han['Click'].set_color('gold')
+                    func_but_text_han['Loop'].set_color('k')
+
+            if mode == 'Click':
+                tmp_press = plt.ginput(1)
             # if tmp_press is empty (button press detected from another window, persist previous location. 
             #    Previously a empty array led to a continue, which led to the bug where additional colorbar were added
             if len(tmp_press) == 0:
@@ -1381,6 +1435,9 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
             
             # convert the mouse click into data indices, and report which axes was clicked
             sel_ax,sel_ii,sel_jj,sel_ti,sel_zz = indices_from_ginput_ax(clii,cljj, thin = thin)
+
+            
+                
             #pdb.set_trace()
             if verbose_debugging: print("selected sel_ax = %s,sel_ii = %s,sel_jj = %s,sel_ti = %s,sel_zz = %s"%(sel_ax,sel_ii,sel_jj,sel_ti,sel_zz))
 
@@ -1433,6 +1490,17 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
                 reload_ew = True
                 reload_ns = True
    
+            
+            if mode == 'Loop':
+                ti+=1
+                if ti == ntime: 
+                    ti = 0
+                    #mode = 'Click'
+                    #pdb.set_trace()
+                    
+
+                    
+                
             
             if verbose_debugging: print('Decide what to reload', datetime.now())
 
@@ -1641,6 +1709,29 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
                             fig.savefig('%s/output_%s_%s_%i_%i_%i_%i_%s.png'%(fig_dir,fig_lab,var,ii,jj,ti,zz,z_meth),bbox_inches = bbox_inches)
                         else:
                             fig.savefig('%s/output_%s_%s_%i_%i_%i_%i_%s.png'%(fig_dir,fig_lab,var,ii,jj,ti,zz,z_meth))
+
+
+
+                    elif but_name in mode_name_lst:
+                        '''
+                        # Careful Catch to change mode to Click at the end of the loop, to avoid and infinte loop
+                        if (ti == 0) & (mode == 'Loop'): 
+                            mode = 'Click'
+                        else:
+                            mode = but_name
+                        '''
+                        if mode == 'Loop': 
+                            #pdb.set_trace()
+                            mouse_in_Click = False
+                        mode = but_name
+                        func_but_text_han['Click'].set_color('k')
+                        func_but_text_han['Loop'].set_color('k')
+                        func_but_text_han[mode].set_color('gold')
+                        reload_map = True
+                        reload_ew = True
+                        reload_ns = True
+                        reload_hov = True
+                        reload_ts = True
                     elif but_name in 'Quit':
                         print('Quit')
                         print('')
@@ -1649,6 +1740,7 @@ def nemo_slice_zlev(fname_lst, subtracted_flist = None,var = None,config = 'amm7
                         return
                     else:
                         print(but_name)
+                        print('No function for but_name')
                         pdb.set_trace()
                     print(clim)
                         
@@ -1781,6 +1873,17 @@ def main():
     ==================
     You can change variables by clicking (twice) on the variable buttons on the left hand side. the current variable is in red. 3d variables are have black boxes
     2d variables have green boxes, derived variables have blue boxes
+    
+    Changing Datasets
+    ==================
+    You can load two data sets using --subtracted_flist, and then switch between the dataset, and show there differnce with the "Dataset 1", "Dataset 2", "Dat2-Dat1" buttons.
+
+    Loop and Click Modes
+    ==================
+    The default mode is "Click", to use the mouse to click the buttons, and figures... in this mode, the program awaits a mouse click to continue. 
+    The other mode is "Loop", where the timeslices are looped throught. This mode does not await a mouse click to continue, 
+    and so clickng on the other buttons will not exit this mode. Instead, we track the mouse location, and see when you point to the "Click" button, and wait.
+    The next iteration will allow you to click on "Click" to continue. 
     
     Zooming
     =======
