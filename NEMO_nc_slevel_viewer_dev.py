@@ -106,9 +106,9 @@ def nemo_slice_zlev(fname_lst, second_flist = None,var = None,config = 'amm7', t
 
 
     thin_x0=0
-    thin_x1=-1
+    thin_x1=None
     thin_y0=0
-    thin_y1=-1
+    thin_y1=None
 
     if verbose_debugging:
         print('======================================================')
