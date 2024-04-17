@@ -1669,7 +1669,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
         if secdataset_proc == 'Dataset 2':secdataset_proc_figname = '_Datset_2'
         if secdataset_proc == 'Dat1-Dat2':secdataset_proc_figname = '_Diff_1-2'
 
-        fig_out_name = '%s/output_%s_%s_%04i_%04i_%03i_%03i_%s%s'%(fig_dir,fig_lab,var,ii,jj,ti,zz,z_meth,secdataset_proc_figname)
+        fig_out_name = '%s/output_%s_%s_th%02i_%04i_%04i_%03i_%03i_%s%s'%(fig_dir,fig_lab,var,thin,ii,jj,ti,zz,z_meth,secdataset_proc_figname)
         if fig_fname_lab is not None: fig_out_name = fig_out_name + '_d1_%s'%fig_fname_lab
         if fig_fname_lab_2nd is not None: fig_out_name = fig_out_name + '_d2_%s'%fig_fname_lab_2nd
         fig_out_name = fig_out_name + '.png'
