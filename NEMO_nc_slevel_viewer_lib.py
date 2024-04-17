@@ -999,6 +999,28 @@ def pea_TS(T_in,S_in,gdept,e3t_in,tmask,calc_TS_comp = False, zcutoff = 400.):
 
 
 
+def lon_lat_to_str(lon,lat,lonlatstr_format = '%.2f'):
+    
+    degree_sign= u'\N{DEGREE SIGN}'
+    #pdb.set_trace()
+    
+    if lat>=0:
+        latstr = (lonlatstr_format+'%sN')%(abs(lat),degree_sign)
+    else:
+        latstr = (lonlatstr_format+'%sS')%(abs(lat),degree_sign)
+    
+    if lon>=0:
+        lonstr = (lonlatstr_format+'%sE')%(abs(lon),degree_sign)
+    else:
+        lonstr = (lonlatstr_format+'%sW')%(abs(lon),degree_sign)
+
+    lat_lon_str = '%s %s'%(latstr, lonstr)
+
+    return lat_lon_str,lonstr,latstr
+
+
+
+
 
 
 if __name__ == "__main__":
