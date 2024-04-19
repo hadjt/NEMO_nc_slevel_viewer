@@ -37,13 +37,13 @@ else:
 
     amm7_mesh_file = '/data/cr1/hadjt/data/reffiles/SSF/amm7.mesh_mask.nc'
     amm15_mesh_file = '/data/cr1/hadjt/data/reffiles/SSF/amm15.mesh_mask.nc'
-    CO9P2_mesh_file = '/data/cr1/hadjt/data/reffiles/SSF/CO9p2/mesh_mask.nc'
+    CO9P2_mesh_file = '/data/cr1/hadjt/data/reffiles/SSF/CO9p2.mesh_mask.nc'
     GULF18_mesh_file = '/data/cr1/hadjt/data/reffiles/SSF/mesh_mask_gulf18_ps45.nc'
     orca025ext_mesh_file = '/data/cr1/hadjt/data/reffiles/ORCA/ORCA025ext/mesh_mask_orca025ext.nc'
 
     nemo_nb_i_filename_amm7 = '/home/h01/hadjt/Work/Programming/Scripts/reffiles/nemo_nb_i_CMEMS_BGC_Reanalysis_14112017.nc'
     nemo_nb_i_filename_amm15 = '/data/cr1/hadjt/data/reffiles/SSF/nemo_nb_i_OpSys_AMM15_NEMO36.nc'
-    nemo_nb_i_filename_CO9P2 = '/data/cr1/hadjt/data/reffiles/SSF/CO9p2/nemo_nb_i_OpSys_AMM15_CO9p2.nc'
+    nemo_nb_i_filename_CO9P2 = '/data/cr1/hadjt/data/reffiles/SSF/nemo_nb_i_OpSys_AMM15_CO9p2.nc'
     nemo_nb_i_filename_GULF18 = '/data/cr1/hadjt/data/reffiles/SSF/nemo_nb_i_OpSys_GULF18_NEMO3'
 
     tmpfname_out_amm15_amm7 = '/data/cr1/hadjt/data/reffiles/SSF/regrid_amm15_amm7_nn.nc'
