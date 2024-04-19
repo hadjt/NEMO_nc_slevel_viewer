@@ -1289,24 +1289,24 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
 
     def reload_ew_data_derived_var():
         if var == 'baroc_mag':
-            ew_slice_dat,ew_slice_x, ew_slice_y = reload_ew_data_derived_var_baroc_mag()
+            ew_slice_dat_1,ew_slice_dat_2,ew_slice_x, ew_slice_y = reload_ew_data_derived_var_baroc_mag()
         else:
             print('var not in deriv_var',var)
-        return ew_slice_dat,ew_slice_x, ew_slice_y
+        return ew_slice_dat_1,ew_slice_dat_2,ew_slice_x, ew_slice_y
 
     def reload_ns_data_derived_var():              
         if var == 'baroc_mag':
-            ns_slice_dat,ns_slice_x, ns_slice_y = reload_ns_data_derived_var_baroc_mag()
+            ns_slice_dat_1,ns_slice_dat_2,ns_slice_x, ns_slice_y = reload_ns_data_derived_var_baroc_mag()
         else:
             print('var not in deriv_var',var)
-        return ns_slice_dat,ns_slice_x, ns_slice_y
+        return ns_slice_dat_1,ns_slice_dat_2,ns_slice_x, ns_slice_y
 
     def reload_hov_data_derived_var():                
         if var == 'baroc_mag':
-            hov_dat,hov_x,hov_y = reload_hov_data_derived_var_baroc_mag()
+            hov_dat_1,hov_dat_2,hov_x,hov_y = reload_hov_data_derived_var_baroc_mag()
         else:
             print('var not in deriv_var',var)
-        return hov_dat,hov_x,hov_y
+        return hov_dat_1,hov_dat_2,hov_x,hov_y
 
 
     def reload_ts_data():
@@ -1388,7 +1388,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
         if secdataset_proc == 'Dataset 1':
             ns_slice_dat_U = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,:,ii].load())
             ns_slice_dat_V = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,:,ii].load())
-        if secdataset_proc == 'Dataset 1':
+        if secdataset_proc == 'Dataset 2':
             ns_slice_dat_U = np.ma.masked_invalid(curr_tmp_data_2nd_U.variables[tmp_var_U][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,:,ii].load())
             ns_slice_dat_V = np.ma.masked_invalid(curr_tmp_data_2nd_V.variables[tmp_var_V][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,:,ii].load())
         elif secdataset_proc =='Dat1-Dat2':
@@ -2012,7 +2012,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
                 if var_dim[var] == 4:
                     
                     if var in deriv_var:
-                        ew_slice_dat,ew_slice_x, ew_slice_y = reload_ew_data_derived_var()
+                        ew_slice_dat_1,ew_slice_dat_2,ew_slice_x, ew_slice_y = reload_ew_data_derived_var()
                     else:
                         ew_slice_dat_1,ew_slice_dat_2,ew_slice_x, ew_slice_y = reload_ew_data()
 
@@ -2023,7 +2023,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
             if reload_ns:
                 if var_dim[var] == 4:
                     if var in deriv_var:
-                        ns_slice_dat,ns_slice_x, ns_slice_y = reload_ns_data_derived_var()    
+                        ns_slice_dat_1,ns_slice_dat_2,ns_slice_x, ns_slice_y = reload_ns_data_derived_var()    
                     else:
                         ns_slice_dat_1,ns_slice_dat_2,ns_slice_x, ns_slice_y = reload_ns_data()                    
                 reload_ns = False
@@ -2033,7 +2033,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
             if reload_hov:
                 if var_dim[var] == 4:
                     if var in deriv_var:
-                        hov_dat,hov_x,hov_y = reload_hov_data_derived_var()
+                        hov_dat_1,hov_dat_2,hov_x,hov_y = reload_hov_data_derived_var()
                     else:
                         hov_dat_1,hov_dat_2,hov_x,hov_y = reload_hov_data()
 
@@ -2206,9 +2206,10 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
 
             cbarax = []      
             cbarax.append(fig.add_axes([leftgap + (axwid - cbwid - cbgap) + cbgap, 0.1,cbwid,  0.8]))
-            cbarax.append(fig.add_axes([leftgap + (axwid - cbwid - cbgap) + wgap + axwid - cbwid - cbgap + cbgap,0.73, cbwid,  0.17]))
-            cbarax.append(fig.add_axes([leftgap + (axwid - cbwid - cbgap) + wgap + axwid - cbwid - cbgap + cbgap,0.52, cbwid,  0.17]))
-            cbarax.append(fig.add_axes([leftgap + (axwid - cbwid - cbgap) + wgap + axwid - cbwid - cbgap + cbgap,0.31, cbwid,  0.17]))
+            if var_dim[var] == 4:  
+                cbarax.append(fig.add_axes([leftgap + (axwid - cbwid - cbgap) + wgap + axwid - cbwid - cbgap + cbgap,0.73, cbwid,  0.17]))
+                cbarax.append(fig.add_axes([leftgap + (axwid - cbwid - cbgap) + wgap + axwid - cbwid - cbgap + cbgap,0.52, cbwid,  0.17]))
+                cbarax.append(fig.add_axes([leftgap + (axwid - cbwid - cbgap) + wgap + axwid - cbwid - cbgap + cbgap,0.31, cbwid,  0.17]))
 
 
             cax = []      
