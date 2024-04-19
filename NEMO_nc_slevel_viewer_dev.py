@@ -68,13 +68,33 @@ def load_nc_dims(tmp_data):
 
     poss_zdims = ['deptht','depthu','depthv']
     poss_tdims = ['time_counter','time']
-    poss_xdims = ['x','X']
-    poss_ydims = ['y','Y']
-
-    if x_dim not in nc_dims: x_dim = [i for i in nc_dims if i in poss_xdims][0]
-    if y_dim not in nc_dims: y_dim = [i for i in nc_dims if i in poss_ydims][0]
-    if z_dim not in nc_dims: z_dim = [i for i in nc_dims if i in poss_zdims][0]
-    if t_dim not in nc_dims: t_dim = [i for i in nc_dims if i in poss_tdims][0]
+    poss_xdims = ['x','X','lon']
+    poss_ydims = ['y','Y','lat']
+    #pdb.set_trace()
+    if x_dim not in nc_dims: 
+        x_dim_lst = [i for i in nc_dims if i in poss_xdims]
+        if len(x_dim_lst)>0: 
+            x_dim = x_dim_lst[0]
+        else:
+            x_dim = ''
+    if y_dim not in nc_dims: 
+        y_dim_lst = [i for i in nc_dims if i in poss_ydims]
+        if len(y_dim_lst)>0: 
+            y_dim = y_dim_lst[0]
+        else:
+            y_dim = ''
+    if z_dim not in nc_dims: 
+        z_dim_lst = [i for i in nc_dims if i in poss_zdims]
+        if len(z_dim_lst)>0: 
+            z_dim = z_dim_lst[0]
+        else:
+            z_dim = ''
+    if t_dim not in nc_dims: 
+        t_dim_lst = [i for i in nc_dims if i in poss_tdims]
+        if len(t_dim_lst)>0: 
+            t_dim = t_dim_lst[0]
+        else:
+            t_dim = ''
     return x_dim, y_dim, z_dim,t_dim
 
 
@@ -135,6 +155,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
     thin_y1_2nd=thin_y1
     if config_2nd is None:
         thin_2nd=thin
+        #config_2nd = config
 
     if verbose_debugging:
         print('======================================================')
@@ -150,6 +171,13 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
 
     z_meth_mat = ['z_slice','ss','nb','df']
 
+    nav_lon_varname = 'nav_lon'
+    nav_lat_varname = 'nav_lat'
+    time_varname = 'time_counter'
+
+    nav_lon_var_mat = ['nav_lon'.upper(),'lon'.upper(),'longitude'.upper()]
+    nav_lat_var_mat = ['nav_lat'.upper(),'lat'.upper(),'latitude'.upper()]
+    time_varname_mat = ['time_counter'.upper(),'time'.upper()]
 
 
     if use_cmocean:
@@ -368,6 +396,21 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
     # open file list with xarray
     tmp_data = xarray.open_mfdataset(fname_lst, combine='by_coords',parallel = True) # , decode_cf=False);# parallel = True
 
+
+
+    ncvar_mat = [ss for ss in tmp_data.variables.keys()]
+    
+    # check name of lon and lat ncvar in data.
+    # cycle through variables and if it is a possibnle varibable name, use it
+    for ncvar in ncvar_mat: 
+        if ncvar.upper() in nav_lon_var_mat: nav_lon_varname = ncvar
+        if ncvar.upper() in nav_lat_var_mat: nav_lat_varname = ncvar
+        if ncvar.upper() in time_varname_mat: time_varname = ncvar
+
+
+    if nav_lon_varname not in ncvar_mat:
+        pdb.set_trace()
+
     print ('xarray open_mfdataset, Finish',datetime.now())
     #Add baroclinic velocity magnitude
     UV_vec = False
@@ -414,16 +457,27 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
         nav_lon = np.ma.array(nav_lon[thin_y0:thin_y1:thin,thin_x0:thin_x1:thin])
 
     else:
-        nav_lat = np.ma.masked_invalid(tmp_data.variables['nav_lat'][thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-        nav_lon = np.ma.masked_invalid(tmp_data.variables['nav_lon'][thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+        if len(tmp_data.variables[nav_lat_varname].shape) == 2:
+            nav_lon = np.ma.masked_invalid(tmp_data.variables[nav_lon_varname][thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+            nav_lat = np.ma.masked_invalid(tmp_data.variables[nav_lat_varname][thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+        else:
+            # if only 1d lon and lat
+            tmp_nav_lon = np.ma.masked_invalid(tmp_data.variables[nav_lon_varname].load())
+            tmp_nav_lat = np.ma.masked_invalid(tmp_data.variables[nav_lat_varname].load())
+
+            nav_lon_mat, nav_lat_mat = np.meshgrid(tmp_nav_lon,tmp_nav_lat)
+
+
+            nav_lat = nav_lat_mat[thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
+            nav_lon = nav_lon_mat[thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
 
 
 
 
     if config.upper() in ['AMM15']: 
-        nav_lat_amm15 = np.ma.masked_invalid(tmp_data.variables['nav_lat'].load())
-        nav_lon_amm15 = np.ma.masked_invalid(tmp_data.variables['nav_lon'].load())
-
+        # AMM15 lon and lats are always 2d
+        nav_lat_amm15 = np.ma.masked_invalid(tmp_data.variables[nav_lat_varname].load())
+        nav_lon_amm15 = np.ma.masked_invalid(tmp_data.variables[nav_lon_varname].load())
 
     
 
@@ -434,7 +488,8 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
 
     nav_lon_2nd, nav_lat_2nd = nav_lon, nav_lat
 
-    
+
+
     deriv_var = []
     x_dim, y_dim, z_dim, t_dim = load_nc_dims(tmp_data) #  find the names of the x, y, z and t dimensions.
     var_4d_mat, var_3d_mat, var_mat, nvar4d, nvar3d, nvar, var_dim = load_nc_var_name_list(tmp_data, x_dim, y_dim, z_dim,t_dim)# find the variable names in the nc file
@@ -514,7 +569,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
 
     
     print ('xarray start reading nctime',datetime.now())
-    nctime = tmp_data.variables['time_counter']
+    nctime = tmp_data.variables[time_varname]
 
     print ('xarray finished reading nctime',datetime.now())
     '''
@@ -528,13 +583,13 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
     if comp == 'hpc':
         #pdb.set_trace()
         rootgrp_hpc_time = Dataset(fname_lst[0], 'r', format='NETCDF4')
-        nc_time_origin = rootgrp_hpc_time.variables['time_counter'].time_origin
+        nc_time_origin = rootgrp_hpc_time.variables[time_varname].time_origin
         rootgrp_hpc_time.close()
     else:        
         nc_time_origin = nctime[0].attrs['time_origin']
     '''
     rootgrp_hpc_time = Dataset(fname_lst[0], 'r', format='NETCDF4')
-    nc_time_origin = rootgrp_hpc_time.variables['time_counter'].time_origin
+    nc_time_origin = rootgrp_hpc_time.variables[time_varname].time_origin
     rootgrp_hpc_time.close()
         
     #different treatment for 360 days and gregorian calendars... needs time_datetime for plotting, and time_datetime_since_1970 for index selection
@@ -546,22 +601,20 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
 
     #different treatment for 360 days and gregorian calendars... needs time_datetime for plotting, and time_datetime_since_1970 for index selection
     #if type(np.array(nctime)[0]) is type(cftime._cftime.Datetime360Day(1980,1,1)):
-    if  nctime_calendar_type == '360':
+    if  nctime_calendar_type in ['360','360_day']:
         # if 360 days
 
-        time_datetime_since_1970 = [ss.year + (ss.month-1)/12 + (ss.day-1)/360 for ss in np.array(nctime)]   
+        time_datetime_since_1970 = np.array([ss.year + (ss.month-1)/12 + (ss.day-1)/360 for ss in np.array(nctime)])
         time_datetime = time_datetime_since_1970
     else:
-        # if gregorian
-
-        
+        # if gregorian        
         sec_since_origin = [float(ii.data - np.datetime64(nc_time_origin))/1e9 for ii in nctime]
         time_datetime_cft = num2date(sec_since_origin,units = 'seconds since ' + nc_time_origin,calendar = 'gregorian') #nctime.calendar)
 
         time_datetime = np.array([datetime(ss.year, ss.month,ss.day,ss.hour,ss.minute) for ss in time_datetime_cft])
         time_datetime_since_1970 = np.array([(ss - datetime(1970,1,1,0,0)).total_seconds()/86400 for ss in time_datetime])
 
-
+    #pdb.set_trace()
     ntime = time_datetime_since_1970.size
 
     if date_in_ind is not None:
@@ -631,26 +684,64 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
         tmp_data_2nd = xarray.open_mfdataset(fname_lst_2nd ,combine='by_coords',parallel = True)
         print ('xarray open_mfdataset 2nd, Finish',datetime.now())   
         #pdb.set_trace()
-        nav_lat_2nd = np.ma.masked_invalid(tmp_data_2nd.variables['nav_lat'][thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
-        nav_lon_2nd = np.ma.masked_invalid(tmp_data_2nd.variables['nav_lon'][thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
-        if config_2nd.upper() in ['AMM15','CO9P2']: 
-            nav_lat_amm15 = np.ma.masked_invalid(tmp_data_2nd.variables['nav_lat'].load())
-            nav_lon_amm15 = np.ma.masked_invalid(tmp_data_2nd.variables['nav_lon'].load())
+        if len(tmp_data_2nd.variables[nav_lat_varname].shape) == 2:
+            nav_lat_2nd = np.ma.masked_invalid(tmp_data_2nd.variables[nav_lat_varname][thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+            nav_lon_2nd = np.ma.masked_invalid(tmp_data_2nd.variables[nav_lon_varname][thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+        else:
+            # if only 1d lon and lat
+            tmp_nav_lon = np.ma.masked_invalid(tmp_data_2nd.variables[nav_lon_varname].load())
+            tmp_nav_lat = np.ma.masked_invalid(tmp_data_2nd.variables[nav_lat_varname].load())
+
+            nav_lon_mat, nav_lat_mat = np.meshgrid(tmp_nav_lon,tmp_nav_lat)
+
+
+            nav_lat_2nd = nav_lat_mat[thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
+            nav_lon_2nd = nav_lon_mat[thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
+
+
+        if load_2nd_files:
+            if config_2nd is not None:
+                if config_2nd.upper() in ['AMM15','CO9P2']: 
+                    nav_lat_amm15 = np.ma.masked_invalid(tmp_data_2nd.variables[nav_lat_varname].load())
+                    nav_lon_amm15 = np.ma.masked_invalid(tmp_data_2nd.variables[nav_lon_varname].load())
         print ('xarray start reading 2nd \nctime',datetime.now())
-        nctime_2nd = tmp_data_2nd.variables['time_counter']
+        nctime_2nd = tmp_data_2nd.variables[time_varname]
         #nc_time_origin_2nd = nctime_2nd[0].attrs['time_origin']
     
         print ('xarray finish reading 2nd nctime',datetime.now())
 
         rootgrp_hpc_time = Dataset(fname_lst_2nd[0], 'r', format='NETCDF4')
-        nc_time_origin_2nd = rootgrp_hpc_time.variables['time_counter'].time_origin
+        nc_time_origin_2nd = rootgrp_hpc_time.variables[time_varname].time_origin
         rootgrp_hpc_time.close()
+        #pdb.set_trace()
+        
+        #different treatment for 360 days and gregorian calendars... needs time_datetime for plotting, and time_datetime_since_1970 for index selection
+        if type(np.array(nctime_2nd)[0]) is type(cftime._cftime.Datetime360Day(1980,1,1)):
+            nctime_calendar_type_2nd = '360'
+        else:
+            nctime_calendar_type_2nd = 'greg'
 
-        sec_since_origin_2nd = [float(ii.data - np.datetime64(nc_time_origin_2nd))/1e9 for ii in nctime_2nd]
-        time_datetime_cft_2nd = num2date(sec_since_origin_2nd,units = 'seconds since ' + nc_time_origin_2nd,calendar = 'gregorian') #nctime.calendar)
 
-        time_datetime_2nd = np.array([datetime(ss.year, ss.month,ss.day,ss.hour,ss.minute) for ss in time_datetime_cft_2nd])
-        time_datetime_since_1970_2nd = np.array([(ss - datetime(1970,1,1,0,0)).total_seconds()/86400 for ss in time_datetime_2nd])
+
+        #different treatment for 360 days and gregorian calendars... needs time_datetime for plotting, and time_datetime_since_1970 for index selection
+        #if type(np.array(nctime)[0]) is type(cftime._cftime.Datetime360Day(1980,1,1)):
+        if  nctime_calendar_type in ['360','360_day']:
+            # if 360 days
+
+            time_datetime_since_1970_2nd = np.array([ss.year + (ss.month-1)/12 + (ss.day-1)/360 for ss in np.array(nctime_2nd)])
+            time_datetime_2nd = time_datetime_since_1970_2nd
+        else:
+            # if gregorian        
+            sec_since_origin_2nd = [float(ii.data - np.datetime64(nc_time_origin_2nd))/1e9 for ii in nctime_2nd]
+            time_datetime_cft_2nd = num2date(sec_since_origin_2nd,units = 'seconds since ' + nc_time_origin_2nd,calendar = 'gregorian') #nctime.calendar)
+
+            time_datetime_2nd = np.array([datetime(ss.year, ss.month,ss.day,ss.hour,ss.minute) for ss in time_datetime_cft_2nd])
+
+            time_datetime_since_1970_2nd = np.array([(ss - datetime(1970,1,1,0,0)).total_seconds()/86400 for ss in time_datetime_2nd])
+
+
+
+
         ntime_2nd = time_datetime_since_1970_2nd.size
         
         # check both filessets have the same times
@@ -689,13 +780,14 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
         nlat_rotamm15 = lat_rotamm15.size
 
     if load_2nd_files:
-        if (config_2nd.upper() in ['AMM15','CO9P2']):
-            lon_rotamm15,lat_rotamm15 = reduce_rotamm15_grid(nav_lon_amm15, nav_lat_amm15)
+        if config_2nd is not None:
+            if (config_2nd.upper() in ['AMM15','CO9P2']):
+                lon_rotamm15,lat_rotamm15 = reduce_rotamm15_grid(nav_lon_amm15, nav_lat_amm15)
 
-            dlon_rotamm15 = (np.diff(lon_rotamm15)).mean()
-            dlat_rotamm15 = (np.diff(lat_rotamm15)).mean()
-            nlon_rotamm15 = lon_rotamm15.size
-            nlat_rotamm15 = lat_rotamm15.size
+                dlon_rotamm15 = (np.diff(lon_rotamm15)).mean()
+                dlat_rotamm15 = (np.diff(lat_rotamm15)).mean()
+                nlon_rotamm15 = lon_rotamm15.size
+                nlat_rotamm15 = lat_rotamm15.size
 
 
 
@@ -1800,6 +1892,11 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
     tmp_press = [(0.5,0.5,)]
     press_ginput = [(0.5,0.5,)]
 
+    #if initial variable is 2d, need to define cross sections variables
+    ns_slice_dat_1, ew_slice_dat_1, hov_dat_1 = 0, 0, 0
+    ns_slice_dat_2, ew_slice_dat_2, hov_dat_2 = 0, 0, 0
+    hov_y = np.array(0)
+
     while ii is not None:
         # try, exit on error
         #try:
@@ -2201,76 +2298,96 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
 
                 if load_2nd_files & (clim_pair == True)&(secdataset_proc not in ['Dat1-Dat2','Dat2-Dat1']) :
 
-                    map_dat_reg_mask_1 = (nav_lon>xlim[0]) & (nav_lon<xlim[1]) & (nav_lat>ylim[0]) & (nav_lat<ylim[1])
+                    # if no xlim present using those from the map.
+                    tmpxlim = xlim
+                    tmpylim = ylim
+                    if xlim is None: tmpxlim = ax[0].get_xlim()#np.array([nav_lon.min(), nav_lon.max()])    
+                    if ylim is None: tmpylim = ax[0].get_ylim()#np.array([nav_lat.min(), nav_lat.max()])    
+
+                    map_dat_reg_mask_1 = (nav_lon>tmpxlim[0]) & (nav_lon<tmpxlim[1]) & (nav_lat>tmpylim[0]) & (nav_lat<tmpylim[1])
                     #map_dat_reg_mask_2 = (nav_lon_2nd>xlim[0]) & (nav_lon_2nd<xlim[1]) & (nav_lat_2nd>ylim[0]) & (nav_lat_2nd<ylim[1])
-
-                    ew_dat_reg_mask_1 = (ew_slice_x>xlim[0]) & (ew_slice_x<xlim[1]) 
-                    #ew_dat_reg_mask_2 = (nav_lon_2nd>xlim[0]) & (nav_lon_2nd<xlim[1]) 
-                    ns_dat_reg_mask_1 = (ns_slice_x>ylim[0]) & (ns_slice_x<ylim[1])
-                    #ns_dat_reg_mask_2 = (nav_lat_2nd>ylim[0]) & (nav_lat_2nd<ylim[1]) 
-
                     tmp_map_dat_1 = map_dat_1[map_dat_reg_mask_1]
                     tmp_map_dat_2 = map_dat_2[map_dat_reg_mask_1]
-                    tmp_ew_dat_1 = ew_slice_dat_1[:,ew_dat_reg_mask_1]
-                    tmp_ew_dat_2 = ew_slice_dat_2[:,ew_dat_reg_mask_1]
-                    tmp_ns_dat_1 = ns_slice_dat_1[:,ns_dat_reg_mask_1]
-                    tmp_ns_dat_2 = ns_slice_dat_2[:,ns_dat_reg_mask_1]
-                   
-                    tmp_hov_dat_1 = hov_dat_1.copy()
-                    tmp_hov_dat_2 = hov_dat_2.copy()
 
                     tmp_map_dat_1 = tmp_map_dat_1[tmp_map_dat_1.mask == False]
                     tmp_map_dat_2 = tmp_map_dat_2[tmp_map_dat_2.mask == False]
 
-                    tmp_ew_dat_1 = tmp_ew_dat_1[tmp_ew_dat_1.mask == False]
-                    tmp_ns_dat_1 = tmp_ns_dat_1[tmp_ns_dat_1.mask == False]
-                    tmp_hov_dat_1 = tmp_hov_dat_1[tmp_hov_dat_1.mask == False]
-                    tmp_ew_dat_2 = tmp_ew_dat_2[tmp_ew_dat_2.mask == False]
-                    tmp_ns_dat_2 = tmp_ns_dat_2[tmp_ns_dat_2.mask == False]
-                    tmp_hov_dat_2 = tmp_hov_dat_2[tmp_hov_dat_2.mask == False]
-
-
-                    
-                    tmp_map_perc_1,tmp_ew_perc_1,tmp_ns_perc_1,tmp_hov_perc_1 = [np.ma.masked for i_i in range(4)]
-                    tmp_map_perc_2,tmp_ew_perc_2,tmp_ns_perc_2,tmp_hov_perc_2 = [np.ma.masked for i_i in range(4)]
+                    tmp_map_perc_1 = np.ma.masked
+                    tmp_map_perc_2 = np.ma.masked
 
                     if len(tmp_map_dat_1)>0: tmp_map_perc_1 = np.percentile(tmp_map_dat_1,(5,95))
-                    if len(tmp_ew_dat_1)>0: tmp_ew_perc_1 = np.percentile(tmp_ew_dat_1,(5,95))
-                    if len(tmp_ns_dat_1)>0: tmp_ns_perc_1 = np.percentile(tmp_ns_dat_1,(5,95))
-                    if len(tmp_hov_dat_1)>0: tmp_hov_perc_1 = np.percentile(tmp_hov_dat_1,(5,95))
-
                     if len(tmp_map_dat_2)>0: tmp_map_perc_2 = np.percentile(tmp_map_dat_2,(5,95))
-                    if len(tmp_ew_dat_2)>0: tmp_ew_perc_2 = np.percentile(tmp_ew_dat_2,(5,95))
-                    if len(tmp_ns_dat_2)>0: tmp_ns_perc_2 = np.percentile(tmp_ns_dat_2,(5,95))
-                    if len(tmp_hov_dat_2)>0: tmp_hov_perc_2 = np.percentile(tmp_hov_dat_2,(5,95))
-
                     tmp_map_perc = np.ma.append(tmp_map_perc_1,tmp_map_perc_2)
-                    tmp_ew_perc = np.ma.append(tmp_ew_perc_1,tmp_ew_perc_2)
-                    tmp_ns_perc = np.ma.append(tmp_ns_perc_1,tmp_ns_perc_2)
-                    tmp_hov_perc = np.ma.append(tmp_hov_perc_1,tmp_hov_perc_2)
-                    #tmp_ew_perc = np.append(np.percentile(tmp_ew_dat_1,(5,95)),np.percentile(tmp_ew_dat_2,(5,95)))
-                    #tmp_ns_perc = np.append(np.percentile(tmp_ns_dat_1,(5,95)),np.percentile(tmp_ns_dat_2,(5,95)))
-                    #tmp_hov_perc = np.append(np.percentile(tmp_hov_dat_1,(5,95)),np.percentile(tmp_hov_dat_2,(5,95)))
-
 
                     map_clim = np.ma.array([tmp_map_perc.min(),tmp_map_perc.max()])
-                    ew_clim = np.ma.array([tmp_ew_perc.min(),tmp_ew_perc.max()])
-                    ns_clim = np.ma.array([tmp_ns_perc.min(),tmp_ns_perc.max()])
-                    hov_clim = np.ma.array([tmp_hov_perc.min(),tmp_hov_perc.max()])
-
 
 
                     if clim_sym: map_clim = np.array([-1,1])*np.abs(map_clim).max()
-                    if clim_sym: ew_clim = np.array([-1,1])*np.abs(ew_clim).max()
-                    if clim_sym: ns_clim = np.array([-1,1])*np.abs(ns_clim).max()
-                    if clim_sym: hov_clim = np.array([-1,1])*np.abs(hov_clim).max()
-
                     if map_clim.mask.any() == False: set_clim_pcolor(map_clim, ax = ax[0])
-                    if ew_clim.mask.any() == False: set_clim_pcolor(ew_clim, ax = ax[1])
-                    if ns_clim.mask.any() == False: set_clim_pcolor(ns_clim, ax = ax[2])
-                    if hov_clim.mask.any() == False: set_clim_pcolor(hov_clim, ax = ax[3])
-                    #When using the log scale, the colour set_clim seems linked, so all panels get set to the limits of the final set_perc_clim_pcolor call..
-                    #   therefore repeat set_perc_clim_pcolor of the map, so the hovmuller colour limit is not the final one. 
+
+                    
+                    # only apply to ns and ew slices, and hov if 3d variable. 
+
+                    if var_dim[var] == 4:
+
+                        ew_dat_reg_mask_1 = (ew_slice_x>tmpxlim[0]) & (ew_slice_x<tmpxlim[1]) 
+                        #ew_dat_reg_mask_2 = (nav_lon_2nd>xlim[0]) & (nav_lon_2nd<xlim[1]) 
+                        ns_dat_reg_mask_1 = (ns_slice_x>tmpylim[0]) & (ns_slice_x<tmpylim[1])
+                        #ns_dat_reg_mask_2 = (nav_lat_2nd>ylim[0]) & (nav_lat_2nd<ylim[1]) 
+
+                        tmp_ew_dat_1 = ew_slice_dat_1[:,ew_dat_reg_mask_1]
+                        tmp_ew_dat_2 = ew_slice_dat_2[:,ew_dat_reg_mask_1]
+                        tmp_ns_dat_1 = ns_slice_dat_1[:,ns_dat_reg_mask_1]
+                        tmp_ns_dat_2 = ns_slice_dat_2[:,ns_dat_reg_mask_1]
+                       
+                        tmp_hov_dat_1 = hov_dat_1.copy()
+                        tmp_hov_dat_2 = hov_dat_2.copy()
+
+                        tmp_ew_dat_1 = tmp_ew_dat_1[tmp_ew_dat_1.mask == False]
+                        tmp_ns_dat_1 = tmp_ns_dat_1[tmp_ns_dat_1.mask == False]
+                        tmp_hov_dat_1 = tmp_hov_dat_1[tmp_hov_dat_1.mask == False]
+                        tmp_ew_dat_2 = tmp_ew_dat_2[tmp_ew_dat_2.mask == False]
+                        tmp_ns_dat_2 = tmp_ns_dat_2[tmp_ns_dat_2.mask == False]
+                        tmp_hov_dat_2 = tmp_hov_dat_2[tmp_hov_dat_2.mask == False]
+
+
+                        
+                        tmp_map_perc_1,tmp_ew_perc_1,tmp_ns_perc_1,tmp_hov_perc_1 = [np.ma.masked for i_i in range(3)]
+                        tmp_map_perc_2,tmp_ew_perc_2,tmp_ns_perc_2,tmp_hov_perc_2 = [np.ma.masked for i_i in range(3)]
+
+                        if len(tmp_ew_dat_1)>0: tmp_ew_perc_1 = np.percentile(tmp_ew_dat_1,(5,95))
+                        if len(tmp_ns_dat_1)>0: tmp_ns_perc_1 = np.percentile(tmp_ns_dat_1,(5,95))
+                        if len(tmp_hov_dat_1)>0: tmp_hov_perc_1 = np.percentile(tmp_hov_dat_1,(5,95))
+
+                        if len(tmp_ew_dat_2)>0: tmp_ew_perc_2 = np.percentile(tmp_ew_dat_2,(5,95))
+                        if len(tmp_ns_dat_2)>0: tmp_ns_perc_2 = np.percentile(tmp_ns_dat_2,(5,95))
+                        if len(tmp_hov_dat_2)>0: tmp_hov_perc_2 = np.percentile(tmp_hov_dat_2,(5,95))
+
+                        tmp_ew_perc = np.ma.append(tmp_ew_perc_1,tmp_ew_perc_2)
+                        tmp_ns_perc = np.ma.append(tmp_ns_perc_1,tmp_ns_perc_2)
+                        tmp_hov_perc = np.ma.append(tmp_hov_perc_1,tmp_hov_perc_2)
+                        #tmp_ew_perc = np.append(np.percentile(tmp_ew_dat_1,(5,95)),np.percentile(tmp_ew_dat_2,(5,95)))
+                        #tmp_ns_perc = np.append(np.percentile(tmp_ns_dat_1,(5,95)),np.percentile(tmp_ns_dat_2,(5,95)))
+                        #tmp_hov_perc = np.append(np.percentile(tmp_hov_dat_1,(5,95)),np.percentile(tmp_hov_dat_2,(5,95)))
+
+
+                        ew_clim = np.ma.array([tmp_ew_perc.min(),tmp_ew_perc.max()])
+                        ns_clim = np.ma.array([tmp_ns_perc.min(),tmp_ns_perc.max()])
+                        hov_clim = np.ma.array([tmp_hov_perc.min(),tmp_hov_perc.max()])
+
+
+
+                        if clim_sym: ew_clim = np.array([-1,1])*np.abs(ew_clim).max()
+                        if clim_sym: ns_clim = np.array([-1,1])*np.abs(ns_clim).max()
+                        if clim_sym: hov_clim = np.array([-1,1])*np.abs(hov_clim).max()
+
+                        if ew_clim.mask.any() == False: set_clim_pcolor(ew_clim, ax = ax[1])
+                        if ns_clim.mask.any() == False: set_clim_pcolor(ns_clim, ax = ax[2])
+                        if hov_clim.mask.any() == False: set_clim_pcolor(hov_clim, ax = ax[3])
+                        #When using the log scale, the colour set_clim seems linked, so all panels get set to the limits of the final set_perc_clim_pcolor call..
+                        #   therefore repeat set_perc_clim_pcolor of the map, so the hovmuller colour limit is not the final one. 
+
+
                     if map_clim.mask.any() == False: set_clim_pcolor(map_clim, ax = ax[0])
 
         
