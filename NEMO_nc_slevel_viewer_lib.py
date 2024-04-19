@@ -49,6 +49,69 @@ SP_coor = np.array([RotSPole_lon,RotSPole_lat])
 
 
 
+def load_nc_dims(tmp_data):
+    x_dim = 'x'
+    y_dim = 'y'
+    z_dim = 'deptht'
+    t_dim = 'time_counter'
+    #pdb.set_trace()
+    
+    nc_dims = [ss for ss in tmp_data._dims.keys()]
+
+    poss_zdims = ['deptht','depthu','depthv']
+    poss_tdims = ['time_counter','time']
+    poss_xdims = ['x','X','lon']
+    poss_ydims = ['y','Y','lat']
+    #pdb.set_trace()
+    if x_dim not in nc_dims: 
+        x_dim_lst = [i for i in nc_dims if i in poss_xdims]
+        if len(x_dim_lst)>0: 
+            x_dim = x_dim_lst[0]
+        else:
+            x_dim = ''
+    if y_dim not in nc_dims: 
+        y_dim_lst = [i for i in nc_dims if i in poss_ydims]
+        if len(y_dim_lst)>0: 
+            y_dim = y_dim_lst[0]
+        else:
+            y_dim = ''
+    if z_dim not in nc_dims: 
+        z_dim_lst = [i for i in nc_dims if i in poss_zdims]
+        if len(z_dim_lst)>0: 
+            z_dim = z_dim_lst[0]
+        else:
+            z_dim = ''
+    if t_dim not in nc_dims: 
+        t_dim_lst = [i for i in nc_dims if i in poss_tdims]
+        if len(t_dim_lst)>0: 
+            t_dim = t_dim_lst[0]
+        else:
+            t_dim = ''
+    return x_dim, y_dim, z_dim,t_dim
+
+
+def load_nc_var_name_list(tmp_data,x_dim, y_dim, z_dim,t_dim):
+
+    # what are the4d variable names, and how many are there?
+    #var_4d_mat = np.array([ss for ss in tmp_data.variables.keys() if len(tmp_data.variables[ss].dims) == 4])
+    var_4d_mat = np.array([ss for ss in tmp_data.variables.keys() if tmp_data.variables[ss].dims == (t_dim, z_dim,y_dim, x_dim)])
+    nvar4d = var_4d_mat.size
+    #pdb.set_trace()
+    #var_3d_mat = np.array([ss for ss in tmp_data.variables.keys() if len(tmp_data.variables[ss].dims) == 3])
+    var_3d_mat = np.array([ss for ss in tmp_data.variables.keys() if tmp_data.variables[ss].dims == (t_dim, y_dim, x_dim)])
+    nvar3d = var_3d_mat.size
+
+    var_mat = np.append(var_4d_mat, var_3d_mat)
+    nvar = var_mat.size
+
+
+    var_dim = {}
+    for vi,var_dat in enumerate(var_4d_mat): var_dim[var_dat] = 4
+    for vi,var_dat in enumerate(var_3d_mat): var_dim[var_dat] = 3
+
+    return var_4d_mat, var_3d_mat, var_mat, nvar4d, nvar3d, nvar, var_dim
+
+
 
 def rotated_grid_transform(grid_in, option, SP_coor):
 

@@ -10,7 +10,7 @@ import glob
 import cftime
 import matplotlib
 
-from NEMO_nc_slevel_viewer_lib import set_perc_clim_pcolor, get_clim_pcolor, set_clim_pcolor,set_perc_clim_pcolor_in_region,interp1dmat_wgt, interp1dmat_create_weight, nearbed_index,extract_nb,load_nearbed_index,pea_TS,rotated_grid_from_amm15,rotated_grid_to_amm15, reduce_rotamm15_grid,lon_lat_to_str,load_nn_amm15_amm7_wgt,load_nn_amm7_amm15_wgt
+from NEMO_nc_slevel_viewer_lib import set_perc_clim_pcolor, get_clim_pcolor, set_clim_pcolor,set_perc_clim_pcolor_in_region,interp1dmat_wgt, interp1dmat_create_weight, nearbed_index,extract_nb,load_nearbed_index,pea_TS,rotated_grid_from_amm15,rotated_grid_to_amm15, reduce_rotamm15_grid,lon_lat_to_str,load_nn_amm15_amm7_wgt,load_nn_amm7_amm15_wgt,load_nc_dims,load_nc_var_name_list
 
 letter_mat = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
 
@@ -53,71 +53,6 @@ else:
 import warnings
 warnings.filterwarnings("ignore")
 
-
-
-
-
-def load_nc_dims(tmp_data):
-    x_dim = 'x'
-    y_dim = 'y'
-    z_dim = 'deptht'
-    t_dim = 'time_counter'
-    #pdb.set_trace()
-    
-    nc_dims = [ss for ss in tmp_data._dims.keys()]
-
-    poss_zdims = ['deptht','depthu','depthv']
-    poss_tdims = ['time_counter','time']
-    poss_xdims = ['x','X','lon']
-    poss_ydims = ['y','Y','lat']
-    #pdb.set_trace()
-    if x_dim not in nc_dims: 
-        x_dim_lst = [i for i in nc_dims if i in poss_xdims]
-        if len(x_dim_lst)>0: 
-            x_dim = x_dim_lst[0]
-        else:
-            x_dim = ''
-    if y_dim not in nc_dims: 
-        y_dim_lst = [i for i in nc_dims if i in poss_ydims]
-        if len(y_dim_lst)>0: 
-            y_dim = y_dim_lst[0]
-        else:
-            y_dim = ''
-    if z_dim not in nc_dims: 
-        z_dim_lst = [i for i in nc_dims if i in poss_zdims]
-        if len(z_dim_lst)>0: 
-            z_dim = z_dim_lst[0]
-        else:
-            z_dim = ''
-    if t_dim not in nc_dims: 
-        t_dim_lst = [i for i in nc_dims if i in poss_tdims]
-        if len(t_dim_lst)>0: 
-            t_dim = t_dim_lst[0]
-        else:
-            t_dim = ''
-    return x_dim, y_dim, z_dim,t_dim
-
-
-def load_nc_var_name_list(tmp_data,x_dim, y_dim, z_dim,t_dim):
-
-    # what are the4d variable names, and how many are there?
-    #var_4d_mat = np.array([ss for ss in tmp_data.variables.keys() if len(tmp_data.variables[ss].dims) == 4])
-    var_4d_mat = np.array([ss for ss in tmp_data.variables.keys() if tmp_data.variables[ss].dims == (t_dim, z_dim,y_dim, x_dim)])
-    nvar4d = var_4d_mat.size
-    #pdb.set_trace()
-    #var_3d_mat = np.array([ss for ss in tmp_data.variables.keys() if len(tmp_data.variables[ss].dims) == 3])
-    var_3d_mat = np.array([ss for ss in tmp_data.variables.keys() if tmp_data.variables[ss].dims == (t_dim, y_dim, x_dim)])
-    nvar3d = var_3d_mat.size
-
-    var_mat = np.append(var_4d_mat, var_3d_mat)
-    nvar = var_mat.size
-
-
-    var_dim = {}
-    for vi,var_dat in enumerate(var_4d_mat): var_dim[var_dat] = 4
-    for vi,var_dat in enumerate(var_3d_mat): var_dim[var_dat] = 3
-
-    return var_4d_mat, var_3d_mat, var_mat, nvar4d, nvar3d, nvar, var_dim
 
 global fname_lst, fname_lst_2nd,var
 
@@ -532,6 +467,9 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
             
         #pdb.set_trace()
     #Add PEA
+
+
+    '''
     add_PEA = False
     if ('votemper' in var_mat) & ('vosaline' in var_mat):
         add_PEA = True
@@ -549,7 +487,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
         var_grid[ss] = 'T'
         deriv_var.append(ss)
 
-    
+    '''
 
     #pdb.set_trace() 
 
@@ -561,6 +499,14 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
 
     nice_varname_dict['votemper'] = 'Temperature'
     nice_varname_dict['vosaline'] = 'Salinity'
+    nice_varname_dict['pea'] = 'Potential Energy Anomaly'
+
+    nice_varname_dict['sossheig'] = 'Sea surface height'
+    nice_varname_dict['temper_bot'] = 'Bottom temperature'
+    nice_varname_dict['tempis_bot'] = 'Bottom (in situ) temperature'
+    nice_varname_dict['votempis'] = 'Temperature (in situ)'
+    nice_varname_dict['mld25h_1'] = 'Mixed layer depth (version 1)'
+    nice_varname_dict['mld25h_2'] = 'Mixed layer depth (version 2)'
 
     # extract time information from xarray.
     # needs to work for gregorian and 360 day calendars.
@@ -768,6 +714,33 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
         var_4d_mat_2nd, var_3d_mat_2nd, var_mat_2nd, nvar4d_2nd, nvar3d_2nd, nvar_2nd, var_dim_2nd = load_nc_var_name_list(tmp_data_2nd, x_dim_2nd, y_dim_2nd, z_dim_2nd,t_dim_2nd)# find the variable names in the nc file
         var_grid_2nd = {}
         for ss in var_mat_2nd: var_grid_2nd[ss] = 'T'
+
+        
+     
+    
+    add_PEA = False
+    if ('votemper' in var_mat) & ('vosaline' in var_mat):
+        add_PEA = True
+
+    #If second data set on a different grid, don't add derived variables
+    if config_2nd is not None:
+        add_PEA = False
+
+
+
+    if add_PEA:
+        ss = 'pea'
+        var_mat = np.append(var_mat,ss)
+        if load_2nd_files:
+            var_mat_2nd = np.append(var_mat_2nd,ss)
+        var_dim[ss] = 3
+        var_grid[ss] = 'T'
+        deriv_var.append(ss)
+
+
+
+
+
 
 
 
@@ -1052,6 +1025,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
     #func_but_text_han['Depth level'].set_color('r')
     func_but_text_han['Clim: normal'].set_color('b')
     but_text_han[var].set_color('r')
+    #pdb.set_trace()
 
     if verbose_debugging: print('Added functions boxes', datetime.now())
 
@@ -1403,7 +1377,11 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
         ew_slice_dat = np.sqrt(ew_slice_dat_U**2 + ew_slice_dat_V**2)
         ew_slice_x =  nav_lon[jj,:]
         ew_slice_y =  rootgrp_gdept.variables['gdept_0'][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][0,:,jj,:]
-        return ew_slice_dat,ew_slice_x, ew_slice_y
+
+        ew_slice_dat_1 = ew_slice_dat
+        ew_slice_dat_2 = ew_slice_dat
+
+        return ew_slice_dat_1,ew_slice_dat_2,ew_slice_x, ew_slice_y
 
     def reload_ns_data_derived_var_baroc_mag():              
         tmp_var_U, tmp_var_V = 'vozocrtx','vomecrty'
@@ -1421,7 +1399,10 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
         ns_slice_dat = np.sqrt(ns_slice_dat_U**2 + ns_slice_dat_V**2)
         ns_slice_x =  nav_lat[:,ii]
         ns_slice_y =  rootgrp_gdept.variables['gdept_0'][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][0,:,:,ii]
-        return ns_slice_dat,ns_slice_x, ns_slice_y
+
+        ns_slice_dat_1 = ns_slice_dat
+        ns_slice_dat_2 = ns_slice_dat
+        return ns_slice_dat_1,ns_slice_dat_2,ns_slice_x, ns_slice_y
 
     def reload_hov_data_derived_var_baroc_mag():                
         tmp_var_U, tmp_var_V = 'vozocrtx','vomecrty'
@@ -1439,7 +1420,10 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
         hov_dat = np.sqrt(hov_dat_U**2 + hov_dat_V**2)
         hov_x = time_datetime
         hov_y = rootgrp_gdept.variables['gdept_0'][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][0,:,jj,ii]
-        return hov_dat,hov_x,hov_y
+
+        hov_dat_1 = hov_dat
+        hov_dat_2 = hov_dat
+        return hov_dat_1,hov_dat_2,hov_x,hov_y
 
     def reload_map_data_derived_var():
         if var == 'baroc_mag':
@@ -1452,25 +1436,17 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
             else:
                 print('z_meth not supported:',z_meth)
                 pdb.set_trace()
+
+            map_dat_1 = map_dat
+            map_dat_2 = map_dat
         elif var == 'pea': 
-            map_dat = reload_map_data_derived_var_pea()
-            '''
-            if z_meth == 'z_slice':
-                map_dat = reload_map_data_derived_var_pea()
-            elif z_meth in ['ss','nb','df']:
-                map_dat = reload_map_data_derived_var_pea_zmeth_ss_nb_df()
-            elif z_meth == 'z_index':
-                map_dat = reload_map_data_derived_var_pea_z_index()
-            else:
-                print('z_meth not supported:',z_meth)
-                pdb.set_trace()
-            '''
+            map_dat_1, map_dat_2 = reload_map_data_derived_var_pea()
         else:
             print('var not in deriv_var',var)
         map_x = nav_lon
         map_y = nav_lat
         
-        return map_dat,map_x,map_y
+        return map_dat_1, map_dat_2,map_x,map_y
 
 
     def reload_map_data_derived_var_baroc_mag_zmeth_z_slice():
@@ -1581,23 +1557,23 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
         gdept_mat = rootgrp_gdept.variables['gdept_0'][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
         dz_mat = rootgrp_gdept.variables['e3t_0'][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
 
-        if secdataset_proc == 'Dataset 1':
-            tmp_T_data = np.ma.masked_invalid(curr_tmp_data.variables['votemper'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-            tmp_S_data = np.ma.masked_invalid(curr_tmp_data.variables['vosaline'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-            map_dat = pea_TS(tmp_T_data[np.newaxis],tmp_S_data[np.newaxis],gdept_mat,dz_mat,tmask=tmask[:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][np.newaxis]==False,calc_TS_comp = False )[0] # tmppea,tmppeat,tmppeas, calc_TS_comp = True
-        elif secdataset_proc == 'Dataset 2':
-            tmp_T_data = np.ma.masked_invalid(curr_tmp_data_2nd.variables['votemper'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-            tmp_S_data = np.ma.masked_invalid(curr_tmp_data_2nd.variables['vosaline'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-            map_dat = pea_TS(tmp_T_data[np.newaxis],tmp_S_data[np.newaxis],gdept_mat,dz_mat,tmask=tmask[:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][np.newaxis]==False,calc_TS_comp = False )[0] # tmppea,tmppeat,tmppeas, calc_TS_comp = True
-        elif secdataset_proc =='Dat1-Dat2':
-            tmp_T_data = np.ma.masked_invalid(curr_tmp_data.variables['votemper'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-            tmp_S_data = np.ma.masked_invalid(curr_tmp_data.variables['vosaline'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-            map_dat = pea_TS(tmp_T_data[np.newaxis],tmp_S_data[np.newaxis],gdept_mat,dz_mat,tmask=tmask[:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][np.newaxis]==False,calc_TS_comp = False )[0] # tmppea,tmppeat,tmppeas, calc_TS_comp = True
-            tmp_T_data_2nd = np.ma.masked_invalid(curr_tmp_data_2nd.variables['votemper'][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-            tmp_S_data_2nd = np.ma.masked_invalid(curr_tmp_data_2nd.variables['vosaline'][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-            map_dat -= pea_TS(tmp_T_data_2nd[np.newaxis],tmp_S_data_2nd[np.newaxis],gdept_mat,dz_mat,tmask=tmask[:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][np.newaxis]==False,calc_TS_comp = False )[0] # tmppea,tmppeat,tmppeas, calc_TS_comp = True
-        return map_dat
+        tmp_T_data_1 = np.ma.masked_invalid(curr_tmp_data.variables['votemper'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+        tmp_S_data_1 = np.ma.masked_invalid(curr_tmp_data.variables['vosaline'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+        map_dat_1 = pea_TS(tmp_T_data_1[np.newaxis],tmp_S_data_1[np.newaxis],gdept_mat,dz_mat,tmask=tmask[:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][np.newaxis]==False,calc_TS_comp = False )[0] # tmppea,tmppeat,tmppeas, calc_TS_comp = True
+        map_dat_2 = map_dat_1
+        if load_2nd_files:
+        
+            
+            tmp_T_data_2 = regrid_2nd(np.ma.masked_invalid(curr_tmp_data_2nd.variables['votemper'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load()))
+            tmp_S_data_2 = regrid_2nd(np.ma.masked_invalid(curr_tmp_data_2nd.variables['vosaline'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load()))
+#
+
+            map_dat_2 = pea_TS(tmp_T_data_2[np.newaxis],tmp_S_data_2[np.newaxis],gdept_mat,dz_mat,tmask=tmask[:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][np.newaxis]==False,calc_TS_comp = False )[0] # tmppea,tmppeat,tmppeas, calc_TS_comp = True
+
+        return map_dat_1, map_dat_2 
   
+
+
     def reload_map_data():
         #pdb.set_trace()
         if var_dim[var] == 3:
@@ -1893,8 +1869,8 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
     press_ginput = [(0.5,0.5,)]
 
     #if initial variable is 2d, need to define cross sections variables
-    ns_slice_dat_1, ew_slice_dat_1, hov_dat_1 = 0, 0, 0
-    ns_slice_dat_2, ew_slice_dat_2, hov_dat_2 = 0, 0, 0
+    #ns_slice_dat_1, ew_slice_dat_1, hov_dat_1 = 0, 0, 0
+    #ns_slice_dat_2, ew_slice_dat_2, hov_dat_2 = 0, 0, 0
     hov_y = np.array(0)
 
     while ii is not None:
@@ -2024,7 +2000,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
 
             if reload_map:
                 if var in deriv_var:
-                    map_dat,map_x,map_y = reload_map_data_derived_var()
+                    map_dat_1,map_dat_2,map_x,map_y = reload_map_data_derived_var()
                 else:
                     map_dat_1,map_dat_2,map_x,map_y = reload_map_data()
                 reload_map = False
@@ -2145,40 +2121,46 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
             #pdb.set_trace()
         
             map_dat = map_dat_1
-            ns_slice_dat = ns_slice_dat_1
-            ew_slice_dat = ew_slice_dat_1
-            hov_dat = hov_dat_1
+            if var_dim[var] == 4:
+                ns_slice_dat = ns_slice_dat_1
+                ew_slice_dat = ew_slice_dat_1
+                hov_dat = hov_dat_1
             ts_dat = ts_dat_1
 
             if load_2nd_files:
                 if secdataset_proc == 'Dataset 1':
                     map_dat = map_dat_1
-                    ns_slice_dat = ns_slice_dat_1
-                    ew_slice_dat = ew_slice_dat_1
-                    hov_dat = hov_dat_1
+                    if var_dim[var] == 4:
+                        ns_slice_dat = ns_slice_dat_1
+                        ew_slice_dat = ew_slice_dat_1
+                        hov_dat = hov_dat_1
                     ts_dat = ts_dat_1
                 elif secdataset_proc == 'Dataset 2':
                     map_dat = map_dat_2
-                    ns_slice_dat = ns_slice_dat_2
-                    ew_slice_dat = ew_slice_dat_2
-                    hov_dat = hov_dat_2
+                    if var_dim[var] == 4:
+                        ns_slice_dat = ns_slice_dat_2
+                        ew_slice_dat = ew_slice_dat_2
+                        hov_dat = hov_dat_2
                     ts_dat = ts_dat_2
                 elif secdataset_proc == 'Dat1-Dat2':
                     map_dat = map_dat_1 - map_dat_2
-                    ns_slice_dat = ns_slice_dat_1 - ns_slice_dat_2
-                    ew_slice_dat = ew_slice_dat_1 - ew_slice_dat_2
-                    hov_dat = hov_dat_1 - hov_dat_2
+                    if var_dim[var] == 4:
+                        ns_slice_dat = ns_slice_dat_1 - ns_slice_dat_2
+                        ew_slice_dat = ew_slice_dat_1 - ew_slice_dat_2
+                        hov_dat = hov_dat_1 - hov_dat_2
                     ts_dat = ts_dat_1 - ts_dat_2
                 elif secdataset_proc == 'Dat2-Dat1':
                     map_dat = map_dat_2 - map_dat_1
-                    ns_slice_dat = ns_slice_dat_2 - ns_slice_dat_1
-                    ew_slice_dat = ew_slice_dat_2 - ew_slice_dat_1
-                    hov_dat = hov_dat_2 - hov_dat_1
+                    if var_dim[var] == 4:
+                        ns_slice_dat = ns_slice_dat_2 - ns_slice_dat_1
+                        ew_slice_dat = ew_slice_dat_2 - ew_slice_dat_1
+                        hov_dat = hov_dat_2 - hov_dat_1
                     ts_dat = ts_dat_2 - ts_dat_1
             
             if verbose_debugging: print("Do pcolormesh for ii = %i,jj = %i,ti = %i,zz = %i, var = '%s'"%(ii,jj, ti, zz,var), datetime.now())
             pax.append(ax[0].pcolormesh(map_x,map_y,map_dat,cmap = curr_cmap,norm = climnorm))
             if var_dim[var] == 4:
+                #pdb.set_trace()
                 pax.append(ax[1].pcolormesh(ew_slice_x,ew_slice_y,ew_slice_dat,cmap = curr_cmap,norm = climnorm))
                 pax.append(ax[2].pcolormesh(ns_slice_x,ns_slice_y,ns_slice_dat,cmap = curr_cmap,norm = climnorm))
                 pax.append(ax[3].pcolormesh(hov_x,hov_y,hov_dat,cmap = curr_cmap,norm = climnorm))
@@ -3132,6 +3114,9 @@ def main():
         if args.verbose_debugging is None: args.verbose_debugging=False
         
         if args.clim_pair is None: args.clim_pair=True
+
+
+        if args.date_fmt is None: args.date_fmt='%Y%m%d'
 
         #if args.fig_fname_lab is None: args.fig_lab=''
         #if args.fig_fname_lab_2nd is None: args.fig_lab=''
