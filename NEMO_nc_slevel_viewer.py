@@ -680,14 +680,22 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
 
 
 
-    if (config.upper() in ['AMM15','CO9P2']) | (config_2nd.upper() in ['AMM15','CO9P2']): 
+    if (config.upper() in ['AMM15','CO9P2']): 
         lon_rotamm15,lat_rotamm15 = reduce_rotamm15_grid(nav_lon_amm15, nav_lat_amm15)
 
         dlon_rotamm15 = (np.diff(lon_rotamm15)).mean()
         dlat_rotamm15 = (np.diff(lat_rotamm15)).mean()
         nlon_rotamm15 = lon_rotamm15.size
         nlat_rotamm15 = lat_rotamm15.size
-    
+
+    if load_2nd_files:
+        if (config_2nd.upper() in ['AMM15','CO9P2']):
+            lon_rotamm15,lat_rotamm15 = reduce_rotamm15_grid(nav_lon_amm15, nav_lat_amm15)
+
+            dlon_rotamm15 = (np.diff(lon_rotamm15)).mean()
+            dlat_rotamm15 = (np.diff(lat_rotamm15)).mean()
+            nlon_rotamm15 = lon_rotamm15.size
+            nlat_rotamm15 = lat_rotamm15.size
 
 
 
