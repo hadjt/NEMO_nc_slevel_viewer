@@ -1,10 +1,6 @@
 
 import pdb,sys,os
 
-#sys.path.append('/net/home/h01/hadjt/workspace/python3')
-#sys.path.append('/net/home/h01/hadjt/workspace/python3/UKCP')
-
-
 from datetime import datetime, timedelta
 
 from netCDF4 import Dataset,num2date
@@ -619,12 +615,7 @@ def nearbed_index(filename, variable_4d,nemo_nb_i_filename = '/home/h01/hadjt/Wo
 
     #pdb.set_trace()
 
-    #nemo_nb_i_filename = '/home/cr/ocean/hadjt/data/reffiles/nemo_nb_i.nc'
-    #nemo_nb_i_filename = '/home/h01/hadjt/Work/Programming/Scripts/reffiles/nemo_nb_i.nc'
     rootgrp_out = Dataset(nemo_nb_i_filename, 'w', format='NETCDF3_CLASSIC')
-    #rootgrp_out.createDimension('x',297)
-    #rootgrp_out.createDimension('y',375)
-    #rootgrp_out.createDimension('z',51)
     rootgrp_out.createDimension('x',ni)
     rootgrp_out.createDimension('y',nj)
     rootgrp_out.createDimension('z',nz)
@@ -635,7 +626,6 @@ def nearbed_index(filename, variable_4d,nemo_nb_i_filename = '/home/h01/hadjt/Wo
     rootgrp_out.close()
 
 
-    #nemo_nb_i_filename = '/home/h01/hadjt/Work/Programming/Scripts/reffiles/nemo_nb_i.nc'
     rootgrp_in = Dataset(nemo_nb_i_filename, 'r', format='NETCDF3_CLASSIC')
     nb_i_in = (rootgrp_in.variables['nb_i'][:,:,:] == 1)
     tmask = (rootgrp_in.variables['t_mask'][:,:,:] == 1)
@@ -1020,7 +1010,30 @@ def lon_lat_to_str(lon,lat,lonlatstr_format = '%.2f'):
 
 
 
-
+def load_nn_amm15_amm7_wgt(tmpfname_out_amm15_amm7 = '/data/cr1/hadjt/data/reffiles/SSF/regrid_amm15_amm7_nn.nc'):
+    
+    amm15_amm7_dict = {}
+    rootgrp = Dataset(tmpfname_out_amm15_amm7, 'r')
+    amm15_amm7_dict['amm15_amm7_ii'] = rootgrp.variables['amm15_amm7_ii'][:]
+    amm15_amm7_dict['amm15_amm7_jj'] = rootgrp.variables['amm15_amm7_jj'][:]
+    amm15_amm7_dict['amm15_amm7_dd'] = rootgrp.variables['amm15_amm7_dd'][:]
+    amm15_amm7_dict['amm15_amm7_am'] = rootgrp.variables['amm15_amm7_am'][:]
+    rootgrp.close()
+    
+    return amm15_amm7_dict
+    
+def load_nn_amm7_amm15_wgt(tmpfname_out_amm7_amm15 = '/data/cr1/hadjt/data/reffiles/SSF/regrid_amm7_amm15_nn.nc'):
+    
+    amm7_amm15_dict = {}
+    rootgrp = Dataset(tmpfname_out_amm7_amm15, 'r')
+    amm7_amm15_dict['amm7_amm15_ii'] = rootgrp.variables['amm7_amm15_ii'][:]
+    amm7_amm15_dict['amm7_amm15_jj'] = rootgrp.variables['amm7_amm15_jj'][:]
+    amm7_amm15_dict['amm7_amm15_dd'] = rootgrp.variables['amm7_amm15_dd'][:]
+    amm7_amm15_dict['amm7_amm15_am'] = rootgrp.variables['amm7_amm15_am'][:]
+    rootgrp.close()
+    
+    return amm7_amm15_dict
+    
 
 
 if __name__ == "__main__":

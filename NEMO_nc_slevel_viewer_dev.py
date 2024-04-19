@@ -5,35 +5,12 @@ import numpy as np
 from netCDF4 import Dataset,date2num,num2date
 import pdb,os,sys
 import os.path
-#import shutil
-#from shutil import copyfile,move
 import xarray
 import glob
 import cftime
 import matplotlib
-#from matplotlib.transforms import Bbox
 
-#sys.path.append('/net/home/h01/hadjt/workspace/python3/')
-
-#from nemo_forcings_functions import lon_lat_to_str
-#sys.path.append('/home/d05/hadjt/scripts/python/')
-
-#from matplotlib.backend_bases import MouseButton
-
-from NEMO_nc_slevel_viewer_lib import set_perc_clim_pcolor, get_clim_pcolor, set_clim_pcolor,set_perc_clim_pcolor_in_region,interp1dmat_wgt, interp1dmat_create_weight, nearbed_index,extract_nb,mask_stats,load_nearbed_index,pea_TS,rotated_grid_from_amm15,rotated_grid_to_amm15, reduce_rotamm15_grid,lon_lat_to_str
-
-
-# my tools to change the colorbar limits, mainly to set to the 5th and 95th percentile of the plotted data.
-#from python3_plotting_function import set_perc_clim_pcolor, get_clim_pcolor, set_clim_pcolor,set_perc_clim_pcolor_in_region
-# efficient way to extract z levels from s level data (effectively linear interpolation)
-#from nemo_forcings_functions import interp1dmat_wgt, interp1dmat_create_weight
-# indices to quickly extract near bed values.
-#from nemo_forcings_functions import  nearbed_index,extract_nb,mask_stats,load_nearbed_index
-# Allow the amm15 grid to be unrotated, to allow efficient coversion between lon, lats to ii,jj's. 
-#
-#from rotated_pole_grid import rotated_grid_from_amm15,rotated_grid_to_amm15, reduce_rotamm15_grid
-
-#scp -pr  NEMO_nc_slevel_viewer*.py ../rotated_pole_grid*  hadjt@xcel00:/home/d05/hadjt/scripts/python/.
+from NEMO_nc_slevel_viewer_lib import set_perc_clim_pcolor, get_clim_pcolor, set_clim_pcolor,set_perc_clim_pcolor_in_region,interp1dmat_wgt, interp1dmat_create_weight, nearbed_index,extract_nb,mask_stats,load_nearbed_index,pea_TS,rotated_grid_from_amm15,rotated_grid_to_amm15, reduce_rotamm15_grid,lon_lat_to_str,load_nn_amm15_amm7_wgt,load_nn_amm7_amm15_wgt
 
 letter_mat = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
 
@@ -46,18 +23,17 @@ computername = socket.gethostname()
 comp = 'linux'
 if computername in ['xcel00','xcfl00']: comp = 'hpc'
 
+'''
+
 if comp == 'linux': sys.path.append('/home/h01/hadjt/workspace/python3/')
 if computername in ['xcel00','xcfl00']: sys.path.append('/home/d05/hadjt/scripts/python/')
-
+'''
 
 import warnings
 warnings.filterwarnings("ignore")
 
 
 
-
-sys.path.append('/net/home/h01/hadjt/workspace/python3/SSF')
-from convert_amm7_amm15 import load_nn_amm15_amm7_wgt,load_nn_amm7_amm15_wgt
 
 
 def load_nc_dims(tmp_data):
@@ -108,13 +84,12 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
     thin = 1,thin_2nd = 1, thin_files = 1,thin_files_0 = 0,thin_files_1 = None, 
     zlim_max = None,xlim = None, ylim = None, tlim = None, clim = None,
     ii = None, jj = None, ti = None, zz = None, 
-    lon_in = None, lat_in = None, date_in_ind = None,
+    lon_in = None, lat_in = None, date_in_ind = None, date_fmt = '%Y%m%d',
     z_meth = None,secdataset_proc = 'Dat2-Dat1',
     clim_sym = None, use_cmocean = False,clim_pair = True,
     U_flist = None,V_flist = None,
-    fig_dir = '/home/h01/hadjt/workspace/python3/NEMO_nc_slevel_viewer/tmpfigs',
-    fig_lab = 'figs',fig_cutout = True, 
-    justplot = False, justplot_date_ind = None,
+    fig_dir = None,fig_lab = 'figs',fig_cutout = True, 
+    justplot = False, justplot_date_ind = None,justplot_z_meth_zz = None,justplot_secdataset_proc = None,
     fig_fname_lab = None, fig_fname_lab_2nd = None, 
     verbose_debugging = False):
 
@@ -178,6 +153,11 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
     if ti is None: ti = 0
     if zz is None: zz = 0
     if zz == 0: zi = 0
+    #pdb.set_trace()
+    if fig_dir is None:
+
+        fig_dir = os.getcwd() + '/tmpfigs'
+        print('fig_dir: ',fig_dir )
 
     #need to load lon_mat and lat_mat to implement lon_in and lat_in
     #need to load date_mat to implement date_in_ind
@@ -202,7 +182,8 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
 
     if load_2nd_files == False:
         clim_pair = False
-
+    
+    if justplot is None: justplot = False
 
 
 
@@ -299,7 +280,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
     elif config.upper() == 'GULF18':
         # depth grid file
         if comp == 'hpc': 
-            print('GULF18 files not copeid onto Cray')
+            print('GULF18 files not copied onto Cray')
             #amm7_mesh_file = '/data/d02/frpk/amm15ps45mesh/amm7/amm7.mesh_mask.nc'
             #nemo_nb_i_filename = '/data/d05/hadjt/reffiles/NEMO_nc_viewer/nemo_nb_i_CMEMS_BGC_Reanalysis_14112017.nc'
         else:
@@ -625,7 +606,8 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
 
     if date_in_ind is not None:
         #date_in_ind_datetime = datetime.strptime(date_in_ind,'%Y%m%d_%H%M')
-        date_in_ind_datetime = datetime.strptime(date_in_ind,'%Y%m%d')
+        #date_in_ind_datetime = datetime.strptime(date_in_ind,'%Y%m%d')
+        date_in_ind_datetime = datetime.strptime(date_in_ind,date_fmt)
         date_in_ind_datetime_timedelta = np.array([(ss - date_in_ind_datetime).total_seconds() for ss in time_datetime])
         #pdb.set_trace()
         ti = np.abs(date_in_ind_datetime_timedelta).argmin()
@@ -642,22 +624,41 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
         just_plt_cnt = 0
 
         if justplot_date_ind is None:
-             justplot_date_ind = time_datetime[ti].strftime('%Y%m%d')
+             #justplot_date_ind = time_datetime[ti].strftime('%Y%m%d')
+             justplot_date_ind = time_datetime[ti].strftime(date_fmt)
+
+        if justplot_z_meth_zz is None:
+             justplot_z_meth_zz = 'ss:0,nb:0,df:0'
+
+        if justplot_secdataset_proc is None:
+             justplot_secdataset_proc = 'Dataset_1,Dataset_2,Dat2-Dat1'
+
+        justplot_secdataset_proc = justplot_secdataset_proc.replace('_',' ')
 
         
-        justplot_date_ind_lst = justplot_date_ind.split(' ')
+        justplot_date_ind_lst = justplot_date_ind.split(',')
+        justplot_z_meth_zz_lst = justplot_z_meth_zz.split(',')
+        justplot_secdataset_proc_lst = justplot_secdataset_proc.split(',')
                 
-
         #just_plt_vals = [(secdataset_proc,justplot_date_ind_str, False, False, False, False, False) for secdataset_proc in secdataset_proc_list for justplot_date_ind_str in justplot_date_ind_lst] 
+
+        
+        #justplot_z_meth_zz = ['ss,0','nb,0','df,0','zslice,10']
+        #justplot_secdataset_proc = 'Dataset 1','Dataset 2','Dat2-Dat1'
+
         
         just_plt_vals = []
         for justplot_date_ind_str in justplot_date_ind_lst:
-            for spi, secdataset_proc in enumerate(secdataset_proc_list):
-                if spi == 0:
-                    just_plt_vals.append((secdataset_proc,justplot_date_ind_str, True, True, True, False, False))
-                else:
-                    just_plt_vals.append((secdataset_proc,justplot_date_ind_str, False, False, False, False, False))
-                  
+            #for spi, secdataset_proc in enumerate(secdataset_proc_list):
+            for zmi, justplot_z_meth_zz in enumerate(justplot_z_meth_zz_lst):
+                justplot_z_meth,justplot_zz_str = justplot_z_meth_zz.split(':')
+                justplot_zz = int(justplot_zz_str)
+                for spi, secdataset_proc in enumerate(justplot_secdataset_proc_lst):
+                    if (spi == 0):
+                        just_plt_vals.append((secdataset_proc,justplot_date_ind_str, justplot_z_meth,justplot_zz, True, True, True, False, False))
+                    else:
+                        just_plt_vals.append((secdataset_proc,justplot_date_ind_str, justplot_z_meth,justplot_zz, False, False, False, False, False))
+                      
 
     #pdb.set_trace()
     # repeat if comparing two time series. 
@@ -1670,8 +1671,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
         if secdataset_proc == 'Dataset 2':secdataset_proc_figname = '_Datset_2'
         if secdataset_proc == 'Dat1-Dat2':secdataset_proc_figname = '_Diff_1-2'
         if secdataset_proc == 'Dat2-Dat1':secdataset_proc_figname = '_Diff_2-1'
-
-        fig_out_name = '%s/output_%s_%s_th%02i_%04i_%04i_%03i_%03i_%s%s'%(fig_dir,fig_lab,var,thin,ii,jj,ti,zz,z_meth,secdataset_proc_figname)
+        fig_out_name = '%s/output_%s_%s_th%02i_fth%02i_%04i_%04i_%03i_%03i_%s%s'%(fig_dir,fig_lab,var,thin,thin_files,ii,jj,ti,zz,z_meth,secdataset_proc_figname)
         if fig_fname_lab is not None: fig_out_name = fig_out_name + '_d1_%s'%fig_fname_lab
         if fig_fname_lab_2nd is not None: fig_out_name = fig_out_name + '_d2_%s'%fig_fname_lab_2nd
         fig_out_name = fig_out_name
@@ -1735,7 +1735,9 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
             arg_output_text = arg_output_text + ' --fig_fname_lab %s'%fig_fname_lab
             arg_output_text = arg_output_text + ' --lon %f'%nav_lon[jj,ii]
             arg_output_text = arg_output_text + ' --lat %f'%nav_lat[jj,ii]
-            arg_output_text = arg_output_text + ' --date_ind %s'%time_datetime[ti].strftime('%Y%m%d')
+            #arg_output_text = arg_output_text + ' --date_ind %s'%time_datetime[ti].strftime('%Y%m%d')
+            arg_output_text = arg_output_text + ' --date_ind %s'%time_datetime[ti].strftime(date_fmt)
+            arg_output_text = arg_output_text + ' --date_fmt %s'%date_fmt
             arg_output_text = arg_output_text + ' --var %s'%var
             arg_output_text = arg_output_text + ' --z_meth %s'%z_meth
             arg_output_text = arg_output_text + ' --zz %s'%zz
@@ -1750,7 +1752,9 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
                 arg_output_text = arg_output_text + ' --fname_lst_2nd  "$flist2"'
                 arg_output_text = arg_output_text + ' --clim_pair %s'%clim_pair
 
-            arg_output_text = arg_output_text + " --justplot_date_ind '%s'"%time_datetime[ti].strftime('%Y%m%d')
+            arg_output_text = arg_output_text + " --justplot_date_ind '%s'"%time_datetime[ti].strftime(date_fmt)
+            arg_output_text = arg_output_text + " --justplot_secdataset_proc '%s'"%justplot_secdataset_proc
+            arg_output_text = arg_output_text + " --justplot_z_meth_zz '%s'"%justplot_z_meth_zz
             arg_output_text = arg_output_text + ' --justplot True'       
             arg_output_text = arg_output_text + '\n\n\n'       
             fid = open(fig_out_name + '.txt','w')
@@ -1775,6 +1779,18 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
     cur_ylim = ylim
     # only load data when needed
     reload_map, reload_ew, reload_ns, reload_hov, reload_ts = True,True,True,True,True
+
+
+
+
+    if justplot: 
+        secdataset_proc = just_plt_vals[just_plt_cnt][0]
+        tmp_date_in_ind = just_plt_vals[just_plt_cnt][1]
+        z_meth = just_plt_vals[just_plt_cnt][2]
+        zz = just_plt_vals[just_plt_cnt][3]
+
+
+
 
 
     if verbose_debugging: print('Create interpolation weights ', datetime.now())
@@ -2042,6 +2058,9 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
             elif secdataset_proc in ['Dataset 1','Dataset 2']:
                 curr_cmap = base_cmap
                 clim_sym = False
+            else:
+                print(secdataset_proc)
+                pdb.set_trace()
 
             #plot data
             pax = []
@@ -2108,10 +2127,12 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
             #pdb.set_trace()
             nice_lev = ''
                 
-            if z_meth == 'z_slice':nice_lev = '%i m'%zz
+            if z_meth in ['z_slice','z_index']:nice_lev = '%i m'%zz
             elif z_meth == 'ss':nice_lev = 'Surface'
             elif z_meth == 'nb':nice_lev = 'Near-Bed'
             elif z_meth == 'df':nice_lev = 'Surface-Bed'
+
+
 
             ax[0].set_title('%s (%s); %s %s'%(nice_varname_dict[var],nice_lev,lon_lat_to_str(nav_lon[jj,ii],nav_lat[jj,ii])[0],time_datetime[ti]))
             
@@ -2255,6 +2276,9 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
                     ew_clim = np.ma.array([tmp_ew_perc.min(),tmp_ew_perc.max()])
                     ns_clim = np.ma.array([tmp_ns_perc.min(),tmp_ns_perc.max()])
                     hov_clim = np.ma.array([tmp_hov_perc.min(),tmp_hov_perc.max()])
+
+
+
                     if clim_sym: map_clim = np.array([-1,1])*np.abs(map_clim).max()
                     if clim_sym: ew_clim = np.array([-1,1])*np.abs(ew_clim).max()
                     if clim_sym: ns_clim = np.array([-1,1])*np.abs(ns_clim).max()
@@ -2353,7 +2377,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
                     but_name = 'Click'
                     func_but_text_han['Click'].set_color('gold')
                     func_but_text_han['Loop'].set_color('k')
-
+            #pdb.set_trace()
             if mode == 'Click':
                 #if verbose_debugging: print('mode Click, check justplot:',justplot, datetime.now())
                 if justplot == False:
@@ -2395,15 +2419,18 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
                 clii,cljj  = 0,0
                 secdataset_proc = just_plt_vals[just_plt_cnt][0]
                 tmp_date_in_ind = just_plt_vals[just_plt_cnt][1]
-                reload_map = just_plt_vals[just_plt_cnt][2]
-                reload_ew = just_plt_vals[just_plt_cnt][3]
-                reload_ns = just_plt_vals[just_plt_cnt][4]
-                reload_hov = just_plt_vals[just_plt_cnt][5]
-                reload_TS = just_plt_vals[just_plt_cnt][6]
+                z_meth = just_plt_vals[just_plt_cnt][2]
+                zz = just_plt_vals[just_plt_cnt][3]
+                reload_map = just_plt_vals[just_plt_cnt][4]
+                reload_ew = just_plt_vals[just_plt_cnt][5]
+                reload_ns = just_plt_vals[just_plt_cnt][6]
+                reload_hov = just_plt_vals[just_plt_cnt][7]
+                reload_TS = just_plt_vals[just_plt_cnt][8]
 
 
                 #date_in_ind_datetime = datetime.strptime(date_in_ind,'%Y%m%d_%H%M')
-                jp_date_in_ind_datetime = datetime.strptime(tmp_date_in_ind,'%Y%m%d')
+                #jp_date_in_ind_datetime = datetime.strptime(tmp_date_in_ind,'%Y%m%d')
+                jp_date_in_ind_datetime = datetime.strptime(tmp_date_in_ind,date_fmt)
                 jp_date_in_ind_datetime_timedelta = np.array([(ss - jp_date_in_ind_datetime).total_seconds() for ss in time_datetime])
                 #pdb.set_trace()
                 ti = np.abs(jp_date_in_ind_datetime_timedelta).argmin()
@@ -2993,10 +3020,11 @@ def main():
         parser.add_argument('--fname_lst_2nd', type=str, required=False, help='Input file list, enclose in "" more than simple wild card, Check this has the same number of files as the fname_lst')
         parser.add_argument('--U_flist', type=str, required=False, help='Input U file list for current magnitude. Assumes file contains vozocrtx, enclose in "" more than simple wild card')
         parser.add_argument('--V_flist', type=str, required=False, help='Input U file list for current magnitude. Assumes file contains vomecrty, enclose in "" more than simple wild card')
+
         parser.add_argument('--fig_dir', type=str, required=False, help = 'if absent, will default to /home/h01/hadjt/workspace/python3/NEMO_nc_slevel_viewer/tmpfigs')
         parser.add_argument('--fig_lab', type=str, required=False, help = 'if absent, will default to figs')
         parser.add_argument('--fig_cutout', type=bool, required=False)
-        parser.add_argument('--justplot', type=bool, required=False)
+
         parser.add_argument('--z_meth', type=str, help="z_slice, ss, nb, df, or z_index for z level models")# Parse the argument
         parser.add_argument('--var', type=str)# Parse the argument
 
@@ -3008,7 +3036,11 @@ def main():
         parser.add_argument('--lon', type=float, required=False)
         parser.add_argument('--lat', type=float, required=False)
         parser.add_argument('--date_ind', type=str, required=False)
-        parser.add_argument('--justplot_date_ind', type=str, required=False)
+
+        parser.add_argument('--justplot', type=bool, required=False)
+        parser.add_argument('--justplot_date_ind', type=str, required=False, help = 'comma separated values')
+        parser.add_argument('--justplot_secdataset_proc', type=str, required=False, help = 'comma separated values')
+        parser.add_argument('--justplot_z_meth_zz', type=str, required=False, help = 'comma separated values, replace space with underscore - e.g. "Dataset_1"')
 
         parser.add_argument('--xlim', type=float, required=False, nargs = 2)
         parser.add_argument('--ylim', type=float, required=False, nargs = 2)
@@ -3023,6 +3055,9 @@ def main():
         parser.add_argument('--thin_files_1', type=int, required=False)
 
         parser.add_argument('--secdataset_proc', type=str, required=False)
+        parser.add_argument('--date_fmt', type=str, required=False)
+
+
 
 
         parser.add_argument('--verbose_debugging', type=bool, required=False)
@@ -3039,7 +3074,7 @@ def main():
         if args.fig_dir is None: args.fig_dir='/home/h01/hadjt/workspace/python3/NEMO_nc_slevel_viewer/tmpfigs'
         if args.fig_lab is None: args.fig_lab='figs'
         if args.fig_cutout is None: args.fig_cutout=True
-        if args.justplot is None: args.justplot=False
+        #if args.justplot is None: args.justplot=False
         if args.verbose_debugging is None: args.verbose_debugging=False
         
         if args.clim_pair is None: args.clim_pair=True
@@ -3047,7 +3082,7 @@ def main():
         #if args.fig_fname_lab is None: args.fig_lab=''
         #if args.fig_fname_lab_2nd is None: args.fig_lab=''
 
-        #pdb.set_trace()
+        print('justplot',args.justplot)
 
         if args.thin is None: args.thin=1
         if args.thin_2nd is None: args.thin_2nd=1
@@ -3076,7 +3111,10 @@ def main():
         nemo_slice_zlev(fname_lst,zlim_max = args.zlim_max, config = args.config, config_2nd = args.config_2nd,
             fname_lst_2nd = fname_lst_2nd, U_flist = U_flist, V_flist = V_flist,
             clim_sym = args.clim_sym, clim = args.clim, clim_pair = args.clim_pair,
-            use_cmocean = args.use_cmocean, justplot = args.justplot,justplot_date_ind = args.justplot_date_ind,
+            use_cmocean = args.use_cmocean, date_fmt = args.date_fmt,
+            justplot = args.justplot,justplot_date_ind = args.justplot_date_ind,
+            justplot_secdataset_proc = args.justplot_secdataset_proc,
+            justplot_z_meth_zz = args.justplot_z_meth_zz,
             fig_fname_lab = args.fig_fname_lab, fig_fname_lab_2nd = args.fig_fname_lab_2nd, 
             thin = args.thin, thin_2nd = args.thin_2nd,
             thin_files = args.thin_files, thin_files_0 = args.thin_files_0, thin_files_1 = args.thin_files_1, 
@@ -3085,7 +3123,7 @@ def main():
             var = args.var, z_meth = args.z_meth,
             xlim = args.xlim,ylim = args.ylim,secdataset_proc = args.secdataset_proc,
             fig_dir = args.fig_dir, fig_lab = args.fig_lab,fig_cutout = args.fig_cutout,
-            verbose_debugging = args.verbose_debugging,)
+            verbose_debugging = args.verbose_debugging)
 
 
         exit()
