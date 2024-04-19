@@ -10,7 +10,7 @@ import glob
 import cftime
 import matplotlib
 
-from NEMO_nc_slevel_viewer_lib import set_perc_clim_pcolor, get_clim_pcolor, set_clim_pcolor,set_perc_clim_pcolor_in_region,interp1dmat_wgt, interp1dmat_create_weight, nearbed_index,extract_nb,mask_stats,load_nearbed_index,pea_TS,rotated_grid_from_amm15,rotated_grid_to_amm15, reduce_rotamm15_grid,lon_lat_to_str,load_nn_amm15_amm7_wgt,load_nn_amm7_amm15_wgt
+from NEMO_nc_slevel_viewer_lib import set_perc_clim_pcolor, get_clim_pcolor, set_clim_pcolor,set_perc_clim_pcolor_in_region,interp1dmat_wgt, interp1dmat_create_weight, nearbed_index,extract_nb,load_nearbed_index,pea_TS,rotated_grid_from_amm15,rotated_grid_to_amm15, reduce_rotamm15_grid,lon_lat_to_str,load_nn_amm15_amm7_wgt,load_nn_amm7_amm15_wgt
 
 letter_mat = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
 
@@ -23,11 +23,32 @@ computername = socket.gethostname()
 comp = 'linux'
 if computername in ['xcel00','xcfl00']: comp = 'hpc'
 
-'''
 
-if comp == 'linux': sys.path.append('/home/h01/hadjt/workspace/python3/')
-if computername in ['xcel00','xcfl00']: sys.path.append('/home/d05/hadjt/scripts/python/')
-'''
+if comp == 'hpc': 
+    amm7_mesh_file = '/data/d02/frpk/amm15ps45mesh/amm7/amm7.mesh_mask.nc'
+    amm15_mesh_file = '/data/d02/frpk/amm15ps45mesh/amm15.mesh_mask.nc'
+    CO9P2_mesh_file = '/projects/ofrd/NEMO/ancil/amm15_CO9/mesh_mask.nc'
+    orca025ext_mesh_file = '/projects/ofrd/NEMO/ancil/orca025ext/mesh_mask_orca025ext.nc'
+
+    nemo_nb_i_filename_amm7 = '/data/d05/hadjt/reffiles/NEMO_nc_viewer/nemo_nb_i_CMEMS_BGC_Reanalysis_14112017.nc'
+    nemo_nb_i_filename_amm15 = '/data/d05/hadjt/reffiles/NEMO_nc_viewer/nemo_nb_i_OpSys_AMM15_NEMO36.nc'
+    nemo_nb_i_filename_CO9P2 = '/data/d05/hadjt/reffiles/NEMO_nc_viewer/nemo_nb_i_OpSys_AMM15_CO9p2.nc'
+else:
+
+    amm7_mesh_file = '/data/cr1/hadjt/data/reffiles/SSF/amm7.mesh_mask.nc'
+    amm15_mesh_file = '/data/cr1/hadjt/data/reffiles/SSF/amm15.mesh_mask.nc'
+    CO9P2_mesh_file = '/data/cr1/hadjt/data/reffiles/SSF/CO9p2/mesh_mask.nc'
+    GULF18_mesh_file = '/data/cr1/hadjt/data/reffiles/SSF/mesh_mask_gulf18_ps45.nc'
+    orca025ext_mesh_file = '/data/cr1/hadjt/data/reffiles/ORCA/ORCA025ext/mesh_mask_orca025ext.nc'
+
+    nemo_nb_i_filename_amm7 = '/home/h01/hadjt/Work/Programming/Scripts/reffiles/nemo_nb_i_CMEMS_BGC_Reanalysis_14112017.nc'
+    nemo_nb_i_filename_amm15 = '/data/cr1/hadjt/data/reffiles/SSF/nemo_nb_i_OpSys_AMM15_NEMO36.nc'
+    nemo_nb_i_filename_CO9P2 = '/data/cr1/hadjt/data/reffiles/SSF/CO9p2/nemo_nb_i_OpSys_AMM15_CO9p2.nc'
+    nemo_nb_i_filename_GULF18 = '/data/cr1/hadjt/data/reffiles/SSF/nemo_nb_i_OpSys_GULF18_NEMO3'
+
+    tmpfname_out_amm15_amm7 = '/data/cr1/hadjt/data/reffiles/SSF/regrid_amm15_amm7_nn.nc'
+    tmpfname_out_amm7_amm15 = '/data/cr1/hadjt/data/reffiles/SSF/regrid_amm7_amm15_nn.nc'
+
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -94,15 +115,13 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
     verbose_debugging = False):
 
     print('Initialise at ',datetime.now())
-    #pdb.set_trace()
-
-    #pdb.set_trace()
-    #global fname_lst, fname_lst_2nd,var
 
     fname_lst = fname_lst[thin_files_0:thin_files_1:thin_files]
     if fname_lst_2nd is not None: fname_lst_2nd = fname_lst_2nd[thin_files_0:thin_files_1:thin_files]
     if U_flist is not None: U_flist = U_flist[thin_files_0:thin_files_1:thin_files]
     if V_flist is not None: V_flist = V_flist[thin_files_0:thin_files_1:thin_files]
+
+    
 
 
     thin_x0=0
@@ -190,12 +209,6 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
     #config version specific info - mainly grid, and lat/lon info
     if config.upper() == 'AMM7':
         # depth grid file
-        if comp == 'hpc': 
-            amm7_mesh_file = '/data/d02/frpk/amm15ps45mesh/amm7/amm7.mesh_mask.nc'
-            nemo_nb_i_filename = '/data/d05/hadjt/reffiles/NEMO_nc_viewer/nemo_nb_i_CMEMS_BGC_Reanalysis_14112017.nc'
-        else:
-            amm7_mesh_file = '/data/cr1/hadjt/data/reffiles/SSF/amm7.mesh_mask.nc'
-            nemo_nb_i_filename = '/home/h01/hadjt/Work/Programming/Scripts/reffiles/nemo_nb_i_CMEMS_BGC_Reanalysis_14112017.nc'
         rootgrp_gdept = Dataset(amm7_mesh_file, 'r', format='NETCDF4')
         # depth grid variable name
         zss = 'gdept'
@@ -203,90 +216,33 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
         #grid lat lon
         lon = np.arange(-19.888889,12.99967+1/9.,1/9.)
         lat = np.arange(40.066669,65+1/15.,1/15.)
-        nbind,tmask = load_nearbed_index(nemo_nb_i_filename = nemo_nb_i_filename)
+        nbind,tmask = load_nearbed_index(nemo_nb_i_filename_amm7)
         z_meth_default = 'z_slice'
         #z_meth = z_meth_default
         
     elif config.upper() == 'AMM15':
-
-        # depth grid file
-        if comp == 'hpc':
-            amm15_mesh_file = '/data/d02/frpk/amm15ps45mesh/amm15.mesh_mask.nc'
-            nemo_nb_i_filename = '/data/d05/hadjt/reffiles/NEMO_nc_viewer/nemo_nb_i_OpSys_AMM15_NEMO36.nc'
-        else:
-            amm15_mesh_file = '/data/cr1/hadjt/data/reffiles/SSF/amm15.mesh_mask.nc'
-            nemo_nb_i_filename = '/data/cr1/hadjt/data/reffiles/SSF/nemo_nb_i_OpSys_AMM15_NEMO36.nc'
+        
         rootgrp_gdept = Dataset(amm15_mesh_file, 'r', format='NETCDF4')
         # depth grid variable name
         zss = 'gdept_0'
         
-        # grid lat lon rotation information
-        lon_rotamm15,lat_rotamm15 = reduce_rotamm15_grid()
-
-        dlon_rotamm15 = (np.diff(lon_rotamm15)).mean()
-        dlat_rotamm15 = (np.diff(lat_rotamm15)).mean()
-        nlon_rotamm15 = lon_rotamm15.size
-        nlat_rotamm15 = lat_rotamm15.size
-
-
-
-        #moo ls moose:/devfc/rosie_OS45_LBC_amm15_control/field.nc.file/prodm_op_am-dm.gridT_20220824_00.-36.nc
-        #nbind_tmp,tmask_tmp = nearbed_index('/scratch/hadjt/SSF/LBC/amm15/OS45_LBC_amm15_control/prodm_op_am-dm.gridT_20220824_00.-36.nc', 'votemper',nemo_nb_i_filename = '/data/cr1/hadjt/data/reffiles/SSF/nemo_nb_i_OpSys_AMM15_NEMO36.nc')
-
-        #nbind_tmp,tmask_tmp = nearbed_index('/scratch/orca12/g18trial/control/prodm_op_gf-dm.gridT_20211203_00.-36.nc', 'votemper',nemo_nb_i_filename = '/data/cr1/hadjt/data/reffiles/SSF/nemo_nb_i_OpSys_GULF18_NEMO36.nc')
-
-        nbind,tmask = load_nearbed_index(nemo_nb_i_filename = nemo_nb_i_filename)
+        nbind,tmask = load_nearbed_index(nemo_nb_i_filename_amm15)
         z_meth_default = 'z_slice'
-        #z_meth = z_meth_default
-
-
-
         
     elif config.upper() == 'CO9P2':
 
         # depth grid file
-        if comp == 'hpc':
-            amm15_mesh_file = '/projects/ofrd/NEMO/ancil/amm15_CO9/mesh_mask.nc'
-            nemo_nb_i_filename = '/data/d05/hadjt/reffiles/NEMO_nc_viewer/nemo_nb_i_OpSys_AMM15_CO9p2.nc'
-        else:
-            amm15_mesh_file = '/data/cr1/hadjt/data/reffiles/SSF/CO9p2/mesh_mask.nc'
-            nemo_nb_i_filename = '/data/cr1/hadjt/data/reffiles/SSF/CO9p2/nemo_nb_i_OpSys_AMM15_CO9p2.nc'
-        rootgrp_gdept = Dataset(amm15_mesh_file, 'r', format='NETCDF4')
+        rootgrp_gdept = Dataset(CO9P2_mesh_file, 'r', format='NETCDF4')
         # depth grid variable name
         zss = 'gdept_0'
         
-        # grid lat lon rotation information
-        lon_rotamm15,lat_rotamm15 = reduce_rotamm15_grid()
-
-        dlon_rotamm15 = (np.diff(lon_rotamm15)).mean()
-        dlat_rotamm15 = (np.diff(lat_rotamm15)).mean()
-        nlon_rotamm15 = lon_rotamm15.size
-        nlat_rotamm15 = lat_rotamm15.size
-
-
-
-        #mkdir /scratch/hadjt/SSF/CO9p2
-        #moo get :/devfc/rosie_amm15_to_CO9p2_addDA_FreeRun_TideFix_continuation_r277221_frwe/field.nc.file/2022122?T0000Z_25hourm.grid_T.nc /scratch/hadjt/SSF/CO9p2/.
-        #pdb.set_trace()
-        #nbind_tmp,tmask_tmp = nearbed_index('/scratch/hadjt/SSF/CO9p2/20221226T0000Z_25hourm.grid_T.nc', 'votemper',nemo_nb_i_filename = '/data/cr1/hadjt/data/reffiles/SSF/CO9p2/nemo_nb_i_OpSys_AMM15_CO9p2.nc')
-        
-        #scp -pr /data/cr1/hadjt/data/reffiles/SSF/CO9p2/nemo_nb_i_OpSys_AMM15_CO9p2.nc hadjt@xcel00:/data/d05/hadjt/reffiles/NEMO_nc_viewer/.
-
-        nbind,tmask = load_nearbed_index(nemo_nb_i_filename = nemo_nb_i_filename)
+        nbind,tmask = load_nearbed_index(nemo_nb_i_filename_CO9P2)
         z_meth_default = 'z_slice'
         #z_meth = z_meth_default
 
 
     elif config.upper() == 'GULF18':
         # depth grid file
-        if comp == 'hpc': 
-            print('GULF18 files not copied onto Cray')
-            #amm7_mesh_file = '/data/d02/frpk/amm15ps45mesh/amm7/amm7.mesh_mask.nc'
-            #nemo_nb_i_filename = '/data/d05/hadjt/reffiles/NEMO_nc_viewer/nemo_nb_i_CMEMS_BGC_Reanalysis_14112017.nc'
-        else:
-            GULF18_mesh_file = '/data/cr1/hadjt/data/reffiles/SSF/mesh_mask_gulf18_ps45.nc'
-            nemo_nb_i_filename = '/data/cr1/hadjt/data/reffiles/SSF/nemo_nb_i_OpSys_GULF18_NEMO36.nc'
-
    
         rootgrp_gdept = Dataset(GULF18_mesh_file, 'r', format='NETCDF4')
         # depth grid variable name
@@ -296,7 +252,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
         #pdb.set_trace()
         lon = rootgrp_gdept.variables['glamt'][:,0,:].ravel()
         lat = rootgrp_gdept.variables['gphit'][:,:,0].ravel()
-        nbind,tmask = load_nearbed_index(nemo_nb_i_filename = nemo_nb_i_filename)
+        nbind,tmask = load_nearbed_index(nemo_nb_i_filename_GULF18)
         z_meth_default = 'z_slice'
         #z_meth = z_meth_default
 
@@ -309,8 +265,6 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
         #need to be able to quickly find ii and jj from lon, lat... 
         #add a function to do this based on grid geometry, rather than a (slow) search for closest grid cell.
 
-        orca025ext_mesh_file = '/data/cr1/hadjt/data/reffiles/ORCA/ORCA025ext/mesh_mask_orca025ext.nc'
-        if comp == 'hpc': orca025ext_mesh_file = '/projects/ofrd/NEMO/ancil/orca025ext/mesh_mask_orca025ext.nc'
         rootgrp_gdept = Dataset(orca025ext_mesh_file, 'r', format='NETCDF4')
         zss = 'gdept_0'
 
@@ -366,49 +320,46 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
         thin_y1_2nd=None
         thin_2nd=1
 
-        if (config.upper() == 'AMM15') & (config_2nd.upper() == 'AMM7'):
+        if (config.upper() == 'AMM15') & (config_2nd.upper() == 'AMM7'):  
 
-    
-
-
-            amm7_amm15_dict = load_nn_amm7_amm15_wgt()
-
-
+            amm7_amm15_dict = load_nn_amm7_amm15_wgt(tmpfname_out_amm7_amm15)
 
             if comp == 'hpc': 
-                amm7_mesh_file_2nd = '/data/d02/frpk/amm15ps45mesh/amm7/amm7.mesh_mask.nc'
-                nemo_nb_i_filename_2nd = '/data/d05/hadjt/reffiles/NEMO_nc_viewer/nemo_nb_i_CMEMS_BGC_Reanalysis_14112017.nc'
+                amm7_mesh_file_2nd = amm7_mesh_file 
+                nemo_nb_i_filename_2nd = nemo_nb_i_filename_amm7 
             else:
-                amm7_mesh_file_2nd = '/data/cr1/hadjt/data/reffiles/SSF/amm7.mesh_mask.nc'
-                nemo_nb_i_filename_2nd = '/home/h01/hadjt/Work/Programming/Scripts/reffiles/nemo_nb_i_CMEMS_BGC_Reanalysis_14112017.nc'
+                amm7_mesh_file_2nd = amm7_mesh_file 
+                nemo_nb_i_filename_2nd = nemo_nb_i_filename_amm7 
             
             rootgrp_gdept_2nd = Dataset(amm7_mesh_file_2nd, 'r', format='NETCDF4')
 
-            nbind_2nd,tmask_2nd = load_nearbed_index(nemo_nb_i_filename = nemo_nb_i_filename_2nd)
+            nbind_2nd,tmask_2nd = load_nearbed_index(nemo_nb_i_filename_2nd)
             lon = np.arange(-19.888889,12.99967+1/9.,1/9.)
             lat = np.arange(40.066669,65+1/15.,1/15.)
 
         if (config.upper() == 'AMM7') & (config_2nd.upper() == 'AMM15'):
-            amm15_amm7_dict = load_nn_amm15_amm7_wgt()
+
+            amm15_amm7_dict = load_nn_amm15_amm7_wgt(tmpfname_out_amm15_amm7)
+
             if comp == 'hpc':
-                amm15_mesh_file_2nd = '/data/d02/frpk/amm15ps45mesh/amm15.mesh_mask.nc'
-                nemo_nb_i_filename_2nd = '/data/d05/hadjt/reffiles/NEMO_nc_viewer/nemo_nb_i_OpSys_AMM15_NEMO36.nc'
+                amm15_mesh_file_2nd = amm15_mesh_file 
+                nemo_nb_i_filename_2nd = nemo_nb_i_filename_amm15 
             else:
-                amm15_mesh_file_2nd = '/data/cr1/hadjt/data/reffiles/SSF/amm15.mesh_mask.nc'
-                nemo_nb_i_filename_2nd = '/data/cr1/hadjt/data/reffiles/SSF/nemo_nb_i_OpSys_AMM15_NEMO36.nc'
+                amm15_mesh_file_2nd = amm15_mesh_file 
+                nemo_nb_i_filename_2nd = nemo_nb_i_filename_amm15 
   
             rootgrp_gdept_2nd = Dataset(amm15_mesh_file_2nd, 'r', format='NETCDF4')
-            nbind_2nd,tmask_2nd = load_nearbed_index(nemo_nb_i_filename = nemo_nb_i_filename_2nd)
+            nbind_2nd,tmask_2nd = load_nearbed_index(nemo_nb_i_filename_2nd)
             
-
+            '''
             # will need to unrotate lon lats for ew/ns transects
-            lon_rotamm15,lat_rotamm15 = reduce_rotamm15_grid()
+            lon_rotamm15,lat_rotamm15 = reduce_rotamm15_grid(nav_lon, nav_lat)
 
             dlon_rotamm15 = (np.diff(lon_rotamm15)).mean()
             dlat_rotamm15 = (np.diff(lat_rotamm15)).mean()
             nlon_rotamm15 = lon_rotamm15.size
             nlat_rotamm15 = lat_rotamm15.size
-
+            '''
 
 
 
@@ -455,14 +406,23 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
 
         nav_lon = np.ma.masked_invalid(rootgrp_gdept.variables['glamt'][0])
         nav_lat = np.ma.masked_invalid(rootgrp_gdept.variables['gphit'][0])
+        nav_lat_amm15 = np.ma.array(nav_lon.copy())
+        nav_lon_amm15 = np.ma.array(nav_lat.copy())
+        
 
         nav_lat = np.ma.array(nav_lat[thin_y0:thin_y1:thin,thin_x0:thin_x1:thin])
         nav_lon = np.ma.array(nav_lon[thin_y0:thin_y1:thin,thin_x0:thin_x1:thin])
-        
+
     else:
         nav_lat = np.ma.masked_invalid(tmp_data.variables['nav_lat'][thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
         nav_lon = np.ma.masked_invalid(tmp_data.variables['nav_lon'][thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
 
+
+
+
+    if config.upper() in ['AMM15']: 
+        nav_lat_amm15 = np.ma.masked_invalid(tmp_data.variables['nav_lat'].load())
+        nav_lon_amm15 = np.ma.masked_invalid(tmp_data.variables['nav_lon'].load())
 
 
     
@@ -673,7 +633,9 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
         #pdb.set_trace()
         nav_lat_2nd = np.ma.masked_invalid(tmp_data_2nd.variables['nav_lat'][thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
         nav_lon_2nd = np.ma.masked_invalid(tmp_data_2nd.variables['nav_lon'][thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
-            
+        if config_2nd.upper() in ['AMM15','CO9P2']: 
+            nav_lat_amm15 = np.ma.masked_invalid(tmp_data_2nd.variables['nav_lat'].load())
+            nav_lon_amm15 = np.ma.masked_invalid(tmp_data_2nd.variables['nav_lon'].load())
         print ('xarray start reading 2nd \nctime',datetime.now())
         nctime_2nd = tmp_data_2nd.variables['time_counter']
         #nc_time_origin_2nd = nctime_2nd[0].attrs['time_origin']
@@ -715,6 +677,18 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
         var_4d_mat_2nd, var_3d_mat_2nd, var_mat_2nd, nvar4d_2nd, nvar3d_2nd, nvar_2nd, var_dim_2nd = load_nc_var_name_list(tmp_data_2nd, x_dim_2nd, y_dim_2nd, z_dim_2nd,t_dim_2nd)# find the variable names in the nc file
         var_grid_2nd = {}
         for ss in var_mat_2nd: var_grid_2nd[ss] = 'T'
+
+
+
+    if (config.upper() in ['AMM15','CO9P2']) | (config_2nd.upper() in ['AMM15','CO9P2']): 
+        lon_rotamm15,lat_rotamm15 = reduce_rotamm15_grid(nav_lon_amm15, nav_lat_amm15)
+
+        dlon_rotamm15 = (np.diff(lon_rotamm15)).mean()
+        dlat_rotamm15 = (np.diff(lat_rotamm15)).mean()
+        nlon_rotamm15 = lon_rotamm15.size
+        nlat_rotamm15 = lat_rotamm15.size
+    
+
 
 
 
@@ -849,16 +823,18 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
     but_dy = 0.04
     but_ysp = 0.01 
 
-
     var_but_mat = var_mat.copy()
+    # If two datasets, find variables in both datasets
     if load_2nd_files:   
         var_but_mat = np.intersect1d(var_mat, var_mat_2nd)
-    
+        
+        # sort them to match the order of the first dataset
+        var_but_mat_order = []
+        for var_but in var_but_mat:var_but_mat_order.append(np.where(var_mat == var_but )[0][0])
+        var_but_mat = var_but_mat[np.argsort(var_but_mat_order)]
 
-    #pdb.set_trace()
     but_extent = {}
     but_line_han,but_text_han = {},{}
-    #for vi,var_dat in enumerate(var_mat): 
     for vi,var_dat in enumerate(var_but_mat): 
         tmpcol = 'k'
         if var_dim[var_dat] == 3: tmpcol = 'darkgreen'
@@ -890,7 +866,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
     
     if load_2nd_files == False:
         func_names_lst.remove('Clim: pair')
-    #if load_2nd_files:func_names_lst.append('Clim: pair')
+
     func_names_lst = func_names_lst + mode_name_lst
 
     # if a secondary data set, give ability to change data sets. 
@@ -922,7 +898,6 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
          #add button names
         func_but_text_han[funcname] = clickax.text((func_but_extent[funcname][0]+func_but_extent[funcname][1])/2,(func_but_extent[funcname][2]+func_but_extent[funcname][3])/2,funcname, ha = 'center', va = 'center')
     
-    #pdb.set_trace()  
     
     # if a secondary data set, det default behaviour. 
     if load_2nd_files: func_but_text_han[secdataset_proc].set_color('darkgreen')
@@ -1661,8 +1636,6 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
 
 
         figdpi = 90
-        #pdb.set_trace()
-        #fig.savefig('/home/h01/hadjt/workspace/python3/tmpfig_%i%i_%i_%i_%s.png'%(ii,jj,ti,zz))
         if not os.path.exists(fig_dir):
             os.makedirs(directory)
 
@@ -2730,52 +2703,8 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
                     elif but_name in ['Save Figure']:                        
                         save_figure_funct()
 
-                        '''
-                        #fig.savefig('/home/h01/hadjt/workspace/python3/tmpfig_%i%i_%i_%i_%s.png'%(ii,jj,ti,zz))
-                        if not os.path.exists(fig_dir):
-                            os.makedirs(directory)
-                        
-                        secdataset_proc_figname = ''
-                        if secdataset_proc == 'Dataset 1':secdataset_proc_figname = '_Data1'
-                        if secdataset_proc == 'Dataset 2':secdataset_proc_figname = '_Data2'
-                        if secdataset_proc == 'Dat1-Dat2':secdataset_proc_figname = '_D2-D1'
-
-                        fig_out_name = '%s/output_%s_%s_%i_%i_%i_%i_%s_%s'%(fig_dir,fig_lab,var,ii,jj,ti,zz,z_meth,secdataset_proc_figname)
-                        if fig_fname_lab is not None: fig_out_name = fig_out_name + '_d1_%s'%fig_fname_lab
-                        if fig_fname_lab_2nd is not None: fig_out_name = fig_out_name + '_d2_%s'%fig_fname_lab_2nd
-                        fig_out_name = fig_out_name + '.png'
-
-                        if fig_cutout:
-                    
-                            #plt.subplots_adjust(top=0.9,bottom=0.11,left=0.08,right=0.9,hspace=0.2,wspace=0.135)
-                            #plt.subplots_adjust(top=0.88,bottom=0.1,left=0.09,right=0.91,hspace=0.2,wspace=0.065)
-
-                            bbox_cutout_pos = [[(but_x1+0.01), (0.066)],[(func_but_x0-0.01),0.96]]
-                            #bbox_cutout_pos_inches = [[fig.get_figwidth()*(but_x1+0.01), fig.get_figheight()*(0.05-0.01+0.026)],[fig.get_figwidth()*(func_but_x0-0.01),fig.get_figheight()*(0.95+0.01)]]
-                            bbox_cutout_pos_inches = [[fig.get_figwidth()*(but_x1+0.01), fig.get_figheight()*(0.066)],[fig.get_figwidth()*(func_but_x0-0.01),fig.get_figheight()*(0.96)]]
-                            bbox_inches =  matplotlib.transforms.Bbox(bbox_cutout_pos_inches)
-                            
-                            if verbose_debugging: print('Save Figure: bbox_cutout_pos',bbox_cutout_pos, datetime.now())
-                            fig.savefig(fig_out_name,bbox_inches = bbox_inches)
-                            #pdb.set_trace()
-                        else:
-                            fig.savefig(fig_out_name)
-
-                        print('')
-                        print(fig_out_name)
-                        print('')
-                        '''
-
                     elif but_name in mode_name_lst:
-                        '''
-                        # Careful Catch to change mode to Click at the end of the loop, to avoid and infinte loop
-                        if (ti == 0) & (mode == 'Loop'): 
-                            mode = 'Click'
-                        else:
-                            mode = but_name
-                        '''
                         if mode == 'Loop': 
-                            #pdb.set_trace()
                             mouse_in_Click = False
                         mode = but_name
                         func_but_text_han['Click'].set_color('k')
@@ -3021,7 +2950,7 @@ def main():
         parser.add_argument('--U_flist', type=str, required=False, help='Input U file list for current magnitude. Assumes file contains vozocrtx, enclose in "" more than simple wild card')
         parser.add_argument('--V_flist', type=str, required=False, help='Input U file list for current magnitude. Assumes file contains vomecrty, enclose in "" more than simple wild card')
 
-        parser.add_argument('--fig_dir', type=str, required=False, help = 'if absent, will default to /home/h01/hadjt/workspace/python3/NEMO_nc_slevel_viewer/tmpfigs')
+        parser.add_argument('--fig_dir', type=str, required=False, help = 'if absent, will default to $PWD/tmpfigs')
         parser.add_argument('--fig_lab', type=str, required=False, help = 'if absent, will default to figs')
         parser.add_argument('--fig_cutout', type=bool, required=False)
 
@@ -3071,7 +3000,7 @@ def main():
 
         args = parser.parse_args()# Print "Hello" + the user input argument
 
-        if args.fig_dir is None: args.fig_dir='/home/h01/hadjt/workspace/python3/NEMO_nc_slevel_viewer/tmpfigs'
+        if args.fig_dir is None: args.fig_dir=os.getcwd() + '/tmpfigs'
         if args.fig_lab is None: args.fig_lab='figs'
         if args.fig_cutout is None: args.fig_cutout=True
         #if args.justplot is None: args.justplot=False

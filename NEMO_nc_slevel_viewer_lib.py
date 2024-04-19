@@ -22,19 +22,6 @@ computername = socket.gethostname()
 comp = 'linux'
 if computername in ['xcel00','xcfl00']: comp = 'hpc'
 
-if comp == 'hpc':
-    amm15_mesh_file = '/data/d02/frpk/amm15ps45mesh/amm15.mesh_mask.nc'
-else:
-    amm15_mesh_file = '/data/cr1/hadjt/data/reffiles/SSF/amm15.mesh_mask.nc'
-
-rootgrp = Dataset(amm15_mesh_file, 'r', format='NETCDF4')
-nav_lon = rootgrp.variables['nav_lon'][:]
-nav_lat = rootgrp.variables['nav_lat'][:]
-
-rootgrp.close()
-nlat,nlon = nav_lon.shape
-
-
 
 """
 https://gmd.copernicus.org/articles/16/2515/2023/
@@ -122,7 +109,7 @@ def rotated_grid_to_amm15(lon_in,lat_in, SP_coor = np.array([ -2.5, -37.5])):
     return lon_old,lat_old
 
 
-def reduce_rotamm15_grid():
+def reduce_rotamm15_grid(nav_lon, nav_lat):
     lon_orig = nav_lon
     lat_orig = nav_lat
     lon_new,lat_new = rotated_grid_from_amm15(lon_orig.copy(),lat_orig.copy(),  SP_coor)
@@ -132,7 +119,7 @@ def reduce_rotamm15_grid():
 
     return rot_lon_axis,rot_lat_axis
 
-def testing_rot_pole():
+def testing_rot_pole(nav_lon, nav_lat):
     import matplotlib.pyplot as plt
     lon_orig = nav_lon[::4,::4]
     lat_orig = nav_lat[::4,::4]
@@ -572,7 +559,7 @@ def ismask(tmpvar):
 
     return ismask_out
 
-def nearbed_index(filename, variable_4d,nemo_nb_i_filename = '/home/h01/hadjt/Work/Programming/Scripts/reffiles/nemo_nb_i.nc'):
+def nearbed_index(filename, variable_4d,nemo_nb_i_filename = 'nemo_nb_i.nc'):
 
 
     rootgrp = Dataset(filename, 'r', format='NETCDF3_CLASSIC')#NETCDF3_CLASSIC
@@ -633,7 +620,7 @@ def nearbed_index(filename, variable_4d,nemo_nb_i_filename = '/home/h01/hadjt/Wo
     return nbind,tmask
 
 
-def load_nearbed_index(nemo_nb_i_filename = '/home/h01/hadjt/Work/Programming/Scripts/reffiles/nemo_nb_i.nc'):
+def load_nearbed_index(nemo_nb_i_filename):
 
 
     rootgrp_in = Dataset(nemo_nb_i_filename, 'r', format='NETCDF3_CLASSIC')
@@ -814,25 +801,7 @@ def sw_dens(tdata,sdata):
     #; tdata = potential temperature i.e. stash 101
     #; sdata = salinity, not stash 102 (stash 102*1000 + 35)
 
-    #is_cube = True if (hasattr(tdata,"units")) else False
-
-    #;pm,sw_dens(15,30),sw_dens(25,33.4038),sw_dens((15+25)/2,(30+33.4038)/2)
-
-    #to_test = 0
-    #
-    #if to_test eq 1 then begin
-    #  restore,filename = '/home/h01/hadjt/Work/Programming/Scripts/reffiles/get_input_data_TS.sav'
-    #
-    #  dens_test = calc_dens(fieldt,fields)
-    #
-    #  tdata = fieldt.data
-    #  sdata = (1000*fields.data) + 35
-    #  tmp = where(fieldt.data eq fieldt(0).bmdi)
-    #  tdata(tmp) = !values.f_nan
-    #  sdata(tmp) = !values.f_nan
-    #
-    #endif
-
+ 
     TO=13.4992332
     SO=-0.0022500
     SIGO=24.573651
@@ -1009,8 +978,7 @@ def lon_lat_to_str(lon,lat,lonlatstr_format = '%.2f'):
     return lat_lon_str,lonstr,latstr
 
 
-
-def load_nn_amm15_amm7_wgt(tmpfname_out_amm15_amm7 = '/data/cr1/hadjt/data/reffiles/SSF/regrid_amm15_amm7_nn.nc'):
+def load_nn_amm15_amm7_wgt(tmpfname_out_amm15_amm7):
     
     amm15_amm7_dict = {}
     rootgrp = Dataset(tmpfname_out_amm15_amm7, 'r')
@@ -1022,7 +990,7 @@ def load_nn_amm15_amm7_wgt(tmpfname_out_amm15_amm7 = '/data/cr1/hadjt/data/reffi
     
     return amm15_amm7_dict
     
-def load_nn_amm7_amm15_wgt(tmpfname_out_amm7_amm15 = '/data/cr1/hadjt/data/reffiles/SSF/regrid_amm7_amm15_nn.nc'):
+def load_nn_amm7_amm15_wgt(tmpfname_out_amm7_amm15):
     
     amm7_amm15_dict = {}
     rootgrp = Dataset(tmpfname_out_amm7_amm15, 'r')
