@@ -2334,8 +2334,8 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
 
 
                         
-                        tmp_map_perc_1,tmp_ew_perc_1,tmp_ns_perc_1,tmp_hov_perc_1 = [np.ma.masked for i_i in range(3)]
-                        tmp_map_perc_2,tmp_ew_perc_2,tmp_ns_perc_2,tmp_hov_perc_2 = [np.ma.masked for i_i in range(3)]
+                        tmp_ew_perc_1,tmp_ns_perc_1,tmp_hov_perc_1 = [np.ma.masked for i_i in range(3)]
+                        tmp_ew_perc_2,tmp_ns_perc_2,tmp_hov_perc_2 = [np.ma.masked for i_i in range(3)]
 
                         if len(tmp_ew_dat_1)>0: tmp_ew_perc_1 = np.percentile(tmp_ew_dat_1,(5,95))
                         if len(tmp_ns_dat_1)>0: tmp_ns_perc_1 = np.percentile(tmp_ns_dat_1,(5,95))
