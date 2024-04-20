@@ -171,6 +171,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
     if justplot is None: justplot = False
 
 
+    hov_time = True
 
     #config version specific info - mainly grid, and lat/lon info
     if config.upper() == 'AMM7':
@@ -982,7 +983,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
 
     mode_name_lst = ['Click','Loop']
 
-    func_names_lst = ['Reset zoom', 'Zoom', 'Clim: Reset','Clim: Zoom','Clim: Expand','Clim: perc','Clim: normal', 'Clim: log','Clim: pair','Surface', 'Near-Bed', 'Surface-Bed','Depth level','Save Figure', 'Quit']
+    func_names_lst = ['Reset zoom', 'Zoom', 'Clim: Reset','Clim: Zoom','Clim: Expand','Clim: perc','Clim: normal', 'Clim: log','Clim: pair','Surface', 'Near-Bed', 'Surface-Bed','Depth level','Save Figure','Hov/Time','Quit']
 
     
     if load_2nd_files == False:
@@ -1040,6 +1041,8 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
     
     if load_2nd_files: 
         if clim_pair:func_but_text_han['Clim: pair'].set_color('gold')
+
+    func_but_text_han['Hov/Time'].set_color('darkgreen')
     # When we move to loop mode, we stop checking for button presses, 
     #   so need another way to end the loop... 
     #       could just wait till the end of the loop, but could be ages
@@ -1283,7 +1286,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
         '''
         hov_x = time_datetime
         hov_y =  rootgrp_gdept.variables['gdept_0'][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][0,:,jj,ii]
-        method = 1
+        method = 2
 
         hov_start = datetime.now()
 
@@ -1320,6 +1323,25 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
                     hov_dat_2 = np.ma.zeros(curr_tmp_data.variables[var][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].shape[1::-1])*np.ma.masked
                     tmpdat_hov = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj_2nd_ind,ii_2nd_ind].load())
                     tmpdat_hov_gdept =  rootgrp_gdept_2nd.variables['gdept_0'][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][0,:,jj_2nd_ind,ii_2nd_ind]               
+                    for i_i,(tmpdat) in enumerate(tmpdat_hov):hov_dat_2[:,i_i] = np.ma.masked_invalid(np.interp(hov_y, tmpdat_hov_gdept, tmpdat))
+                    #pdb.set_trace()
+            else:
+                hov_dat_2 = hov_dat_1
+        elif method == 2:
+
+            #hov_dat_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,:,jj,ii].load()).T
+            hov_dat_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][:,:,jj*thin + thin_y0,ii*thin + thin_x0].load()).T        
+
+            
+            if load_2nd_files:
+                if config_2nd is None:
+                    #hov_dat_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj,ii].load()).T
+                    hov_dat_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,jj*thin_2nd+thin_y0_2nd,ii*thin_2nd + thin_x0_2nd].load()).T
+                else:
+                    hov_dat_2 = np.ma.zeros(curr_tmp_data.variables[var][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].shape[1::-1])*np.ma.masked
+                    #tmpdat_hov = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj_2nd_ind,ii_2nd_ind].load())
+                    tmpdat_hov = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,jj_2nd_ind*thin_2nd + thin_y0_2nd,ii_2nd_ind*thin_2nd+thin_x0_2nd].load())
+                    tmpdat_hov_gdept =  rootgrp_gdept_2nd.variables['gdept_0'][0,:,jj_2nd_ind*thin_2nd + thin_y0_2nd,ii_2nd_ind*thin_2nd+thin_x0_2nd]               
                     for i_i,(tmpdat) in enumerate(tmpdat_hov):hov_dat_2[:,i_i] = np.ma.masked_invalid(np.interp(hov_y, tmpdat_hov_gdept, tmpdat))
                     #pdb.set_trace()
             else:
@@ -2036,14 +2058,21 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
             #pdb.set_trace()
             if verbose_debugging: print('Reloaded  ns data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now(),'; dt = %s'%(datetime.now()-prevtime))
             prevtime = datetime.now()
+            
             if reload_hov:
-                if var_dim[var] == 4:
-                    if var in deriv_var:
-                        hov_dat_1,hov_dat_2,hov_x,hov_y = reload_hov_data_derived_var()
-                    else:
-                        hov_dat_1,hov_dat_2,hov_x,hov_y = reload_hov_data()
+                if hov_time:
+                    if var_dim[var] == 4:
+                        if var in deriv_var:
+                            hov_dat_1,hov_dat_2,hov_x,hov_y = reload_hov_data_derived_var()
+                        else:
+                            hov_dat_1,hov_dat_2,hov_x,hov_y = reload_hov_data()
 
-
+                else:
+                    
+                    hov_x = time_datetime
+                    hov_y =  rootgrp_gdept.variables['gdept_0'][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][0,:,jj,ii]
+                    hov_dat_1 = np.ma.zeros((hov_y.shape+hov_x.shape))*np.ma.masked
+                    hov_dat_2 = np.ma.zeros((hov_y.shape+hov_x.shape))*np.ma.masked
                 reload_hov = False
             #pdb.set_trace()
             if verbose_debugging: print('Reloaded hov data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now(),'; dt = %s'%(datetime.now()-prevtime))
@@ -2765,6 +2794,19 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
                             func_but_text_han['Clim: pair'].set_color('gold')
                             clim_pair = True
 
+
+                    elif but_name == 'Hov/Time':
+                        if hov_time:
+                            func_but_text_han['Hov/Time'].set_color('0.5')
+                            hov_time = False
+                            reload_hov = True
+                            reload_ts = True
+                        else:
+                            func_but_text_han['Hov/Time'].set_color('darkgreen')
+                            hov_time = True
+                            reload_hov = True
+                            reload_ts = True
+
                     elif but_name in secdataset_proc_list:
                         secdataset_proc = but_name
                         func_but_text_han['Dat1-Dat2'].set_color('k')
@@ -3163,9 +3205,6 @@ def main():
         if V_flist_2nd is not None:V_flist_2nd.sort()
         if len(fname_lst) == 0: 
             print('no files passed')
-            pdb.set_trace()
-        if len(U_flist_2nd) == 0: 
-            print('U_flist_2nd no files passed')
             pdb.set_trace()
        
         nemo_slice_zlev(fname_lst,zlim_max = args.zlim_max, config = args.config, config_2nd = args.config_2nd,
