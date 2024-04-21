@@ -62,7 +62,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
     ii = None, jj = None, ti = None, zz = None, 
     lon_in = None, lat_in = None, date_in_ind = None, date_fmt = '%Y%m%d',
     z_meth = None,secdataset_proc = 'Dat2-Dat1',
-    clim_sym = None, use_cmocean = False,clim_pair = True,
+    clim_sym = None, use_cmocean = False,clim_pair = True,hov_time = True,
     U_flist = None,V_flist = None,
     U_flist_2nd = None,V_flist_2nd = None,
     fig_dir = None,fig_lab = 'figs',fig_cutout = True, 
@@ -171,7 +171,9 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
     if justplot is None: justplot = False
 
 
-    hov_time = True
+    if hov_time is None: hov_time = True
+
+    print('hov_time:',hov_time)
 
     #config version specific info - mainly grid, and lat/lon info
     if config.upper() == 'AMM7':
@@ -1042,7 +1044,10 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
     if load_2nd_files: 
         if clim_pair:func_but_text_han['Clim: pair'].set_color('gold')
 
-    func_but_text_han['Hov/Time'].set_color('darkgreen')
+    if hov_time:
+        func_but_text_han['Hov/Time'].set_color('darkgreen')
+    else:
+        func_but_text_han['Hov/Time'].set_color('0.5')
     # When we move to loop mode, we stop checking for button presses, 
     #   so need another way to end the loop... 
     #       could just wait till the end of the loop, but could be ages
@@ -1286,7 +1291,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
         '''
         hov_x = time_datetime
         hov_y =  rootgrp_gdept.variables['gdept_0'][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][0,:,jj,ii]
-        method = 2
+        method = 1
 
         hov_start = datetime.now()
 
@@ -1315,10 +1320,12 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
         elif method == 1:
 
             hov_dat_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,:,jj,ii].load()).T
+            #hov_dat_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][:,:,jj*thin + thin_y0,ii*thin + thin_x0].load()).T        
             
             if load_2nd_files:
                 if config_2nd is None:
                     hov_dat_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj,ii].load()).T
+                    #hov_dat_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,jj*thin_2nd+thin_y0_2nd,ii*thin_2nd + thin_x0_2nd].load()).T
                 else:
                     hov_dat_2 = np.ma.zeros(curr_tmp_data.variables[var][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].shape[1::-1])*np.ma.masked
                     tmpdat_hov = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj_2nd_ind,ii_2nd_ind].load())
@@ -1327,26 +1334,6 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
                     #pdb.set_trace()
             else:
                 hov_dat_2 = hov_dat_1
-        elif method == 2:
-
-            #hov_dat_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,:,jj,ii].load()).T
-            hov_dat_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][:,:,jj*thin + thin_y0,ii*thin + thin_x0].load()).T        
-
-            
-            if load_2nd_files:
-                if config_2nd is None:
-                    #hov_dat_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj,ii].load()).T
-                    hov_dat_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,jj*thin_2nd+thin_y0_2nd,ii*thin_2nd + thin_x0_2nd].load()).T
-                else:
-                    hov_dat_2 = np.ma.zeros(curr_tmp_data.variables[var][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].shape[1::-1])*np.ma.masked
-                    #tmpdat_hov = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj_2nd_ind,ii_2nd_ind].load())
-                    tmpdat_hov = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,jj_2nd_ind*thin_2nd + thin_y0_2nd,ii_2nd_ind*thin_2nd+thin_x0_2nd].load())
-                    tmpdat_hov_gdept =  rootgrp_gdept_2nd.variables['gdept_0'][0,:,jj_2nd_ind*thin_2nd + thin_y0_2nd,ii_2nd_ind*thin_2nd+thin_x0_2nd]               
-                    for i_i,(tmpdat) in enumerate(tmpdat_hov):hov_dat_2[:,i_i] = np.ma.masked_invalid(np.interp(hov_y, tmpdat_hov_gdept, tmpdat))
-                    #pdb.set_trace()
-            else:
-                hov_dat_2 = hov_dat_1
-
         hov_stop = datetime.now()
 
         #print(hov_start,hov_stop,(hov_stop - hov_start).total_seconds())
@@ -3148,6 +3135,7 @@ def main():
         parser.add_argument('--date_fmt', type=str, required=False)
 
 
+        parser.add_argument('--hov_time', type=str, required=False)
 
 
         parser.add_argument('--verbose_debugging', type=bool, required=False)
@@ -3168,6 +3156,21 @@ def main():
         if args.verbose_debugging is None: args.verbose_debugging=False
         
         if args.clim_pair is None: args.clim_pair=True
+
+
+
+
+        if args.hov_time is None:
+            hov_time_in=True
+        elif args.hov_time is not None::
+            #args.hov_time=bool(args.hov_time)
+            if args.hov_time.upper() in ['TRUE','T']:
+                hov_time_in = bool(True)
+            elif args.hov_time.upper() in ['FALSE','F']:
+                hov_time_in = bool(False)
+            else:                
+                print(args.hov_time)
+                pdb.set_trace()
 
 
         if args.date_fmt is None: args.date_fmt='%Y%m%d'
@@ -3211,7 +3214,7 @@ def main():
             U_flist = U_flist, V_flist = V_flist,
             fname_lst_2nd = fname_lst_2nd,
             U_flist_2nd = U_flist_2nd, V_flist_2nd = V_flist_2nd,
-            clim_sym = args.clim_sym, clim = args.clim, clim_pair = args.clim_pair,
+            clim_sym = args.clim_sym, clim = args.clim, clim_pair = args.clim_pair,hov_time = hov_time_in,
             use_cmocean = args.use_cmocean, date_fmt = args.date_fmt,
             justplot = args.justplot,justplot_date_ind = args.justplot_date_ind,
             justplot_secdataset_proc = args.justplot_secdataset_proc,
