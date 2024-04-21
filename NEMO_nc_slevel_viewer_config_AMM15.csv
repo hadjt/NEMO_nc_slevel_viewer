@@ -1,0 +1,4 @@
+mesh_file,/data/cr1/hadjt/data/reffiles/SSF/amm15.mesh_mask.nc
+nemo_nb_i_filename,/data/cr1/hadjt/data/reffiles/SSF/nemo_nb_i_OpSys_AMM15_NEMO36.nc
+regrid_amm15_amm7,/data/cr1/hadjt/data/reffiles/SSF/regrid_amm15_amm7_nn.nc
+regrid_amm7_amm15,/data/cr1/hadjt/data/reffiles/SSF/regrid_amm7_amm15_nn.nc

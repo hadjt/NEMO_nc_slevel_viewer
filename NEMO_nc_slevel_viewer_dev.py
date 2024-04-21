@@ -9,6 +9,7 @@ import xarray
 import glob
 import cftime
 import matplotlib
+import csv
 
 from NEMO_nc_slevel_viewer_lib import set_perc_clim_pcolor, get_clim_pcolor, set_clim_pcolor,set_perc_clim_pcolor_in_region,interp1dmat_wgt, interp1dmat_create_weight, nearbed_index,extract_nb,load_nearbed_index,pea_TS,rotated_grid_from_amm15,rotated_grid_to_amm15, reduce_rotamm15_grid,lon_lat_to_str,load_nn_amm15_amm7_wgt,load_nn_amm7_amm15_wgt,load_nc_dims,load_nc_var_name_list
 
@@ -22,33 +23,6 @@ import socket
 computername = socket.gethostname()
 comp = 'linux'
 if computername in ['xcel00','xcfl00']: comp = 'hpc'
-
-
-if comp == 'hpc': 
-    amm7_mesh_file = '/data/d02/frpk/amm15ps45mesh/amm7/amm7.mesh_mask.nc'
-    amm15_mesh_file = '/data/d02/frpk/amm15ps45mesh/amm15.mesh_mask.nc'
-    CO9P2_mesh_file = '/projects/ofrd/NEMO/ancil/amm15_CO9/mesh_mask.nc'
-    orca025ext_mesh_file = '/projects/ofrd/NEMO/ancil/orca025ext/mesh_mask_orca025ext.nc'
-
-    nemo_nb_i_filename_amm7 = '/data/d05/hadjt/reffiles/NEMO_nc_viewer/nemo_nb_i_CMEMS_BGC_Reanalysis_14112017.nc'
-    nemo_nb_i_filename_amm15 = '/data/d05/hadjt/reffiles/NEMO_nc_viewer/nemo_nb_i_OpSys_AMM15_NEMO36.nc'
-    nemo_nb_i_filename_CO9P2 = '/data/d05/hadjt/reffiles/NEMO_nc_viewer/nemo_nb_i_OpSys_AMM15_CO9p2.nc'
-else:
-
-    amm7_mesh_file = '/data/cr1/hadjt/data/reffiles/SSF/amm7.mesh_mask.nc'
-    amm15_mesh_file = '/data/cr1/hadjt/data/reffiles/SSF/amm15.mesh_mask.nc'
-    CO9P2_mesh_file = '/data/cr1/hadjt/data/reffiles/SSF/CO9p2.mesh_mask.nc'
-    GULF18_mesh_file = '/data/cr1/hadjt/data/reffiles/SSF/mesh_mask_gulf18_ps45.nc'
-    orca025ext_mesh_file = '/data/cr1/hadjt/data/reffiles/ORCA/ORCA025ext/mesh_mask_orca025ext.nc'
-
-    nemo_nb_i_filename_amm7 = '/home/h01/hadjt/Work/Programming/Scripts/reffiles/nemo_nb_i_CMEMS_BGC_Reanalysis_14112017.nc'
-    nemo_nb_i_filename_amm15 = '/data/cr1/hadjt/data/reffiles/SSF/nemo_nb_i_OpSys_AMM15_NEMO36.nc'
-    nemo_nb_i_filename_CO9P2 = '/data/cr1/hadjt/data/reffiles/SSF/nemo_nb_i_OpSys_AMM15_CO9p2.nc'
-    nemo_nb_i_filename_GULF18 = '/data/cr1/hadjt/data/reffiles/SSF/nemo_nb_i_OpSys_GULF18_NEMO3'
-
-    tmpfname_out_amm15_amm7 = '/data/cr1/hadjt/data/reffiles/SSF/regrid_amm15_amm7_nn.nc'
-    tmpfname_out_amm7_amm15 = '/data/cr1/hadjt/data/reffiles/SSF/regrid_amm7_amm15_nn.nc'
-
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -117,7 +91,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
     nav_lat_var_mat = ['nav_lat'.upper(),'lat'.upper(),'latitude'.upper()]
     time_varname_mat = ['time_counter'.upper(),'time'.upper()]
 
-
+    rootgrp_gdept, nbind,tmask = None, None, None
     if use_cmocean:
         
         import cmocean
@@ -175,37 +149,56 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
 
     print('hov_time:',hov_time)
 
+
+    config_fnames_dict = {}
+    config_fnames_dict[config] = {}
+    
+
+    config_csv_fname = 'NEMO_nc_slevel_viewer_config_%s.csv'%config.upper()
+    with open(config_csv_fname, mode='r') as infile:
+        reader = csv.reader(infile)
+        for rows in reader :config_fnames_dict[config][rows[0]] = rows[1]
+
+
+    if config_2nd is not None:
+        config_fnames_dict[config_2nd] = {}
+        config_2nd_csv_fname = 'NEMO_nc_slevel_viewer_config_%s.csv'%config_2nd.upper()
+        with open(config_2nd_csv_fname, mode='r') as infile:
+            reader = csv.reader(infile)
+            for rows in reader :config_fnames_dict[config_2nd][rows[0]] = rows[1]
+
+
     #config version specific info - mainly grid, and lat/lon info
     if config.upper() == 'AMM7':
         # depth grid file
-        rootgrp_gdept = Dataset(amm7_mesh_file, 'r', format='NETCDF4')
+        rootgrp_gdept = Dataset(config_fnames_dict[config]['mesh_file'], 'r', format='NETCDF4')
         # depth grid variable name
         zss = 'gdept'
 
         #grid lat lon
         lon = np.arange(-19.888889,12.99967+1/9.,1/9.)
         lat = np.arange(40.066669,65+1/15.,1/15.)
-        nbind,tmask = load_nearbed_index(nemo_nb_i_filename_amm7)
+        nbind,tmask = load_nearbed_index(config_fnames_dict[config]['nemo_nb_i_filename'])
         z_meth_default = 'z_slice'
         #z_meth = z_meth_default
         
     elif config.upper() == 'AMM15':
         
-        rootgrp_gdept = Dataset(amm15_mesh_file, 'r', format='NETCDF4')
+        rootgrp_gdept = Dataset(config_fnames_dict[config]['mesh_file'], 'r', format='NETCDF4')
         # depth grid variable name
         zss = 'gdept_0'
         
-        nbind,tmask = load_nearbed_index(nemo_nb_i_filename_amm15)
+        nbind,tmask = load_nearbed_index(config_fnames_dict[config]['nemo_nb_i_filename'])
         z_meth_default = 'z_slice'
         
     elif config.upper() == 'CO9P2':
 
         # depth grid file
-        rootgrp_gdept = Dataset(CO9P2_mesh_file, 'r', format='NETCDF4')
+        rootgrp_gdept = Dataset(config_fnames_dict[config]['mesh_file'], 'r', format='NETCDF4')
         # depth grid variable name
         zss = 'gdept_0'
         
-        nbind,tmask = load_nearbed_index(nemo_nb_i_filename_CO9P2)
+        nbind,tmask = load_nearbed_index(config_fnames_dict[config]['nemo_nb_i_filename'])
         z_meth_default = 'z_slice'
         #z_meth = z_meth_default
 
@@ -213,19 +206,16 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
     elif config.upper() == 'GULF18':
         # depth grid file
    
-        rootgrp_gdept = Dataset(GULF18_mesh_file, 'r', format='NETCDF4')
+        rootgrp_gdept = Dataset(config_fnames_dict[config]['mesh_file'], 'r', format='NETCDF4')
         # depth grid variable name
         zss = 'gdept'
 
         #grid lat lon
-        #pdb.set_trace()
         lon = rootgrp_gdept.variables['glamt'][:,0,:].ravel()
         lat = rootgrp_gdept.variables['gphit'][:,:,0].ravel()
-        nbind,tmask = load_nearbed_index(nemo_nb_i_filename_GULF18)
+        nbind,tmask = load_nearbed_index(config_fnames_dict[config]['nemo_nb_i_filename'])
         z_meth_default = 'z_slice'
         #z_meth = z_meth_default
-
-
 
 
 
@@ -234,12 +224,11 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
         #need to be able to quickly find ii and jj from lon, lat... 
         #add a function to do this based on grid geometry, rather than a (slow) search for closest grid cell.
 
-        rootgrp_gdept = Dataset(orca025ext_mesh_file, 'r', format='NETCDF4')
+        rootgrp_gdept = Dataset(config_fnames_dict[config]['mesh_file'], 'r', format='NETCDF4')
         zss = 'gdept_0'
 
 
         z_meth_default = 'z_index'
-        #z_meth = z_meth_default
 
         # As ORCA025 has a rotated pole, the northern row of longitude does not increase monotonically, 
         # and so causes issues plotting.. this is avoided by trimming the northern three rows
@@ -291,16 +280,16 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
 
         if (config.upper() == 'AMM15') & (config_2nd.upper() == 'AMM7'):  
 
-            amm7_amm15_dict = load_nn_amm7_amm15_wgt(tmpfname_out_amm7_amm15)
+            amm7_amm15_dict = load_nn_amm7_amm15_wgt(config_fnames_dict[config]['regrid_amm7_amm15'] )
 
             if comp == 'hpc': 
-                amm7_mesh_file_2nd = amm7_mesh_file 
-                nemo_nb_i_filename_2nd = nemo_nb_i_filename_amm7 
+                mesh_file_2nd = config_fnames_dict[config_2nd]['mesh_file'] 
+                nemo_nb_i_filename_2nd = config_fnames_dict[config_2nd]['nemo_nb_i_filename'] 
             else:
-                amm7_mesh_file_2nd = amm7_mesh_file 
-                nemo_nb_i_filename_2nd = nemo_nb_i_filename_amm7 
+                mesh_file_2nd = config_fnames_dict[config_2nd]['mesh_file'] 
+                nemo_nb_i_filename_2nd = config_fnames_dict[config_2nd]['nemo_nb_i_filename'] 
             
-            rootgrp_gdept_2nd = Dataset(amm7_mesh_file_2nd, 'r', format='NETCDF4')
+            rootgrp_gdept_2nd = Dataset(mesh_file_2nd, 'r', format='NETCDF4')
 
             nbind_2nd,tmask_2nd = load_nearbed_index(nemo_nb_i_filename_2nd)
             lon = np.arange(-19.888889,12.99967+1/9.,1/9.)
@@ -308,16 +297,16 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
 
         if (config.upper() == 'AMM7') & (config_2nd.upper() == 'AMM15'):
 
-            amm15_amm7_dict = load_nn_amm15_amm7_wgt(tmpfname_out_amm15_amm7)
+            amm15_amm7_dict = load_nn_amm15_amm7_wgt(config_fnames_dict[config]['regrid_amm15_amm7'])
 
             if comp == 'hpc':
-                amm15_mesh_file_2nd = amm15_mesh_file 
-                nemo_nb_i_filename_2nd = nemo_nb_i_filename_amm15 
+                mesh_file_2nd = config_fnames_dict[config_2nd]['mesh_file'] 
+                nemo_nb_i_filename_2nd = config_fnames_dict[config_2nd]['nemo_nb_i_filename'] 
             else:
-                amm15_mesh_file_2nd = amm15_mesh_file 
-                nemo_nb_i_filename_2nd = nemo_nb_i_filename_amm15 
+                mesh_file_2nd = config_fnames_dict[config_2nd]['mesh_file'] 
+                nemo_nb_i_filename_2nd = config_fnames_dict[config_2nd]['nemo_nb_i_filename'] 
   
-            rootgrp_gdept_2nd = Dataset(amm15_mesh_file_2nd, 'r', format='NETCDF4')
+            rootgrp_gdept_2nd = Dataset(mesh_file_2nd, 'r', format='NETCDF4')
             nbind_2nd,tmask_2nd = load_nearbed_index(nemo_nb_i_filename_2nd)
             
             '''
@@ -985,7 +974,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
 
     mode_name_lst = ['Click','Loop']
 
-    func_names_lst = ['Reset zoom', 'Zoom', 'Clim: Reset','Clim: Zoom','Clim: Expand','Clim: perc','Clim: normal', 'Clim: log','Clim: pair','Surface', 'Near-Bed', 'Surface-Bed','Depth level','Save Figure','Hov/Time','Quit']
+    func_names_lst = ['Hov/Time','Reset zoom', 'Zoom', 'Clim: Reset','Clim: Zoom','Clim: Expand','Clim: perc','Clim: normal', 'Clim: log','Clim: pair','Surface', 'Near-Bed', 'Surface-Bed','Depth level','Save Figure','Quit']
 
     
     if load_2nd_files == False:
@@ -3162,8 +3151,7 @@ def main():
 
         if args.hov_time is None:
             hov_time_in=True
-        elif args.hov_time is not None::
-            #args.hov_time=bool(args.hov_time)
+        elif args.hov_time is not None:
             if args.hov_time.upper() in ['TRUE','T']:
                 hov_time_in = bool(True)
             elif args.hov_time.upper() in ['FALSE','F']:
