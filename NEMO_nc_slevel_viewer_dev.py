@@ -27,6 +27,7 @@ if computername in ['xcel00','xcfl00']: comp = 'hpc'
 import warnings
 warnings.filterwarnings("ignore")
 
+script_dir=os.path.dirname(os.path.realpath(__file__)) + '/'
 
 global fname_lst, fname_lst_2nd,var
 
@@ -91,7 +92,6 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
     nav_lat_var_mat = ['nav_lat'.upper(),'lat'.upper(),'latitude'.upper()]
     time_varname_mat = ['time_counter'.upper(),'time'.upper()]
 
-    rootgrp_gdept, nbind,tmask = None, None, None
     if use_cmocean:
         
         import cmocean
@@ -115,7 +115,8 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
     #pdb.set_trace()
     if fig_dir is None:
 
-        fig_dir = os.getcwd() + '/tmpfigs'
+        #fig_dir = os.getcwd() + '/tmpfigs'
+        fig_dir = script_dir + '/tmpfigs'
         print('fig_dir: ',fig_dir )
 
     #need to load lon_mat and lat_mat to implement lon_in and lat_in
@@ -153,8 +154,8 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
     config_fnames_dict = {}
     config_fnames_dict[config] = {}
     
-
-    config_csv_fname = 'NEMO_nc_slevel_viewer_config_%s.csv'%config.upper()
+    #pdb.set_trace()
+    config_csv_fname = script_dir + 'NEMO_nc_slevel_viewer_config_%s.csv'%config.upper()
     with open(config_csv_fname, mode='r') as infile:
         reader = csv.reader(infile)
         for rows in reader :config_fnames_dict[config][rows[0]] = rows[1]
@@ -162,61 +163,49 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
 
     if config_2nd is not None:
         config_fnames_dict[config_2nd] = {}
-        config_2nd_csv_fname = 'NEMO_nc_slevel_viewer_config_%s.csv'%config_2nd.upper()
+        config_2nd_csv_fname = script_dir + 'NEMO_nc_slevel_viewer_config_%s.csv'%config_2nd.upper()
         with open(config_2nd_csv_fname, mode='r') as infile:
             reader = csv.reader(infile)
             for rows in reader :config_fnames_dict[config_2nd][rows[0]] = rows[1]
 
 
+    rootgrp_gdept, nbind,tmask = None, None, None
+        
+    # depth grid file
+    rootgrp_gdept = Dataset(config_fnames_dict[config]['mesh_file'], 'r', format='NETCDF4')
+
+
+    if config.upper() in ['AMM7', 'AMM15','CO9P2','GULF18']:
+        nbind,tmask = load_nearbed_index(config_fnames_dict[config]['nemo_nb_i_filename'])
+
     #config version specific info - mainly grid, and lat/lon info
     if config.upper() == 'AMM7':
-        # depth grid file
-        rootgrp_gdept = Dataset(config_fnames_dict[config]['mesh_file'], 'r', format='NETCDF4')
-        # depth grid variable name
         zss = 'gdept'
+        z_meth_default = 'z_slice'
 
         #grid lat lon
         lon = np.arange(-19.888889,12.99967+1/9.,1/9.)
         lat = np.arange(40.066669,65+1/15.,1/15.)
-        nbind,tmask = load_nearbed_index(config_fnames_dict[config]['nemo_nb_i_filename'])
-        z_meth_default = 'z_slice'
-        #z_meth = z_meth_default
         
     elif config.upper() == 'AMM15':
-        
-        rootgrp_gdept = Dataset(config_fnames_dict[config]['mesh_file'], 'r', format='NETCDF4')
         # depth grid variable name
         zss = 'gdept_0'
-        
-        nbind,tmask = load_nearbed_index(config_fnames_dict[config]['nemo_nb_i_filename'])
         z_meth_default = 'z_slice'
         
     elif config.upper() == 'CO9P2':
-
-        # depth grid file
-        rootgrp_gdept = Dataset(config_fnames_dict[config]['mesh_file'], 'r', format='NETCDF4')
         # depth grid variable name
-        zss = 'gdept_0'
-        
-        nbind,tmask = load_nearbed_index(config_fnames_dict[config]['nemo_nb_i_filename'])
+        zss = 'gdept_0'        
         z_meth_default = 'z_slice'
-        #z_meth = z_meth_default
 
 
     elif config.upper() == 'GULF18':
-        # depth grid file
-   
-        rootgrp_gdept = Dataset(config_fnames_dict[config]['mesh_file'], 'r', format='NETCDF4')
         # depth grid variable name
         zss = 'gdept'
+        z_meth_default = 'z_slice'
 
         #grid lat lon
         lon = rootgrp_gdept.variables['glamt'][:,0,:].ravel()
         lat = rootgrp_gdept.variables['gphit'][:,:,0].ravel()
-        nbind,tmask = load_nearbed_index(config_fnames_dict[config]['nemo_nb_i_filename'])
-        z_meth_default = 'z_slice'
-        #z_meth = z_meth_default
-
 
 
     elif config.upper() in ['ORCA025','ORCA025EXT']:
@@ -224,15 +213,12 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
         #need to be able to quickly find ii and jj from lon, lat... 
         #add a function to do this based on grid geometry, rather than a (slow) search for closest grid cell.
 
-        rootgrp_gdept = Dataset(config_fnames_dict[config]['mesh_file'], 'r', format='NETCDF4')
+        #rootgrp_gdept = Dataset(config_fnames_dict[config]['mesh_file'], 'r', format='NETCDF4')
         zss = 'gdept_0'
-
-
         z_meth_default = 'z_index'
 
         # As ORCA025 has a rotated pole, the northern row of longitude does not increase monotonically, 
         # and so causes issues plotting.. this is avoided by trimming the northern three rows
-
         thin_y1 = -3
 
 
@@ -258,10 +244,6 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
 
     if z_meth is None:
         z_meth = z_meth_default
-        
-
-
-
 
 
     global nbind_2nd,tmask_2nd
@@ -276,58 +258,31 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
         thin_x1_2nd=None
         thin_y0_2nd=0
         thin_y1_2nd=None
+        #if thin_2nd is None:
         thin_2nd=1
 
-        if (config.upper() == 'AMM15') & (config_2nd.upper() == 'AMM7'):  
-
-            amm7_amm15_dict = load_nn_amm7_amm15_wgt(config_fnames_dict[config]['regrid_amm7_amm15'] )
-
-            if comp == 'hpc': 
-                mesh_file_2nd = config_fnames_dict[config_2nd]['mesh_file'] 
-                nemo_nb_i_filename_2nd = config_fnames_dict[config_2nd]['nemo_nb_i_filename'] 
-            else:
-                mesh_file_2nd = config_fnames_dict[config_2nd]['mesh_file'] 
-                nemo_nb_i_filename_2nd = config_fnames_dict[config_2nd]['nemo_nb_i_filename'] 
-            
-            rootgrp_gdept_2nd = Dataset(mesh_file_2nd, 'r', format='NETCDF4')
-
-            nbind_2nd,tmask_2nd = load_nearbed_index(nemo_nb_i_filename_2nd)
-            lon = np.arange(-19.888889,12.99967+1/9.,1/9.)
-            lat = np.arange(40.066669,65+1/15.,1/15.)
-
-        if (config.upper() == 'AMM7') & (config_2nd.upper() == 'AMM15'):
-
-            amm15_amm7_dict = load_nn_amm15_amm7_wgt(config_fnames_dict[config]['regrid_amm15_amm7'])
-
-            if comp == 'hpc':
-                mesh_file_2nd = config_fnames_dict[config_2nd]['mesh_file'] 
-                nemo_nb_i_filename_2nd = config_fnames_dict[config_2nd]['nemo_nb_i_filename'] 
-            else:
-                mesh_file_2nd = config_fnames_dict[config_2nd]['mesh_file'] 
-                nemo_nb_i_filename_2nd = config_fnames_dict[config_2nd]['nemo_nb_i_filename'] 
-  
+        if (config.upper() in ['AMM7','AMM15']) & (config_2nd.upper() in ['AMM7','AMM15']):  
+            mesh_file_2nd = config_fnames_dict[config_2nd]['mesh_file'] 
+            nemo_nb_i_filename_2nd = config_fnames_dict[config_2nd]['nemo_nb_i_filename'] 
             rootgrp_gdept_2nd = Dataset(mesh_file_2nd, 'r', format='NETCDF4')
             nbind_2nd,tmask_2nd = load_nearbed_index(nemo_nb_i_filename_2nd)
-            
-            '''
-            # will need to unrotate lon lats for ew/ns transects
-            lon_rotamm15,lat_rotamm15 = reduce_rotamm15_grid(nav_lon, nav_lat)
 
-            dlon_rotamm15 = (np.diff(lon_rotamm15)).mean()
-            dlat_rotamm15 = (np.diff(lat_rotamm15)).mean()
-            nlon_rotamm15 = lon_rotamm15.size
-            nlat_rotamm15 = lat_rotamm15.size
-            '''
+            if (config.upper() == 'AMM15') & (config_2nd.upper() == 'AMM7'):  
 
+                amm7_amm15_dict = load_nn_amm7_amm15_wgt(config_fnames_dict[config]['regrid_amm7_amm15'] )
+
+                lon = np.arange(-19.888889,12.99967+1/9.,1/9.)
+                lat = np.arange(40.066669,65+1/15.,1/15.)
+
+            if (config.upper() == 'AMM7') & (config_2nd.upper() == 'AMM15'):
+
+                amm15_amm7_dict = load_nn_amm15_amm7_wgt(config_fnames_dict[config_2nd]['regrid_amm15_amm7'])
 
 
     print ('xarray open_mfdataset, Start',datetime.now())
 
     # open file list with xarray
     tmp_data = xarray.open_mfdataset(fname_lst, combine='by_coords',parallel = True) # , decode_cf=False);# parallel = True
-
-
-
     ncvar_mat = [ss for ss in tmp_data.variables.keys()]
     
     # check name of lon and lat ncvar in data.
@@ -3138,7 +3093,8 @@ def main():
 
         args = parser.parse_args()# Print "Hello" + the user input argument
 
-        if args.fig_dir is None: args.fig_dir=os.getcwd() + '/tmpfigs'
+        #if args.fig_dir is None: args.fig_dir=os.getcwd() + '/tmpfigs'
+        if args.fig_dir is None: args.fig_dir=script_dir + '/tmpfigs'
         if args.fig_lab is None: args.fig_lab='figs'
         if args.fig_cutout is None: args.fig_cutout=True
         #if args.justplot is None: args.justplot=False
