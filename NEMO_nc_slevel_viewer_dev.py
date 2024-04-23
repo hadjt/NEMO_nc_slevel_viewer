@@ -32,7 +32,7 @@ script_dir=os.path.dirname(os.path.realpath(__file__)) + '/'
 global fname_lst, fname_lst_2nd,var
 
 def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = None,config = 'amm7', 
-    thin = 1,thin_2nd = 1, thin_files = 1,thin_files_0 = 0,thin_files_1 = None, 
+    thin = 1,thin_2nd = 1, thin_files = 1,thin_files_0 = 0,thin_files_1 = None, thin_x0=0,thin_x1=None,thin_y0=0,thin_y1=None,
     zlim_max = None,xlim = None, ylim = None, tlim = None, clim = None,
     ii = None, jj = None, ti = None, zz = None, 
     lon_in = None, lat_in = None, date_in_ind = None, date_fmt = '%Y%m%d',
@@ -54,13 +54,18 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
     if U_flist_2nd is not None: U_flist_2nd = U_flist_2nd[thin_files_0:thin_files_1:thin_files]
     if V_flist_2nd is not None: V_flist_2nd = V_flist_2nd[thin_files_0:thin_files_1:thin_files]
 
-    
 
 
+
+    '''
     thin_x0=0
     thin_x1=None
     thin_y0=0
     thin_y1=None
+    '''
+    if thin_x0 is None: thin_x0=0
+    if thin_y0 is None: thin_y0=0
+
 
     thin_x0_2nd=thin_x0
     thin_x1_2nd=thin_x1
@@ -148,7 +153,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
 
     if hov_time is None: hov_time = True
 
-    print('hov_time:',hov_time)
+    print('thin: %i; thin_files: %i; hov_time: %s; '%(thin,thin_files,hov_time))
 
 
     config_fnames_dict = {}
@@ -330,9 +335,11 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
 
     # if lon_in and lat_in are present, use them
     if (lon_in is not None) & (lat_in is not None):
+        #pdb.set_trace()
+
         lonlatin_dist_mat = np.sqrt((nav_lon - lon_in)**2 + (nav_lat - lat_in)**2)
         jj,ii = lonlatin_dist_mat.argmin()//nav_lon.shape[1], lonlatin_dist_mat.argmin()%nav_lon.shape[1]
-
+    
     nav_lon_2nd, nav_lat_2nd = nav_lon, nav_lat
 
 
@@ -693,7 +700,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
     if fig_fname_lab is not None: fig_tit_str = fig_tit_str + ' Dataset 1 = %s;'%fig_fname_lab
     if fig_fname_lab is not None: fig_tit_str = fig_tit_str + ' Dataset 2 = %s;'%fig_fname_lab_2nd
 
-    fig_tit_str_int = 'Interactive figure, Select lat/lon in a); lon in b); lat  in c); depth in d) and time in e). %s[%i, %i, %i, %i]'%(var,ii,jj,zz,ti)
+    fig_tit_str_int = 'Interactive figure, Select lat/lon in a); lon in b); lat  in c); depth in d) and time in e). %s[%i, %i, %i, %i] (thin = %i; thin_files = %i) '%(var,ii,jj,zz,ti, thin, thin_files)
     fig_tit_str_lab = ''
     if fig_fname_lab is not None: fig_tit_str_lab = fig_tit_str_lab + ' Dataset 1 = %s;'%fig_fname_lab
     if fig_fname_lab is not None: fig_tit_str_lab = fig_tit_str_lab + ' Dataset 2 = %s;'%fig_fname_lab_2nd
@@ -1231,12 +1238,12 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
                 #pdb.set_trace()
 
                 ss_ts_dat_1 = hov_dat_1[0,:].ravel()
-                nb_ts_dat_1 = hov_dat_1[nbind[:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,ii,jj] == False,:].ravel()
+                nb_ts_dat_1 = hov_dat_1[nbind[:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,jj,ii] == False,:].ravel()
                 df_ts_dat_1 = ss_ts_dat_1 - nb_ts_dat_1
 
                 ss_ts_dat_2 = hov_dat_2[0,:].ravel()
                 #nb_ts_dat_2 = hov_dat_2[nbind_2nd[:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,jj_2nd_ind,ii_2nd_ind] == False,:].ravel()
-                nb_ts_dat_2 = hov_dat_2[nbind[:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,ii,jj] == False,:].ravel()
+                nb_ts_dat_2 = hov_dat_2[nbind[:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,jj,ii] == False,:].ravel()
                 df_ts_dat_2 = ss_ts_dat_2 - nb_ts_dat_2
                 
                 #pdb.set_trace()
@@ -2044,10 +2051,11 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
             if cur_ylim is not None:ax[2].set_xlim(cur_ylim)
             if tlim is not None:ax[3].set_xlim(tlim)
             if tlim is not None:ax[4].set_xlim(tlim)
-            
+            #pdb.set_trace()
             #reset ylim to time series to data min max
-            ax[4].set_ylim(ts_dat.min(),ts_dat.max())
-
+            #ax[4].set_ylim(ts_dat.min(),ts_dat.max())
+            ax[4].set_xlim(ax[3].get_xlim())
+            
 
             if load_2nd_files == False:
                 ax[4].set_ylim(ts_dat.min(),ts_dat.max())
@@ -2629,7 +2637,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
                         reload_hov = False
                         reload_ts = False
                     elif but_name in 'Quit':
-                        print('Quit')
+                        print('Closing')
                         print('')
                         print('')
                         print('')
@@ -2898,6 +2906,12 @@ def main():
         parser.add_argument('--thin_files_0', type=int, required=False)
         parser.add_argument('--thin_files_1', type=int, required=False)
 
+
+        parser.add_argument('--thin_x0', type=int, required=False)
+        parser.add_argument('--thin_x1', type=int, required=False)
+        parser.add_argument('--thin_y0', type=int, required=False)
+        parser.add_argument('--thin_y1', type=int, required=False)
+
         parser.add_argument('--secdataset_proc', type=str, required=False)
         parser.add_argument('--date_fmt', type=str, required=False)
 
@@ -3030,6 +3044,12 @@ def main():
         if args.thin_files is None: args.thin_files=1
         if args.thin_files_0 is None: args.thin_files_0=1
         if args.thin_files_1 is None: args.thin_files_1=None
+
+        if args.thin_x0 is None: args.thin_files_0=1
+        if args.thin_x1 is None: args.thin_files_1=None
+        if args.thin_y0 is None: args.thin_files_0=1
+        if args.thin_y1 is None: args.thin_files_1=None
+
         #Deal with file lists
         print(args.fname_lst)
         fname_lst = glob.glob(args.fname_lst)
@@ -3067,6 +3087,7 @@ def main():
             fig_fname_lab = args.fig_fname_lab, fig_fname_lab_2nd = args.fig_fname_lab_2nd, 
             thin = args.thin, thin_2nd = args.thin_2nd,
             thin_files = args.thin_files, thin_files_0 = args.thin_files_0, thin_files_1 = args.thin_files_1, 
+            thin_x0 = args.thin_x0, thin_x1 = args.thin_x1, thin_y0 = args.thin_y0, thin_y1 = args.thin_y1, 
             ii = args.ii, jj = args.jj, ti = args.ti, zz = args.zz, 
             lon_in = args.lon, lat_in = args.lat, date_in_ind = args.date_ind,
             var = args.var, z_meth = args.z_meth,
