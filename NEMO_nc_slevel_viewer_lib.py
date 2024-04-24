@@ -962,29 +962,55 @@ def pea_TS(T_in,S_in,gdept,e3t_in,tmask,calc_TS_comp = False, zcutoff = 400.):
     for i in range(ind_3_mat.shape[3]):ind_3_mat[:,:,:,i] = i
 
     #make a weighting array, being the proportion of the grid box begin above a threshold depth (400m)
+    ##################################################################################################
 
-    gb_zcut_int = (gdept < zcutoff) + 0
-    gb_zcut_ind = gb_zcut_int.sum(axis = 1)[0,:,:] # index of box shallower than threshold depth
-    gb_zcut_ind = np.minimum(gb_zcut_ind,nz-1)
-    weight_mat = gb_zcut_int.copy() + 0.
+    #curr_gdept = gdept.copy()
+    curr_gdept = e3t.cumsum(axis = 1)
 
-    gdept_sh_zcut = gdept[ind_0_mat[:,0,:,:],gb_zcut_ind-1,ind_2_mat[:,0,:,:],ind_3_mat[:,0,:,:]]
-    gdept_de_zcut = gdept[ind_0_mat[:,0,:,:],np.minimum(gb_zcut_ind,nz)-0,ind_2_mat[:,0,:,:],ind_3_mat[:,0,:,:]]
+
+    # find depths less than the threshold (int index)
+    gb_zcut_int = (curr_gdept < zcutoff) + 0             
+    # index of box deeper (not shallower!) than threshold depth
+    gb_zcut_ind = gb_zcut_int.sum(axis = 1)[0,:,:]  
+    # make sure not greater than depth of water
+    gb_zcut_ind = np.minimum(gb_zcut_ind,nz-1)        
+    # initialise a weighting matrix
+    weight_mat = gb_zcut_int.copy() + 0.          
+
+    # find depth above and below threshold
+    #   grid boxes shallower than the threshold
+    gdept_sh_zcut = curr_gdept[ind_0_mat[:,0,:,:],gb_zcut_ind-1,ind_2_mat[:,0,:,:],ind_3_mat[:,0,:,:]]
+
+    #   grid boxes deeper than the threshold
+    gdept_de_zcut = curr_gdept[ind_0_mat[:,0,:,:],np.minimum(gb_zcut_ind,nz)-0,ind_2_mat[:,0,:,:],ind_3_mat[:,0,:,:]]
+
+
+    # Find the proportion of the grid box that straddles the threhold,that is above the theshold
     prop_ab_zcut = (zcutoff- gdept_sh_zcut) / (gdept_de_zcut - gdept_sh_zcut)
+    
+    # when the water column is shallowe than the threshold, 
+    #   the index of the grid box above and below don't make sense, 
+    #   therefore the proportion, and so the weighting >1.
+    # Catch this, by setting the weighting of this grid box to zero.
+    prop_ab_zcut[gdept_de_zcut<zcutoff] = 1
 
+    # add this proportion to the weighing array
     weight_mat[ind_0_mat[:,0,:,:],gb_zcut_ind,ind_2_mat[:,0,:,:],ind_3_mat[:,0,:,:]] = prop_ab_zcut
 
-
-    # depth mean T and S above the threshold depth
+    if weight_mat.max() > 1:
+        print('')
+        print('Error in pea_TS.')
+        print('Logic to produce weighting of grid box> depth threshold has failed.')
+        print('')
+        pdb.set_trace()
 
     T_mn_zcut = (T*e3t*weight_mat).sum(axis = 1)/(e3t*weight_mat).sum(axis = 1)
     S_mn_zcut = (S*e3t*weight_mat).sum(axis = 1)/(e3t*weight_mat).sum(axis = 1)
 
     #3d density field
     #rho = calc_sigma0(T,S)
-    rho = sw_dens(T,S)
-
-
+    from NEMO_nc_slevel_viewer_lib import sw_dens
+    rho = sw_dens(T,S) 
 
 
     #Density field from depth average T and S
@@ -1004,13 +1030,13 @@ def pea_TS(T_in,S_in,gdept,e3t_in,tmask,calc_TS_comp = False, zcutoff = 400.):
         rho_mn_zcut_T = sw_dens(T,S_mn_zcut_mat)
         drho_zcut_T = (rho - rho_mn_zcut_T)
 
-
     #potential energy anomaly - depth integrated to depth threshold (400m)
-    pea =  9.81*(drho_zcut*gdept*e3t*weight_mat).sum(axis = 1)/(gdept*weight_mat).max(axis = 1)
+    # mistake pea =  9.81*(drho_zcut*gdept*e3t*weight_mat).sum(axis = 1)/(gdept*weight_mat).sum(axis = 1)
+    pea =  9.81*(drho_zcut*curr_gdept*e3t*weight_mat).sum(axis = 1)/(e3t*weight_mat).sum(axis = 1)
 
 
     if calc_TS_comp:
-        pea_T  =         9.81*(drho_zcut_T*gdept*e3t*weight_mat).sum(axis = 1)/(gdept*weight_mat).max(axis = 1)
+        pea_T  =         9.81*(drho_zcut_T*curr_gdept*e3t*weight_mat).sum(axis = 1)/(e3t*weight_mat).sum(axis = 1)
         pea_S = pea*(1-pea_T/pea)
 
     if calc_TS_comp:

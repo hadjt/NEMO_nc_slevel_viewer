@@ -1221,8 +1221,12 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
         if var_dim[var] == 3:
 
             if var in deriv_var:
-                ts_dat_1 = np.ma.ones(len(nctime))*np.ma.masked
-                ts_dat_2 = np.ma.ones(len(nctime))*np.ma.masked
+                if var.upper() in ['PEA', 'PEAT','PEAS']:
+                    ts_dat_1, ts_dat_2 = reload_ts_data_derived_var_pea()
+                else:
+                    ts_dat_1 = np.ma.ones(len(nctime))*np.ma.masked
+                    ts_dat_2 = np.ma.ones(len(nctime))*np.ma.masked
+
             else:
                 ts_dat_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,jj,ii].load())
                 if load_2nd_files:
@@ -1416,6 +1420,61 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
 
 
 
+    def reload_ts_data_derived_var_pea():
+        #pdb.set_trace()
+        
+
+        gdept_mat = rootgrp_gdept.variables[ncgdept][0,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,jj,ii]
+        dz_mat = rootgrp_gdept.variables['e3t_0'][0,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,jj,ii]
+
+        tmp_T_data_1 = np.ma.masked_invalid(curr_tmp_data.variables['votemper'][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,:,jj,ii].load())[:,:,np.newaxis,np.newaxis]
+        tmp_S_data_1 = np.ma.masked_invalid(curr_tmp_data.variables['vosaline'][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,:,jj,ii].load())[:,:,np.newaxis,np.newaxis]
+        nt_pea = tmp_T_data_1.shape[0]
+
+        gdept_mat_pea = np.tile(gdept_mat[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_pea)).T
+        dz_mat_pea = np.tile(dz_mat[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_pea)).T
+        tmask_pea = np.tile((tmask[:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,jj,ii])[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_pea)).T
+
+
+        ts_dat_1 = pea_TS(tmp_T_data_1,tmp_S_data_1,gdept_mat_pea,dz_mat_pea,tmask=tmask_pea==False,calc_TS_comp = False )[:,0,0] # tmppea,tmppeat,tmppeas, calc_TS_comp = True
+
+        # tmp_T_data_1.shape,tmp_S_data_1.shape,gdept_mat_pea.shape,dz_mat_pea.shape,tmask_pea.shape
+
+
+        #pdb.set_trace()
+        ts_dat_2 = ts_dat_1
+        if load_2nd_files:
+        
+            if config_2nd is None:
+            
+                tmp_T_data_2 = regrid_2nd(np.ma.masked_invalid(curr_tmp_data_2nd.variables['votemper'][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj,ii].load()))[:,:,np.newaxis,np.newaxis]
+                tmp_S_data_2 = regrid_2nd(np.ma.masked_invalid(curr_tmp_data_2nd.variables['vosaline'][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj,ii].load()))[:,:,np.newaxis,np.newaxis]
+#
+
+                ts_dat_2 = pea_TS(tmp_T_data_2,tmp_S_data_2,gdept_mat_pea,dz_mat_pea,tmask=tmask_pea==False,calc_TS_comp = False )[:,0,0] # tmppea,tmppeat,tmppeas, calc_TS_comp = True
+            else:
+
+            
+                tmp_T_data_2 = regrid_2nd(np.ma.masked_invalid(curr_tmp_data_2nd.variables['votemper'][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj_2nd_ind,ii_2nd_ind].load()))[:,:,np.newaxis,np.newaxis]
+                tmp_S_data_2 = regrid_2nd(np.ma.masked_invalid(curr_tmp_data_2nd.variables['vosaline'][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj_2nd_ind,ii_2nd_ind].load()))[:,:,np.newaxis,np.newaxis]
+#
+
+                gdept_mat_2nd = rootgrp_gdept_2nd.variables[ncgdept][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,jj_2nd_ind,ii_2nd_ind]
+                dz_mat_2nd = rootgrp_gdept_2nd.variables['e3t_0'][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,jj_2nd_ind,ii_2nd_ind]
+
+
+                gdept_mat_pea_2nd = np.tile(gdept_mat[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_pea)).T
+                dz_mat_pea_2nd = np.tile(dz_mat[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_pea)).T
+
+                gdept_mat_pea_2nd = np.tile(gdept_mat_2nd[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_pea)).T
+                dz_mat_pea_2nd = np.tile(dz_mat_2nd[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_pea)).T
+                tmask_pea_2nd = np.tile((tmask_2nd[:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,jj,ii])[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_pea)).T
+
+
+                ts_dat_2 = pea_TS(tmp_T_data_2[np.newaxis],tmp_S_data_2[np.newaxis],gdept_mat_pea_2nd,dz_mat_pea_2nd,tmask=tmask_pea_2nd==False,calc_TS_comp = False )[0] # tmppea,tmppeat,tmppeas, calc_TS_comp = True
+        return ts_dat_1, ts_dat_2 
+ 
+
 
     def reload_map_data_derived_var_pea():
 
@@ -1425,6 +1484,9 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
         tmp_T_data_1 = np.ma.masked_invalid(curr_tmp_data.variables['votemper'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
         tmp_S_data_1 = np.ma.masked_invalid(curr_tmp_data.variables['vosaline'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
         map_dat_1 = pea_TS(tmp_T_data_1[np.newaxis],tmp_S_data_1[np.newaxis],gdept_mat,dz_mat,tmask=tmask[:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][np.newaxis]==False,calc_TS_comp = False )[0] # tmppea,tmppeat,tmppeas, calc_TS_comp = True
+
+
+        #pdb.set_trace()
         map_dat_2 = map_dat_1
         if load_2nd_files:
         
@@ -2098,10 +2160,10 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
                 if load_2nd_files & (clim_pair == True)&(secdataset_proc not in ['Dat1-Dat2','Dat2-Dat1']) :
 
                     # if no xlim present using those from the map.
-                    tmpxlim = xlim
-                    tmpylim = ylim
-                    if xlim is None: tmpxlim = ax[0].get_xlim()#np.array([nav_lon.min(), nav_lon.max()])    
-                    if ylim is None: tmpylim = ax[0].get_ylim()#np.array([nav_lat.min(), nav_lat.max()])    
+                    tmpxlim = cur_xlim
+                    tmpylim = cur_ylim
+                    if cur_xlim is None: tmpxlim = ax[0].get_xlim()#np.array([nav_lon.min(), nav_lon.max()])    
+                    if cur_ylim is None: tmpylim = ax[0].get_ylim()#np.array([nav_lat.min(), nav_lat.max()])    
 
                     map_dat_reg_mask_1 = (nav_lon>tmpxlim[0]) & (nav_lon<tmpxlim[1]) & (nav_lat>tmpylim[0]) & (nav_lat<tmpylim[1])
                     #map_dat_reg_mask_2 = (nav_lon_2nd>xlim[0]) & (nav_lon_2nd<xlim[1]) & (nav_lat_2nd>ylim[0]) & (nav_lat_2nd<ylim[1])
@@ -2460,11 +2522,11 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
                         # set xlim and ylim to max size possible from nav_lat and nav_lon
                         cur_xlim = np.array([nav_lon.min(),nav_lon.max()])
                         cur_ylim = np.array([nav_lat.min(),nav_lat.max()])
-                        reload_map = True
-                        reload_ew = True
-                        reload_ns = True
-                        reload_hov = True
-                        reload_ts = True
+                        #reload_map = True
+                        #reload_ew = True
+                        #reload_ns = True
+                        #reload_hov = True
+                        #reload_ts = True
                     elif but_name in 'Zoom':
                         # use ginput to take two clicks as zoom region. 
                         # only coded for main axes
@@ -2493,11 +2555,11 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
                                 if zoom0_ax == 0:
                                     cur_xlim = np.array([nav_lon[zoom0_jj,zoom0_ii],nav_lon[zoom1_jj,zoom1_ii]])
                                     cur_ylim = np.array([nav_lat[zoom0_jj,zoom0_ii],nav_lat[zoom1_jj,zoom1_ii]])
-                                    reload_map = True
-                                    reload_ew = True
-                                    reload_ns = True
-                                    reload_hov = True
-                                    reload_ts = True
+                                    #reload_map = True
+                                    #reload_ew = True
+                                    #reload_ns = True
+                                    #reload_hov = True
+                                    #reload_ts = True
                                 
                         #print(cur_xlim)
                         #print(cur_ylim)
