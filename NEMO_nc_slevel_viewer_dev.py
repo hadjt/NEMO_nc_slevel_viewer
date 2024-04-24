@@ -215,7 +215,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
         thin_y0_2nd=0
         thin_y1_2nd=None
         #if thin_2nd is None:
-        thin_2nd=1
+        #thin_2nd=1
 
         if (config.upper() in ['AMM7','AMM15']) & (config_2nd.upper() in ['AMM7','AMM15']):  
             mesh_file_2nd = config_fnames_dict[config_2nd]['mesh_file'] 
@@ -806,6 +806,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
         var_but_mat_order = []
         for var_but in var_but_mat:var_but_mat_order.append(np.where(var_mat == var_but )[0][0])
         var_but_mat = var_but_mat[np.argsort(var_but_mat_order)]
+
 
     but_extent = {}
     but_line_han,but_text_han = {},{}
@@ -1564,6 +1565,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
         map_dat_df_1 = map_dat_ss_1 - map_dat_nb_1
      
         if load_2nd_files:
+            #pdb.set_trace()
 
             map_dat_3d = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
             map_dat_ss_2 = regrid_2nd(map_dat_3d[0])
@@ -1614,7 +1616,10 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
 
                 #tmp_dat_out = dat_in[amm7_amm15_dict['amm7_amm15_jj'][thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]//thin,amm7_amm15_dict['amm7_amm15_ii'][thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]//thin]
                 #dat_out = tmp_dat_out[thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
-                dat_out = dat_in[amm7_amm15_dict['amm7_amm15_jj'][thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]//thin_2nd,amm7_amm15_dict['amm7_amm15_ii'][thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]//thin_2nd]
+                #dat_out = dat_in[amm7_amm15_dict['amm7_amm15_jj'][thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]//thin_2nd,amm7_amm15_dict['amm7_amm15_ii'][thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]//thin_2nd]
+
+
+                dat_out = dat_in[(amm7_amm15_dict['amm7_amm15_jj'] - thin_y0_2nd) //thin_2nd,(amm7_amm15_dict['amm7_amm15_ii'] - thin_y0_2nd) //thin_2nd]
                 dat_out = dat_out[thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
 
             elif (config.upper() == 'AMM7') & (config_2nd.upper() == 'AMM15'):
@@ -1623,7 +1628,14 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
                 #tmp_dat_out = dat_in[amm15_amm7_dict['amm15_amm7_jj'][thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]//thin,amm15_amm7_dict['amm15_amm7_ii'][thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]//thin]
                 #dat_out = tmp_dat_out[thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
                 #pdb.set_trace()
-                dat_out = dat_in[amm15_amm7_dict['amm15_amm7_jj'][thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]//thin_2nd,amm15_amm7_dict['amm15_amm7_ii'][thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]//thin_2nd]
+
+                
+                #dat_out = dat_in[amm15_amm7_dict['amm15_amm7_jj'][thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]//thin_2nd,amm15_amm7_dict['amm15_amm7_ii'][thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]//thin_2nd]
+
+
+                dat_out = dat_in[(amm15_amm7_dict['amm15_amm7_jj'] - thin_y0_2nd) //thin_2nd,(amm15_amm7_dict['amm15_amm7_ii'] - thin_y0_2nd) //thin_2nd]
+
+
                 dat_out = dat_out[thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
             else:
                 print('config and config_2nd must be AMM15 and AMM7')
@@ -1977,8 +1989,13 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
             if verbose_debugging: print('Reloaded hov data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now(),'; dt = %s'%(datetime.now()-prevtime))
             prevtime = datetime.now()
             if reload_ts:
+                if hov_time:
 
-                ts_dat_1, ts_dat_2,ts_x = reload_ts_data()
+                    ts_dat_1, ts_dat_2,ts_x = reload_ts_data()
+                else:
+                    ts_x = time_datetime
+                    ts_dat_1 = np.ma.ones(len(nctime))*np.ma.masked
+                    ts_dat_2 = np.ma.ones(len(nctime))*np.ma.masked
                 reload_ts = False
                 
 
@@ -2058,10 +2075,10 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
             elif load_2nd_files:
                 if secdataset_proc == 'Dat1-Dat2':
                     tsax  = ax[4].plot(ts_x,ts_dat_1 - ts_dat_2,'tab:brown')
-                    tsax2 = ax[4].plot(ts_x,ts_dat_1 - ts_dat_2,'tab:brown')
+                    tsax2 = ax[4].plot(ts_x,ts_dat_1*0, color = '0.5', ls = '--')
                 elif secdataset_proc == 'Dat2-Dat1':
                     tsax  = ax[4].plot(ts_x,ts_dat_2 - ts_dat_1,'g')
-                    tsax2 = ax[4].plot(ts_x,ts_dat_2 - ts_dat_1,'g')
+                    tsax2 = ax[4].plot(ts_x,ts_dat_1*0, color = '0.5', ls = '--')
                 elif secdataset_proc == 'Dataset 1':
                     tsax   = ax[4].plot(ts_x,ts_dat_1,'r')
                     tsax2 = ax[4].plot(ts_x,ts_dat_2,'b', lw = 0.5)
@@ -2485,7 +2502,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
                 but_pos_x0,but_pos_x1,but_pos_y0,but_pos_y1 = but_extent[but_name]
                 if (clii >= but_pos_x0) & (clii <= but_pos_x1) & (cljj >= but_pos_y0) & (cljj <= but_pos_y1):
                     is_in_axes = True
-                    if but_name in var_mat:
+                    if but_name in var_but_mat:
                         var = but_name
 
 
@@ -2497,7 +2514,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
                             func_but_text_han['Near-Bed'].set_color('k')
                             func_but_text_han['Surface-Bed'].set_color('k')
                         
-                        for vi,var_dat in enumerate(var_mat): but_text_han[var_dat].set_color('k')
+                        for vi,var_dat in enumerate(var_but_mat): but_text_han[var_dat].set_color('k')
                         but_text_han[but_name].set_color('r')
                         fig.canvas.draw()
                         
