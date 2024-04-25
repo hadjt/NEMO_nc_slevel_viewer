@@ -918,8 +918,10 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
     if do_grad == 1:
         func_but_text_han['Grad'].set_color('darkgreen')
     else:
-        func_but_text_han['Grad'].set_color('k')
-        func_but_text_han['Grad'].set_text(''.join([u'\u0336{}'.format(c) for c in 'Grad ']))
+        func_but_text_han['Grad'].set_color('0.5')
+        func_but_text_han['Grad'].set_text('Grad')
+        #func_but_text_han['Grad'].set_color('k')
+        #func_but_text_han['Grad'].set_text(''.join([u'\u0336{}'.format(c) for c in 'Grad ']))
 
     # When we move to loop mode, we stop checking for button presses, 
     #   so need another way to end the loop... 
@@ -2930,8 +2932,10 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
                             reload_hov = True
                             reload_ts = True
                         elif do_grad == 2:
-                            func_but_text_han['Grad'].set_color('k')
-                            func_but_text_han['Grad'].set_text(''.join([u'\u0336{}'.format(c) for c in 'Grad ']))
+                            #func_but_text_han['Grad'].set_color('k')
+                            #func_but_text_han['Grad'].set_text(''.join([u'\u0336{}'.format(c) for c in 'Grad ']))
+                            func_but_text_han['Grad'].set_color('0.5')
+                            func_but_text_han['Grad'].set_text('Grad')
 
                             do_grad = 0
                             reload_map = True
@@ -3081,11 +3085,20 @@ def main():
     The first two positional keywords are the NEMO configuration "config", 
     and the second is the list of input file names "fname_lst"
     
-    config: should be AMM7, AMM15, CO9p2, ORCA025, ORCA025EXT or ORCA12. Other configurations will be supported soon. 
+    config: should be AMM7, AMM15, CO9p2, ORCA025, ORCA12. Other configurations will be supported soon. 
     fname_lst: supports wild cards, but should be  enclosed in quotes.
     e.g.
-    python NEMO_nc_slevel_viewer_dev.py amm15 "/scratch/frpk/a15ps46trial/control/prodm_op_am-dm.gridT*-36.nc" 
+    python NEMO_nc_slevel_viewer_dev.py amm15 "/directory/to/some/files/prodm_op_am-dm.gridT*-36.nc" 
 
+    if using a variable in the file list use:
+
+
+    fig_fname_lab=dataset1
+    fig_fname_lab_2nd=dataset1
+
+
+    flist1=$(echo "/directory/to/some/files/${fig_fname_lab}/prodm_op_am-dm.gridT*-36.nc)
+    flist2=$(echo "/directory/to/some/files/${fig_fname_lab_2nd}/prodm_op_am-dm.gridT*-36.nc)
 
     Optional arguments are give as keyword value pairs, with the keyword following a double hypen.
     We will list the most useful options first.
@@ -3096,38 +3109,93 @@ def main():
         Enclose in quotes. Make sure this has the same number of files, with the same dates as 
         fname_lst. This will be checked in later upgrades, but will currently fail if the files
         are inconsistent
-    --config_2nd - it is now possible to compare two differnt amm7 and amm15 data, although there is currently reduced functionality (no sections, no derived vars
+
+    --config_2nd - it is now possible to compare two differnt amm7 and amm15 data, although there is currently reduced functionality (to be added)
+
     --U_flist - specify a consistent set of U and V files, to calculate a drived variable current magintude. 
         assumes the variable vozocrtx is present. Later upgrade will allow the plotting of vectors, 
         and to handle other current variable names. Must have both U_flist and V_flist.
     --V_flist - specify a consistent set of U and V files, to calculate a drived variable current magintude. 
         assumes the variable vomecrty is present. Later upgrade will allow the plotting of vectors, 
         and to handle other current variable names. Must have both U_flist and V_flist.
+        
+    --U_flist_2nd as above for a second data set
+    --V_flist_2nd as above for a second data set
+    
+    --ii            initial ii value
+    --jj            initial jj value
+    --ti            initial ti value
+    --zz            initial zz value
+    --lon           initial lon value
+    --lat           initial lat value
+    --date_ind      initial date value in '%Y%m%d' format, or a differnt format with --date_fmt
+    --date_fmt      format for reading dates
+    
+    When displaying large datasets it can take a long time to load the file (connecting with xarray vis open_mfdataset). 
+    When a button press requires new data to be display that can also take time. The slowest part to read new data is 
+    when loading time series of data through files - uses in the hovmuller plots and the time series. There is a button
+    to turn on and off reloading of these data, which can speed up the response. To speed up the initial display, 
+    this can also be turned off at the command line with:
+    
+    --hov_time False
 
+
+    Data Thinning
+    =============
+    To speed up handling of large files, you can "thin" the data, only loading every x row and column of the data:
+        data[thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
+
+    When commparing two data sets, you can thin them separately, with thin_2nd
+
+    You can also thin how many files are read in, using thin_files, which skips files, in the file list,
+    or thin_files_0 and thin_files_1 to start and end at files within the file list
+
+    use the option --thin 5, --thin_2nd 5, --thin_files 5
+
+    e.g.
+    
+    --thin      thin the data, to only load the xth row and column
+    --thin_2nd  thin the data of the second data set, if of a differnt configuration.
+    
+    or thinned temporally, skipping some of the files: 
+    
+    --thin_files        thin the data, to only load the xth file
+    --thin_files_0      thin the data, to only load the files after the xth
+    --thin_files_1      thin the data, to only load the files before the xth
+    
+    It is also possible to only load a reduced region:
+    
+    --thin_x0   first row to load
+    --thin_x1   last row to load
+    --thin_y0   first column to load
+    --thin_y1   last column to load
+    
+    --thin_x0_2nd   first row to load of the second data set, if of a differnt configuration.
+    --thin_x1_2nd   last row to load of the second data set, if of a differnt configuration.
+    --thin_y0_2nd   first column to load of the second data set, if of a differnt configuration.
+    --thin_y1_2nd   last column to load of the second data set, if of a differnt configuration.
+    
+    It is possible to save figures, these will also have text files with the settings to recreate the figure
+    at a higher resolution (more files, less thining) with just plot
 
     --fig_dir - directory for figure output
     --fig_lab - label to add to filesnames, so can compare runs.
     --fig_cutout - save full screen, or cut off the buttons - this is the defaulted to True
 
     --clim_sym use a symetrical colourbar -defaulted to False
+    --clim_pair use the same color limits between datasets. Can be changed with a button click
     --use_cmocean - use cmocean colormaps -defaulted to False
 
     --verbose_debugging - prints out lots of statements at run time, to help debug -defaulted to False
 
-    --ii    initial ii value
-    --jj    initial jj value
-    --ti    initial ti value
-    --zz    initial zz value
-
-
-    --thin  thin the data, to only load the xth row and column
 
     Planned upgrades:
     =================
     Plot current vectors.
-    Improve meaningfulness of the figure title. State level being plotted (zlev, ss, df etc.)
-    Allow colorbar to be specified
-    
+
+    add density
+
+    output ncfiles of data
 
     Using NEMO_nc_slevel_viewer.
     ============================
@@ -3205,16 +3273,6 @@ def main():
     It doesn't appear to work when comparing two sets of files.
     It doens't handle negative values very well. 
     
-    Data Thinning
-    =============
-    To speed up handling of large files, you can "thin" the data, only loading every x row and column of the data:
-        data[thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
-
-    When commparing two data sets, you can thin them separately, with thin_2nd
-
-    You can also thin how many files are read in, using thin_files
-
-    use the option --thin 5, --thin_2nd 5, --thin_files 5
 
 
     Saving figures
@@ -3224,6 +3282,19 @@ def main():
     Figures will be named based on the variable, ii,jj, ti and zz location, and with a figure label
     given with the --fig_lab option. By default, the savedfigure will exclude the buttons. If you want
     the full screen (or the cut out is not optimised) use  the --fig_cutout False option.
+
+    Just plotting
+    =============
+    When analysing large datasets, the loading and interactivity can be slow. thinnig the data allows 
+    reasonable performance at reduce resolution. One approach is to use this low-res option to find 
+    intersting features, then save the figure and the options in an text files. These can then be edited
+    (e.g. reducing the thinning), and the viewer can be run in "justplot" mode, where it loads the data
+    and saves the figures without any interactivity. This can even be run on spice.
+    
+    --justplot True                 Just plot mode
+    --justplot_date_ind             additional dates to plot
+    --justplot_secdataset_proc      datasets to plot
+    --justplot_z_meth_zz            depths to plot
 
     Quit
     ====
