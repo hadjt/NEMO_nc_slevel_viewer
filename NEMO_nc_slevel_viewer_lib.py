@@ -476,6 +476,35 @@ def get_colorbar_values(cb, verbose = False):
 
 
 
+def field_gradient_2d(tmpdat,e1t,e2t,dir_grad = False):
+
+
+    nlat,nlon = e1t.shape
+
+    xs = e1t.cumsum(axis = 1)
+    ys = e2t.cumsum(axis = 0)
+
+    dtmpdat_dx_c = (tmpdat[1:-1,2:] - tmpdat[1:-1,:-2])/(0.001*2*(xs[1:-1,2:] - xs[1:-1,:-2]))
+    dtmpdat_dy_c = (tmpdat[2:,1:-1] - tmpdat[:-2,1:-1])/(0.001*2*(ys[2:,1:-1] - ys[:-2,1:-1]))
+
+    dtmpdat_dkm = np.sqrt( (dtmpdat_dx_c)**2 + (dtmpdat_dy_c)**2   )
+
+
+    dtmpdat_dkm_out = np.ma.zeros((nlat,nlon))
+    dtmpdat_dx_c_out = np.ma.zeros((nlat,nlon))
+    dtmpdat_dy_c_out = np.ma.zeros((nlat,nlon))
+    dtmpdat_dkm_out[:] = np.ma.masked
+    dtmpdat_dx_c_out[:] = np.ma.masked
+    dtmpdat_dy_c_out[:] = np.ma.masked
+    dtmpdat_dkm_out[1:-1,1:-1] = dtmpdat_dkm
+    dtmpdat_dx_c_out[1:-1,1:-1] = dtmpdat_dx_c
+    dtmpdat_dy_c_out[1:-1,1:-1] = dtmpdat_dy_c
+    if dir_grad:
+        return dtmpdat_dkm_out, dtmpdat_dx_c_out, dtmpdat_dy_c_out
+    else:
+        return dtmpdat_dkm_out
+
+
 
 
 #from nemo_forcings_functions import interp1dmat_wgt, interp1dmat_create_weight
