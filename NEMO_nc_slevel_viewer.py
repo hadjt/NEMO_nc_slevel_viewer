@@ -350,8 +350,8 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
 
     e1t = rootgrp_gdept.variables['e1t'][0,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
     e2t = rootgrp_gdept.variables['e2t'][0,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
-    e1t_2nd = rootgrp_gdept.variables['e1t'][0,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
-    e2t_2nd = rootgrp_gdept.variables['e2t'][0,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
+    #e1t_2nd = rootgrp_gdept.variables['e1t'][0,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
+    #e2t_2nd = rootgrp_gdept.variables['e2t'][0,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
 
     deriv_var = []
     if load_2nd_files: deriv_var_2nd = []
@@ -1562,7 +1562,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
         
         if load_2nd_files:
             if zz not in interp1d_wgtT_2nd.keys(): 
-                interp1d_wgtT_2nd[zz] = interp1dmat_create_weight(rootgrp_gdept_2nd.variables[config_fnames_dict[config][ncgept]][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd],zz)
+                interp1d_wgtT_2nd[zz] = interp1dmat_create_weight(rootgrp_gdept_2nd.variables[config_fnames_dict[config][ncgdept]][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd],zz)
         
         map_dat_1 =  interp1dmat_wgt(np.ma.masked_invalid(curr_tmp_data.variables[var][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load()),interp1d_wgtT[zz])
 
@@ -1779,14 +1779,15 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
 
 
     def grad_horiz_ns_data():
-        ns_slice_dx_1 =  (e2t[2:,ii] +  e2t[:-2,ii])/2 + e2t[1:-1,ii]
-        ns_slice_dx_2 =  (e2t_2nd[2:,ii] +  e2t_2nd[:-2,ii])/2 + e2t_2nd[1:-1,ii]
+        ns_slice_dx =  thin*((e2t[2:,ii] +  e2t[:-2,ii])/2 + e2t[1:-1,ii])
+        #ns_slice_dx_1 =  (e2t[2:,ii] +  e2t[:-2,ii])/2 + e2t[1:-1,ii]
+        #ns_slice_dx_2 =  (e2t_2nd[2:,ii] +  e2t_2nd[:-2,ii])/2 + e2t_2nd[1:-1,ii]
         dns_1 = ns_slice_dat_1[:,2:] - ns_slice_dat_1[:,:-2]
         dns_2 = ns_slice_dat_2[:,2:] - ns_slice_dat_2[:,:-2]
 
 
-        ns_slice_dat_1[:,1:-1] = dns_1/ns_slice_dx_1
-        ns_slice_dat_2[:,1:-1] = dns_2/ns_slice_dx_2
+        ns_slice_dat_1[:,1:-1] = dns_1/ns_slice_dx#_1
+        ns_slice_dat_2[:,1:-1] = dns_2/ns_slice_dx#_2
 
         ns_slice_dat_1[:,0] = np.ma.masked
         ns_slice_dat_1[:,-1] = np.ma.masked
@@ -1797,13 +1798,15 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
 
 
     def grad_horiz_ew_data():
-        ew_slice_dx_1 =  (e1t[jj,2:] +  e1t[jj,:-2])/2 + e1t[jj,1:-1]
-        ew_slice_dx_2 =  (e1t_2nd[jj,2:] +  e1t_2nd[jj,:-2])/2 + e1t_2nd[jj,1:-1]
+        #pdb.set_trace()
+        ew_slice_dx =  thin*((e1t[jj,2:] +  e1t[jj,:-2])/2 + e1t[jj,1:-1])
+        #ew_slice_dx_1 =  (e1t[jj,2:] +  e1t[jj,:-2])/2 + e1t[jj,1:-1]
+        #ew_slice_dx_2 =  (e1t_2nd[jj,2:] +  e1t_2nd[jj,:-2])/2 + e1t_2nd[jj,1:-1]
         dew_1 = ew_slice_dat_1[:,2:] - ew_slice_dat_1[:,:-2]
         dew_2 = ew_slice_dat_2[:,2:] - ew_slice_dat_2[:,:-2]
 
-        ew_slice_dat_1[:,1:-1] = dew_1/ew_slice_dx_1
-        ew_slice_dat_2[:,1:-1] = dew_2/ew_slice_dx_2
+        ew_slice_dat_1[:,1:-1] = dew_1/ew_slice_dx#_1
+        ew_slice_dat_2[:,1:-1] = dew_2/ew_slice_dx#_2
 
         ew_slice_dat_1[:,0] = np.ma.masked
         ew_slice_dat_1[:,-1] = np.ma.masked
@@ -2061,8 +2064,9 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
                 
 
                 if do_grad == 1:
-                    map_dat_1 = field_gradient_2d(map_dat_1, e1t,e2t)
-                    map_dat_2 = field_gradient_2d(map_dat_2, e1t_2nd,e2t_2nd)
+                    #pdb.set_trace()
+                    map_dat_1 = field_gradient_2d(map_dat_1, thin*e1t,thin*e2t) # scale up widths between grid boxes
+                    map_dat_2 = field_gradient_2d(map_dat_2, thin*e1t,thin*e2t) # map 2 aleady on map1 grid, so use e1t not e1t_2nd
 
 
 
