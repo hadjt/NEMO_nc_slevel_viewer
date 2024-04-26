@@ -11,7 +11,7 @@ import cftime
 import matplotlib
 import csv
 
-from NEMO_nc_slevel_viewer_lib import set_perc_clim_pcolor, get_clim_pcolor, set_clim_pcolor,set_perc_clim_pcolor_in_region,get_colorbar_values,interp1dmat_wgt, interp1dmat_create_weight, nearbed_index,extract_nb,load_nearbed_index,pea_TS,rotated_grid_from_amm15,rotated_grid_to_amm15, reduce_rotamm15_grid,lon_lat_to_str,load_nn_amm15_amm7_wgt,load_nn_amm7_amm15_wgt,load_nc_dims,load_nc_var_name_list,field_gradient_2d
+from NEMO_nc_slevel_viewer_lib import set_perc_clim_pcolor, get_clim_pcolor, set_clim_pcolor,set_perc_clim_pcolor_in_region,get_colorbar_values,interp1dmat_wgt, interp1dmat_create_weight, nearbed_index,extract_nb,load_nearbed_index,pea_TS,rotated_grid_from_amm15,rotated_grid_to_amm15, reduce_rotamm15_grid,lon_lat_to_str,load_nn_amm15_amm7_wgt,load_nn_amm7_amm15_wgt,load_nc_dims,load_nc_var_name_list,field_gradient_2d,scale_color_map
 
 letter_mat = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
 
@@ -110,13 +110,18 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         
         import cmocean
         # default color map to use
-        base_cmap = None
+        base_cmap = cmocean.cm.thermal
         scnd_cmap = cmocean.cm.balance
     else:
-        base_cmap = None
+        base_cmap = matplotlib.cm.viridis
         #scnd_cmap = matplotlib.cm.seismic
         scnd_cmap = matplotlib.cm.coolwarm
+
+    col_scl = 0
     curr_cmap = base_cmap
+    base_cmap_low,base_cmap_high = scale_color_map(curr_cmap)
+
+    #pdb.set_trace()
 
     if clim_sym is None: clim_sym = False
 
@@ -853,7 +858,8 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
     mode_name_lst = ['Click','Loop']
 
-    func_names_lst = ['Hov/Time','Reset zoom', 'Zoom', 'Clim: Reset','Clim: Zoom','Clim: Expand','Clim: perc','Clim: normal', 'Clim: log','Clim: pair','Surface', 'Near-Bed', 'Surface-Bed','Depth level','Contours','Grad','Save Figure','Quit']
+    #func_names_lst = ['Hov/Time','Reset zoom', 'Zoom', 'Clim: Reset','Clim: Zoom','Clim: Expand','Clim: perc','Clim: normal', 'Clim: log','Clim: pair','Surface', 'Near-Bed', 'Surface-Bed','Depth level','Contours','Grad','Save Figure','Quit']
+    func_names_lst = ['Hov/Time','ColScl','Reset zoom', 'Zoom', 'Clim: Reset','Clim: Zoom','Clim: Expand','Clim: pair','Surface', 'Near-Bed', 'Surface-Bed','Depth level','Contours','Grad','Save Figure','Quit']
 
     
     if load_2nd_files == False:
@@ -928,6 +934,10 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     else:
         func_but_text_han['Grad'].set_color('0.5')
         func_but_text_han['Grad'].set_text('Grad')
+
+    func_but_text_han['ColScl'].set_text('Col: Linear')
+
+
         #func_but_text_han['Grad'].set_color('k')
         #func_but_text_han['Grad'].set_text(''.join([u'\u0336{}'.format(c) for c in 'Grad ']))
 
@@ -962,7 +972,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
 
     #func_but_text_han['Depth level'].set_color('r')
-    func_but_text_han['Clim: normal'].set_color('b')
+    #func_but_text_han['Clim: normal'].set_color('b')
     but_text_han[var].set_color('r')
     #pdb.set_trace()
 
@@ -2169,76 +2179,6 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
             if verbose_debugging: print('Reloaded  ts data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now(),'; dt = %s'%(datetime.now()-prevtime))
             prevtime = datetime.now()
 
-
-            '''
-
-            if do_grad:
-
-
-                map_dat_1 = field_gradient_2d(map_dat_1, e1t,e2t)
-                map_dat_2 = field_gradient_2d(map_dat_2, e1t_2nd,e2t_2nd)
-
-
-                e1t = rootgrp_gdept.variables['e1t'][0,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
-                e2t = rootgrp_gdept.variables['e2t'][0,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
-                e1t_2nd = rootgrp_gdept.variables['e1t'][0,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
-                e2t_2nd = rootgrp_gdept.variables['e2t'][0,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
-
-                if var_dim[var] == 4:
-                    #pdb.set_trace()
-                    ew_slice_dx_1 =  (e1t[jj,2:] +  e1t[jj,:-2])/2 + e1t[jj,1:-1]
-                    ew_slice_dx_2 =  (e1t_2nd[jj,2:] +  e1t_2nd[jj,:-2])/2 + e1t_2nd[jj,1:-1]
-                    dew_1 = ew_slice_dat_1[:,2:] - ew_slice_dat_1[:,:-2]
-                    dew_2 = ew_slice_dat_2[:,2:] - ew_slice_dat_2[:,:-2]
-
-                    ew_slice_dat_1[:,1:-1] = dew_1/ew_slice_dx_1
-                    ew_slice_dat_2[:,1:-1] = dew_2/ew_slice_dx_2
-
-                    ew_slice_dat_1[:,0] = np.ma.masked
-                    ew_slice_dat_1[:,-1] = np.ma.masked
-                    ew_slice_dat_2[:,0] = np.ma.masked
-                    ew_slice_dat_2[:,-1] = np.ma.masked
-
-
-                    ns_slice_dx_1 =  (e2t[2:,ii] +  e2t[:-2,ii])/2 + e2t[1:-1,ii]
-                    ns_slice_dx_2 =  (e2t_2nd[2:,ii] +  e2t_2nd[:-2,ii])/2 + e2t_2nd[1:-1,ii]
-                    dns_1 = ns_slice_dat_1[:,2:] - ns_slice_dat_1[:,:-2]
-                    dns_2 = ns_slice_dat_2[:,2:] - ns_slice_dat_2[:,:-2]
-
-
-                    ns_slice_dat_1[:,1:-1] = dns_1/ns_slice_dx_1
-                    ns_slice_dat_2[:,1:-1] = dns_2/ns_slice_dx_2
-
-                    ns_slice_dat_1[:,0] = np.ma.masked
-                    ns_slice_dat_1[:,-1] = np.ma.masked
-                    ns_slice_dat_2[:,0] = np.ma.masked
-                    ns_slice_dat_2[:,-1] = np.ma.masked
-            '''
-
-            '''
-            e1t = rootgrp_gdept.variables['e1t'][0,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
-            e2t = rootgrp_gdept.variables['e2t'][0,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
-            ew_slice_dx =  (e1t[jj,2:] +  e1t[jj,:-2])/2 + e1t[jj,1:-1]
-            ns_slice_dx =  (e2t[2:,ii] +  e2t[:-2,ii])/2 + e2t[1:-1,ii]
-
-            dew = ew_slice_dat[:,2:] - ew_slice_dat[:,:-2]
-            dns = ns_slice_dat[:,2:] - ns_slice_dat[:,:-2]
-
-            ew_slice_dat[:,1:-1] = dew/ew_slice_dx
-            ns_slice_dat[:,1:-1] = dns/ns_slice_dx
-
-            ns_slice_dat[:,0] = np.ma.masked
-            ns_slice_dat[:,-1] = np.ma.masked
-            ew_slice_dat[:,0] = np.ma.masked
-            ew_slice_dat[:,-1] = np.ma.masked
-
-            pdb.set_trace()
-            map_dat = field_gradient_2d(map_dat, e1t,e2t)
-
-            '''
-
-                
-                
             print('Reloaded all data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now(),'; dt = %s'%(datetime.now()-datstarttime))
 
 
@@ -2250,7 +2190,12 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                 curr_cmap = scnd_cmap
                 clim_sym = True
             elif secdataset_proc in ['Dataset 1','Dataset 2']:
-                curr_cmap = base_cmap
+                if col_scl == 0:
+                    curr_cmap = base_cmap
+                elif col_scl == 1:
+                    curr_cmap = base_cmap_high
+                elif col_scl == 2:
+                    curr_cmap = base_cmap_low
                 clim_sym = False
             else:
                 print(secdataset_proc)
@@ -2514,9 +2459,13 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                         #   therefore repeat set_perc_clim_pcolor of the map, so the hovmuller colour limit is not the final one. 
                         set_perc_clim_pcolor_in_region(5,95, ax = ax[0],sym = clim_sym)
 
-                    else:
-                        for ai,tmpax in enumerate(ax):set_clim_pcolor((clim[2*ai:2*ai+1+1]), ax = tmpax)
-                        set_clim_pcolor((clim[:2]), ax = ax[0])
+                    elif clim is not None:
+                        if len(clim)>2:
+                            for ai,tmpax in enumerate(ax):set_clim_pcolor((clim[2*ai:2*ai+1+1]), ax = tmpax)
+                            set_clim_pcolor((clim[:2]), ax = ax[0])
+                        elif len(clim)==2:
+                            for ai,tmpax in enumerate(ax):set_clim_pcolor((clim), ax = tmpax)
+                            set_clim_pcolor((clim), ax = ax[0])
             except:
                 print("An exception occured - probably 'IndexError: cannot do a non-empty take from an empty axes.'")
                 pdb.set_trace()
@@ -2788,8 +2737,8 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                         fig.canvas.draw()
                         
                         climnorm = None 
-                        func_but_text_han['Clim: log'].set_color('k')
-                        func_but_text_han['Clim: normal'].set_color('b')
+                        #func_but_text_han['Clim: log'].set_color('k')
+                        #func_but_text_han['Clim: normal'].set_color('b')
 
                         reload_map = True
                         reload_ew = True
@@ -2876,24 +2825,24 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                         clim = None
 
                     
-                    elif but_name == 'Clim: log': 
-                        if secdataset_proc in ['Dat1-Dat2','Dat2-Dat1']:
-                            func_but_text_han['Clim: log'].set_color('0.5')
-                        else:
-                            #clim = get_clim_pcolor(ax = ax[0])
-                            #pdb.set_trace()
-                            #climnorm = matplotlib.colors.LogNorm(tmpclim[0],tmpclim[1]) # matplotlib.colors.LogNorm(0.005,0.1)
-                            climnorm = matplotlib.colors.LogNorm() # matplotlib.colors.LogNorm(0.005,0.1)
-                            func_but_text_han['Clim: log'].set_color('k')
-                            func_but_text_han['Clim: normal'].set_color('k')
-                            func_but_text_han[but_name].set_color('b')
-                        
+                    #elif but_name == 'Clim: log': 
+                    #    if secdataset_proc in ['Dat1-Dat2','Dat2-Dat1']:
+                    #        func_but_text_han['Clim: log'].set_color('0.5')
+                    #    else:
+                    #        #clim = get_clim_pcolor(ax = ax[0])
+                    #        #pdb.set_trace()
+                    #        #climnorm = matplotlib.colors.LogNorm(tmpclim[0],tmpclim[1]) # matplotlib.colors.LogNorm(0.005,0.1)
+                    #        climnorm = matplotlib.colors.LogNorm() # matplotlib.colors.LogNorm(0.005,0.1)
+                    #        func_but_text_han['Clim: log'].set_color('k')
+                    #        func_but_text_han['Clim: normal'].set_color('k')
+                    #        func_but_text_han[but_name].set_color('b')
+                    #    
 
-                    elif but_name == 'Clim: normal':
-                        climnorm = None 
-                        func_but_text_han['Clim: log'].set_color('k')
-                        func_but_text_han['Clim: normal'].set_color('k')
-                        func_but_text_han[but_name].set_color('b')
+                    #elif but_name == 'Clim: normal':
+                    #    climnorm = None 
+                    #    func_but_text_han['Clim: log'].set_color('k')
+                    #    func_but_text_han['Clim: normal'].set_color('k')
+                    #    func_but_text_han[but_name].set_color('b')
 
 
                     elif but_name == 'Clim: pair':
@@ -2962,6 +2911,25 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                             reload_hov = True
                             reload_ts = True
                     
+
+                    elif but_name == 'ColScl':
+                        if secdataset_proc in ['Dataset 1','Dataset 2']:
+                            if col_scl == 0:
+                                func_but_text_han['ColScl'].set_text('Col: High')
+                                col_scl = 1
+                                curr_cmap = base_cmap_high
+                            elif col_scl == 1:
+                                func_but_text_han['ColScl'].set_text('Col: Low')
+                                curr_cmap = base_cmap_low
+                                col_scl = 2
+                            elif col_scl == 2:
+                                func_but_text_han['ColScl'].set_text('Col: Linear')
+                                curr_cmap = base_cmap
+                                col_scl = 0
+                        else:
+                            curr_cmap = scnd_cmap
+
+
                     
                     elif but_name in secdataset_proc_list:
                         secdataset_proc = but_name
@@ -2975,7 +2943,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                         #reload_ns = True
                         #reload_hov = True
                         #reload_ts = True
-
+                        '''
                         #if changing to a difference plot, change to clim normal
                         if but_name in ['Dat1-Dat2','Dat2-Dat1']:
                             func_but_text_han['Clim: log'].set_color('0.5')   
@@ -2983,7 +2951,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                             func_but_text_han['Clim: normal'].set_color('b')
                         else:
                             func_but_text_han['Clim: log'].set_color('k')   
-                    
+                        '''
 
 
 
@@ -3488,28 +3456,6 @@ def main():
                 pdb.set_trace()
  
         if args.do_grad is None:do_grad_in=0
-        '''
-        if args.do_grad is None:
-            do_grad_in=False
-        elif args.do_grad is not None:
-            if args.do_grad.upper() in ['TRUE','T']:
-                do_grad_in = bool(True)
-            elif args.do_grad.upper() in ['FALSE','F']:
-                do_grad_in = bool(False)
-            else:                
-                print(args.do_grad)
-                pdb.set_trace()
-        if args.do_vertgrad is None:
-            do_vertgrad_in=False
-        elif args.do_vertgrad is not None:
-            if args.do_vertgrad.upper() in ['TRUE','T']:
-                do_vertgrad_in = bool(True)
-            elif args.do_vertgrad.upper() in ['FALSE','F']:
-                do_vertgrad_in = bool(False)
-            else:                
-                print(args.do_vertgrad)
-                pdb.set_trace()
-        '''
 
         if args.do_cont is None:
             do_cont_in=True

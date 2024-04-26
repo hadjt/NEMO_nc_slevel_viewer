@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 #from python3_plotting_function import set_perc_clim_pcolor, get_clim_pcolor, set_clim_pcolor,set_perc_clim_pcolor_in_region
 
 
+from matplotlib.colors import LinearSegmentedColormap, ListedColormap
 
 
 import socket
@@ -245,6 +246,29 @@ def testing_rot_pole(nav_lon, nav_lat):
 
     pdb.set_trace()
 
+        
+
+def scale_color_map(base_cmap):
+
+    defcolmap_lst = [] 
+    for i_i in range(256):defcolmap_lst.append(base_cmap(i_i))
+    defcolmap_mat = np.array(defcolmap_lst)
+
+    linind = np.linspace(0,1,256)
+    polyind = np.linspace(0,1,256)**4
+    invpolyind = np.linspace(0,1,256)**(1/4)
+
+
+    poly_defcolmap_mat = defcolmap_mat.copy()
+    invpoly_defcolmap_mat = defcolmap_mat.copy()
+
+    for i_i in range(4):poly_defcolmap_mat[:,i_i] = np.interp(linind, polyind, defcolmap_mat[:,i_i])
+    for i_i in range(4):invpoly_defcolmap_mat[:,i_i] = np.interp(linind, invpolyind, defcolmap_mat[:,i_i])
+
+    curr_cmap_low = ListedColormap(poly_defcolmap_mat)
+    curr_cmap_high = ListedColormap(invpoly_defcolmap_mat)
+    
+    return curr_cmap_low,curr_cmap_high
 
 
 
