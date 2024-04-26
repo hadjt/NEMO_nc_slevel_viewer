@@ -31,15 +31,21 @@ script_dir=os.path.dirname(os.path.realpath(__file__)) + '/'
 
 global fname_lst, fname_lst_2nd,var
 
-def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = None,config = 'amm7', 
-    thin = 1,thin_2nd = 1, thin_files = 1,thin_files_0 = 0,thin_files_1 = None, thin_x0=0,thin_x1=None,thin_y0=0,thin_y1=None,
-    zlim_max = None,xlim = None, ylim = None, tlim = None, clim = None,
+def nemo_slice_zlev(fname_lst, config = 'amm7',  
+    zlim_max = None,var = None,
+    fname_lst_2nd = None,config_2nd = None,
+    U_fname_lst = None,V_fname_lst = None,
+    U_fname_lst_2nd = None,V_fname_lst_2nd = None,
+    thin = 1,thin_2nd = 1, 
+    thin_x0=0,thin_x1=None,thin_y0=0,thin_y1=None,
+    thin_files = 1,thin_files_0 = 0,thin_files_1 = None, 
+    xlim = None, ylim = None, tlim = None, clim = None,
     ii = None, jj = None, ti = None, zz = None, 
     lon_in = None, lat_in = None, date_in_ind = None, date_fmt = '%Y%m%d',
-    z_meth = None,secdataset_proc = 'Dat2-Dat1',
-    clim_sym = None, use_cmocean = False,clim_pair = True,hov_time = True, do_cont = True, do_grad = 1,
-    U_flist = None,V_flist = None,
-    U_flist_2nd = None,V_flist_2nd = None,
+    z_meth = None,
+    secdataset_proc = 'Dataset 1',
+    hov_time = True, do_cont = True, do_grad = 1,
+    clim_sym = None, clim_pair = True,use_cmocean = False,
     fig_dir = None,fig_lab = 'figs',fig_cutout = True, 
     justplot = False, justplot_date_ind = None,justplot_z_meth_zz = None,justplot_secdataset_proc = None,
     fig_fname_lab = None, fig_fname_lab_2nd = None, 
@@ -49,10 +55,10 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
 
     fname_lst = fname_lst[thin_files_0:thin_files_1:thin_files]
     if fname_lst_2nd is not None: fname_lst_2nd = fname_lst_2nd[thin_files_0:thin_files_1:thin_files]
-    if U_flist is not None: U_flist = U_flist[thin_files_0:thin_files_1:thin_files]
-    if V_flist is not None: V_flist = V_flist[thin_files_0:thin_files_1:thin_files]
-    if U_flist_2nd is not None: U_flist_2nd = U_flist_2nd[thin_files_0:thin_files_1:thin_files]
-    if V_flist_2nd is not None: V_flist_2nd = V_flist_2nd[thin_files_0:thin_files_1:thin_files]
+    if U_fname_lst is not None: U_fname_lst = U_fname_lst[thin_files_0:thin_files_1:thin_files]
+    if V_fname_lst is not None: V_fname_lst = V_fname_lst[thin_files_0:thin_files_1:thin_files]
+    if U_fname_lst_2nd is not None: U_fname_lst_2nd = U_fname_lst_2nd[thin_files_0:thin_files_1:thin_files]
+    if V_fname_lst_2nd is not None: V_fname_lst_2nd = V_fname_lst_2nd[thin_files_0:thin_files_1:thin_files]
 
 
 
@@ -145,11 +151,13 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
 
     # if a secondary data set, give ability to change data sets. 
     secdataset_proc_list = ['Dataset 1', 'Dataset 2', 'Dat2-Dat1', 'Dat1-Dat2']
+    if secdataset_proc is None: secdataset_proc = 'Dataset 1'
+    '''
     if load_2nd_files:
         if secdataset_proc is None: secdataset_proc = 'Dat2-Dat1'
     else:
         secdataset_proc = 'Dataset 1'
-
+    '''
     if load_2nd_files == False:
         clim_pair = False
     
@@ -260,10 +268,10 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
     print ('xarray open_mfdataset, Finish',datetime.now())
     #Add baroclinic velocity magnitude
     UV_vec = False
-    if (U_flist is not None) & (V_flist is not None):
+    if (U_fname_lst is not None) & (V_fname_lst is not None):
         UV_vec = True
-        tmp_data_U = xarray.open_mfdataset(U_flist, combine='by_coords',parallel = True) # , decode_cf=False)
-        tmp_data_V = xarray.open_mfdataset(V_flist, combine='by_coords',parallel = True) # , decode_cf=False)
+        tmp_data_U = xarray.open_mfdataset(U_fname_lst, combine='by_coords',parallel = True) # , decode_cf=False)
+        tmp_data_V = xarray.open_mfdataset(V_fname_lst, combine='by_coords',parallel = True) # , decode_cf=False)
     
     print ('xarray open_mfdataset, finish U and V',datetime.now())
 
@@ -519,10 +527,10 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
         print ('xarray open_mfdataset, Start 2nd U and V',datetime.now())
         #Add baroclinic velocity magnitude
         UV_vec_2nd = False
-        if (U_flist_2nd is not None) & (V_flist_2nd is not None):
+        if (U_fname_lst_2nd is not None) & (V_fname_lst_2nd is not None):
             UV_vec_2nd = True
-            tmp_data_U_2nd = xarray.open_mfdataset(U_flist_2nd, combine='by_coords',parallel = True) # , decode_cf=False)
-            tmp_data_V_2nd = xarray.open_mfdataset(V_flist_2nd, combine='by_coords',parallel = True) # , decode_cf=False)
+            tmp_data_U_2nd = xarray.open_mfdataset(U_fname_lst_2nd, combine='by_coords',parallel = True) # , decode_cf=False)
+            tmp_data_V_2nd = xarray.open_mfdataset(V_fname_lst_2nd, combine='by_coords',parallel = True) # , decode_cf=False)
         
         print ('xarray open_mfdataset, finish 2nd U and V',datetime.now())
 
@@ -1309,6 +1317,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
         ew_slice_dat_U = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,jj,:].load())
         ew_slice_dat_V = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,jj,:].load())
         ew_slice_dat_1 = np.sqrt(ew_slice_dat_U**2 + ew_slice_dat_V**2)
+        ew_slice_dat_2 = ew_slice_dat_1
         if load_2nd_files:
             ew_slice_dat_U = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,jj,:].load())
             ew_slice_dat_V = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,jj,:].load())
@@ -1324,6 +1333,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
         ns_slice_dat_U = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,:,ii].load())
         ns_slice_dat_V = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,:,ii].load())
         ns_slice_dat_1 = np.sqrt(ns_slice_dat_U**2 + ns_slice_dat_V**2)
+        ns_slice_dat_2 = ns_slice_dat_1
         if load_2nd_files:
             ns_slice_dat_U = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,:,ii].load())
             ns_slice_dat_V = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,:,ii].load())
@@ -1339,6 +1349,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
         hov_dat_U = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,:,jj,ii].load()).T
         hov_dat_V = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,:,jj,ii].load()).T
         hov_dat_1 = np.sqrt(hov_dat_U**2 + hov_dat_V**2)
+        hov_dat_2 = hov_dat_1
         if load_2nd_files:
             hov_dat_U = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,:,jj,ii].load()).T
             hov_dat_V = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,:,jj,ii].load()).T
@@ -1374,6 +1385,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
             map_dat_3d_1 = np.sqrt(map_dat_3d_U_1**2 + map_dat_3d_V_1**2)
             if zz not in interp1d_wgtT.keys(): interp1d_wgtT[zz] = interp1dmat_create_weight(rootgrp_gdept.variables[ncgdept][0,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin],zz)
             map_dat_1 =  interp1dmat_wgt(map_dat_3d_1,interp1d_wgtT[zz])
+            map_dat_2 = map_dat_1
 
             if load_2nd_files:
                 map_dat_3d_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
@@ -1387,6 +1399,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
             map_dat_U_1 = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
             map_dat_V_1 = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
             map_dat_1 = np.sqrt(map_dat_U_1**2 + map_dat_V_1**2)
+            map_dat_2 = map_dat_1
             if load_2nd_files:
                 map_dat_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
                 map_dat_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
@@ -1402,6 +1415,8 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
             map_dat_3d_1 = np.sqrt(map_dat_3d_U_1**2 + map_dat_3d_V_1**2)
             map_dat_ss_1 = map_dat_3d_1[0,:,:]
             map_dat_nb_1 = np.ma.array(extract_nb(map_dat_3d_1[:,:,:],nbind),mask = tmask[0,:,:])
+
+            map_dat_2 = map_dat_1
             if load_2nd_files:
                 map_dat_3d_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
                 map_dat_3d_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
@@ -1418,6 +1433,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
             map_dat_U_1 = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
             map_dat_V_1 = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
             map_dat_1 = np.sqrt(map_dat_U_1**2 + map_dat_V_1**2)
+            map_dat_2 = map_dat_1
             if load_2nd_files:
                 map_dat_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
                 map_dat_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
@@ -1429,6 +1445,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
             map_dat_U_1 = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][ti,zz,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
             map_dat_V_1 = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][ti,zz,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
             map_dat_1 = np.sqrt(map_dat_U_1**2 + map_dat_V_1**2)
+            map_dat_2 = map_dat_1
             if load_2nd_files:
                 map_dat_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][ti,zz,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
                 map_dat_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][ti,zz,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
@@ -1437,6 +1454,7 @@ def nemo_slice_zlev(fname_lst, fname_lst_2nd = None,config_2nd = None, var = Non
             map_dat_U_1 = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
             map_dat_V_1 = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
             map_dat_1 = np.sqrt(map_dat_U_1**2 + map_dat_V_1**2)
+            map_dat_2 = map_dat_1
             if load_2nd_files:
                 map_dat_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
                 map_dat_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
@@ -3112,15 +3130,15 @@ def main():
 
     --config_2nd - it is now possible to compare two differnt amm7 and amm15 data, although there is currently reduced functionality (to be added)
 
-    --U_flist - specify a consistent set of U and V files, to calculate a drived variable current magintude. 
+    --U_fname_lst - specify a consistent set of U and V files, to calculate a drived variable current magintude. 
         assumes the variable vozocrtx is present. Later upgrade will allow the plotting of vectors, 
-        and to handle other current variable names. Must have both U_flist and V_flist.
-    --V_flist - specify a consistent set of U and V files, to calculate a drived variable current magintude. 
+        and to handle other current variable names. Must have both U_fname_lst and V_fname_lst.
+    --V_fname_lst - specify a consistent set of U and V files, to calculate a drived variable current magintude. 
         assumes the variable vomecrty is present. Later upgrade will allow the plotting of vectors, 
-        and to handle other current variable names. Must have both U_flist and V_flist.
+        and to handle other current variable names. Must have both U_fname_lst and V_fname_lst.
         
-    --U_flist_2nd as above for a second data set
-    --V_flist_2nd as above for a second data set
+    --U_fname_lst_2nd as above for a second data set
+    --V_fname_lst_2nd as above for a second data set
     
     --ii            initial ii value
     --jj            initial jj value
@@ -3314,22 +3332,38 @@ def main():
             epilog=nemo_slice_zlev_helptext)
 
 
+
         parser.add_argument('config', type=str, help="AMM7, AMM15, CO9P2, ORCA025, ORCA025EXT or ORCA12")# Parse the argument
         parser.add_argument('fname_lst', type=str, help='Input file list, enclose in "" more than simple wild card')
-        parser.add_argument('--config_2nd', type=str, required=False, help="Only AMM7, AMM15. No implemented CO9P2, ORCA025, ORCA025EXT or ORCA12")# Parse the argument
+
         parser.add_argument('--zlim_max', type=int, required=False)
-        parser.add_argument('--fname_lst_2nd', type=str, required=False, help='Input file list, enclose in "" more than simple wild card, Check this has the same number of files as the fname_lst')
-        parser.add_argument('--U_flist', type=str, required=False, help='Input U file list for current magnitude. Assumes file contains vozocrtx, enclose in "" more than simple wild card')
-        parser.add_argument('--V_flist', type=str, required=False, help='Input U file list for current magnitude. Assumes file contains vomecrty, enclose in "" more than simple wild card')
-        parser.add_argument('--U_flist_2nd', type=str, required=False, help='Input U file list for current magnitude. Assumes file contains vozocrtx, enclose in "" more than simple wild card')
-        parser.add_argument('--V_flist_2nd', type=str, required=False, help='Input U file list for current magnitude. Assumes file contains vomecrty, enclose in "" more than simple wild card')
-
-        parser.add_argument('--fig_dir', type=str, required=False, help = 'if absent, will default to $PWD/tmpfigs')
-        parser.add_argument('--fig_lab', type=str, required=False, help = 'if absent, will default to figs')
-        parser.add_argument('--fig_cutout', type=str, required=False)
-
-        parser.add_argument('--z_meth', type=str, help="z_slice, ss, nb, df, or z_index for z level models")# Parse the argument
         parser.add_argument('--var', type=str)# Parse the argument
+
+        parser.add_argument('--fname_lst_2nd', type=str, required=False, help='Input file list, enclose in "" more than simple wild card, Check this has the same number of files as the fname_lst')
+        parser.add_argument('--config_2nd', type=str, required=False, help="Only AMM7, AMM15. No implemented CO9P2, ORCA025, ORCA025EXT or ORCA12")# Parse the argument
+
+        parser.add_argument('--U_fname_lst', type=str, required=False, help='Input U file list for current magnitude. Assumes file contains vozocrtx, enclose in "" more than simple wild card')
+        parser.add_argument('--V_fname_lst', type=str, required=False, help='Input U file list for current magnitude. Assumes file contains vomecrty, enclose in "" more than simple wild card')
+        parser.add_argument('--U_fname_lst_2nd', type=str, required=False, help='Input U file list for current magnitude. Assumes file contains vozocrtx, enclose in "" more than simple wild card')
+        parser.add_argument('--V_fname_lst_2nd', type=str, required=False, help='Input U file list for current magnitude. Assumes file contains vomecrty, enclose in "" more than simple wild card')
+
+        parser.add_argument('--thin', type=int, required=False)
+        parser.add_argument('--thin_2nd', type=int, required=False)
+
+        parser.add_argument('--thin_x0', type=int, required=False)
+        parser.add_argument('--thin_x1', type=int, required=False)
+        parser.add_argument('--thin_y0', type=int, required=False)
+        parser.add_argument('--thin_y1', type=int, required=False)
+
+        parser.add_argument('--thin_files', type=int, required=False)
+        parser.add_argument('--thin_files_0', type=int, required=False)
+        parser.add_argument('--thin_files_1', type=int, required=False)
+
+
+        parser.add_argument('--xlim', type=float, required=False, nargs = 2)
+        parser.add_argument('--ylim', type=float, required=False, nargs = 2)
+        #parser.add_argument('--tlim', type=str, required=False)
+        parser.add_argument('--clim', type=float, required=False, nargs = 8)
 
         parser.add_argument('--ii', type=int, required=False)
         parser.add_argument('--jj', type=int, required=False)
@@ -3339,54 +3373,39 @@ def main():
         parser.add_argument('--lon', type=float, required=False)
         parser.add_argument('--lat', type=float, required=False)
         parser.add_argument('--date_ind', type=str, required=False)
-
-        parser.add_argument('--justplot', type=str, required=False)
-        parser.add_argument('--justplot_date_ind', type=str, required=False, help = 'comma separated values')
-        parser.add_argument('--justplot_secdataset_proc', type=str, required=False, help = 'comma separated values')
-        parser.add_argument('--justplot_z_meth_zz', type=str, required=False, help = 'comma separated values, replace space with underscore - e.g. "Dataset_1"')
-
-        parser.add_argument('--xlim', type=float, required=False, nargs = 2)
-        parser.add_argument('--ylim', type=float, required=False, nargs = 2)
-        parser.add_argument('--clim', type=float, required=False, nargs = 8)
-        parser.add_argument('--clim_pair', type=str, required=False)
-        parser.add_argument('--clim_sym', type=str, required=False)
-        parser.add_argument('--use_cmocean', type=str, required=False)
-        parser.add_argument('--thin', type=int, required=False)
-        parser.add_argument('--thin_2nd', type=int, required=False)
-        parser.add_argument('--thin_files', type=int, required=False)
-        parser.add_argument('--thin_files_0', type=int, required=False)
-        parser.add_argument('--thin_files_1', type=int, required=False)
-
-
-        parser.add_argument('--do_cont', type=str, required=False)
-        parser.add_argument('--do_grad', type=int, required=False)
-        #parser.add_argument('--do_vertgrad', type=str, required=False)
-
-
-        parser.add_argument('--thin_x0', type=int, required=False)
-        parser.add_argument('--thin_x1', type=int, required=False)
-        parser.add_argument('--thin_y0', type=int, required=False)
-        parser.add_argument('--thin_y1', type=int, required=False)
-
-        parser.add_argument('--secdataset_proc', type=str, required=False)
         parser.add_argument('--date_fmt', type=str, required=False)
 
 
-        parser.add_argument('--hov_time', type=str, required=False)
-
-
-        parser.add_argument('--verbose_debugging', type=str, required=False)
-
         parser.add_argument('--fig_fname_lab', type=str, required=False)
         parser.add_argument('--fig_fname_lab_2nd', type=str, required=False)
+        parser.add_argument('--z_meth', type=str, help="z_slice, ss, nb, df, or z_index for z level models")# Parse the argument
+
+        parser.add_argument('--secdataset_proc', type=str, required=False)
+
+        parser.add_argument('--hov_time', type=str, required=False)
+        parser.add_argument('--do_cont', type=str, required=False)
+        parser.add_argument('--do_grad', type=int, required=False)
+
+        parser.add_argument('--clim_sym', type=str, required=False)
+        parser.add_argument('--clim_pair', type=str, required=False)
+        parser.add_argument('--use_cmocean', type=str, required=False)
+
+
+        parser.add_argument('--fig_dir', type=str, required=False, help = 'if absent, will default to $PWD/tmpfigs')
+        parser.add_argument('--fig_lab', type=str, required=False, help = 'if absent, will default to figs')
+        parser.add_argument('--fig_cutout', type=str, required=False)
+        #parser.add_argument('--fig_cutout', type=str, required=False)
         
+        parser.add_argument('--justplot', type=str, required=False)
+        parser.add_argument('--justplot_date_ind', type=str, required=False, help = 'comma separated values')
+        parser.add_argument('--justplot_z_meth_zz', type=str, required=False, help = 'comma separated values, replace space with underscore - e.g. "Dataset_1"')
+        parser.add_argument('--justplot_secdataset_proc', type=str, required=False, help = 'comma separated values')
+
+        parser.add_argument('--verbose_debugging', type=str, required=False)
 
 
         args = parser.parse_args()# Print "Hello" + the user input argument
 
-        if args.fig_dir is None: args.fig_dir=script_dir + '/tmpfigs'
-        if args.fig_lab is None: args.fig_lab='figs'
-        
 
         
         # Handling of Bool variable types
@@ -3518,16 +3537,14 @@ def main():
 
 
         '''
+        #set default values for None
 
-
-
+        if args.fig_dir is None: args.fig_dir=script_dir + '/tmpfigs'
+        if args.fig_lab is None: args.fig_lab='figs'
 
         if args.date_fmt is None: args.date_fmt='%Y%m%d'
 
-        #if args.fig_fname_lab is None: args.fig_lab=''
-        #if args.fig_fname_lab_2nd is None: args.fig_lab=''
-
-        print('justplot',args.justplot)
+        #print('justplot',args.justplot)
 
         if args.thin is None: args.thin=1
         if args.thin_2nd is None: args.thin_2nd=1
@@ -3545,33 +3562,31 @@ def main():
         fname_lst = glob.glob(args.fname_lst)
         fname_lst.sort()
         fname_lst_2nd = None
-        U_flist = None
-        V_flist = None
-        U_flist_2nd = None
-        V_flist_2nd = None
+        U_fname_lst = None
+        V_fname_lst = None
+        U_fname_lst_2nd = None
+        V_fname_lst_2nd = None
 
         if args.fname_lst_2nd is not None:fname_lst_2nd = glob.glob(args.fname_lst_2nd)
-        if args.U_flist is not None:U_flist = glob.glob(args.U_flist)
-        if args.V_flist is not None:V_flist = glob.glob(args.V_flist)
-        if args.U_flist_2nd is not None:U_flist_2nd = glob.glob(args.U_flist_2nd)
-        if args.V_flist_2nd is not None:V_flist_2nd = glob.glob(args.V_flist_2nd)
+        if args.U_fname_lst is not None:U_fname_lst = glob.glob(args.U_fname_lst)
+        if args.V_fname_lst is not None:V_fname_lst = glob.glob(args.V_fname_lst)
+        if args.U_fname_lst_2nd is not None:U_fname_lst_2nd = glob.glob(args.U_fname_lst_2nd)
+        if args.V_fname_lst_2nd is not None:V_fname_lst_2nd = glob.glob(args.V_fname_lst_2nd)
 
         if fname_lst_2nd is not None:fname_lst_2nd.sort()
-        if U_flist is not None:U_flist.sort()
-        if V_flist is not None:V_flist.sort()
-        if U_flist_2nd is not None:U_flist_2nd.sort()
-        if V_flist_2nd is not None:V_flist_2nd.sort()
+        if U_fname_lst is not None:U_fname_lst.sort()
+        if V_fname_lst is not None:V_fname_lst.sort()
+        if U_fname_lst_2nd is not None:U_fname_lst_2nd.sort()
+        if V_fname_lst_2nd is not None:V_fname_lst_2nd.sort()
         if len(fname_lst) == 0: 
             print('no files passed')
             pdb.set_trace()
 
-
-        #pdb.set_trace()
         
         nemo_slice_zlev(fname_lst,zlim_max = args.zlim_max, config = args.config, config_2nd = args.config_2nd,
-            U_flist = U_flist, V_flist = V_flist,
+            U_fname_lst = U_fname_lst, V_fname_lst = V_fname_lst,
             fname_lst_2nd = fname_lst_2nd,
-            U_flist_2nd = U_flist_2nd, V_flist_2nd = V_flist_2nd,
+            U_fname_lst_2nd = U_fname_lst_2nd, V_fname_lst_2nd = V_fname_lst_2nd,
             clim_sym = clim_sym_in, clim = args.clim, clim_pair = clim_pair_in,hov_time = hov_time_in,
             do_grad = do_grad_in,do_cont = do_cont_in,
             use_cmocean = use_cmocean_in, date_fmt = args.date_fmt,
