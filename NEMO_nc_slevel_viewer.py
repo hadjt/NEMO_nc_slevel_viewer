@@ -411,6 +411,8 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     nice_varname_dict['votemper'] = 'Temperature'
     nice_varname_dict['vosaline'] = 'Salinity'
     nice_varname_dict['pea'] = 'Potential Energy Anomaly'
+    nice_varname_dict['peat'] = 'Potential Energy Anomaly (T component)'
+    nice_varname_dict['peas'] = 'Potential Energy Anomaly (S component)'
 
     nice_varname_dict['sossheig'] = 'Sea surface height'
     nice_varname_dict['temper_bot'] = 'Bottom temperature'
@@ -418,6 +420,23 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     nice_varname_dict['votempis'] = 'Temperature (in situ)'
     nice_varname_dict['mld25h_1'] = 'Mixed layer depth (version 1)'
     nice_varname_dict['mld25h_2'] = 'Mixed layer depth (version 2)'
+    nice_varname_dict['karamld'] = 'Mixed layer depth (Kara)'
+
+    nice_varname_dict['pCO2'] = 'Carbonate pCO2'
+    nice_varname_dict['CHL'] = 'Total Chlorophyll'
+    nice_varname_dict['netPP'] = 'Net Primary Production'
+    nice_varname_dict['N1p'] = 'Phosphate'
+    nice_varname_dict['N3n'] = 'Nitrate'
+    nice_varname_dict['N5s'] = 'Silicate'
+    nice_varname_dict['N4n'] = 'Ammonium Nitrogen'
+    nice_varname_dict['O2o'] = 'Oxygen'
+
+    nice_varname_dict['pH'] = 'Carbonate pH'
+    nice_varname_dict['PhytoC'] = 'Phytoplankton (carbon)'
+    nice_varname_dict['Visib'] = 'Secchi depth '
+    nice_varname_dict['spCO2'] = 'Surface Carbonate pCO2'
+
+
 
     # extract time information from xarray.
     # needs to work for gregorian and 360 day calendars.
@@ -460,8 +479,6 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     ntime = time_datetime_since_1970.size
 
     if date_in_ind is not None:
-        #date_in_ind_datetime = datetime.strptime(date_in_ind,'%Y%m%d_%H%M')
-        #date_in_ind_datetime = datetime.strptime(date_in_ind,'%Y%m%d')
         date_in_ind_datetime = datetime.strptime(date_in_ind,date_fmt)
         date_in_ind_datetime_timedelta = np.array([(ss - date_in_ind_datetime).total_seconds() for ss in time_datetime])
         #pdb.set_trace()
@@ -495,16 +512,9 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         justplot_z_meth_zz_lst = justplot_z_meth_zz.split(',')
         justplot_secdataset_proc_lst = justplot_secdataset_proc.split(',')
                 
-        #just_plt_vals = [(secdataset_proc,justplot_date_ind_str, False, False, False, False, False) for secdataset_proc in secdataset_proc_list for justplot_date_ind_str in justplot_date_ind_lst] 
-
-        
-        #justplot_z_meth_zz = ['ss,0','nb,0','df,0','zslice,10']
-        #justplot_secdataset_proc = 'Dataset 1','Dataset 2','Dat2-Dat1'
-
         
         just_plt_vals = []
         for justplot_date_ind_str in justplot_date_ind_lst:
-            #for spi, secdataset_proc in enumerate(secdataset_proc_list):
             for zmi, justplot_z_meth_zz in enumerate(justplot_z_meth_zz_lst):
                 justplot_z_meth,justplot_zz_str = justplot_z_meth_zz.split(':')
                 justplot_zz = int(justplot_zz_str)
@@ -515,7 +525,6 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                         just_plt_vals.append((secdataset_proc,justplot_date_ind_str, justplot_z_meth,justplot_zz, False, False, False, False, False))
                       
 
-    #pdb.set_trace()
     # repeat if comparing two time series. 
     if fname_lst_2nd is not None:
         
@@ -663,11 +672,11 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         add_PEA = True
 
     #If second data set on a different grid, don't add derived variables
-    if config_2nd is not None:
-        add_PEA = False
+    #if config_2nd is not None:
+    #    add_PEA = False
 
 
-
+    '''
     if add_PEA:
         ss = 'pea'
         var_mat = np.append(var_mat,ss)
@@ -677,7 +686,18 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         var_grid[ss] = 'T'
         deriv_var.append(ss)
 
+    '''
 
+
+
+    if add_PEA:
+        for ss in ['pea','peat','peas']:
+            var_mat = np.append(var_mat,ss)
+            if load_2nd_files:
+                var_mat_2nd = np.append(var_mat_2nd,ss)
+            var_dim[ss] = 3
+            var_grid[ss] = 'T'
+            deriv_var.append(ss)
 
 
 
@@ -1040,8 +1060,6 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                         sel_jj = (np.abs(lat[thin_y0:thin_y1:thin] - latj)).argmin()
                     elif config.upper() in ['AMM15','CO9P2']:
                         lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(loni,latj)
-                        #sel_ii = np.minimum(np.maximum( np.round((lon_mat_rot - lon_rotamm15.min())/dlon_rotamm15).astype('int') ,0),nlon_rotamm15-1)
-                        #sel_jj = np.minimum(np.maximum( np.round((lat_mat_rot - lat_rotamm15.min())/dlat_rotamm15).astype('int') ,0),nlat_rotamm15-1)
                         sel_ii = np.minimum(np.maximum( np.round((lon_mat_rot - lon_rotamm15[thin_x0:thin_x1:thin].min())/(dlon_rotamm15*thin)).astype('int') ,0),nlon_rotamm15//thin-1)
                         sel_jj = np.minimum(np.maximum( np.round((lat_mat_rot - lat_rotamm15[thin_y0:thin_y1:thin].min())/(dlat_rotamm15*thin)).astype('int') ,0),nlat_rotamm15//thin-1)
                     elif config.upper() in ['ORCA025','ORCA025EXT']:
@@ -1191,8 +1209,6 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         if method == 0:
             hov_dat_1 = np.ma.zeros((hov_y.shape+hov_x.shape))*np.ma.masked
             hov_dat_2 = np.ma.zeros((hov_y.shape+hov_x.shape))*np.ma.masked
-            #(Pdb) hov_x.shape,hov_y.shape, hov_dat.shape
-            #((25,), (51,), (51, 25))
             for fi,tmpfname in enumerate(fname_lst):            
                 rootgrp_hov = Dataset(tmpfname, 'r', format='NETCDF4')
                 datshape = rootgrp_hov.variables[var].shape[2:]
@@ -1213,23 +1229,19 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         elif method == 1:
 
             hov_dat_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,:,jj,ii].load()).T
-            #hov_dat_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][:,:,jj*thin + thin_y0,ii*thin + thin_x0].load()).T        
             
             if load_2nd_files:
                 if config_2nd is None:
                     hov_dat_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj,ii].load()).T
-                    #hov_dat_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,jj*thin_2nd+thin_y0_2nd,ii*thin_2nd + thin_x0_2nd].load()).T
                 else:
                     hov_dat_2 = np.ma.zeros(curr_tmp_data.variables[var][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].shape[1::-1])*np.ma.masked
                     tmpdat_hov = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj_2nd_ind,ii_2nd_ind].load())
                     tmpdat_hov_gdept =  rootgrp_gdept_2nd.variables[ncgdept][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][0,:,jj_2nd_ind,ii_2nd_ind]               
                     for i_i,(tmpdat) in enumerate(tmpdat_hov):hov_dat_2[:,i_i] = np.ma.masked_invalid(np.interp(hov_y, tmpdat_hov_gdept, tmpdat))
-                    #pdb.set_trace()
             else:
                 hov_dat_2 = hov_dat_1
         hov_stop = datetime.now()
 
-        #print(hov_start,hov_stop,(hov_stop - hov_start).total_seconds())
 
         return hov_dat_1,hov_dat_2,hov_x,hov_y
 
@@ -1282,18 +1294,15 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         elif var_dim[var] == 4:
 
             if z_meth in ['ss','nb','df']:
-                #pdb.set_trace()
 
                 ss_ts_dat_1 = hov_dat_1[0,:].ravel()
                 nb_ts_dat_1 = hov_dat_1[nbind[:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,jj,ii] == False,:].ravel()
                 df_ts_dat_1 = ss_ts_dat_1 - nb_ts_dat_1
 
                 ss_ts_dat_2 = hov_dat_2[0,:].ravel()
-                #nb_ts_dat_2 = hov_dat_2[nbind_2nd[:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,jj_2nd_ind,ii_2nd_ind] == False,:].ravel()
                 nb_ts_dat_2 = hov_dat_2[nbind[:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,jj,ii] == False,:].ravel()
                 df_ts_dat_2 = ss_ts_dat_2 - nb_ts_dat_2
                 
-                #pdb.set_trace()
 
                 if z_meth == 'ss':
                     ts_dat_1 = ss_ts_dat_1
@@ -1305,7 +1314,6 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                     ts_dat_1 = df_ts_dat_1
                     ts_dat_2 = df_ts_dat_2
             elif z_meth == 'z_slice':
-                #print(hov_y,zz)
                 tmpzi = (np.abs(zz - hov_y)).argmin()
                 ts_dat_1 = hov_dat_1[tmpzi,:].ravel()
                 ts_dat_2 = hov_dat_2[tmpzi,:].ravel()
@@ -1378,7 +1386,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                 print('z_meth not supported:',z_meth)
                 pdb.set_trace()
 
-        elif var == 'pea': 
+        elif var.upper() in ['PEA', 'PEAT','PEAS']:
             map_dat_1, map_dat_2 = reload_map_data_derived_var_pea()
         else:
             print('var not in deriv_var',var)
@@ -1489,12 +1497,14 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         tmask_pea = np.tile((tmask[:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,jj,ii])[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_pea)).T
 
 
-        ts_dat_1 = pea_TS(tmp_T_data_1,tmp_S_data_1,gdept_mat_pea,dz_mat_pea,tmask=tmask_pea==False,calc_TS_comp = False )[:,0,0] # tmppea,tmppeat,tmppeas, calc_TS_comp = True
+        tmppea_1, tmppeat_1, tmppeas_1 = pea_TS(tmp_T_data_1,tmp_S_data_1,gdept_mat_pea,dz_mat_pea,tmask=tmask_pea==False,calc_TS_comp = True )
+        if var.upper() == 'PEA':
+            ts_dat_1 = tmppea_1[:,0,0] 
+        elif var.upper() == 'PEAT':
+            ts_dat_1 = tmppeat_1[:,0,0] 
+        elif var.upper() == 'PEAS':
+            ts_dat_1 = tmppeas_1[:,0,0] 
 
-        # tmp_T_data_1.shape,tmp_S_data_1.shape,gdept_mat_pea.shape,dz_mat_pea.shape,tmask_pea.shape
-
-
-        #pdb.set_trace()
         ts_dat_2 = ts_dat_1
         if load_2nd_files:
         
@@ -1504,27 +1514,31 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                 tmp_S_data_2 = regrid_2nd(np.ma.masked_invalid(curr_tmp_data_2nd.variables['vosaline'][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj,ii].load()))[:,:,np.newaxis,np.newaxis]
 #
 
-                ts_dat_2 = pea_TS(tmp_T_data_2,tmp_S_data_2,gdept_mat_pea,dz_mat_pea,tmask=tmask_pea==False,calc_TS_comp = False )[:,0,0] # tmppea,tmppeat,tmppeas, calc_TS_comp = True
+                tmppea_2, tmppeat_2, tmppeas_2 = pea_TS(tmp_T_data_2,tmp_S_data_2,gdept_mat_pea,dz_mat_pea,tmask=tmask_pea==False,calc_TS_comp = True ) 
+               
             else:
+    
 
-            
-                tmp_T_data_2 = regrid_2nd(np.ma.masked_invalid(curr_tmp_data_2nd.variables['votemper'][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj_2nd_ind,ii_2nd_ind].load()))[:,:,np.newaxis,np.newaxis]
-                tmp_S_data_2 = regrid_2nd(np.ma.masked_invalid(curr_tmp_data_2nd.variables['vosaline'][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj_2nd_ind,ii_2nd_ind].load()))[:,:,np.newaxis,np.newaxis]
-#
+                tmp_T_data_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables['votemper'][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj_2nd_ind,ii_2nd_ind].load())[:,:,np.newaxis,np.newaxis]
+                tmp_S_data_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables['vosaline'][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj_2nd_ind,ii_2nd_ind].load())[:,:,np.newaxis,np.newaxis] 
+
 
                 gdept_mat_2nd = rootgrp_gdept_2nd.variables[ncgdept][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,jj_2nd_ind,ii_2nd_ind]
                 dz_mat_2nd = rootgrp_gdept_2nd.variables['e3t_0'][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,jj_2nd_ind,ii_2nd_ind]
 
-
+                tmask_pea_2nd = np.tile((tmask_2nd[:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,jj_2nd_ind,ii_2nd_ind])[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_pea)).T
+ 
                 gdept_mat_pea_2nd = np.tile(gdept_mat[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_pea)).T
                 dz_mat_pea_2nd = np.tile(dz_mat[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_pea)).T
 
-                gdept_mat_pea_2nd = np.tile(gdept_mat_2nd[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_pea)).T
-                dz_mat_pea_2nd = np.tile(dz_mat_2nd[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_pea)).T
-                tmask_pea_2nd = np.tile((tmask_2nd[:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,jj,ii])[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_pea)).T
+                tmppea_2, tmppeat_2, tmppeas_2 = pea_TS(tmp_T_data_2,tmp_S_data_2,gdept_mat_pea_2nd,dz_mat_pea_2nd,tmask=tmask_pea_2nd==False,calc_TS_comp = True ) # tmppea,tmppeat,tmppeas,
 
-
-                ts_dat_2 = pea_TS(tmp_T_data_2[np.newaxis],tmp_S_data_2[np.newaxis],gdept_mat_pea_2nd,dz_mat_pea_2nd,tmask=tmask_pea_2nd==False,calc_TS_comp = False )[0] # tmppea,tmppeat,tmppeas, calc_TS_comp = True
+            if var.upper() == 'PEA':
+                ts_dat_2 = tmppea_2[:,0,0] 
+            elif var.upper() == 'PEAT':
+                ts_dat_2 = tmppeat_2[:,0,0] 
+            elif var.upper() == 'PEAS':
+                ts_dat_2 = tmppeas_2[:,0,0] 
         return ts_dat_1, ts_dat_2 
  
 
@@ -1536,19 +1550,53 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
         tmp_T_data_1 = np.ma.masked_invalid(curr_tmp_data.variables['votemper'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
         tmp_S_data_1 = np.ma.masked_invalid(curr_tmp_data.variables['vosaline'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-        map_dat_1 = pea_TS(tmp_T_data_1[np.newaxis],tmp_S_data_1[np.newaxis],gdept_mat,dz_mat,tmask=tmask[:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][np.newaxis]==False,calc_TS_comp = False )[0] # tmppea,tmppeat,tmppeas, calc_TS_comp = True
+        tmppea_1, tmppeat_1, tmppeas_1 = pea_TS(tmp_T_data_1[np.newaxis],tmp_S_data_1[np.newaxis],gdept_mat,dz_mat,tmask=tmask[:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][np.newaxis]==False,calc_TS_comp = True ) 
+        if var.upper() == 'PEA':
+            map_dat_1 = tmppea_1[0]
+        elif var.upper() == 'PEAT':
+            map_dat_1 = tmppeat_1[0]
+        elif var.upper() == 'PEAS':
+            map_dat_1 = tmppeas_1[0]
 
 
         #pdb.set_trace()
         map_dat_2 = map_dat_1
         if load_2nd_files:
         
-            
-            tmp_T_data_2 = regrid_2nd(np.ma.masked_invalid(curr_tmp_data_2nd.variables['votemper'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load()))
-            tmp_S_data_2 = regrid_2nd(np.ma.masked_invalid(curr_tmp_data_2nd.variables['vosaline'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load()))
-#
+            if config_2nd is None:            
+                tmp_T_data_2 = regrid_2nd(np.ma.masked_invalid(curr_tmp_data_2nd.variables['votemper'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load()))
+                tmp_S_data_2 = regrid_2nd(np.ma.masked_invalid(curr_tmp_data_2nd.variables['vosaline'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load()))
+                tmppea_2, tmppeat_2, tmppeas_2 = pea_TS(tmp_T_data_2[np.newaxis],tmp_S_data_2[np.newaxis],gdept_mat,dz_mat,tmask=tmask[:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][np.newaxis]==False,calc_TS_comp = True ) 
 
-            map_dat_2 = pea_TS(tmp_T_data_2[np.newaxis],tmp_S_data_2[np.newaxis],gdept_mat,dz_mat,tmask=tmask[:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][np.newaxis]==False,calc_TS_comp = False )[0] # tmppea,tmppeat,tmppeas, calc_TS_comp = True
+
+                if var.upper() == 'PEA':
+                    map_dat_2 = tmppea_2[0]
+                elif var.upper() == 'PEAT':
+                    map_dat_2 = tmppeat_2[0]
+                elif var.upper() == 'PEAS':
+                    map_dat_2 = tmppeas_2[0]
+
+
+            else:
+
+                
+                gdept_mat_2nd = rootgrp_gdept_2nd.variables[ncgdept][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
+                dz_mat_2nd = rootgrp_gdept_2nd.variables['e3t_0'][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
+
+
+                tmp_T_data_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables['votemper'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                tmp_S_data_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables['vosaline'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+
+                tmppea_2, tmppeat_2, tmppeas_2 = pea_TS(tmp_T_data_2[np.newaxis],tmp_S_data_2[np.newaxis],gdept_mat_2nd,dz_mat_2nd,tmask=tmask_2nd[:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][np.newaxis]==False,calc_TS_comp = True ) 
+                
+
+                if var.upper() == 'PEA':
+                    map_dat_2 = regrid_2nd(tmppea_2[0])
+                elif var.upper() == 'PEAT':
+                    map_dat_2 = regrid_2nd(tmppeat_2[0])
+                elif var.upper() == 'PEAS':
+                    map_dat_2 = regrid_2nd(tmppeas_2[0])
+
 
         return map_dat_1, map_dat_2 
   
@@ -1651,10 +1699,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
             map_dat_2 = map_dat_1
         return map_dat_1,map_dat_2
 
-    
 
-
-    #from convert_amm7_amm15 import load_nn_amm15_amm7_wgt,load_nn_amm7_amm15_wgt,regrid_nn_amm15_amm7,regrid_nn_amm7_amm15
     def regrid_2nd(dat_in):
         if config_2nd is None:
             dat_out = dat_in
@@ -1663,27 +1708,14 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                 print('thin_x0 and thin_y0 must equal 0, if not, need to work out thinning code in the regrid index method')
                 pdb.set_trace()
 
-            #pdb.set_trace()
             if (config.upper() == 'AMM15') & (config_2nd.upper() == 'AMM7'):
-
-                #tmp_dat_out = dat_in[amm7_amm15_dict['amm7_amm15_jj'][thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]//thin,amm7_amm15_dict['amm7_amm15_ii'][thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]//thin]
-                #dat_out = tmp_dat_out[thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
-                #dat_out = dat_in[amm7_amm15_dict['amm7_amm15_jj'][thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]//thin_2nd,amm7_amm15_dict['amm7_amm15_ii'][thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]//thin_2nd]
 
 
                 dat_out = dat_in[(amm7_amm15_dict['amm7_amm15_jj'] - thin_y0_2nd) //thin_2nd,(amm7_amm15_dict['amm7_amm15_ii'] - thin_y0_2nd) //thin_2nd]
                 dat_out = dat_out[thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
 
             elif (config.upper() == 'AMM7') & (config_2nd.upper() == 'AMM15'):
-                #dat_out = regrid_nn_amm15_amm7(dat_in, amm15_amm7_dict = amm15_amm7_dict)
                 
-                #tmp_dat_out = dat_in[amm15_amm7_dict['amm15_amm7_jj'][thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]//thin,amm15_amm7_dict['amm15_amm7_ii'][thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]//thin]
-                #dat_out = tmp_dat_out[thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
-                #pdb.set_trace()
-
-                
-                #dat_out = dat_in[amm15_amm7_dict['amm15_amm7_jj'][thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]//thin_2nd,amm15_amm7_dict['amm15_amm7_ii'][thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]//thin_2nd]
-
 
                 dat_out = dat_in[(amm15_amm7_dict['amm15_amm7_jj'] - thin_y0_2nd) //thin_2nd,(amm15_amm7_dict['amm15_amm7_ii'] - thin_y0_2nd) //thin_2nd]
 
@@ -1693,7 +1725,6 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                 print('config and config_2nd must be AMM15 and AMM7')
                 pdb.set_trace()
 
-        #pdb.set_trace()
         return dat_out
 
 
@@ -1735,11 +1766,8 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
         if fig_cutout:
 
-            #plt.subplots_adjust(top=0.9,bottom=0.11,left=0.08,right=0.9,hspace=0.2,wspace=0.135)
-            #plt.subplots_adjust(top=0.88,bottom=0.1,left=0.09,right=0.91,hspace=0.2,wspace=0.065)
 
             bbox_cutout_pos = [[(but_x1+0.01), (0.066)],[(func_but_x0-0.01),0.965]]
-            #bbox_cutout_pos_inches = [[fig.get_figwidth()*(but_x1+0.01), fig.get_figheight()*(0.05-0.01+0.026)],[fig.get_figwidth()*(func_but_x0-0.01),fig.get_figheight()*(0.95+0.01)]]
             bbox_cutout_pos_inches = [[fig.get_figwidth()*(but_x1+0.01), fig.get_figheight()*(0.066)],[fig.get_figwidth()*(func_but_x0-0.01),fig.get_figheight()*(0.965)]]
             bbox_cutout_pos_inches = [[fig.get_figwidth()*(but_x1+0.01), fig.get_figheight()*(0.066)],[fig.get_figwidth()*(func_but_x0-0.01),fig.get_figheight()]]
             bbox_inches =  matplotlib.transforms.Bbox(bbox_cutout_pos_inches)
