@@ -62,13 +62,6 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
 
 
-
-    '''
-    thin_x0=0
-    thin_x1=None
-    thin_y0=0
-    thin_y1=None
-    '''
     if thin_x0 is None: thin_x0 = 0
     if thin_y0 is None: thin_y0 = 0
 
@@ -96,7 +89,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     tmp_var_U, tmp_var_V = 'vozocrtx','vomecrty'
 
 
-    z_meth_mat = ['z_slice','ss','nb','df']
+    z_meth_mat = ['z_slice','ss','nb','df','zm']
 
     nav_lon_varname = 'nav_lon'
     nav_lat_varname = 'nav_lat'
@@ -281,8 +274,8 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     print ('xarray open_mfdataset, finish U and V',datetime.now())
 
     #If second data set on a different grid, don't add derived variables
-    if config_2nd is not None:
-        UV_vec = False
+    #if config_2nd is not None:
+    #    UV_vec = False
 
 
     # load nav_lat and nav_lon
@@ -880,6 +873,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
     #func_names_lst = ['Hov/Time','Reset zoom', 'Zoom', 'Clim: Reset','Clim: Zoom','Clim: Expand','Clim: perc','Clim: normal', 'Clim: log','Clim: pair','Surface', 'Near-Bed', 'Surface-Bed','Depth level','Contours','Grad','Save Figure','Quit']
     func_names_lst = ['Hov/Time','ColScl','Reset zoom', 'Zoom', 'Clim: Reset','Clim: Zoom','Clim: Expand','Clim: pair','Surface', 'Near-Bed', 'Surface-Bed','Depth level','Contours','Grad','Save Figure','Quit']
+    func_names_lst = ['Hov/Time','ColScl','Reset zoom', 'Zoom', 'Clim: Reset','Clim: Zoom','Clim: Expand','Clim: pair','Surface', 'Near-Bed', 'Surface-Bed','Depth-Mean','Depth level','Contours','Grad','Save Figure','Quit']
 
     
     if load_2nd_files == False:
@@ -928,10 +922,12 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     func_but_text_han['Surface'].set_color('k')
     func_but_text_han['Near-Bed'].set_color('k')
     func_but_text_han['Surface-Bed'].set_color('k')
+    func_but_text_han['Depth-Mean'].set_color('k')
     if z_meth == 'z_slice':func_but_text_han['Depth level'].set_color('r')
     if z_meth == 'ss':func_but_text_han['Surface'].set_color('r')
     if z_meth == 'nb':func_but_text_han['Near-Bed'].set_color('r')
     if z_meth == 'df':func_but_text_han['Surface-Bed'].set_color('r')
+    if z_meth == 'zm':func_but_text_han['Depth-Mean'].set_color('r')
 
 
     
@@ -1007,11 +1003,15 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     #global ii,jj
 
     if verbose_debugging: print('Create inner functions', datetime.now())
+
+
+
     def indices_from_ginput_ax(clii,cljj,thin=thin,ew_line_x = None,ew_line_y = None,ns_line_x = None,ns_line_y = None):
         #global ii,jj
 
         #global map_x,map_y,map_dat,ew_slice_x,ew_slice_y,ew_slice_dat,ns_slice_x,ns_slice_y,ns_slice_dat,hov_x,hov_y,hov_dat,ts_x,ts_dat
-
+        # to make an outer function
+        #    ax,config
 
         '''
         ginput doesn't tell you which subplot you are clicking, only the position within that subplot.
@@ -1119,7 +1119,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         
         return sel_ax,sel_ii,sel_jj,sel_ti,sel_zz
 
-
+    """
 
     def indices_from_ginput_cax(cclii,ccljj):
         '''
@@ -1148,7 +1148,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         sel_cjj = ccljj
                
         return sel_cax,sel_cii,sel_cjj
-
+    """
     def reload_ew_data():
         '''
         reload the data for the E-W cross-section
@@ -1293,15 +1293,17 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                     ts_dat_2 = ts_dat_1
         elif var_dim[var] == 4:
 
-            if z_meth in ['ss','nb','df']:
+            if z_meth in ['ss','nb','df','dm']:
 
                 ss_ts_dat_1 = hov_dat_1[0,:].ravel()
                 nb_ts_dat_1 = hov_dat_1[nbind[:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,jj,ii] == False,:].ravel()
                 df_ts_dat_1 = ss_ts_dat_1 - nb_ts_dat_1
+                zm_ts_dat_1 = hov_dat_1[:,:].mean(axis = 0)
 
                 ss_ts_dat_2 = hov_dat_2[0,:].ravel()
                 nb_ts_dat_2 = hov_dat_2[nbind[:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,jj,ii] == False,:].ravel()
                 df_ts_dat_2 = ss_ts_dat_2 - nb_ts_dat_2
+                zm_ts_dat_2 = hov_dat_2[:,:].mean(axis = 0)
                 
 
                 if z_meth == 'ss':
@@ -1313,6 +1315,9 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                 if z_meth == 'df':
                     ts_dat_1 = df_ts_dat_1
                     ts_dat_2 = df_ts_dat_2
+                if z_meth == 'zm':
+                    ts_dat_1 = zm_ts_dat_1
+                    ts_dat_2 = zm_ts_dat_2
             elif z_meth == 'z_slice':
                 tmpzi = (np.abs(zz - hov_y)).argmin()
                 ts_dat_1 = hov_dat_1[tmpzi,:].ravel()
@@ -1337,10 +1342,12 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         ew_slice_dat_1 = np.sqrt(ew_slice_dat_U**2 + ew_slice_dat_V**2)
         ew_slice_dat_2 = ew_slice_dat_1
         if load_2nd_files:
-            ew_slice_dat_U = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,jj,:].load())
-            ew_slice_dat_V = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,jj,:].load())
-            ew_slice_dat_2 = np.sqrt(ew_slice_dat_U**2 + ew_slice_dat_V**2)
-
+            if config_2nd is None:
+                ew_slice_dat_U = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti,:,jj,:].load())
+                ew_slice_dat_V = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti,:,jj,:].load())
+                ew_slice_dat_2 = np.sqrt(ew_slice_dat_U**2 + ew_slice_dat_V**2)
+            else:
+                ew_slice_dat_2 = ew_slice_dat_1.copy()*np.ma.masked
 
         return ew_slice_dat_1,ew_slice_dat_2,ew_slice_x, ew_slice_y
 
@@ -1353,9 +1360,12 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         ns_slice_dat_1 = np.sqrt(ns_slice_dat_U**2 + ns_slice_dat_V**2)
         ns_slice_dat_2 = ns_slice_dat_1
         if load_2nd_files:
-            ns_slice_dat_U = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,:,ii].load())
-            ns_slice_dat_V = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,:,ii].load())
-            ns_slice_dat_2 = np.sqrt(ns_slice_dat_U**2 + ns_slice_dat_V**2)
+            if config_2nd is None:
+                ns_slice_dat_U = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti,:,:,ii].load())
+                ns_slice_dat_V = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti,:,:,ii].load())
+                ns_slice_dat_2 = np.sqrt(ns_slice_dat_U**2 + ns_slice_dat_V**2)
+            else:
+                ns_slice_dat_2 = ns_slice_dat_1.copy()*np.ma.masked
 
         return ns_slice_dat_1,ns_slice_dat_2,ns_slice_x, ns_slice_y
 
@@ -1369,17 +1379,20 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         hov_dat_1 = np.sqrt(hov_dat_U**2 + hov_dat_V**2)
         hov_dat_2 = hov_dat_1
         if load_2nd_files:
-            hov_dat_U = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,:,jj,ii].load()).T
-            hov_dat_V = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,:,jj,ii].load()).T
-            hov_dat_2 = np.sqrt(hov_dat_U**2 + hov_dat_V**2)
+            if config_2nd is None:
+                hov_dat_U = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj,ii].load()).T
+                hov_dat_V = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj,ii].load()).T
+                hov_dat_2 = np.sqrt(hov_dat_U**2 + hov_dat_V**2)
+            else:
+                hov_dat_2 = hov_dat_1.copy()*np.ma.masked
         return hov_dat_1,hov_dat_2,hov_x,hov_y
 
     def reload_map_data_derived_var():
         if var == 'baroc_mag':
             if z_meth == 'z_slice':
                 map_dat_1, map_dat_2 = reload_map_data_derived_var_baroc_mag_zmeth_z_slice()
-            elif z_meth in ['ss','nb','df']:
-                map_dat_1, map_dat_2 = reload_map_data_derived_var_baroc_mag_zmeth_ss_nb_df()
+            elif z_meth in ['ss','nb','df','zm']:
+                map_dat_1, map_dat_2 = reload_map_data_derived_var_baroc_mag_zmeth_ss_nb_df_zm()
             elif z_meth == 'z_index':
                 map_dat_1, map_dat_2 = reload_map_data_derived_var_baroc_mag_z_index()
             else:
@@ -1406,25 +1419,25 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
             map_dat_2 = map_dat_1
 
             if load_2nd_files:
-                map_dat_3d_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-                map_dat_3d_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+                map_dat_3d_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                map_dat_3d_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
                 map_dat_3d_2 = np.sqrt(map_dat_3d_U_2**2 + map_dat_3d_V_2**2)
 
-                if zz not in interp1d_wgtT.keys(): interp1d_wgtT[zz] = interp1dmat_create_weight(rootgrp_gdept.variables[ncgdept][0,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin],zz)
-                map_dat_2 =  interp1dmat_wgt(map_dat_3d_2,interp1d_wgtT[zz])
-        
+                if zz not in interp1d_wgtT_2nd.keys(): interp1d_wgtT_2nd[zz] = interp1dmat_create_weight(rootgrp_gdept_2nd.variables[ncgdept][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd],zz)
+                map_dat_2 =  regrid_2nd(interp1dmat_wgt(map_dat_3d_2,interp1d_wgtT_2nd[zz]))
+
         elif var_dim[var] == 3:
             map_dat_U_1 = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
             map_dat_V_1 = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
             map_dat_1 = np.sqrt(map_dat_U_1**2 + map_dat_V_1**2)
             map_dat_2 = map_dat_1
             if load_2nd_files:
-                map_dat_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-                map_dat_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-                map_dat_2 = np.sqrt(map_dat_U_2**2 + map_dat_V_2**2)
+                map_dat_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][ti,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                map_dat_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][ti,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                map_dat_2 = regrid_2nd(np.sqrt(map_dat_U_2**2 + map_dat_V_2**2))
         return map_dat_1, map_dat_2
 
-    def reload_map_data_derived_var_baroc_mag_zmeth_ss_nb_df():
+    def reload_map_data_derived_var_baroc_mag_zmeth_ss_nb_df_zm():
 
 
         if var_dim[var] == 4:        
@@ -1433,29 +1446,44 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
             map_dat_3d_1 = np.sqrt(map_dat_3d_U_1**2 + map_dat_3d_V_1**2)
             map_dat_ss_1 = map_dat_3d_1[0,:,:]
             map_dat_nb_1 = np.ma.array(extract_nb(map_dat_3d_1[:,:,:],nbind),mask = tmask[0,:,:])
+            map_dat_zm_1 = map_dat_3d_1.mean(axis = 0)
 
-            map_dat_2 = map_dat_1
+            map_dat_ss_2 = map_dat_ss_1
+            map_dat_nb_2 = map_dat_nb_1
+            map_dat_zm_2 = map_dat_zm_1
             if load_2nd_files:
-                map_dat_3d_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-                map_dat_3d_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+                #pdb.set_trace()
+                map_dat_3d_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                map_dat_3d_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
                 map_dat_3d_2 = np.sqrt(map_dat_3d_U_2**2 + map_dat_3d_V_2**2)
-                map_dat_ss_2 = map_dat_3d_2[0,:,:]
-                map_dat_nb_2 = np.ma.array(extract_nb(map_dat_3d_2[:,:,:],nbind),mask = tmask[0,:,:])
+                map_dat_ss_2 = regrid_2nd(map_dat_3d_2[0,:,:])
+                map_dat_nb_2 = regrid_2nd(np.ma.array(extract_nb(map_dat_3d_2,nbind_2nd[:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]),mask = tmask_2nd[0,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]))
+
+
+                map_dat_zm_2 = regrid_2nd(map_dat_3d_2.mean(axis = 0))
+            else:
+                map_dat_ss_2 = map_dat_ss_1
+                map_dat_nb_2 = map_dat_nb_1
+                map_dat_df_2 = map_dat_df_1
+                map_dat_zm_2 = map_dat_zm_1
+            
             if z_meth == 'ss': map_dat_1 = map_dat_ss_1
             if z_meth == 'nb': map_dat_1 = map_dat_nb_1
             if z_meth == 'df': map_dat_1 = map_dat_ss_1 - map_dat_nb_1
+            if z_meth == 'zm': map_dat_1 = map_dat_zm_1
             if z_meth == 'ss': map_dat_2 = map_dat_ss_2
             if z_meth == 'nb': map_dat_2 = map_dat_nb_2
             if z_meth == 'df': map_dat_2 = map_dat_ss_2 - map_dat_nb_2
+            if z_meth == 'zm': map_dat_2 = map_dat_zm_2
         elif var_dim[var] == 3:
             map_dat_U_1 = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
             map_dat_V_1 = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
             map_dat_1 = np.sqrt(map_dat_U_1**2 + map_dat_V_1**2)
             map_dat_2 = map_dat_1
             if load_2nd_files:
-                map_dat_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-                map_dat_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-                map_dat_2 = np.sqrt(map_dat_U_2**2 + map_dat_V_2**2)
+                map_dat_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][ti,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                map_dat_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][ti,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                map_dat_2 = regrid_2nd(np.sqrt(map_dat_U_2**2 + map_dat_V_2**2))
         return map_dat_1, map_dat_2
 
     def reload_map_data_derived_var_baroc_mag_z_index():
@@ -1465,18 +1493,18 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
             map_dat_1 = np.sqrt(map_dat_U_1**2 + map_dat_V_1**2)
             map_dat_2 = map_dat_1
             if load_2nd_files:
-                map_dat_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][ti,zz,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-                map_dat_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][ti,zz,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-                map_dat_2 = np.sqrt(map_dat_U_2**2 + map_dat_V_2**2)
+                map_dat_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][ti,zz,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                map_dat_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][ti,zz,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                map_dat_2 = regrid_2nd(np.sqrt(map_dat_U_2**2 + map_dat_V_2**2))
         elif var_dim[var] == 3:
             map_dat_U_1 = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
             map_dat_V_1 = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
             map_dat_1 = np.sqrt(map_dat_U_1**2 + map_dat_V_1**2)
-            map_dat_2 = map_dat_1
+            map_dat_2 = regrid_2nd(map_dat_1)
             if load_2nd_files:
-                map_dat_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-                map_dat_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-                map_dat_2 = np.sqrt(map_dat_U_2**2 + map_dat_V_2**2)
+                map_dat_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][ti,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                map_dat_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][ti,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                map_dat_2 = regrid_2nd(np.sqrt(map_dat_U_2**2 + map_dat_V_2**2))
         return map_dat_1, map_dat_2
 
 
@@ -1617,8 +1645,8 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         else:
             if z_meth == 'z_slice':
                 map_dat_1,map_dat_2 = reload_map_data_zmeth_zslice()
-            elif z_meth in ['ss','nb','df']:
-                map_dat_1,map_dat_2 = reload_map_data_zmeth_ss_nb_df()
+            elif z_meth in ['ss','nb','df','zm']:
+                map_dat_1,map_dat_2 = reload_map_data_zmeth_ss_nb_df_zm()
             elif z_meth == 'z_index':
                 map_dat_1,map_dat_2 = reload_map_data_zmeth_zindex()
             else:
@@ -1652,7 +1680,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
         return map_dat_1,map_dat_2
             
-    def reload_map_data_zmeth_ss_nb_df():
+    def reload_map_data_zmeth_ss_nb_df_zm():
 
         global nbind_2nd,tmask_2nd
 
@@ -1661,6 +1689,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         map_dat_3d = np.ma.masked_invalid(curr_tmp_data.variables[var][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
         map_dat_ss_1 = map_dat_3d[0]
         map_dat_nb_1 = np.ma.array(extract_nb(map_dat_3d,nbind[:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]),mask = tmask[0,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin])
+        map_dat_zm_1 = map_dat_3d.mean(axis = 0)
         del(map_dat_3d)
         map_dat_df_1 = map_dat_ss_1 - map_dat_nb_1
      
@@ -1670,22 +1699,34 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
             map_dat_3d = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
             map_dat_ss_2 = regrid_2nd(map_dat_3d[0])
             map_dat_nb_2 = regrid_2nd(np.ma.array(extract_nb(map_dat_3d,nbind_2nd[:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]),mask = tmask_2nd[0,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]))
+            map_dat_zm_2 = regrid_2nd(map_dat_3d.mean(axis = 0))
             del(map_dat_3d)
             map_dat_df_2 = map_dat_ss_2 - map_dat_nb_2
         else:
             map_dat_ss_2 = map_dat_ss_1
             map_dat_nb_2 = map_dat_nb_1
             map_dat_df_2 = map_dat_df_1
+            map_dat_zm_2 = map_dat_zm_1
          
         if z_meth == 'ss': 
             map_dat_1 = map_dat_ss_1
             map_dat_2 = map_dat_ss_2
-        if z_meth == 'nb': 
+        elif z_meth == 'nb': 
             map_dat_1 = map_dat_nb_1
             map_dat_2 = map_dat_nb_2
-        if z_meth == 'df': 
+        elif z_meth == 'df': 
             map_dat_1 = map_dat_df_1
             map_dat_2 = map_dat_df_2
+        elif z_meth == 'zm': 
+            map_dat_1 = map_dat_zm_1
+            map_dat_2 = map_dat_zm_2
+
+
+
+
+        if map_dat_1.size != map_dat_2.size:
+            print('exception save, map 1 and 2 different size')
+            pdb.set_trace()
 
         return map_dat_1,map_dat_2
 
@@ -2307,6 +2348,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
             elif z_meth == 'ss':nice_lev = 'Surface'
             elif z_meth == 'nb':nice_lev = 'Near-Bed'
             elif z_meth == 'df':nice_lev = 'Surface-Bed'
+            elif z_meth == 'zm':nice_lev = 'Depth-Mean'
 
 
 
@@ -2400,6 +2442,10 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                     map_dat_reg_mask_1 = (nav_lon>tmpxlim[0]) & (nav_lon<tmpxlim[1]) & (nav_lat>tmpylim[0]) & (nav_lat<tmpylim[1])
                     #map_dat_reg_mask_2 = (nav_lon_2nd>xlim[0]) & (nav_lon_2nd<xlim[1]) & (nav_lat_2nd>ylim[0]) & (nav_lat_2nd<ylim[1])
                     tmp_map_dat_1 = map_dat_1[map_dat_reg_mask_1]
+                    #tmp_map_dat_2 = map_dat_2[map_dat_reg_mask_2]
+                    if map_dat_1.size != map_dat_2.size:
+                        print('clim exception save, map 1 and 2 different size')
+                        pdb.set_trace()
                     tmp_map_dat_2 = map_dat_2[map_dat_reg_mask_1]
 
                     tmp_map_dat_1 = tmp_map_dat_1[tmp_map_dat_1.mask == False]
@@ -2439,7 +2485,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                         tmp_ew_dat_1 = tmp_ew_dat_1[tmp_ew_dat_1.mask == False]
                         tmp_ns_dat_1 = tmp_ns_dat_1[tmp_ns_dat_1.mask == False]
                         tmp_hov_dat_1 = tmp_hov_dat_1[tmp_hov_dat_1.mask == False]
-                        tmp_ew_dat_2 = tmp_ew_dat_2[tmp_ew_dat_2.mask == False]
+                        tmp_ew_dat_2 = tmp_ew_dat_2[tmp_ew_dat_2.mask == False] 
                         tmp_ns_dat_2 = tmp_ns_dat_2[tmp_ns_dat_2.mask == False]
                         tmp_hov_dat_2 = tmp_hov_dat_2[tmp_hov_dat_2.mask == False]
 
@@ -2759,6 +2805,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                             func_but_text_han['Surface'].set_color('k')
                             func_but_text_han['Near-Bed'].set_color('k')
                             func_but_text_han['Surface-Bed'].set_color('k')
+                            func_but_text_han['Depth-Mean'].set_color('k')
                         
                         for vi,var_dat in enumerate(var_but_mat): but_text_han[var_dat].set_color('k')
                         but_text_han[but_name].set_color('r')
@@ -2984,12 +3031,13 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
 
 
-                    elif but_name in ['Surface','Near-Bed','Surface-Bed']:
+                    elif but_name in ['Surface','Near-Bed','Surface-Bed','Depth-Mean']:
                         if var_dim[var] == 4:
                             
                             if but_name == 'Surface':z_meth = 'ss'
                             if but_name == 'Near-Bed': z_meth = 'nb'
                             if but_name == 'Surface-Bed': z_meth = 'df'
+                            if but_name == 'Depth-Mean': z_meth = 'zm'
                             reload_map = True
                             reload_ts = True
 ###
@@ -2998,6 +3046,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                             func_but_text_han['Surface'].set_color('k')
                             func_but_text_han['Near-Bed'].set_color('k')
                             func_but_text_han['Surface-Bed'].set_color('k')
+                            func_but_text_han['Depth-Mean'].set_color('k')
                             func_but_text_han[but_name].set_color('r')
                             fig.canvas.draw()
 
@@ -3007,6 +3056,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                         func_but_text_han['Surface'].set_color('k')
                         func_but_text_han['Near-Bed'].set_color('k')
                         func_but_text_han['Surface-Bed'].set_color('k')
+                        func_but_text_han['Depth-Mean'].set_color('k')
                         func_but_text_han[but_name].set_color('r')
                         z_meth = z_meth_default    
                         reload_map = True
@@ -3374,7 +3424,7 @@ def main():
 
         parser.add_argument('--fig_fname_lab', type=str, required=False)
         parser.add_argument('--fig_fname_lab_2nd', type=str, required=False)
-        parser.add_argument('--z_meth', type=str, help="z_slice, ss, nb, df, or z_index for z level models")# Parse the argument
+        parser.add_argument('--z_meth', type=str, help="z_slice, ss, nb, df, zm, or z_index for z level models")# Parse the argument
 
         parser.add_argument('--secdataset_proc', type=str, required=False)
 
