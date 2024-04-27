@@ -407,6 +407,10 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     nice_varname_dict['peat'] = 'Potential Energy Anomaly (T component)'
     nice_varname_dict['peas'] = 'Potential Energy Anomaly (S component)'
 
+    nice_varname_dict['baroc_mag'] = 'Baroclinic current magnitude'
+    nice_varname_dict['vozocrtx'] = 'Baroclinic current (eastward component)'
+    nice_varname_dict['vomecrty'] = 'Baroclinic current (westward component)'
+
     nice_varname_dict['sossheig'] = 'Sea surface height'
     nice_varname_dict['temper_bot'] = 'Bottom temperature'
     nice_varname_dict['tempis_bot'] = 'Bottom (in situ) temperature'
@@ -2241,9 +2245,12 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
             elif z_meth == 'df':nice_lev = 'Surface-Bed'
             elif z_meth == 'zm':nice_lev = 'Depth-Mean'
 
+            if var_dim[var] == 4:  
+                map_title_str = '%s (%s); %s %s'%(nice_varname_dict[var],nice_lev,lon_lat_to_str(nav_lon[jj,ii],nav_lat[jj,ii])[0],time_datetime[ti])
+            elif var_dim[var] == 3:
+                map_title_str = '%s; %s %s'%(nice_varname_dict[var],lon_lat_to_str(nav_lon[jj,ii],nav_lat[jj,ii])[0],time_datetime[ti])
 
-
-            ax[0].set_title('%s (%s); %s %s'%(nice_varname_dict[var],nice_lev,lon_lat_to_str(nav_lon[jj,ii],nav_lat[jj,ii])[0],time_datetime[ti]))
+            ax[0].set_title(map_title_str)
             
 
 
