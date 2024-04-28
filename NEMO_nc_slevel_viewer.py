@@ -345,6 +345,13 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
     e1t = rootgrp_gdept.variables['e1t'][0,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
     e2t = rootgrp_gdept.variables['e2t'][0,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
+    e3t = rootgrp_gdept.variables['e3t_0'][0,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
+    e3t_2nd = rootgrp_gdept_2nd.variables['e3t_0'][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
+
+    gdept = rootgrp_gdept.variables[ncgdept][0,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
+    #gdept_2nd = rootgrp_gdept_2nd.variables[ncgdept][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
+    gdept_2nd = rootgrp_gdept_2nd.variables[config_fnames_dict[config_2nd]['ncgept']][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
+
 
     deriv_var = []
     if load_2nd_files: deriv_var_2nd = []
@@ -1046,13 +1053,13 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         '''
 
         ew_slice_x =  nav_lon[jj,:]
-        ew_slice_y =  rootgrp_gdept.variables[ncgdept][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][0,:,jj,:]
+        ew_slice_y =  gdept[:,jj,:]
 
 
         if var == 'baroc_mag':
             tmp_var_U, tmp_var_V = 'vozocrtx','vomecrty'
             ew_slice_x =  nav_lon[jj,:]
-            ew_slice_y =  rootgrp_gdept.variables[ncgdept][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][0,:,jj,:]
+            ew_slice_y =  gdept[:,jj,:]
             ew_slice_dat_U = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,jj,:].load())
             ew_slice_dat_V = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,jj,:].load())
             ew_slice_dat_1 = np.sqrt(ew_slice_dat_U**2 + ew_slice_dat_V**2)
@@ -1075,7 +1082,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                     ew_slice_dat_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti,:,jj,:].load())
                 else:
                     tmpdat_ew_slice = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti].load())[:,ew_jj_2nd_ind,ew_ii_2nd_ind].T
-                    tmpdat_ew_gdept = rootgrp_gdept_2nd.variables[ncgdept][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][0,:,ew_jj_2nd_ind,ew_ii_2nd_ind]
+                    tmpdat_ew_gdept=gdept_2nd[:,ew_jj_2nd_ind,ew_ii_2nd_ind].T
                     ew_slice_dat_2 = np.ma.zeros(curr_tmp_data.variables[var][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].shape[1::2])*np.ma.masked
                     for i_i,(tmpdat,tmpz,tmpzorig) in enumerate(zip(tmpdat_ew_slice,tmpdat_ew_gdept,ew_slice_y.T)):ew_slice_dat_2[:,i_i] = np.ma.masked_invalid(np.interp(tmpzorig, tmpz, tmpdat))
             else:
@@ -1089,7 +1096,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
         '''
         ns_slice_x =  nav_lat[:,ii]
-        ns_slice_y =  rootgrp_gdept.variables[ncgdept][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][0,:,:,ii]
+        ns_slice_y =  gdept[:,:,ii]
 
 
         
@@ -1119,7 +1126,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                     ns_slice_dat_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti,:,:,ii].load())
                 else:
                     tmpdat_ns_slice = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti].load())[:,ns_jj_2nd_ind,ns_ii_2nd_ind].T
-                    tmpdat_ns_gdept = rootgrp_gdept_2nd.variables[ncgdept][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][0,:,ns_jj_2nd_ind,ns_ii_2nd_ind]
+                    tmpdat_ns_gdept = gdept_2nd[:,ns_jj_2nd_ind,ns_ii_2nd_ind].T
                     ns_slice_dat_2 = np.ma.zeros(curr_tmp_data.variables[var][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].shape[1:3])*np.ma.masked
                     for i_i,(tmpdat,tmpz,tmpzorig) in enumerate(zip(tmpdat_ns_slice,tmpdat_ns_gdept,ns_slice_y.T)):ns_slice_dat_2[:,i_i] = np.ma.masked_invalid(np.interp(tmpzorig, tmpz, tmpdat))
             else:
@@ -1134,7 +1141,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         reload the data for the Hovmuller plot
         '''
         hov_x = time_datetime
-        hov_y =  rootgrp_gdept.variables[ncgdept][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][0,:,jj,ii]
+        hov_y =  gdept[:,jj,ii]
         method = 1
 
         hov_start = datetime.now()
@@ -1143,7 +1150,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         if var == 'baroc_mag':
             tmp_var_U, tmp_var_V = 'vozocrtx','vomecrty'
             hov_x = time_datetime
-            hov_y = rootgrp_gdept.variables[ncgdept][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][0,:,jj,ii]
+            hov_y = gdept[:,jj,ii]
 
             hov_dat_U = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,:,jj,ii].load()).T
             hov_dat_V = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,:,jj,ii].load()).T
@@ -1167,7 +1174,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                 else:
                     hov_dat_2 = np.ma.zeros(curr_tmp_data.variables[var][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].shape[1::-1])*np.ma.masked
                     tmpdat_hov = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj_2nd_ind,ii_2nd_ind].load())
-                    tmpdat_hov_gdept =  rootgrp_gdept_2nd.variables[ncgdept][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][0,:,jj_2nd_ind,ii_2nd_ind]               
+                    tmpdat_hov_gdept =  gdept_2nd[:,jj_2nd_ind,ii_2nd_ind]               
                     for i_i,(tmpdat) in enumerate(tmpdat_hov):hov_dat_2[:,i_i] = np.ma.masked_invalid(np.interp(hov_y, tmpdat_hov_gdept, tmpdat))
             else:
                 hov_dat_2 = hov_dat_1
@@ -1321,8 +1328,8 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         #pdb.set_trace()
         
 
-        gdept_mat = rootgrp_gdept.variables[ncgdept][0,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,jj,ii]
-        dz_mat = rootgrp_gdept.variables['e3t_0'][0,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,jj,ii]
+        gdept_mat = gdept[:,jj,ii]
+        dz_mat = e3t[:,jj,ii] # rootgrp_gdept.variables['e3t_0'][0,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,jj,ii]
 
         tmp_T_data_1 = np.ma.masked_invalid(curr_tmp_data.variables['votemper'][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,:,jj,ii].load())[:,:,np.newaxis,np.newaxis]
         tmp_S_data_1 = np.ma.masked_invalid(curr_tmp_data.variables['vosaline'][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,:,jj,ii].load())[:,:,np.newaxis,np.newaxis]
@@ -1357,8 +1364,8 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                 tmp_S_data_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables['vosaline'][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj_2nd_ind,ii_2nd_ind].load())[:,:,np.newaxis,np.newaxis] 
 
 
-                gdept_mat_2nd = rootgrp_gdept_2nd.variables[ncgdept][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,jj_2nd_ind,ii_2nd_ind]
-                dz_mat_2nd = rootgrp_gdept_2nd.variables['e3t_0'][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,jj_2nd_ind,ii_2nd_ind]
+                gdept_mat_2nd = gdept_2nd[:,jj_2nd_ind,ii_2nd_ind]
+                dz_mat_2nd = e3t_2nd[:,jj_2nd_ind,ii_2nd_ind]# rootgrp_gdept_2nd.variables['e3t_0'][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,jj_2nd_ind,ii_2nd_ind]
 
  
                 gdept_mat_pea_2nd = np.tile(gdept_mat[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_pea)).T
@@ -1401,11 +1408,12 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         if var.upper() in ['PEA', 'PEAT','PEAS']:
 
 
-            gdept_mat = rootgrp_gdept.variables[ncgdept][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
-            dz_mat = rootgrp_gdept.variables['e3t_0'][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
+            gdept_mat = gdept[np.newaxis]
+            dz_mat = e3t[np.newaxis]# rootgrp_gdept.variables['e3t_0'][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
 
             tmp_T_data_1 = np.ma.masked_invalid(curr_tmp_data.variables['votemper'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
             tmp_S_data_1 = np.ma.masked_invalid(curr_tmp_data.variables['vosaline'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+            #pdb.set_trace()
             tmppea_1, tmppeat_1, tmppeas_1 = pea_TS(tmp_T_data_1[np.newaxis],tmp_S_data_1[np.newaxis],gdept_mat,dz_mat,calc_TS_comp = True ) 
             if var.upper() == 'PEA':
                 map_dat_1 = tmppea_1[0]
@@ -1434,13 +1442,13 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                 else:
 
                     
-                    gdept_mat_2nd = rootgrp_gdept_2nd.variables[ncgdept][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
-                    dz_mat_2nd = rootgrp_gdept_2nd.variables['e3t_0'][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
+                    gdept_mat_2nd = gdept_2nd[np.newaxis]
+                    dz_mat_2nd = e3t_2nd[np.newaxis] # rootgrp_gdept_2nd.variables['e3t_0'][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
 
 
                     tmp_T_data_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables['votemper'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
                     tmp_S_data_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables['vosaline'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
-
+                    #pdb.set_trace()
                     tmppea_2, tmppeat_2, tmppeas_2 = pea_TS(tmp_T_data_2[np.newaxis],tmp_S_data_2[np.newaxis],gdept_mat_2nd,dz_mat_2nd,calc_TS_comp = True ) 
                     
 
@@ -1465,11 +1473,12 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
 
         if zz not in interp1d_wgtT.keys():
-            interp1d_wgtT[zz] = interp1dmat_create_weight(rootgrp_gdept.variables[ncgdept][0,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin],zz)
+            interp1d_wgtT[zz] = interp1dmat_create_weight(gdept,zz)
         
         if load_2nd_files:
             if zz not in interp1d_wgtT_2nd.keys(): 
-                interp1d_wgtT_2nd[zz] = interp1dmat_create_weight(rootgrp_gdept_2nd.variables[config_fnames_dict[config_2nd]['ncgept']][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd],zz)
+                #interp1d_wgtT_2nd[zz] = interp1dmat_create_weight(rootgrp_gdept_2nd.variables[config_fnames_dict[config_2nd]['ncgept']][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd],zz)
+                interp1d_wgtT_2nd[zz] = interp1dmat_create_weight(gdept_2nd,zz)
         
         
 
@@ -1781,13 +1790,13 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     if verbose_debugging: print('Create interpolation weights ', datetime.now())
     if z_meth_default == 'z_slice':
         interp1d_wgtT = {}
-        interp1d_wgtT[0] = interp1dmat_create_weight(rootgrp_gdept.variables[ncgdept][0,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin],0)
+        interp1d_wgtT[0] = interp1dmat_create_weight(gdept,0)
 
         if config_2nd is None:
             interp1d_wgtT_2nd = interp1d_wgtT
         else:
             interp1d_wgtT_2nd = {}
-            interp1d_wgtT_2nd[0] = interp1dmat_create_weight(rootgrp_gdept_2nd.variables[ncgdept][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd],0)
+            interp1d_wgtT_2nd[0] = interp1dmat_create_weight(gdept_2nd,0)
 
 
 
@@ -1984,7 +1993,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                 else:
                     
                     hov_x = time_datetime
-                    hov_y =  rootgrp_gdept.variables[ncgdept][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][0,:,jj,ii]
+                    hov_y =  gdept[:,jj,ii]
                     hov_dat_1 = np.ma.zeros((hov_y.shape+hov_x.shape))*np.ma.masked
                     hov_dat_2 = np.ma.zeros((hov_y.shape+hov_x.shape))*np.ma.masked
                 reload_hov = False
