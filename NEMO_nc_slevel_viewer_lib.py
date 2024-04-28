@@ -1057,20 +1057,29 @@ def sw_dens(tdata,sdata):
 
 
 
-def pea_TS(T_in,S_in,gdept,e3t_in,tmask,calc_TS_comp = False, zcutoff = 400.):
+def pea_TS(T_in,S_in,gdept,e3t_in,tmask = None,calc_TS_comp = False, zcutoff = 400.):
     #from call_eos import calc_sigma0, calc_sigmai#, calc_albet
 
     # Create potential energy anomaly.
+
 
     nt,nz = T_in.shape[:2]
     # if t and s are not masked arrays turn them into them
     if np.ma.isMA(T_in):
         T = T_in.copy()
         S = S_in.copy()
+            
+        if tmask is None:
+            tmask = T_in.mask==False
+
     else:
 
-        T = np.ma.array(T_in,mask = tmask==False)
-        S = np.ma.array(S_in,mask = tmask==False)
+        if tmask is None:
+            print('Must pass tmask if T and S are not masked arrays')
+            pdb.set_trace()
+        else:
+            T = np.ma.array(T_in,mask = tmask==False)
+            S = np.ma.array(S_in,mask = tmask==False)
 
     #create masked array of dz mat (e3t)
     e3t = np.ma.array(e3t_in,mask = tmask==False)

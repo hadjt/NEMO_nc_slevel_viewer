@@ -1330,9 +1330,8 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
         gdept_mat_pea = np.tile(gdept_mat[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_pea)).T
         dz_mat_pea = np.tile(dz_mat[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_pea)).T
-        tmask_pea = tmp_T_data_1.mask.copy()
 
-        tmppea_1, tmppeat_1, tmppeas_1 = pea_TS(tmp_T_data_1,tmp_S_data_1,gdept_mat_pea,dz_mat_pea,tmask=tmask_pea==False,calc_TS_comp = True )
+        tmppea_1, tmppeat_1, tmppeas_1 = pea_TS(tmp_T_data_1,tmp_S_data_1,gdept_mat_pea,dz_mat_pea,calc_TS_comp = True )
         if var.upper() == 'PEA':
             ts_dat_1 = tmppea_1[:,0,0] 
         elif var.upper() == 'PEAT':
@@ -1349,7 +1348,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                 tmp_S_data_2 = regrid_2nd(np.ma.masked_invalid(curr_tmp_data_2nd.variables['vosaline'][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj,ii].load()))[:,:,np.newaxis,np.newaxis]
 #
 
-                tmppea_2, tmppeat_2, tmppeas_2 = pea_TS(tmp_T_data_2,tmp_S_data_2,gdept_mat_pea,dz_mat_pea,tmask=tmask_pea==False,calc_TS_comp = True ) 
+                tmppea_2, tmppeat_2, tmppeas_2 = pea_TS(tmp_T_data_2,tmp_S_data_2,gdept_mat_pea,dz_mat_pea,calc_TS_comp = True ) 
                
             else:
     
@@ -1361,12 +1360,11 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                 gdept_mat_2nd = rootgrp_gdept_2nd.variables[ncgdept][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,jj_2nd_ind,ii_2nd_ind]
                 dz_mat_2nd = rootgrp_gdept_2nd.variables['e3t_0'][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,jj_2nd_ind,ii_2nd_ind]
 
-                tmask_pea_2nd = tmp_T_data_2.mask.copy()
  
                 gdept_mat_pea_2nd = np.tile(gdept_mat[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_pea)).T
                 dz_mat_pea_2nd = np.tile(dz_mat[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_pea)).T
 
-                tmppea_2, tmppeat_2, tmppeas_2 = pea_TS(tmp_T_data_2,tmp_S_data_2,gdept_mat_pea_2nd,dz_mat_pea_2nd,tmask=tmask_pea_2nd==False,calc_TS_comp = True ) 
+                tmppea_2, tmppeat_2, tmppeas_2 = pea_TS(tmp_T_data_2,tmp_S_data_2,gdept_mat_pea_2nd,dz_mat_pea_2nd,calc_TS_comp = True ) 
 
             if var.upper() == 'PEA':
                 ts_dat_2 = tmppea_2[:,0,0] 
@@ -1408,8 +1406,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
             tmp_T_data_1 = np.ma.masked_invalid(curr_tmp_data.variables['votemper'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
             tmp_S_data_1 = np.ma.masked_invalid(curr_tmp_data.variables['vosaline'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-            tmask_pea = tmp_T_data_1.mask.copy()
-            tmppea_1, tmppeat_1, tmppeas_1 = pea_TS(tmp_T_data_1[np.newaxis],tmp_S_data_1[np.newaxis],gdept_mat,dz_mat,tmask=tmask_pea==False,calc_TS_comp = True ) 
+            tmppea_1, tmppeat_1, tmppeas_1 = pea_TS(tmp_T_data_1[np.newaxis],tmp_S_data_1[np.newaxis],gdept_mat,dz_mat,calc_TS_comp = True ) 
             if var.upper() == 'PEA':
                 map_dat_1 = tmppea_1[0]
             elif var.upper() == 'PEAT':
@@ -1417,16 +1414,13 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
             elif var.upper() == 'PEAS':
                 map_dat_1 = tmppeas_1[0]
 
-
-            #pdb.set_trace()
             map_dat_2 = map_dat_1
             if load_2nd_files:
             
                 if config_2nd is None:            
                     tmp_T_data_2 = regrid_2nd(np.ma.masked_invalid(curr_tmp_data_2nd.variables['votemper'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load()))
                     tmp_S_data_2 = regrid_2nd(np.ma.masked_invalid(curr_tmp_data_2nd.variables['vosaline'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load()))
-                    tmask_pea_2 = tmp_T_data_2.mask.copy()
-                    tmppea_2, tmppeat_2, tmppeas_2 = pea_TS(tmp_T_data_2[np.newaxis],tmp_S_data_2[np.newaxis],gdept_mat,dz_mat,tmask=tmask_pea_2==False,calc_TS_comp = True ) 
+                    tmppea_2, tmppeat_2, tmppeas_2 = pea_TS(tmp_T_data_2[np.newaxis],tmp_S_data_2[np.newaxis],gdept_mat,dz_mat,calc_TS_comp = True ) 
 
 
                     if var.upper() == 'PEA':
@@ -1447,8 +1441,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                     tmp_T_data_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables['votemper'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
                     tmp_S_data_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables['vosaline'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
 
-                    tmask_pea_2 = tmp_T_data_2.mask.copy()
-                    tmppea_2, tmppeat_2, tmppeas_2 = pea_TS(tmp_T_data_2[np.newaxis],tmp_S_data_2[np.newaxis],gdept_mat_2nd,dz_mat_2nd,tmask= tmask_pea_2==False,calc_TS_comp = True ) 
+                    tmppea_2, tmppeat_2, tmppeas_2 = pea_TS(tmp_T_data_2[np.newaxis],tmp_S_data_2[np.newaxis],gdept_mat_2nd,dz_mat_2nd,calc_TS_comp = True ) 
                     
 
                     if var.upper() == 'PEA':
