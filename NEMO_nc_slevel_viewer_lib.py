@@ -675,6 +675,78 @@ def ismask(tmpvar):
 
     return ismask_out
 
+
+def nearbed_int_use_index_val(tmp3dmasknbivar,nbzindint,nbiindint,nbijndint,tmask):
+    
+    tmp_nb_mat = np.ma.masked_invalid(tmp3dmasknbivar[nbzindint,nbiindint,nbijndint])
+    
+    return tmp_nb_mat
+
+
+
+def nearbed_int_index_val(tmp3dmasknbivar):
+    nbzindint,nbiindint,nbijndint,tmask = nearbed_int_index_func(tmp3dmasknbivar)
+
+    tmp_nb_mat = nearbed_int_use_index_val(tmp3dmasknbivar,nbzindint,nbiindint,nbijndint,tmask)
+    
+    return tmp_nb_mat
+
+
+def nearbed_int_index_func(tmp3dmasknbivar):
+
+    tmask = tmp3dmasknbivar.mask
+
+    nz, nj, ni = tmask.shape
+
+    nbzindint = np.maximum(((tmask == False).sum(axis = 0)-1),0).astype('int')
+    nbiindint,nbijndint = np.meshgrid(np.arange(nj).astype('int'),np.arange(ni).astype('int'))
+
+    #tmpnbt = tmp3dmasknbivar[nbindint.astype('int'),nbiindint.astype('int').T,nbijndint.astype('int').T]
+
+    nbiindint,nbijndint = nbiindint.astype('int').T,nbijndint.astype('int').T
+
+
+    return nbzindint,nbiindint,nbijndint,tmask
+
+
+def nearbed_index_func(tmp_var):
+
+    if ismask(tmp_var):
+        tmask = tmp_var.mask.copy()
+    else:
+        tmp_var = np.ma.masked_equal(tmp_var, 0)
+        tmask = tmp_var.mask.copy()
+
+    nz, nj, ni = tmask.shape
+
+
+    # make an array of the size of the domain with the level numbers
+    #zindmat = np.tile(np.arange(51),(297,375,1)).T
+    zindmat = np.tile(np.arange(nz),(ni, nj,1)).T
+
+    # Multiply this by the domain mask, so grid boxes below the sea bed are set to zero
+    zindmatT = zindmat*(~tmask)
+
+    # Identify the maximum model level for each grid box.
+    zindmax = zindmatT.max(axis = 0)
+
+    # ... and turn this into a 3d array, matching the domain grid size
+    #zindmaxmat = np.tile(zindmax,(51,1,1))
+    zindmaxmat = np.tile(zindmax,(nz,1,1))
+
+    # Find where the grid boxes are not the near bed values (so True where we want to mask)
+    nbind = zindmaxmat != zindmat
+
+    #if ((nbind*1).sum(axis = 0).min() != 50) | ((nbind*1).sum(axis = 0).max() != 50) :
+    #if ((nbind.astype('int')).sum(axis = 0).min() != (nz-1)) | ((nbind.astype('int')).sum(axis = 0).max() != (nz-1)) :
+    if ((nbind).sum(axis = 0).min() != (nz-1)) | ((nbind).sum(axis = 0).max() != (nz-1)) :
+        print("ERROR, nbind has found more than one near bed boxes...")
+        pdb.set_trace()
+
+
+    return nbind,tmask
+
+
 def nearbed_index(filename, variable_4d,nemo_nb_i_filename = 'nemo_nb_i.nc'):
 
 
@@ -713,7 +785,6 @@ def nearbed_index(filename, variable_4d,nemo_nb_i_filename = 'nemo_nb_i.nc'):
     if ((nbind*1).sum(axis = 0).min() != (nz-1)) | ((nbind*1).sum(axis = 0).max() != (nz-1)) :
         print("ERROR, nbind has found more than one near bed boxes...")
         pdb.set_trace()
-
 
 
     #pdb.set_trace()
