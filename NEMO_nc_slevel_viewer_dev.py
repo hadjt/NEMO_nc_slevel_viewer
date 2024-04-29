@@ -399,8 +399,6 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
             var_grid[ss] = 'UV'
             deriv_var.append(ss)
 
-    #pdb.set_trace() 
-
     if var is None: var = 'votemper'
     if var not in var_mat: var = var_mat[0]
 
@@ -450,40 +448,67 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     print ('xarray start reading nctime',datetime.now())
     nctime = tmp_data.variables[time_varname]
 
-    print ('xarray finished reading nctime',datetime.now())
 
-    rootgrp_hpc_time = Dataset(fname_lst[0], 'r', format='NETCDF4')
-    nc_time_origin = rootgrp_hpc_time.variables[time_varname].time_origin
-    rootgrp_hpc_time.close()
+    try:
+
+
+        print ('xarray finished reading nctime',datetime.now())
+
+        rootgrp_hpc_time = Dataset(fname_lst[0], 'r', format='NETCDF4')
+        #pdb.set_trace()
         
-    #different treatment for 360 days and gregorian calendars... needs time_datetime for plotting, and time_datetime_since_1970 for index selection
-    if type(np.array(nctime)[0]) is type(cftime._cftime.Datetime360Day(1980,1,1)):
-        nctime_calendar_type = '360'
-    else:
-        nctime_calendar_type = 'greg'
+        nc_time_var = rootgrp_hpc_time.variables[time_varname]
+        if 'time_origin' in nc_time_var.ncattrs():
+            nc_time_origin = nc_time_var.time_origin
+        else:
+            nc_time_origin = '1980-01-01 00:00:00'
+            print('No time origin set - set to 1/1/1980. Other Time parameters likely to be missing')
+
+            #pdb.set_trace()
+        rootgrp_hpc_time.close()
+
+       
+        #different treatment for 360 days and gregorian calendars... needs time_datetime for plotting, and time_datetime_since_1970 for index selection
+        if type(np.array(nctime)[0]) is type(cftime._cftime.Datetime360Day(1980,1,1)):
+            nctime_calendar_type = '360'
+        else:
+            nctime_calendar_type = 'greg'
 
 
-    #different treatment for 360 days and gregorian calendars... needs time_datetime for plotting, and time_datetime_since_1970 for index selection
-    if  nctime_calendar_type in ['360','360_day']:
-        # if 360 days
+        #different treatment for 360 days and gregorian calendars... needs time_datetime for plotting, and time_datetime_since_1970 for index selection
+        if  nctime_calendar_type in ['360','360_day']:
+            # if 360 days
 
-        time_datetime_since_1970 = np.array([ss.year + (ss.month-1)/12 + (ss.day-1)/360 for ss in np.array(nctime)])
-        time_datetime = time_datetime_since_1970
-    else:
-        # if gregorian        
-        sec_since_origin = [float(ii.data - np.datetime64(nc_time_origin))/1e9 for ii in nctime]
-        time_datetime_cft = num2date(sec_since_origin,units = 'seconds since ' + nc_time_origin,calendar = 'gregorian') #nctime.calendar)
+            time_datetime_since_1970 = np.array([ss.year + (ss.month-1)/12 + (ss.day-1)/360 for ss in np.array(nctime)])
+            time_datetime = time_datetime_since_1970
+        else:
+            # if gregorian        
+            sec_since_origin = [float(ii.data - np.datetime64(nc_time_origin))/1e9 for ii in nctime]
+            time_datetime_cft = num2date(sec_since_origin,units = 'seconds since ' + nc_time_origin,calendar = 'gregorian') #nctime.calendar)
 
-        time_datetime = np.array([datetime(ss.year, ss.month,ss.day,ss.hour,ss.minute) for ss in time_datetime_cft])
+            time_datetime = np.array([datetime(ss.year, ss.month,ss.day,ss.hour,ss.minute) for ss in time_datetime_cft])
+            time_datetime_since_1970 = np.array([(ss - datetime(1970,1,1,0,0)).total_seconds()/86400 for ss in time_datetime])
+
+
+        if date_in_ind is not None:
+            date_in_ind_datetime = datetime.strptime(date_in_ind,date_fmt)
+            date_in_ind_datetime_timedelta = np.array([(ss - date_in_ind_datetime).total_seconds() for ss in time_datetime])
+            ti = np.abs(date_in_ind_datetime_timedelta).argmin()
+            if verbose_debugging: print('Setting ti from date_in_ind (%s): ti = %i (%s). '%(date_in_ind,ti, time_datetime[ti]), datetime.now())
+
+    except:
+        print()
+        print()
+        print()
+        print(' Not able to read time in second data set, using dummy time')
+        print()
+        print()
+        print()
+        time_datetime = np.array([datetime(datetime.now().year, datetime.now().month, datetime.now().day) + timedelta(days = i_i) for i_i in range( tmp_data.dims[t_dim])])
         time_datetime_since_1970 = np.array([(ss - datetime(1970,1,1,0,0)).total_seconds()/86400 for ss in time_datetime])
 
-    ntime = time_datetime_since_1970.size
-
-    if date_in_ind is not None:
-        date_in_ind_datetime = datetime.strptime(date_in_ind,date_fmt)
-        date_in_ind_datetime_timedelta = np.array([(ss - date_in_ind_datetime).total_seconds() for ss in time_datetime])
-        ti = np.abs(date_in_ind_datetime_timedelta).argmin()
-        if verbose_debugging: print('Setting ti from date_in_ind (%s): ti = %i (%s). '%(date_in_ind,ti, time_datetime[ti]), datetime.now())
+        if date_in_ind is not None: ti = 0
+    ntime = time_datetime.size
 
 
     if justplot: 
@@ -569,42 +594,52 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                     nav_lon_amm15 = np.ma.masked_invalid(tmp_data_2nd.variables[nav_lon_varname].load())
         print ('xarray start reading 2nd \nctime',datetime.now())
         nctime_2nd = tmp_data_2nd.variables[time_varname]
-    
-        print ('xarray finish reading 2nd nctime',datetime.now())
+        try: 
+            print ('xarray finish reading 2nd nctime',datetime.now())
 
-        rootgrp_hpc_time = Dataset(fname_lst_2nd[0], 'r', format='NETCDF4')
-        nc_time_origin_2nd = rootgrp_hpc_time.variables[time_varname].time_origin
-        rootgrp_hpc_time.close()
-        #pdb.set_trace()
-        
-        #different treatment for 360 days and gregorian calendars... needs time_datetime for plotting, and time_datetime_since_1970 for index selection
-        if type(np.array(nctime_2nd)[0]) is type(cftime._cftime.Datetime360Day(1980,1,1)):
-            nctime_calendar_type_2nd = '360'
-        else:
-            nctime_calendar_type_2nd = 'greg'
+            rootgrp_hpc_time = Dataset(fname_lst_2nd[0], 'r', format='NETCDF4')
+            nc_time_origin_2nd = rootgrp_hpc_time.variables[time_varname].time_origin
+            rootgrp_hpc_time.close()
+            #pdb.set_trace()
+            
+            #different treatment for 360 days and gregorian calendars... needs time_datetime for plotting, and time_datetime_since_1970 for index selection
+            if type(np.array(nctime_2nd)[0]) is type(cftime._cftime.Datetime360Day(1980,1,1)):
+                nctime_calendar_type_2nd = '360'
+            else:
+                nctime_calendar_type_2nd = 'greg'
 
 
 
-        #different treatment for 360 days and gregorian calendars... needs time_datetime for plotting, and time_datetime_since_1970 for index selection
-        #if type(np.array(nctime)[0]) is type(cftime._cftime.Datetime360Day(1980,1,1)):
-        if  nctime_calendar_type in ['360','360_day']:
-            # if 360 days
+            #different treatment for 360 days and gregorian calendars... needs time_datetime for plotting, and time_datetime_since_1970 for index selection
+            #if type(np.array(nctime)[0]) is type(cftime._cftime.Datetime360Day(1980,1,1)):
+            if  nctime_calendar_type in ['360','360_day']:
+                # if 360 days
 
-            time_datetime_since_1970_2nd = np.array([ss.year + (ss.month-1)/12 + (ss.day-1)/360 for ss in np.array(nctime_2nd)])
-            time_datetime_2nd = time_datetime_since_1970_2nd
-        else:
-            # if gregorian        
-            sec_since_origin_2nd = [float(ii.data - np.datetime64(nc_time_origin_2nd))/1e9 for ii in nctime_2nd]
-            time_datetime_cft_2nd = num2date(sec_since_origin_2nd,units = 'seconds since ' + nc_time_origin_2nd,calendar = 'gregorian') #nctime.calendar)
+                time_datetime_since_1970_2nd = np.array([ss.year + (ss.month-1)/12 + (ss.day-1)/360 for ss in np.array(nctime_2nd)])
+                time_datetime_2nd = time_datetime_since_1970_2nd
+            else:
+                # if gregorian        
+                sec_since_origin_2nd = [float(ii.data - np.datetime64(nc_time_origin_2nd))/1e9 for ii in nctime_2nd]
+                time_datetime_cft_2nd = num2date(sec_since_origin_2nd,units = 'seconds since ' + nc_time_origin_2nd,calendar = 'gregorian') #nctime.calendar)
 
-            time_datetime_2nd = np.array([datetime(ss.year, ss.month,ss.day,ss.hour,ss.minute) for ss in time_datetime_cft_2nd])
+                time_datetime_2nd = np.array([datetime(ss.year, ss.month,ss.day,ss.hour,ss.minute) for ss in time_datetime_cft_2nd])
 
+                time_datetime_since_1970_2nd = np.array([(ss - datetime(1970,1,1,0,0)).total_seconds()/86400 for ss in time_datetime_2nd])
+
+        except:
+            print()
+            print()
+            print()
+            print(' Not able to read time in second data set, using dummy time')
+            print()
+            print()
+            print()
+            time_datetime_2nd = np.array([datetime(datetime.now().year, datetime.now().month, datetime.now().day) + timedelta(days = i_i) for i_i in range( tmp_data.dims[t_dim])])
             time_datetime_since_1970_2nd = np.array([(ss - datetime(1970,1,1,0,0)).total_seconds()/86400 for ss in time_datetime_2nd])
 
 
 
-
-        ntime_2nd = time_datetime_since_1970_2nd.size
+        ntime_2nd = time_datetime_2nd.size
         
         # check both filessets have the same times
         if ntime_2nd != ntime:     
@@ -2062,8 +2097,8 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                     ts_dat_1, ts_dat_2,ts_x = reload_ts_data_comb()
                 else:
                     ts_x = time_datetime
-                    ts_dat_1 = np.ma.ones(len(nctime))*np.ma.masked
-                    ts_dat_2 = np.ma.ones(len(nctime))*np.ma.masked
+                    ts_dat_1 = np.ma.ones(ntime)*np.ma.masked
+                    ts_dat_2 = np.ma.ones(ntime)*np.ma.masked
                 reload_ts = False
                 
 
