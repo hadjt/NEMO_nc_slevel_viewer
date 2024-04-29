@@ -1053,353 +1053,6 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         return sel_ax,sel_ii,sel_jj,sel_ti,sel_zz
 
 
-    def reload_ew_data_comb():
-        '''
-        reload the data for the E-W cross-section
-
-        '''
-
-        ew_slice_x =  nav_lon[jj,:]
-        ew_slice_y =  gdept[:,jj,:]
-
-
-        if var == 'baroc_mag':
-            tmp_var_U, tmp_var_V = 'vozocrtx','vomecrty'
-            ew_slice_x =  nav_lon[jj,:]
-            ew_slice_y =  gdept[:,jj,:]
-            ew_slice_dat_U = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,jj,:].load())
-            ew_slice_dat_V = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,jj,:].load())
-            ew_slice_dat_1 = np.sqrt(ew_slice_dat_U**2 + ew_slice_dat_V**2)
-            ew_slice_dat_2 = ew_slice_dat_1
-            if load_2nd_files:
-                if config_2nd is None:
-                    ew_slice_dat_U = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti,:,jj,:].load())
-                    ew_slice_dat_V = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti,:,jj,:].load())
-                    ew_slice_dat_2 = np.sqrt(ew_slice_dat_U**2 + ew_slice_dat_V**2)
-                else:
-                    ew_slice_dat_2 = ew_slice_dat_1.copy()*np.ma.masked
-
-
-
-        else:
-            ew_slice_dat_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,jj,:].load())
-
-            if load_2nd_files:
-                if config_2nd is None:
-                    ew_slice_dat_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti,:,jj,:].load())
-                else:
-                    tmpdat_ew_slice = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti].load())[:,ew_jj_2nd_ind,ew_ii_2nd_ind].T
-                    tmpdat_ew_gdept=gdept_2nd[:,ew_jj_2nd_ind,ew_ii_2nd_ind].T
-                    ew_slice_dat_2 = np.ma.zeros(curr_tmp_data.variables[var][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].shape[1::2])*np.ma.masked
-                    for i_i,(tmpdat,tmpz,tmpzorig) in enumerate(zip(tmpdat_ew_slice,tmpdat_ew_gdept,ew_slice_y.T)):ew_slice_dat_2[:,i_i] = np.ma.masked_invalid(np.interp(tmpzorig, tmpz, tmpdat))
-            else:
-                ew_slice_dat_2 = ew_slice_dat_1
-
-        return ew_slice_dat_1,ew_slice_dat_2,ew_slice_x, ew_slice_y
-    
-    def reload_ns_data_comb():              
-        '''
-        reload the data for the N-S cross-section
-
-        '''
-        ns_slice_x =  nav_lat[:,ii]
-        ns_slice_y =  gdept[:,:,ii]
-
-
-        
-        if var == 'baroc_mag':
-            tmp_var_U, tmp_var_V = 'vozocrtx','vomecrty'
-            ns_slice_dat_U = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,:,ii].load())
-            ns_slice_dat_V = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,:,ii].load())
-            ns_slice_dat_1 = np.sqrt(ns_slice_dat_U**2 + ns_slice_dat_V**2)
-            ns_slice_dat_2 = ns_slice_dat_1
-            if load_2nd_files:
-                if config_2nd is None:
-                    ns_slice_dat_U = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti,:,:,ii].load())
-                    ns_slice_dat_V = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti,:,:,ii].load())
-                    ns_slice_dat_2 = np.sqrt(ns_slice_dat_U**2 + ns_slice_dat_V**2)
-                else:
-                    ns_slice_dat_2 = ns_slice_dat_1.copy()*np.ma.masked
-
-        else:
-
-
-            ns_slice_dat_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,:,ii].load())
-
-
-
-            if load_2nd_files:
-                if config_2nd is None:
-                    ns_slice_dat_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti,:,:,ii].load())
-                else:
-                    tmpdat_ns_slice = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti].load())[:,ns_jj_2nd_ind,ns_ii_2nd_ind].T
-                    tmpdat_ns_gdept = gdept_2nd[:,ns_jj_2nd_ind,ns_ii_2nd_ind].T
-                    ns_slice_dat_2 = np.ma.zeros(curr_tmp_data.variables[var][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].shape[1:3])*np.ma.masked
-                    for i_i,(tmpdat,tmpz,tmpzorig) in enumerate(zip(tmpdat_ns_slice,tmpdat_ns_gdept,ns_slice_y.T)):ns_slice_dat_2[:,i_i] = np.ma.masked_invalid(np.interp(tmpzorig, tmpz, tmpdat))
-            else:
-                ns_slice_dat_2 = ns_slice_dat_1
-
-        return ns_slice_dat_1,ns_slice_dat_2,ns_slice_x, ns_slice_y
-    
-
-
-    def reload_hov_data_comb():                
-        '''
-        reload the data for the Hovmuller plot
-        '''
-        hov_x = time_datetime
-        hov_y =  gdept[:,jj,ii]
-        method = 1
-
-        hov_start = datetime.now()
-
-        
-        if var == 'baroc_mag':
-            tmp_var_U, tmp_var_V = 'vozocrtx','vomecrty'
-            hov_x = time_datetime
-            hov_y = gdept[:,jj,ii]
-
-            hov_dat_U = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,:,jj,ii].load()).T
-            hov_dat_V = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,:,jj,ii].load()).T
-            hov_dat_1 = np.sqrt(hov_dat_U**2 + hov_dat_V**2)
-            hov_dat_2 = hov_dat_1
-            if load_2nd_files:
-                if config_2nd is None:
-                    hov_dat_U = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj,ii].load()).T
-                    hov_dat_V = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj,ii].load()).T
-                    hov_dat_2 = np.sqrt(hov_dat_U**2 + hov_dat_V**2)
-                else:
-                    hov_dat_2 = hov_dat_1.copy()*np.ma.masked
-     
-
-        else:
-            hov_dat_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,:,jj,ii].load()).T
-            
-            if load_2nd_files:
-                if config_2nd is None:
-                    hov_dat_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj,ii].load()).T
-                else:
-                    hov_dat_2 = np.ma.zeros(curr_tmp_data.variables[var][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].shape[1::-1])*np.ma.masked
-                    tmpdat_hov = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj_2nd_ind,ii_2nd_ind].load())
-                    tmpdat_hov_gdept =  gdept_2nd[:,jj_2nd_ind,ii_2nd_ind]               
-                    for i_i,(tmpdat) in enumerate(tmpdat_hov):hov_dat_2[:,i_i] = np.ma.masked_invalid(np.interp(hov_y, tmpdat_hov_gdept, tmpdat))
-            else:
-                hov_dat_2 = hov_dat_1
-        hov_stop = datetime.now()
-
-        return hov_dat_1,hov_dat_2,hov_x,hov_y
-
-    def reload_ts_data_comb():
-        ts_x = time_datetime
-        if var_dim[var] == 3:
-
-            if var.upper() in ['PEA', 'PEAT','PEAS']:
-                ts_dat_1, ts_dat_2 = reload_ts_data_derived_var_pea()
-            else:
-                ts_dat_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,jj,ii].load())
-                if load_2nd_files:
-                    if config_2nd is None:
-                        ts_dat_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,jj,ii].load())
-                    else:
-                        ts_dat_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,jj_2nd_ind,ii_2nd_ind].load())
-                else:
-                    ts_dat_2 = ts_dat_1
-        elif var_dim[var] == 4:
-
-            if z_meth in ['ss','nb','df','zm']:
-
-                ss_ts_dat_1 = hov_dat_1[0,:].ravel()
-                hov_nb_ind_1 = (hov_dat_1[:,0].mask == False).sum()-1
-                nb_ts_dat_1 = hov_dat_1[hov_nb_ind_1,:].ravel()
-                df_ts_dat_1 = ss_ts_dat_1 - nb_ts_dat_1
-                #zm_ts_dat_1 = hov_dat_1[:,:].mean(axis = 0)
-                
-                ss_ts_dat_2 = hov_dat_2[0,:].ravel()
-                hov_nb_ind_2 = (hov_dat_2[:,0].mask == False).sum()-1
-                nb_ts_dat_2 = hov_dat_2[hov_nb_ind_2,:].ravel()
-                df_ts_dat_2 = ss_ts_dat_2 - nb_ts_dat_2
-                #zm_ts_dat_2 = hov_dat_2[:,:].mean(axis = 0)
-                
-                if z_meth == 'ss':
-                    ts_dat_1 = ss_ts_dat_1
-                    ts_dat_2 = ss_ts_dat_2
-                if z_meth == 'nb':
-                    ts_dat_1 = nb_ts_dat_1
-                    ts_dat_2 = nb_ts_dat_2
-                if z_meth == 'df':
-                    ts_dat_1 = df_ts_dat_1
-                    ts_dat_2 = df_ts_dat_2
-                if z_meth == 'zm':
-                    ts_e3t_1 = np.ma.array(e3t[:,jj,ii], mask = hov_dat_2[:,0].mask)
-                    ts_dm_wgt_1 = ts_e3t_1/ts_e3t_1.sum()
-                    ts_dat_1 = ((hov_dat_1.T*ts_dm_wgt_1).T).sum(axis = 0)
-                    
-                    if load_2nd_files: # e3t_2nd only loaded if 2nd files present
-                        ts_e3t_2 = np.ma.array(e3t_2nd[:,jj_2nd_ind,ii_2nd_ind], mask = hov_dat_2[:,0].mask)
-                        ts_dm_wgt_2 = ts_e3t_2/ts_e3t_2.sum()
-                        ts_dat_2 = ((hov_dat_2.T*ts_dm_wgt_2).T).sum(axis = 0)
-                    else:
-                        ts_dat_2 = ts_dat_1
-                        #ts_dat_1 = zm_ts_dat_1
-                        #ts_dat_2 = zm_ts_dat_2
-            elif z_meth == 'z_slice':
-                tmpzi = (np.abs(zz - hov_y)).argmin()
-                ts_dat_1 = hov_dat_1[tmpzi,:].ravel()
-                ts_dat_2 = hov_dat_2[tmpzi,:].ravel()
-
-            elif z_meth == 'z_index':
-
-                ts_dat_1 = hov_dat_1[zi,:]
-                ts_dat_2 = hov_dat_2[zi,:]
-        return ts_dat_1, ts_dat_2,ts_x
-
-
-    def  reload_map_data_comb_zmeth_nb_df_zm_3d():
-
-        # load files
-
-        if var == 'baroc_mag':
-            map_dat_3d_U_1 = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-            map_dat_3d_V_1 = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-            map_dat_3d_1 = np.sqrt(map_dat_3d_U_1**2 + map_dat_3d_V_1**2)
-            del(map_dat_3d_U_1)
-            del(map_dat_3d_V_1)
-
-            if load_2nd_files:
-                map_dat_3d_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
-                map_dat_3d_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
-                map_dat_3d_2 = np.sqrt(map_dat_3d_U_2**2 + map_dat_3d_V_2**2)
-                del(map_dat_3d_U_2)
-                del(map_dat_3d_V_2)
-              
-
-        else:
-            map_dat_3d_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-            if load_2nd_files:
-                map_dat_3d_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
-
-        # process onto 2d levels
-        map_dat_ss_1 = map_dat_3d_1[0]
-        map_dat_nb_1 = nearbed_int_index_val(map_dat_3d_1)
-        #map_dat_zm_1 = map_dat_3d_1.mean(axis = 0)
-        map_dat_zm_1 = weighted_depth_mean_masked_var(map_dat_3d_1,e3t)
-        del(map_dat_3d_1)
-        map_dat_df_1 = map_dat_ss_1 - map_dat_nb_1
-     
-        if load_2nd_files:
-        
-            map_dat_ss_2 = regrid_2nd(map_dat_3d_2[0])
-            map_dat_nb_2 = regrid_2nd(nearbed_int_index_val(map_dat_3d_2))
-            #map_dat_zm_2 = regrid_2nd(map_dat_3d_2.mean(axis = 0))
-            map_dat_zm_2 = regrid_2nd(weighted_depth_mean_masked_var(map_dat_3d_2,e3t_2nd))
-            del(map_dat_3d_2)
-            map_dat_df_2 = map_dat_ss_2 - map_dat_nb_2
-        else:
-
-            map_dat_ss_2 = map_dat_ss_1
-            map_dat_nb_2 = map_dat_nb_1
-            map_dat_df_2 = map_dat_df_1
-            map_dat_zm_2 = map_dat_zm_1
-
-
-            
-        if z_meth == 'nb': map_dat_1 = map_dat_nb_1
-        if z_meth == 'df': map_dat_1 = map_dat_ss_1 - map_dat_nb_1
-        if z_meth == 'zm': map_dat_1 = map_dat_zm_1
-        if z_meth == 'nb': map_dat_2 = map_dat_nb_2
-        if z_meth == 'df': map_dat_2 = map_dat_ss_2 - map_dat_nb_2
-        if z_meth == 'zm': map_dat_2 = map_dat_zm_2
-
-        return map_dat_1, map_dat_2
-
-
-
-    def  reload_map_data_comb_zmeth_ss_3d():
-
-        # load files
-
-        if var == 'baroc_mag':
-            map_dat_3d_U_1 = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][ti,0,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-            map_dat_3d_V_1 = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][ti,0,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-            map_dat_ss_1 = np.sqrt(map_dat_3d_U_1**2 + map_dat_3d_V_1**2)
-            del(map_dat_3d_U_1)
-            del(map_dat_3d_V_1)
-
-            if load_2nd_files:
-                map_dat_3d_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][ti,0,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
-                map_dat_3d_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][ti,0,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
-                map_dat_ss_2 = regrid_2nd(np.sqrt(map_dat_3d_U_2**2 + map_dat_3d_V_2**2))
-                del(map_dat_3d_U_2)
-                del(map_dat_3d_V_2)
-            else: map_dat_ss_2 = map_dat_ss_1
-              
-
-        else:
-            map_dat_ss_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][ti,0,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-            if load_2nd_files:
-                map_dat_ss_2 = regrid_2nd(np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][ti,0,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load()))
-            else: 
-                map_dat_ss_2 = map_dat_ss_1
-
-
-        return map_dat_ss_1, map_dat_ss_2
-
-    def reload_ts_data_derived_var_pea():
-        #pdb.set_trace()
-        
-
-        gdept_mat = gdept[:,jj,ii]
-        dz_mat = e3t[:,jj,ii] # rootgrp_gdept.variables['e3t_0'][0,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,jj,ii]
-
-        tmp_T_data_1 = np.ma.masked_invalid(curr_tmp_data.variables['votemper'][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,:,jj,ii].load())[:,:,np.newaxis,np.newaxis]
-        tmp_S_data_1 = np.ma.masked_invalid(curr_tmp_data.variables['vosaline'][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,:,jj,ii].load())[:,:,np.newaxis,np.newaxis]
-        nt_pea = tmp_T_data_1.shape[0]
-
-        gdept_mat_pea = np.tile(gdept_mat[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_pea)).T
-        dz_mat_pea = np.tile(dz_mat[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_pea)).T
-
-        tmppea_1, tmppeat_1, tmppeas_1 = pea_TS(tmp_T_data_1,tmp_S_data_1,gdept_mat_pea,dz_mat_pea,calc_TS_comp = True )
-        if var.upper() == 'PEA':
-            ts_dat_1 = tmppea_1[:,0,0] 
-        elif var.upper() == 'PEAT':
-            ts_dat_1 = tmppeat_1[:,0,0] 
-        elif var.upper() == 'PEAS':
-            ts_dat_1 = tmppeas_1[:,0,0] 
-
-        ts_dat_2 = ts_dat_1
-        if load_2nd_files:
-        
-            if config_2nd is None:
-            
-                tmp_T_data_2 = regrid_2nd(np.ma.masked_invalid(curr_tmp_data_2nd.variables['votemper'][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj,ii].load()))[:,:,np.newaxis,np.newaxis]
-                tmp_S_data_2 = regrid_2nd(np.ma.masked_invalid(curr_tmp_data_2nd.variables['vosaline'][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj,ii].load()))[:,:,np.newaxis,np.newaxis]
-#
-
-                tmppea_2, tmppeat_2, tmppeas_2 = pea_TS(tmp_T_data_2,tmp_S_data_2,gdept_mat_pea,dz_mat_pea,calc_TS_comp = True ) 
-               
-            else:
-    
-
-                tmp_T_data_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables['votemper'][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj_2nd_ind,ii_2nd_ind].load())[:,:,np.newaxis,np.newaxis]
-                tmp_S_data_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables['vosaline'][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj_2nd_ind,ii_2nd_ind].load())[:,:,np.newaxis,np.newaxis] 
-
-
-                gdept_mat_2nd = gdept_2nd[:,jj_2nd_ind,ii_2nd_ind]
-                dz_mat_2nd = e3t_2nd[:,jj_2nd_ind,ii_2nd_ind]# rootgrp_gdept_2nd.variables['e3t_0'][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,jj_2nd_ind,ii_2nd_ind]
-
- 
-                gdept_mat_pea_2nd = np.tile(gdept_mat[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_pea)).T
-                dz_mat_pea_2nd = np.tile(dz_mat[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_pea)).T
-
-                tmppea_2, tmppeat_2, tmppeas_2 = pea_TS(tmp_T_data_2,tmp_S_data_2,gdept_mat_pea_2nd,dz_mat_pea_2nd,calc_TS_comp = True ) 
-
-            if var.upper() == 'PEA':
-                ts_dat_2 = tmppea_2[:,0,0] 
-            elif var.upper() == 'PEAT':
-                ts_dat_2 = tmppeat_2[:,0,0] 
-            elif var.upper() == 'PEAS':
-                ts_dat_2 = tmppeas_2[:,0,0] 
-        return ts_dat_1, ts_dat_2 
 
     def reload_map_data_comb():
         if var_dim[var] == 3:
@@ -1490,6 +1143,100 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
         return map_dat_1,map_dat_2
 
+
+
+
+    def  reload_map_data_comb_zmeth_ss_3d():
+
+        # load files
+
+        if var == 'baroc_mag':
+            map_dat_3d_U_1 = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][ti,0,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+            map_dat_3d_V_1 = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][ti,0,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+            map_dat_ss_1 = np.sqrt(map_dat_3d_U_1**2 + map_dat_3d_V_1**2)
+            del(map_dat_3d_U_1)
+            del(map_dat_3d_V_1)
+
+            if load_2nd_files:
+                map_dat_3d_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][ti,0,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                map_dat_3d_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][ti,0,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                map_dat_ss_2 = regrid_2nd(np.sqrt(map_dat_3d_U_2**2 + map_dat_3d_V_2**2))
+                del(map_dat_3d_U_2)
+                del(map_dat_3d_V_2)
+            else: map_dat_ss_2 = map_dat_ss_1
+              
+
+        else:
+            map_dat_ss_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][ti,0,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+            if load_2nd_files:
+                map_dat_ss_2 = regrid_2nd(np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][ti,0,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load()))
+            else: 
+                map_dat_ss_2 = map_dat_ss_1
+
+
+        return map_dat_ss_1, map_dat_ss_2
+
+
+
+    def  reload_map_data_comb_zmeth_nb_df_zm_3d():
+
+        # load files
+
+        if var == 'baroc_mag':
+            map_dat_3d_U_1 = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+            map_dat_3d_V_1 = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+            map_dat_3d_1 = np.sqrt(map_dat_3d_U_1**2 + map_dat_3d_V_1**2)
+            del(map_dat_3d_U_1)
+            del(map_dat_3d_V_1)
+
+            if load_2nd_files:
+                map_dat_3d_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                map_dat_3d_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                map_dat_3d_2 = np.sqrt(map_dat_3d_U_2**2 + map_dat_3d_V_2**2)
+                del(map_dat_3d_U_2)
+                del(map_dat_3d_V_2)
+              
+
+        else:
+            map_dat_3d_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+            if load_2nd_files:
+                map_dat_3d_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+
+        # process onto 2d levels
+        map_dat_ss_1 = map_dat_3d_1[0]
+        map_dat_nb_1 = nearbed_int_index_val(map_dat_3d_1)
+        #map_dat_zm_1 = map_dat_3d_1.mean(axis = 0)
+        map_dat_zm_1 = weighted_depth_mean_masked_var(map_dat_3d_1,e3t)
+        del(map_dat_3d_1)
+        map_dat_df_1 = map_dat_ss_1 - map_dat_nb_1
+     
+        if load_2nd_files:
+        
+            map_dat_ss_2 = regrid_2nd(map_dat_3d_2[0])
+            map_dat_nb_2 = regrid_2nd(nearbed_int_index_val(map_dat_3d_2))
+            #map_dat_zm_2 = regrid_2nd(map_dat_3d_2.mean(axis = 0))
+            map_dat_zm_2 = regrid_2nd(weighted_depth_mean_masked_var(map_dat_3d_2,e3t_2nd))
+            del(map_dat_3d_2)
+            map_dat_df_2 = map_dat_ss_2 - map_dat_nb_2
+        else:
+
+            map_dat_ss_2 = map_dat_ss_1
+            map_dat_nb_2 = map_dat_nb_1
+            map_dat_df_2 = map_dat_df_1
+            map_dat_zm_2 = map_dat_zm_1
+
+
+            
+        if z_meth == 'nb': map_dat_1 = map_dat_nb_1
+        if z_meth == 'df': map_dat_1 = map_dat_ss_1 - map_dat_nb_1
+        if z_meth == 'zm': map_dat_1 = map_dat_zm_1
+        if z_meth == 'nb': map_dat_2 = map_dat_nb_2
+        if z_meth == 'df': map_dat_2 = map_dat_ss_2 - map_dat_nb_2
+        if z_meth == 'zm': map_dat_2 = map_dat_zm_2
+
+        return map_dat_1, map_dat_2
+
+
     def reload_map_data_comb_zmeth_zslice():
 
 
@@ -1567,6 +1314,285 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
 
         return map_dat_1,map_dat_2
+
+
+
+    def reload_ew_data_comb():
+        '''
+        reload the data for the E-W cross-section
+
+        '''
+
+        ew_slice_x =  nav_lon[jj,:]
+        ew_slice_y =  gdept[:,jj,:]
+
+
+        if var == 'baroc_mag':
+            tmp_var_U, tmp_var_V = 'vozocrtx','vomecrty'
+            ew_slice_x =  nav_lon[jj,:]
+            ew_slice_y =  gdept[:,jj,:]
+            ew_slice_dat_U = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,jj,:].load())
+            ew_slice_dat_V = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,jj,:].load())
+            ew_slice_dat_1 = np.sqrt(ew_slice_dat_U**2 + ew_slice_dat_V**2)
+            ew_slice_dat_2 = ew_slice_dat_1
+            if load_2nd_files:
+                if config_2nd is None:
+                    ew_slice_dat_U = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti,:,jj,:].load())
+                    ew_slice_dat_V = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti,:,jj,:].load())
+                    ew_slice_dat_2 = np.sqrt(ew_slice_dat_U**2 + ew_slice_dat_V**2)
+                else:
+                    #pdb.set_trace()
+                    ew_slice_dat_2 = ew_slice_dat_1.copy()*np.ma.masked
+                    tmpdat_ew_slice_dat_U = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti].load())[:,ew_jj_2nd_ind,ew_ii_2nd_ind].T
+                    tmpdat_ew_slice_dat_V = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti].load())[:,ew_jj_2nd_ind,ew_ii_2nd_ind].T
+                    tmpdat_ew_slice = np.sqrt(tmpdat_ew_slice_dat_U**2 + tmpdat_ew_slice_dat_V**2)
+                    tmpdat_ew_gdept=gdept_2nd[:,ew_jj_2nd_ind,ew_ii_2nd_ind].T
+                    #for i_i,(tmpdat,tmpz,tmpzorig) in enumerate(zip(tmpdat_ew_slice,tmpdat_ew_gdept,ew_slice_y.T)):ew_slice_dat_2[:,i_i] = np.ma.masked_invalid(np.interp(tmpzorig, tmpz, tmpdat))
+                    #np.interp not a mask function, so set Masked valeus to NaNs
+                    for i_i,(tmpdat,tmpz,tmpzorig) in enumerate(zip(tmpdat_ew_slice,tmpdat_ew_gdept,ew_slice_y.T)):ew_slice_dat_2[:,i_i] = np.ma.masked_invalid(np.interp(tmpzorig, tmpz, np.ma.array(tmpdat.copy(),fill_value=np.nan).filled()  ))
+
+        else:
+
+            ew_slice_dat_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,jj,:].load())
+
+            if load_2nd_files:
+                if config_2nd is None:
+                    ew_slice_dat_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti,:,jj,:].load())
+                else:
+                    tmpdat_ew_slice = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti].load())[:,ew_jj_2nd_ind,ew_ii_2nd_ind].T
+                    tmpdat_ew_gdept=gdept_2nd[:,ew_jj_2nd_ind,ew_ii_2nd_ind].T
+                    ew_slice_dat_2 = np.ma.zeros(curr_tmp_data.variables[var][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].shape[1::2])*np.ma.masked
+                    for i_i,(tmpdat,tmpz,tmpzorig) in enumerate(zip(tmpdat_ew_slice,tmpdat_ew_gdept,ew_slice_y.T)):ew_slice_dat_2[:,i_i] = np.ma.masked_invalid(np.interp(tmpzorig, tmpz, tmpdat))
+            else:
+                ew_slice_dat_2 = ew_slice_dat_1
+
+        return ew_slice_dat_1,ew_slice_dat_2,ew_slice_x, ew_slice_y
+    
+    def reload_ns_data_comb():              
+        '''
+        reload the data for the N-S cross-section
+
+        '''
+        ns_slice_x =  nav_lat[:,ii]
+        ns_slice_y =  gdept[:,:,ii]
+
+
+        
+        if var == 'baroc_mag':
+            tmp_var_U, tmp_var_V = 'vozocrtx','vomecrty'
+            ns_slice_dat_U = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,:,ii].load())
+            ns_slice_dat_V = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,:,ii].load())
+            ns_slice_dat_1 = np.sqrt(ns_slice_dat_U**2 + ns_slice_dat_V**2)
+            ns_slice_dat_2 = ns_slice_dat_1
+            if load_2nd_files:
+                if config_2nd is None:
+                    ns_slice_dat_U = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti,:,:,ii].load())
+                    ns_slice_dat_V = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti,:,:,ii].load())
+                    ns_slice_dat_2 = np.sqrt(ns_slice_dat_U**2 + ns_slice_dat_V**2)
+                else:
+                    
+                    ns_slice_dat_2 = ns_slice_dat_1.copy()*np.ma.masked
+                    ns_slice_dat_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti].load())[:,ns_jj_2nd_ind,ns_ii_2nd_ind].T
+                    ns_slice_dat_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti].load())[:,ns_jj_2nd_ind,ns_ii_2nd_ind].T
+                    tmpdat_ns_slice = np.sqrt(ns_slice_dat_U_2**2 + ns_slice_dat_V_2**2)
+                    tmpdat_ns_gdept = gdept_2nd[:,ns_jj_2nd_ind,ns_ii_2nd_ind].T
+                    #for i_i,(tmpdat,tmpz,tmpzorig) in enumerate(zip(tmpdat_ns_slice,tmpdat_ns_gdept,ns_slice_y.T)):ns_slice_dat_2[:,i_i] = np.ma.masked_invalid(np.interp(tmpzorig, tmpz, tmpdat))
+                    #np.interp not a mask function, so set Masked valeus to NaNs
+                    for i_i,(tmpdat,tmpz,tmpzorig) in enumerate(zip(tmpdat_ns_slice,tmpdat_ns_gdept,ns_slice_y.T)):ns_slice_dat_2[:,i_i] = np.ma.masked_invalid(np.interp(tmpzorig, tmpz, np.ma.array(tmpdat.copy(),fill_value=np.nan).filled()  ))
+
+        else:
+
+            ns_slice_dat_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,:,ii].load())
+
+            if load_2nd_files:
+                if config_2nd is None:
+                    ns_slice_dat_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti,:,:,ii].load())
+                else:
+                    tmpdat_ns_slice = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti].load())[:,ns_jj_2nd_ind,ns_ii_2nd_ind].T
+                    tmpdat_ns_gdept = gdept_2nd[:,ns_jj_2nd_ind,ns_ii_2nd_ind].T
+                    ns_slice_dat_2 = np.ma.zeros(curr_tmp_data.variables[var][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].shape[1:3])*np.ma.masked
+                    for i_i,(tmpdat,tmpz,tmpzorig) in enumerate(zip(tmpdat_ns_slice,tmpdat_ns_gdept,ns_slice_y.T)):ns_slice_dat_2[:,i_i] = np.ma.masked_invalid(np.interp(tmpzorig, tmpz, tmpdat))
+            else:
+                ns_slice_dat_2 = ns_slice_dat_1
+
+        return ns_slice_dat_1,ns_slice_dat_2,ns_slice_x, ns_slice_y
+    
+
+
+    def reload_hov_data_comb():                
+        '''
+        reload the data for the Hovmuller plot
+        '''
+        hov_x = time_datetime
+        hov_y =  gdept[:,jj,ii]
+        method = 1
+
+        hov_start = datetime.now()
+
+        
+        if var == 'baroc_mag':
+            tmp_var_U, tmp_var_V = 'vozocrtx','vomecrty'
+            hov_x = time_datetime
+            hov_y = gdept[:,jj,ii]
+
+            hov_dat_U = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,:,jj,ii].load()).T
+            hov_dat_V = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,:,jj,ii].load()).T
+            hov_dat_1 = np.sqrt(hov_dat_U**2 + hov_dat_V**2)
+            hov_dat_2 = hov_dat_1
+            if load_2nd_files:
+                if config_2nd is None:
+                    hov_dat_U = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj,ii].load()).T
+                    hov_dat_V = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj,ii].load()).T
+                    hov_dat_2 = np.sqrt(hov_dat_U**2 + hov_dat_V**2)
+                else:
+                    hov_dat_2 = hov_dat_1.copy()*np.ma.masked
+                    hov_dat_U = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj_2nd_ind,ii_2nd_ind].load()).T
+                    hov_dat_V = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj_2nd_ind,ii_2nd_ind].load()).T
+                    tmpdat_hov = np.sqrt(hov_dat_U**2 + hov_dat_V**2).T
+                    tmpdat_hov_gdept =  gdept_2nd[:,jj_2nd_ind,ii_2nd_ind]               
+                    for i_i,(tmpdat) in enumerate(tmpdat_hov):hov_dat_2[:,i_i] = np.ma.masked_invalid(np.interp(hov_y, tmpdat_hov_gdept, tmpdat))
+     
+
+        else:
+            hov_dat_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,:,jj,ii].load()).T
+            
+            if load_2nd_files:
+                if config_2nd is None:
+                    hov_dat_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj,ii].load()).T
+                else:
+                    hov_dat_2 = np.ma.zeros(curr_tmp_data.variables[var][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].shape[1::-1])*np.ma.masked
+                    tmpdat_hov = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj_2nd_ind,ii_2nd_ind].load())
+                    tmpdat_hov_gdept =  gdept_2nd[:,jj_2nd_ind,ii_2nd_ind]               
+                    for i_i,(tmpdat) in enumerate(tmpdat_hov):hov_dat_2[:,i_i] = np.ma.masked_invalid(np.interp(hov_y, tmpdat_hov_gdept, tmpdat))
+            else:
+                hov_dat_2 = hov_dat_1
+        hov_stop = datetime.now()
+
+        return hov_dat_1,hov_dat_2,hov_x,hov_y
+
+    def reload_ts_data_comb():
+        ts_x = time_datetime
+        if var_dim[var] == 3:
+
+            if var.upper() in ['PEA', 'PEAT','PEAS']:
+                ts_dat_1, ts_dat_2 = reload_ts_data_derived_var_pea()
+            else:
+                ts_dat_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,jj,ii].load())
+                if load_2nd_files:
+                    if config_2nd is None:
+                        ts_dat_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,jj,ii].load())
+                    else:
+                        ts_dat_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,jj_2nd_ind,ii_2nd_ind].load())
+                else:
+                    ts_dat_2 = ts_dat_1
+        elif var_dim[var] == 4:
+
+            if z_meth in ['ss','nb','df','zm']:
+
+                ss_ts_dat_1 = hov_dat_1[0,:].ravel()
+                hov_nb_ind_1 = (hov_dat_1[:,0].mask == False).sum()-1
+                nb_ts_dat_1 = hov_dat_1[hov_nb_ind_1,:].ravel()
+                df_ts_dat_1 = ss_ts_dat_1 - nb_ts_dat_1
+                #zm_ts_dat_1 = hov_dat_1[:,:].mean(axis = 0)
+                
+                ss_ts_dat_2 = hov_dat_2[0,:].ravel()
+                hov_nb_ind_2 = (hov_dat_2[:,0].mask == False).sum()-1
+                nb_ts_dat_2 = hov_dat_2[hov_nb_ind_2,:].ravel()
+                df_ts_dat_2 = ss_ts_dat_2 - nb_ts_dat_2
+                #zm_ts_dat_2 = hov_dat_2[:,:].mean(axis = 0)
+                
+                if z_meth == 'ss':
+                    ts_dat_1 = ss_ts_dat_1
+                    ts_dat_2 = ss_ts_dat_2
+                if z_meth == 'nb':
+                    ts_dat_1 = nb_ts_dat_1
+                    ts_dat_2 = nb_ts_dat_2
+                if z_meth == 'df':
+                    ts_dat_1 = df_ts_dat_1
+                    ts_dat_2 = df_ts_dat_2
+                if z_meth == 'zm':
+                    ts_e3t_1 = np.ma.array(e3t[:,jj,ii], mask = hov_dat_2[:,0].mask)
+                    ts_dm_wgt_1 = ts_e3t_1/ts_e3t_1.sum()
+                    ts_dat_1 = ((hov_dat_1.T*ts_dm_wgt_1).T).sum(axis = 0)
+                    
+                    if load_2nd_files: # e3t_2nd only loaded if 2nd files present
+                        ts_e3t_2 = np.ma.array(e3t_2nd[:,jj_2nd_ind,ii_2nd_ind], mask = hov_dat_2[:,0].mask)
+                        ts_dm_wgt_2 = ts_e3t_2/ts_e3t_2.sum()
+                        ts_dat_2 = ((hov_dat_2.T*ts_dm_wgt_2).T).sum(axis = 0)
+                    else:
+                        ts_dat_2 = ts_dat_1
+                        #ts_dat_1 = zm_ts_dat_1
+                        #ts_dat_2 = zm_ts_dat_2
+            elif z_meth == 'z_slice':
+                tmpzi = (np.abs(zz - hov_y)).argmin()
+                ts_dat_1 = hov_dat_1[tmpzi,:].ravel()
+                ts_dat_2 = hov_dat_2[tmpzi,:].ravel()
+
+            elif z_meth == 'z_index':
+
+                ts_dat_1 = hov_dat_1[zi,:]
+                ts_dat_2 = hov_dat_2[zi,:]
+        return ts_dat_1, ts_dat_2,ts_x
+
+    def reload_ts_data_derived_var_pea():
+        #pdb.set_trace()
+        
+
+        gdept_mat = gdept[:,jj,ii]
+        dz_mat = e3t[:,jj,ii] # rootgrp_gdept.variables['e3t_0'][0,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,jj,ii]
+
+        tmp_T_data_1 = np.ma.masked_invalid(curr_tmp_data.variables['votemper'][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,:,jj,ii].load())[:,:,np.newaxis,np.newaxis]
+        tmp_S_data_1 = np.ma.masked_invalid(curr_tmp_data.variables['vosaline'][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,:,jj,ii].load())[:,:,np.newaxis,np.newaxis]
+        nt_pea = tmp_T_data_1.shape[0]
+
+        gdept_mat_pea = np.tile(gdept_mat[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_pea)).T
+        dz_mat_pea = np.tile(dz_mat[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_pea)).T
+
+        tmppea_1, tmppeat_1, tmppeas_1 = pea_TS(tmp_T_data_1,tmp_S_data_1,gdept_mat_pea,dz_mat_pea,calc_TS_comp = True )
+        if var.upper() == 'PEA':
+            ts_dat_1 = tmppea_1[:,0,0] 
+        elif var.upper() == 'PEAT':
+            ts_dat_1 = tmppeat_1[:,0,0] 
+        elif var.upper() == 'PEAS':
+            ts_dat_1 = tmppeas_1[:,0,0] 
+
+        ts_dat_2 = ts_dat_1
+        if load_2nd_files:
+        
+            if config_2nd is None:
+            
+                tmp_T_data_2 = regrid_2nd(np.ma.masked_invalid(curr_tmp_data_2nd.variables['votemper'][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj,ii].load()))[:,:,np.newaxis,np.newaxis]
+                tmp_S_data_2 = regrid_2nd(np.ma.masked_invalid(curr_tmp_data_2nd.variables['vosaline'][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj,ii].load()))[:,:,np.newaxis,np.newaxis]
+#
+
+                tmppea_2, tmppeat_2, tmppeas_2 = pea_TS(tmp_T_data_2,tmp_S_data_2,gdept_mat_pea,dz_mat_pea,calc_TS_comp = True ) 
+               
+            else:
+    
+
+                tmp_T_data_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables['votemper'][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj_2nd_ind,ii_2nd_ind].load())[:,:,np.newaxis,np.newaxis]
+                tmp_S_data_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables['vosaline'][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,:,jj_2nd_ind,ii_2nd_ind].load())[:,:,np.newaxis,np.newaxis] 
+
+
+                gdept_mat_2nd = gdept_2nd[:,jj_2nd_ind,ii_2nd_ind]
+                dz_mat_2nd = e3t_2nd[:,jj_2nd_ind,ii_2nd_ind]# rootgrp_gdept_2nd.variables['e3t_0'][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,jj_2nd_ind,ii_2nd_ind]
+
+ 
+                gdept_mat_pea_2nd = np.tile(gdept_mat[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_pea)).T
+                dz_mat_pea_2nd = np.tile(dz_mat[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_pea)).T
+
+                tmppea_2, tmppeat_2, tmppeas_2 = pea_TS(tmp_T_data_2,tmp_S_data_2,gdept_mat_pea_2nd,dz_mat_pea_2nd,calc_TS_comp = True ) 
+
+            if var.upper() == 'PEA':
+                ts_dat_2 = tmppea_2[:,0,0] 
+            elif var.upper() == 'PEAT':
+                ts_dat_2 = tmppeat_2[:,0,0] 
+            elif var.upper() == 'PEAS':
+                ts_dat_2 = tmppeas_2[:,0,0] 
+        return ts_dat_1, ts_dat_2 
+
+
+
 
     def regrid_2nd(dat_in):
         if config_2nd is None:
