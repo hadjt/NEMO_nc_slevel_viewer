@@ -855,11 +855,24 @@ def extract_ss_nb_df(var_in,nbind,mask_in):
     nbvar = extract_nb(var_mask_in,nbind)
     ssvar = extract_ss(var_mask_in,nbind)
     dfvar = ssvar - nbvar
-
     return ssvar,nbvar,dfvar
 
+def weighted_depth_mean_masked_var(tmpvar_in, e3_in,output_weighting = False):
+    # tmpvar_in and e3_in must be 3d (nz, ny, nx)
+    
+    #mask e3 with 3d variable mask
+    e3_ma = np.ma.array(e3_in,mask = tmpvar_in.mask)
+    e3_ma_sum = e3_ma.sum(axis = 0)
 
+    dz_wgt = e3_ma/e3_ma_sum
 
+    DM_out = (tmpvar_in*dz_wgt).sum(axis = 0)
+
+    
+    if output_weighting:
+        return DM_out,dz_wgt
+    else:
+        return DM_out
 
 
 
