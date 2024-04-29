@@ -51,6 +51,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     z_meth = None,
     secdataset_proc = 'Dataset 1',
     hov_time = True, do_cont = True, do_grad = 1,
+    allow_diff_time = False,
     clim_sym = None, clim_pair = True,use_cmocean = False,
     fig_dir = None,fig_lab = 'figs',fig_cutout = True, 
     justplot = False, justplot_date_ind = None,justplot_z_meth_zz = None,justplot_secdataset_proc = None,
@@ -355,8 +356,12 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     gdept = rootgrp_gdept.variables[ncgdept][0,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
     #gdept_2nd = rootgrp_gdept_2nd.variables[ncgdept][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
     if load_2nd_files:
-        e3t_2nd = rootgrp_gdept_2nd.variables['e3t_0'][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
-        gdept_2nd = rootgrp_gdept_2nd.variables[config_fnames_dict[config_2nd]['ncgept']][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
+        if config_2nd is None:
+            e3t_2nd = rootgrp_gdept_2nd.variables['e3t_0'][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
+            gdept_2nd = rootgrp_gdept_2nd.variables[ncgdept][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
+        else:
+            e3t_2nd = rootgrp_gdept_2nd.variables['e3t_0'][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
+            gdept_2nd = rootgrp_gdept_2nd.variables[config_fnames_dict[config_2nd]['ncgept']][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
 
 
     deriv_var = []
@@ -606,11 +611,12 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
             print('Diff Times have different number of files')
             pdb.set_trace() 
         else:
-            if (time_datetime_since_1970_2nd != time_datetime_since_1970).any():   
-                print()
-                print('Times don''t match between Dataset 1 and Dataset 2')
-                print()
-                pdb.set_trace()
+            if allow_diff_time == False:
+                if (time_datetime_since_1970_2nd != time_datetime_since_1970).any():   
+                    print()
+                    print("Times don't match between Dataset 1 and Dataset 2")
+                    print()
+                    pdb.set_trace()
 
         if config_2nd is None:
             if (nav_lat != nav_lat_2nd).any():
@@ -712,11 +718,14 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     if fig_fname_lab is not None: fig_tit_str_lab = fig_tit_str_lab + ' Dataset 1 = %s;'%fig_fname_lab
     if fig_fname_lab is not None: fig_tit_str_lab = fig_tit_str_lab + ' Dataset 2 = %s;'%fig_fname_lab_2nd
 
+
+    nvarbutcol = 16 # 18
+
     fig = plt.figure()
     fig.suptitle(fig_tit_str_int + '\n' + fig_tit_str_lab, fontsize=14)
     fig.set_figheight(12)
     fig.set_figwidth(18)
-    if nvar <18:
+    if nvar <nvarbutcol:
         plt.subplots_adjust(top=0.88,bottom=0.1,left=0.09,right=0.91,hspace=0.2,wspace=0.065)
     else:
         plt.subplots_adjust(top=0.88,bottom=0.1,left=0.15,right=0.91,hspace=0.2,wspace=0.065)
@@ -726,7 +735,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     hgap = 0.04
     dyhig = 0.17
     axwid = 0.4
-    if nvar <18:
+    if nvar <nvarbutcol:
         axwid = 0.39
         leftgap = 0.09
     else:
@@ -800,8 +809,8 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         if var_grid[var_dat] != 'T': tmpcol = 'gold'
         if var_dat in deriv_var: tmpcol = '0.5'
         vi_num = vi
-        if vi>=18:
-            vi_num = vi-18
+        if vi>=nvarbutcol:
+            vi_num = vi-nvarbutcol
 
             but_x0 = 0.01 + 0.06
             but_x1 = 0.06 + 0.06
@@ -3113,6 +3122,10 @@ def main():
         parser.add_argument('--U_fname_lst_2nd', type=str, required=False, help='Input U file list for current magnitude. Assumes file contains vozocrtx, enclose in "" more than simple wild card')
         parser.add_argument('--V_fname_lst_2nd', type=str, required=False, help='Input U file list for current magnitude. Assumes file contains vomecrty, enclose in "" more than simple wild card')
 
+
+        parser.add_argument('--allow_diff_time', type=str, required=False)
+
+
         parser.add_argument('--thin', type=int, required=False)
         parser.add_argument('--thin_2nd', type=int, required=False)
 
@@ -3176,6 +3189,20 @@ def main():
         
         # Handling of Bool variable types
         #
+
+
+
+        if args.allow_diff_time is None:
+            allow_diff_time_in=False
+        elif args.allow_diff_time is not None:
+            if args.allow_diff_time.upper() in ['TRUE','T']:
+                allow_diff_time_in = bool(True)
+            elif args.allow_diff_time.upper() in ['FALSE','F']:
+                allow_diff_time_in = bool(False)
+            else:                
+                print(args.allow_diff_time)
+                pdb.set_trace()
+
         if args.clim_sym is None:
             clim_sym_in=False
         elif args.clim_sym is not None:
@@ -3332,6 +3359,7 @@ def main():
             fname_lst_2nd = fname_lst_2nd,
             U_fname_lst_2nd = U_fname_lst_2nd, V_fname_lst_2nd = V_fname_lst_2nd,
             clim_sym = clim_sym_in, clim = args.clim, clim_pair = clim_pair_in,hov_time = hov_time_in,
+            allow_diff_time = allow_diff_time_in,
             do_grad = do_grad_in,do_cont = do_cont_in,
             use_cmocean = use_cmocean_in, date_fmt = args.date_fmt,
             justplot = justplot_in,justplot_date_ind = args.justplot_date_ind,
