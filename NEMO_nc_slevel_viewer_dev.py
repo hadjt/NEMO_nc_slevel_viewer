@@ -121,6 +121,9 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     #pdb.set_trace()
 
     if clim_sym is None: clim_sym = False
+    
+    clim_sym_but = 0
+    #clim_sym_but_norm_val = clim_sym
 
     # default initial indices
     if ii is None: ii = 10
@@ -864,7 +867,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
     mode_name_lst = ['Click','Loop']
 
-    func_names_lst = ['Hov/Time','ColScl','Reset zoom', 'Zoom', 'Clim: Reset','Clim: Zoom','Clim: Expand','Clim: pair','Surface', 'Near-Bed', 'Surface-Bed','Depth-Mean','Depth level','Contours','Grad','Save Figure','Quit']
+    func_names_lst = ['Hov/Time','ColScl','Reset zoom', 'Zoom', 'Clim: Reset','Clim: Zoom','Clim: Expand','Clim: pair','Clim: sym','Surface', 'Near-Bed', 'Surface-Bed','Depth-Mean','Depth level','Contours','Grad','Save Figure','Quit']
 
     
     if load_2nd_files == False:
@@ -1406,7 +1409,8 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                     tmpdat_ew_slice = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti].load())[:,ew_jj_2nd_ind,ew_ii_2nd_ind].T
                     tmpdat_ew_gdept=gdept_2nd[:,ew_jj_2nd_ind,ew_ii_2nd_ind].T
                     ew_slice_dat_2 = np.ma.zeros(curr_tmp_data.variables[var][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].shape[1::2])*np.ma.masked
-                    for i_i,(tmpdat,tmpz,tmpzorig) in enumerate(zip(tmpdat_ew_slice,tmpdat_ew_gdept,ew_slice_y.T)):ew_slice_dat_2[:,i_i] = np.ma.masked_invalid(np.interp(tmpzorig, tmpz, tmpdat))
+                    #for i_i,(tmpdat,tmpz,tmpzorig) in enumerate(zip(tmpdat_ew_slice,tmpdat_ew_gdept,ew_slice_y.T)):ew_slice_dat_2[:,i_i] = np.ma.masked_invalid(np.interp(tmpzorig, tmpz, tmpdat))
+                    for i_i,(tmpdat,tmpz,tmpzorig) in enumerate(zip(tmpdat_ew_slice,tmpdat_ew_gdept,ew_slice_y.T)):ew_slice_dat_2[:,i_i] = np.ma.masked_invalid(np.interp(tmpzorig, tmpz, np.ma.array(tmpdat.copy(),fill_value=np.nan).filled()  ))
             else:
                 ew_slice_dat_2 = ew_slice_dat_1
 
@@ -1455,7 +1459,8 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                     tmpdat_ns_slice = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti].load())[:,ns_jj_2nd_ind,ns_ii_2nd_ind].T
                     tmpdat_ns_gdept = gdept_2nd[:,ns_jj_2nd_ind,ns_ii_2nd_ind].T
                     ns_slice_dat_2 = np.ma.zeros(curr_tmp_data.variables[var][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].shape[1:3])*np.ma.masked
-                    for i_i,(tmpdat,tmpz,tmpzorig) in enumerate(zip(tmpdat_ns_slice,tmpdat_ns_gdept,ns_slice_y.T)):ns_slice_dat_2[:,i_i] = np.ma.masked_invalid(np.interp(tmpzorig, tmpz, tmpdat))
+                    #for i_i,(tmpdat,tmpz,tmpzorig) in enumerate(zip(tmpdat_ns_slice,tmpdat_ns_gdept,ns_slice_y.T)):ns_slice_dat_2[:,i_i] = np.ma.masked_invalid(np.interp(tmpzorig, tmpz, tmpdat))
+                    for i_i,(tmpdat,tmpz,tmpzorig) in enumerate(zip(tmpdat_ns_slice,tmpdat_ns_gdept,ns_slice_y.T)):ns_slice_dat_2[:,i_i] = np.ma.masked_invalid(np.interp(tmpzorig, tmpz, np.ma.array(tmpdat.copy(),fill_value=np.nan).filled()  ))
             else:
                 ns_slice_dat_2 = ns_slice_dat_1
 
@@ -2112,7 +2117,8 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
             if verbose_debugging: print('Choose cmap based on secdataset_proc:',secdataset_proc, datetime.now())
 
             # Choose the colormap depending on which dataset being shown
-            if secdataset_proc in ['Dat1-Dat2','Dat2-Dat1']:
+            #if secdataset_proc in ['Dat1-Dat2','Dat2-Dat1']:
+            if (secdataset_proc in ['Dat1-Dat2','Dat2-Dat1']) | (clim_sym_but == 1):
                 curr_cmap = scnd_cmap
                 clim_sym = True
             elif secdataset_proc in ['Dataset 1','Dataset 2']:
@@ -2314,7 +2320,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                     map_clim = np.ma.array([tmp_map_perc.min(),tmp_map_perc.max()])
 
 
-                    if clim_sym: map_clim = np.array([-1,1])*np.abs(map_clim).max()
+                    if clim_sym: map_clim = np.ma.array([-1,1])*np.abs(map_clim).max()
                     if map_clim.mask.any() == False: set_clim_pcolor(map_clim, ax = ax[0])
 
                     
@@ -2363,9 +2369,9 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
 
 
-                        if clim_sym: ew_clim = np.array([-1,1])*np.abs(ew_clim).max()
-                        if clim_sym: ns_clim = np.array([-1,1])*np.abs(ns_clim).max()
-                        if clim_sym: hov_clim = np.array([-1,1])*np.abs(hov_clim).max()
+                        if clim_sym: ew_clim = np.ma.array([-1,1])*np.abs(ew_clim).max()
+                        if clim_sym: ns_clim = np.ma.array([-1,1])*np.abs(ns_clim).max()
+                        if clim_sym: hov_clim = np.ma.array([-1,1])*np.abs(hov_clim).max()
 
                         if ew_clim.mask.any() == False: set_clim_pcolor(ew_clim, ax = ax[1])
                         if ns_clim.mask.any() == False: set_clim_pcolor(ns_clim, ax = ax[2])
@@ -2718,6 +2724,24 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                             func_but_text_han['Clim: pair'].set_color('gold')
                             clim_pair = True
 
+                    elif but_name == 'Clim: sym':
+                        if clim_sym_but == 0:
+                            func_but_text_han['Clim: sym'].set_color('r')
+                            #curr_cmap = scnd_cmap
+                            clim_sym_but = 1
+                            #clim_sym_but_norm_val = clim_sym
+                            clim_sym = True
+                            
+                        elif clim_sym_but == 1:
+                            func_but_text_han['Clim: sym'].set_color('k')
+                            clim_sym_but = 0
+                            
+                            
+                            #curr_cmap = base_cmap
+                            #func_but_text_han['ColScl'].set_text('Col: Linear')
+                            #col_scl = 0
+                            #clim_sym = clim_sym_but_norm_val
+                            
 
                     elif but_name == 'Hov/Time':
                         if hov_time:
@@ -2769,7 +2793,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                             reload_ew = True
                             reload_hov = True
                             reload_ts = True
-                    
+ 
 
                     elif but_name == 'ColScl':
                         if secdataset_proc in ['Dataset 1','Dataset 2']:
