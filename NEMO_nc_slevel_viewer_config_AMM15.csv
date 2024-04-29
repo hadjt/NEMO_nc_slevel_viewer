@@ -1,5 +1,5 @@
 mesh_file,/data/cr1/hadjt/data/reffiles/SSF/amm15.mesh_mask.nc
-ncgept,gdept_0
+ncgdept,gdept_0
 z_meth_default,z_slice
 regrid_amm15_amm7,/data/cr1/hadjt/data/reffiles/SSF/regrid_amm15_amm7_nn.nc
 regrid_amm7_amm15,/data/cr1/hadjt/data/reffiles/SSF/regrid_amm7_amm15_nn.nc

@@ -59,7 +59,6 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     verbose_debugging = False):
 
     print('Initialise at ',datetime.now())
-
     fname_lst = fname_lst[thin_files_0:thin_files_1:thin_files]
     if fname_lst_2nd is not None: fname_lst_2nd = fname_lst_2nd[thin_files_0:thin_files_1:thin_files]
     if U_fname_lst is not None: U_fname_lst = U_fname_lst[thin_files_0:thin_files_1:thin_files]
@@ -356,12 +355,13 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     gdept = rootgrp_gdept.variables[ncgdept][0,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
     #gdept_2nd = rootgrp_gdept_2nd.variables[ncgdept][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
     if load_2nd_files:
+        #pdb.set_trace()
         if config_2nd is None:
             e3t_2nd = rootgrp_gdept_2nd.variables['e3t_0'][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
             gdept_2nd = rootgrp_gdept_2nd.variables[ncgdept][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
         else:
             e3t_2nd = rootgrp_gdept_2nd.variables['e3t_0'][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
-            gdept_2nd = rootgrp_gdept_2nd.variables[config_fnames_dict[config_2nd]['ncgept']][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
+            gdept_2nd = rootgrp_gdept_2nd.variables[config_fnames_dict[config_2nd]['ncgdept']][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
 
 
     deriv_var = []
@@ -3320,12 +3320,12 @@ def main():
         if args.thin is None: args.thin=1
         if args.thin_2nd is None: args.thin_2nd=1
         if args.thin_files is None: args.thin_files=1
-        if args.thin_files_0 is None: args.thin_files_0=1
+        if args.thin_files_0 is None: args.thin_files_0=0
         if args.thin_files_1 is None: args.thin_files_1=None
 
-        if args.thin_x0 is None: args.thin_files_0=1
+        if args.thin_x0 is None: args.thin_files_0=0
         if args.thin_x1 is None: args.thin_files_1=None
-        if args.thin_y0 is None: args.thin_files_0=1
+        if args.thin_y0 is None: args.thin_files_0=0
         if args.thin_y1 is None: args.thin_files_1=None
 
         #Deal with file lists
@@ -3352,7 +3352,7 @@ def main():
         if len(fname_lst) == 0: 
             print('no files passed')
             pdb.set_trace()
-
+    
         
         nemo_slice_zlev(fname_lst,zlim_max = args.zlim_max, config = args.config, config_2nd = args.config_2nd,
             U_fname_lst = U_fname_lst, V_fname_lst = V_fname_lst,

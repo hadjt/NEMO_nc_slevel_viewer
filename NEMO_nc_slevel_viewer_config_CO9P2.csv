@@ -1,3 +1,3 @@
 mesh_file,/data/cr1/hadjt/data/reffiles/SSF/CO9p2.mesh_mask.nc
-ncgept,gdept_0
+ncgdept,gdept_0
 z_meth_default,z_slice
