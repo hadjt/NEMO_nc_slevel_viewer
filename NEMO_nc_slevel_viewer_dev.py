@@ -72,6 +72,10 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     if thin_x0 is None: thin_x0 = 0
     if thin_y0 is None: thin_y0 = 0
 
+    if config.upper() in ['ORCA025','ORCA025EXT']: 
+        if thin_y1 is None: thin_y1 = -2
+
+
     if do_grad is None: do_grad = 0
     if do_cont is None: do_cont = True
 
@@ -82,6 +86,8 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     thin_y1_2nd=thin_y1
     if config_2nd is None:
         thin_2nd=thin
+
+    
 
     if verbose_debugging:
         print('======================================================')
@@ -341,6 +347,8 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
         nav_lat = np.ma.array(nav_lat[thin_y0:thin_y1:thin,thin_x0:thin_x1:thin])
         nav_lon = np.ma.array(nav_lon[thin_y0:thin_y1:thin,thin_x0:thin_x1:thin])
+
+        
         
         
     elif config.upper() in ['CO9P2']: 
@@ -761,9 +769,13 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
             deriv_var.append(ss)
 
 
+    data_inst_1 = None
+    data_inst_2 = None
     if preload_data:
         preload_data_ti = ti
         preload_data_ti_2nd = ti
+        preload_data_var = var
+
 
         
 
@@ -1157,6 +1169,27 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
 
 
+    def reload_data_instances():
+        start_time_load_inst = datetime.now()
+        if var_dim[var] == 3:
+                
+            data_inst_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+            data_inst_2 = data_inst_1
+            if load_2nd_files:
+                data_inst_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][ti,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                
+        if var_dim[var] == 4:
+            data_inst_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+            data_inst_2 = data_inst_1
+            if load_2nd_files:
+                data_inst_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+
+        preload_data_ti = ti
+        preload_data_var = var
+
+        print('Reloaded data instances for ti = %i, var = %s %s = %s'%(ti,var,datetime.now(),datetime.now() - start_time_load_inst))
+        return data_inst_1,data_inst_2
+
     def reload_map_data_comb():
         if var_dim[var] == 3:
             map_dat_1,map_dat_2 = reload_map_data_comb_2d()
@@ -1182,7 +1215,6 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
     def reload_map_data_comb_2d():
         if var.upper() in ['PEA', 'PEAT','PEAS']:
-
 
             gdept_mat = gdept[np.newaxis]
             dz_mat = e3t[np.newaxis]# rootgrp_gdept.variables['e3t_0'][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
@@ -1237,11 +1269,19 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
             
         else:
-            map_dat_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+            if data_inst_1 is None:
+                map_dat_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+            else:
+                map_dat_1 = data_inst_1
             map_dat_2 = map_dat_1
-            if load_2nd_files:
-                map_dat_2 = regrid_2nd(np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][ti,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load()))
 
+            
+            if load_2nd_files:
+                if data_inst_2 is None:
+                    map_dat_2 = regrid_2nd(np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][ti,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load()))
+                else:
+                    map_dat_2 = regrid_2nd(data_inst_2)
+            
 
 
         return map_dat_1,map_dat_2
@@ -1270,9 +1310,16 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
               
 
         else:
-            map_dat_ss_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][ti,0,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+            if data_inst_1 is None:
+                map_dat_ss_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][ti,0,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+            else:
+                map_dat_ss_1 = data_inst_1[0]
+
             if load_2nd_files:
-                map_dat_ss_2 = regrid_2nd(np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][ti,0,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load()))
+                if data_inst_1 is None:
+                    map_dat_ss_2 = regrid_2nd(np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][ti,0,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load()))
+                else:
+                    map_dat_ss_2 = regrid_2nd(data_inst_2[0])
             else: 
                 map_dat_ss_2 = map_dat_ss_1
 
@@ -1301,9 +1348,16 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
               
 
         else:
-            map_dat_3d_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+            if data_inst_1 is None:
+                map_dat_3d_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+            else:
+                map_dat_3d_1 = data_inst_1
+
             if load_2nd_files:
-                map_dat_3d_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                if data_inst_2 is None:
+                    map_dat_3d_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                else:
+                    map_dat_3d_2 = data_inst_2
 
         # process onto 2d levels
         map_dat_ss_1 = map_dat_3d_1[0]
@@ -1369,9 +1423,15 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
               
 
         else:
-            map_dat_3d_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+            if data_inst_1 is None:
+                map_dat_3d_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+            else:
+                map_dat_3d_1 = np.ma.masked_invalid(data_inst_1)
             if load_2nd_files:
-                map_dat_3d_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                if data_inst_2 is None:
+                    map_dat_3d_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                else:
+                    map_dat_3d_2 = np.ma.masked_invalid(data_inst_2)
 
 
 
@@ -1407,11 +1467,15 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
               
         else:
 
-        
-            map_dat_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][ti,zz,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-            
+            if data_inst_1 is None:        
+                map_dat_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][ti,zz,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+            else:
+                map_dat_1 = np.ma.masked_invalid(data_inst_1[zz])
             if load_2nd_files:
-                map_dat_2 = regrid_2nd(np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][ti,zz,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load()))
+                if data_inst_2 is None:
+                    map_dat_2 = regrid_2nd(np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][ti,zz,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load()))
+                else:
+                    map_dat_2 = np.ma.masked_invalid(data_inst_2[zz])
             else:
                 map_dat_2 = map_dat_1
 
@@ -1456,13 +1520,22 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
         else:
 
-            ew_slice_dat_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,jj,:].load())
+            if data_inst_1 is None:     
+                ew_slice_dat_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,jj,:].load())
+            else:
+                ew_slice_dat_1 = np.ma.masked_invalid(data_inst_1[:,jj,:])
 
             if load_2nd_files:
                 if config_2nd is None:
-                    ew_slice_dat_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti,:,jj,:].load())
+                    if data_inst_2 is None: 
+                        ew_slice_dat_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti,:,jj,:].load())
+                    else:
+                        ew_slice_dat_2 = np.ma.masked_invalid(data_inst_2[:,jj,:])
                 else:
-                    tmpdat_ew_slice = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti].load())[:,ew_jj_2nd_ind,ew_ii_2nd_ind].T
+                    if data_inst_2 is None: 
+                        tmpdat_ew_slice = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti].load())[:,ew_jj_2nd_ind,ew_ii_2nd_ind].T
+                    else: 
+                        tmpdat_ew_slice = np.ma.masked_invalid(data_inst_2[:,ew_jj_2nd_ind,ew_ii_2nd_ind].T)
                     tmpdat_ew_gdept=gdept_2nd[:,ew_jj_2nd_ind,ew_ii_2nd_ind].T
                     ew_slice_dat_2 = np.ma.zeros(curr_tmp_data.variables[var][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].shape[1::2])*np.ma.masked
                     #for i_i,(tmpdat,tmpz,tmpzorig) in enumerate(zip(tmpdat_ew_slice,tmpdat_ew_gdept,ew_slice_y.T)):ew_slice_dat_2[:,i_i] = np.ma.masked_invalid(np.interp(tmpzorig, tmpz, tmpdat))
@@ -1506,13 +1579,23 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
         else:
 
-            ns_slice_dat_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,:,ii].load())
+            if data_inst_1 is None:    
+                ns_slice_dat_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,:,ii].load())
+            else:
+                ns_slice_dat_1 = np.ma.masked_invalid(data_inst_1[:,:,ii])
 
             if load_2nd_files:
                 if config_2nd is None:
-                    ns_slice_dat_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti,:,:,ii].load())
+                    if data_inst_2 is None: 
+                        ns_slice_dat_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti,:,:,ii].load())
+                    else:
+                        ns_slice_dat_2 = np.ma.masked_invalid(data_inst_2[:,:,ii])
                 else:
-                    tmpdat_ns_slice = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti].load())[:,ns_jj_2nd_ind,ns_ii_2nd_ind].T
+                    if data_inst_2 is None: 
+                        tmpdat_ns_slice = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti].load())[:,ns_jj_2nd_ind,ns_ii_2nd_ind].T
+                    else:
+                        tmpdat_ns_slice = np.ma.masked_invalid(data_inst_2[:,ns_jj_2nd_ind,ns_ii_2nd_ind].T)
+
                     tmpdat_ns_gdept = gdept_2nd[:,ns_jj_2nd_ind,ns_ii_2nd_ind].T
                     ns_slice_dat_2 = np.ma.zeros(curr_tmp_data.variables[var][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].shape[1:3])*np.ma.masked
                     #for i_i,(tmpdat,tmpz,tmpzorig) in enumerate(zip(tmpdat_ns_slice,tmpdat_ns_gdept,ns_slice_y.T)):ns_slice_dat_2[:,i_i] = np.ma.masked_invalid(np.interp(tmpzorig, tmpz, tmpdat))
@@ -1938,6 +2021,8 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     ###########################################################################
     # Inner functions defined
     ###########################################################################
+
+
     
     if verbose_debugging: print('Inner functions created ', datetime.now())
 
@@ -1983,9 +2068,18 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
     hov_y = np.array(0)
 
+
+    stage_timer = {}
+    stage_timer_name = {}
+    for i_i in range(12+1):
+        stage_timer[i_i] = datetime.now()
+        stage_timer_name[i_i] = None
+    
+
     while ii is not None:
         # try, exit on error
-
+        stage_timer[3] = datetime.now() # start while loop
+        stage_timer_name[3] = 'Start loop'
 
         print('do_cont:',do_cont)
         #try:
@@ -2103,13 +2197,31 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
                     
                     '''
-
+            
                 
             if verbose_debugging: print('Reload data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now())
             if verbose_debugging: print('Reload map, ew, ns, hov, ts',reload_map,reload_ew,reload_ns,reload_hov,reload_ts, datetime.now())
             prevtime = datetime.now()
             datstarttime = prevtime
 
+            
+            
+            stage_timer[4] = datetime.now() # start data instance load, finished converting data location from config to config2
+            stage_timer_name[4] = 'Load Instance'
+
+            if preload_data:
+                if var not in deriv_var:
+                    if data_inst_1 is None:
+                        data_inst_1,data_inst_2 = reload_data_instances()
+
+                    if (preload_data_ti != ti)|(preload_data_var != var):
+                        data_inst_1,data_inst_2 = reload_data_instances()
+                else:
+                    data_inst_1,data_inst_2 = None, None
+
+
+            stage_timer[5] = datetime.now() # start data dataload
+            stage_timer_name[5] = 'Slice data'
             if reload_map:
                 map_dat_1,map_dat_2,map_x,map_y = reload_map_data_comb()
                 reload_map = False
@@ -2186,6 +2298,8 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
             print('Reloaded all data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now(),'; dt = %s'%(datetime.now()-datstarttime))
 
 
+            stage_timer[6] = datetime.now() #  dataload reloaded
+            stage_timer_name[6] = 'Data sliced'
             
             if verbose_debugging: print('Choose cmap based on secdataset_proc:',secdataset_proc, datetime.now())
 
@@ -2248,7 +2362,9 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
             
 
 
-        
+            
+            stage_timer[7] = datetime.now() #  Starting Plotting data
+            stage_timer_name[7] = 'Plot Data '
 
 
 
@@ -2274,6 +2390,11 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                 elif secdataset_proc == 'Dataset 2':
                     tsax   = ax[4].plot(ts_x,ts_dat_2,'b')
                     tsax2 = ax[4].plot(ts_x,ts_dat_1,'r', lw = 0.5)
+
+
+            
+            stage_timer[8] = datetime.now() #  Plotted data
+            stage_timer_name[8] = 'Data Plotted'
 
             nice_lev = ''
                 
@@ -2358,6 +2479,8 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                 ax[3].set_ylim([np.minimum(zlim_max,hov_y.max()),xlim_min])
 
 
+            stage_timer[9] = datetime.now() #  starting clims
+            stage_timer_name[9] = 'Starting clim'
 
             if verbose_debugging: print('Reset colour limits', datetime.now())
             try:
@@ -2475,6 +2598,9 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                 pdb.set_trace()
         
 
+            stage_timer[10] = datetime.now() #  set clims
+            stage_timer_name[10] = 'Set clim'
+
             if verbose_debugging: print('Plot location lines for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now())
             
             ## add lines to show current point. 
@@ -2518,8 +2644,8 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                 conax.append(ax[0].contour(map_x,map_y,map_dat,cont_val_lst[0], colors = contcols, linewidths = contlws, alphas = contalphas))
                 if var_dim[var] == 4: 
                     nz = ns_slice_y.shape[0]
-                    conax.append(ax[1].contour(np.tile(ew_slice_x,(51,1)),ew_slice_y,ew_slice_dat,cont_val_lst[1], colors = contcols, linewidths = contlws, alphas = contalphas))
-                    conax.append(ax[2].contour(np.tile(ns_slice_x,(51,1)),ns_slice_y,ns_slice_dat,cont_val_lst[2], colors = contcols, linewidths = contlws, alphas = contalphas))
+                    conax.append(ax[1].contour(np.tile(ew_slice_x,(nz,1)),ew_slice_y,ew_slice_dat,cont_val_lst[1], colors = contcols, linewidths = contlws, alphas = contalphas))
+                    conax.append(ax[2].contour(np.tile(ns_slice_x,(nz,1)),ns_slice_y,ns_slice_dat,cont_val_lst[2], colors = contcols, linewidths = contlws, alphas = contalphas))
                     if hov_time & ntime>1:
                         
                         conax.append(ax[3].contour(hov_x,hov_y,hov_dat,cont_val_lst[3], colors = contcols, linewidths = contlws, alphas = contalphas))
@@ -2527,6 +2653,8 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
             if verbose_debugging: print('Canvas draw', datetime.now())
 
+            stage_timer[11] = datetime.now() #  redraw
+            stage_timer_name[11] = 'Redraw'
             # Redraw canvas
             #==================
             fig.canvas.draw()
@@ -2544,6 +2672,17 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
             if verbose_debugging: print('mode', mode,'mouse_in_Click',mouse_in_Click,datetime.now())
             
 
+
+            stage_timer[12] = datetime.now() #  redrawn
+            stage_timer_name[12] = 'Redrawn'
+
+            if verbose_debugging:
+                if stage_timer_name[1] is not None:
+                    print()
+                    for i_i in range(2,12+1):print('Stage time %02i - %02i: %s - %s - %s '%(i_i-1,i_i,stage_timer[i_i] - stage_timer[i_i-1], stage_timer_name[i_i-1], stage_timer_name[i_i]))
+                    print()
+                    print('Stage time 1 - 12: %s'%(stage_timer[12] - stage_timer[1]))
+                    print()
 
 
             if mode == 'Loop':
@@ -2568,6 +2707,9 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
             if verbose_debugging: print('')
             if verbose_debugging: print('')
             if verbose_debugging: print('Button pressed!', datetime.now())
+
+            stage_timer[1] = datetime.now() # after button pressed
+            stage_timer_name[1] = 'Button Pressed'
 
             clii,cljj = press_ginput[0][0],press_ginput[0][1]
 
@@ -3004,6 +3146,9 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
             
             if verbose_debugging: print('Cycle', datetime.now())
 
+            stage_timer[2] = datetime.now() # after end of cycle
+            stage_timer_name[2] = 'Cycle ended'
+
 
 def main():
     
@@ -3335,7 +3480,7 @@ def main():
 
 
         if args.preload_data is None:
-            preload_data_in=False
+            preload_data_in=True
         elif args.preload_data is not None:
             if args.preload_data.upper() in ['TRUE','T']:
                 preload_data_in = bool(True)
