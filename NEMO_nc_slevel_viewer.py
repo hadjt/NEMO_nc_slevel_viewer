@@ -1184,11 +1184,71 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
             if load_2nd_files:
                 map_dat_3d_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
                 map_dat_3d_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
-                data_inst_2 = regrid_2nd(np.sqrt(map_dat_3d_U_2**2 + map_dat_3d_V_2**2))
+                data_inst_2 = np.sqrt(map_dat_3d_U_2**2 + map_dat_3d_V_2**2)
                 del(map_dat_3d_U_2)
                 del(map_dat_3d_V_2)
             else:
                 data_inst_2 = data_inst_1
+
+
+
+        elif var.upper() in ['PEA', 'PEAT','PEAS']:
+
+            gdept_mat = gdept[np.newaxis]
+            dz_mat = e3t[np.newaxis]# rootgrp_gdept.variables['e3t_0'][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
+
+            tmp_T_data_1 = np.ma.masked_invalid(curr_tmp_data.variables['votemper'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+            tmp_S_data_1 = np.ma.masked_invalid(curr_tmp_data.variables['vosaline'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+            #pdb.set_trace()
+            tmppea_1, tmppeat_1, tmppeas_1 = pea_TS(tmp_T_data_1[np.newaxis],tmp_S_data_1[np.newaxis],gdept_mat,dz_mat,calc_TS_comp = True ) 
+            if var.upper() == 'PEA':
+                data_inst_1= tmppea_1[0]
+            elif var.upper() == 'PEAT':
+                data_inst_1 = tmppeat_1[0]
+            elif var.upper() == 'PEAS':
+                data_inst_1 = tmppeas_1[0]
+
+            
+            if load_2nd_files:
+            
+                if config_2nd is None:            
+                    tmp_T_data_2 = regrid_2nd(np.ma.masked_invalid(curr_tmp_data_2nd.variables['votemper'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load()))
+                    tmp_S_data_2 = regrid_2nd(np.ma.masked_invalid(curr_tmp_data_2nd.variables['vosaline'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load()))
+                    tmppea_2, tmppeat_2, tmppeas_2 = pea_TS(tmp_T_data_2[np.newaxis],tmp_S_data_2[np.newaxis],gdept_mat,dz_mat,calc_TS_comp = True ) 
+
+
+                    if var.upper() == 'PEA':
+                        map_dat_2 = tmppea_2[0]
+                    elif var.upper() == 'PEAT':
+                        map_dat_2 = tmppeat_2[0]
+                    elif var.upper() == 'PEAS':
+                        map_dat_2 = tmppeas_2[0]
+
+
+                else:
+
+                    
+                    gdept_mat_2nd = gdept_2nd[np.newaxis]
+                    dz_mat_2nd = e3t_2nd[np.newaxis] # rootgrp_gdept_2nd.variables['e3t_0'][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
+
+
+                    tmp_T_data_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables['votemper'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                    tmp_S_data_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables['vosaline'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                    #pdb.set_trace()
+                    tmppea_2, tmppeat_2, tmppeas_2 = pea_TS(tmp_T_data_2[np.newaxis],tmp_S_data_2[np.newaxis],gdept_mat_2nd,dz_mat_2nd,calc_TS_comp = True ) 
+                    
+
+                    if var.upper() == 'PEA':
+                        data_inst_2 = tmppea_2[0]
+                    elif var.upper() == 'PEAT':
+                        data_inst_2 = tmppeat_2[0]
+                    elif var.upper() == 'PEAS':
+                        data_inst_2 = tmppeas_2[0]
+
+            else:
+                data_inst_2 = data_inst_1
+
+
 
         else:
             if var_dim[var] == 3:
@@ -1235,57 +1295,64 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
     def reload_map_data_comb_2d():
         if var.upper() in ['PEA', 'PEAT','PEAS']:
-
-            gdept_mat = gdept[np.newaxis]
-            dz_mat = e3t[np.newaxis]# rootgrp_gdept.variables['e3t_0'][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
-
-            tmp_T_data_1 = np.ma.masked_invalid(curr_tmp_data.variables['votemper'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-            tmp_S_data_1 = np.ma.masked_invalid(curr_tmp_data.variables['vosaline'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-            #pdb.set_trace()
-            tmppea_1, tmppeat_1, tmppeas_1 = pea_TS(tmp_T_data_1[np.newaxis],tmp_S_data_1[np.newaxis],gdept_mat,dz_mat,calc_TS_comp = True ) 
-            if var.upper() == 'PEA':
-                map_dat_1 = tmppea_1[0]
-            elif var.upper() == 'PEAT':
-                map_dat_1 = tmppeat_1[0]
-            elif var.upper() == 'PEAS':
-                map_dat_1 = tmppeas_1[0]
-
-            map_dat_2 = map_dat_1
-            if load_2nd_files:
             
-                if config_2nd is None:            
-                    tmp_T_data_2 = regrid_2nd(np.ma.masked_invalid(curr_tmp_data_2nd.variables['votemper'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load()))
-                    tmp_S_data_2 = regrid_2nd(np.ma.masked_invalid(curr_tmp_data_2nd.variables['vosaline'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load()))
-                    tmppea_2, tmppeat_2, tmppeas_2 = pea_TS(tmp_T_data_2[np.newaxis],tmp_S_data_2[np.newaxis],gdept_mat,dz_mat,calc_TS_comp = True ) 
+            if data_inst_1 is None:
+                gdept_mat = gdept[np.newaxis]
+                dz_mat = e3t[np.newaxis]# rootgrp_gdept.variables['e3t_0'][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
+
+                tmp_T_data_1 = np.ma.masked_invalid(curr_tmp_data.variables['votemper'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+                tmp_S_data_1 = np.ma.masked_invalid(curr_tmp_data.variables['vosaline'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+                #pdb.set_trace()
+                tmppea_1, tmppeat_1, tmppeas_1 = pea_TS(tmp_T_data_1[np.newaxis],tmp_S_data_1[np.newaxis],gdept_mat,dz_mat,calc_TS_comp = True ) 
+                if var.upper() == 'PEA':
+                    map_dat_1 = tmppea_1[0]
+                elif var.upper() == 'PEAT':
+                    map_dat_1 = tmppeat_1[0]
+                elif var.upper() == 'PEAS':
+                    map_dat_1 = tmppeas_1[0]
+            else:
+                map_dat_1 =  data_inst_1
+
+            if load_2nd_files:
+                
+                if data_inst_1 is None:
+                    if config_2nd is None:            
+                        tmp_T_data_2 = regrid_2nd(np.ma.masked_invalid(curr_tmp_data_2nd.variables['votemper'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load()))
+                        tmp_S_data_2 = regrid_2nd(np.ma.masked_invalid(curr_tmp_data_2nd.variables['vosaline'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load()))
+                        tmppea_2, tmppeat_2, tmppeas_2 = pea_TS(tmp_T_data_2[np.newaxis],tmp_S_data_2[np.newaxis],gdept_mat,dz_mat,calc_TS_comp = True ) 
 
 
-                    if var.upper() == 'PEA':
-                        map_dat_2 = tmppea_2[0]
-                    elif var.upper() == 'PEAT':
-                        map_dat_2 = tmppeat_2[0]
-                    elif var.upper() == 'PEAS':
-                        map_dat_2 = tmppeas_2[0]
+                        if var.upper() == 'PEA':
+                            map_dat_2 = tmppea_2[0]
+                        elif var.upper() == 'PEAT':
+                            map_dat_2 = tmppeat_2[0]
+                        elif var.upper() == 'PEAS':
+                            map_dat_2 = tmppeas_2[0]
 
 
+                    else:
+
+                        
+                        gdept_mat_2nd = gdept_2nd[np.newaxis]
+                        dz_mat_2nd = e3t_2nd[np.newaxis] # rootgrp_gdept_2nd.variables['e3t_0'][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
+
+
+                        tmp_T_data_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables['votemper'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                        tmp_S_data_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables['vosaline'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                        #pdb.set_trace()
+                        tmppea_2, tmppeat_2, tmppeas_2 = pea_TS(tmp_T_data_2[np.newaxis],tmp_S_data_2[np.newaxis],gdept_mat_2nd,dz_mat_2nd,calc_TS_comp = True ) 
+                        
+
+                        if var.upper() == 'PEA':
+                            map_dat_2 = regrid_2nd(tmppea_2[0])
+                        elif var.upper() == 'PEAT':
+                            map_dat_2 = regrid_2nd(tmppeat_2[0])
+                        elif var.upper() == 'PEAS':
+                            map_dat_2 = regrid_2nd(tmppeas_2[0])
                 else:
-
-                    
-                    gdept_mat_2nd = gdept_2nd[np.newaxis]
-                    dz_mat_2nd = e3t_2nd[np.newaxis] # rootgrp_gdept_2nd.variables['e3t_0'][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
-
-
-                    tmp_T_data_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables['votemper'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
-                    tmp_S_data_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables['vosaline'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
-                    #pdb.set_trace()
-                    tmppea_2, tmppeat_2, tmppeas_2 = pea_TS(tmp_T_data_2[np.newaxis],tmp_S_data_2[np.newaxis],gdept_mat_2nd,dz_mat_2nd,calc_TS_comp = True ) 
-                    
-
-                    if var.upper() == 'PEA':
-                        map_dat_2 = regrid_2nd(tmppea_2[0])
-                    elif var.upper() == 'PEAT':
-                        map_dat_2 = regrid_2nd(tmppeat_2[0])
-                    elif var.upper() == 'PEAS':
-                        map_dat_2 = regrid_2nd(tmppeas_2[0])
+                    map_dat_2 = regrid_2nd(data_inst_2)
+            else:
+                map_dat_2 = map_dat_1
 
             
         else:
@@ -1507,7 +1574,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                     del(map_dat_3d_U_2)
                     del(map_dat_3d_V_2)
                 else:
-                    map_dat_2 = data_inst_2
+                    map_dat_2 = regrid_2nd(data_inst_2)
 
             else:
                 map_dat_2 = map_dat_1
@@ -1521,7 +1588,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                 if data_inst_2 is None:
                     map_dat_2 = regrid_2nd(np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][ti,zz,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load()))
                 else:
-                    map_dat_2 = np.ma.masked_invalid(data_inst_2[zz])
+                    map_dat_2 = np.ma.masked_invalid(regrid_2nd(data_inst_2[zz]))
             else:
                 map_dat_2 = map_dat_1
 
@@ -2282,7 +2349,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
             stage_timer_name[4] = 'Load Instance'
 
             if preload_data:
-                if (var not in deriv_var)| (var in ['baroc_mag']):
+                if (var not in deriv_var)| (var.upper() in ['BAROC_MAG'])| (var.upper() in ['PEA','PEAT', 'PEAS']):
                     if data_inst_1 is None:
                         data_inst_1,data_inst_2 = reload_data_instances()
 
