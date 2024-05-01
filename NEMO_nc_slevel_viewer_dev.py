@@ -52,6 +52,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     secdataset_proc = 'Dataset 1',
     hov_time = True, do_cont = True, do_grad = 1,
     allow_diff_time = False,
+    preload_data = False,
     clim_sym = None, clim_pair = True,use_cmocean = False,
     fig_dir = None,fig_lab = 'figs',fig_cutout = True, 
     justplot = False, justplot_date_ind = None,justplot_z_meth_zz = None,justplot_secdataset_proc = None,
@@ -232,6 +233,8 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     rootgrp_gdept_2nd = rootgrp_gdept   
 
 
+    regrid_meth = 1
+
     if config_2nd is not None:
 
         thin_x0_2nd=0
@@ -242,7 +245,6 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         #thin_2nd=1
         
 
-        regrid_meth = 1
 
         if (config.upper() in ['AMM7','AMM15']) & (config_2nd.upper() in ['AMM7','AMM15']):  
             mesh_file_2nd = config_fnames_dict[config_2nd]['mesh_file'] 
@@ -759,6 +761,13 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
             deriv_var.append(ss)
 
 
+    if preload_data:
+        preload_data_ti = ti
+        preload_data_ti_2nd = ti
+
+        
+
+
 
     if (config.upper() in ['AMM15','CO9P2']): 
         lon_rotamm15,lat_rotamm15 = reduce_rotamm15_grid(nav_lon_amm15, nav_lat_amm15)
@@ -972,6 +981,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
     
     if load_2nd_files: 
+        func_but_text_han['regrid_meth'].set_text('Regrid: NN')
         if clim_pair:func_but_text_han['Clim: pair'].set_color('gold')
 
     if hov_time:
@@ -992,8 +1002,6 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         func_but_text_han['Grad'].set_text('Grad')
 
     func_but_text_han['ColScl'].set_text('Col: Linear')
-
-    func_but_text_han['regrid_meth'].set_text('Regrid: NN')
 
 
     # When we move to loop mode, we stop checking for button presses, 
@@ -1698,40 +1706,39 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
         #NWS_amm_bl_jj_ind_out, NWS_amm_bl_ii_ind_out, NWS_amm_wgt_out, NWS_amm_nn_jj_ind_out, NWS_amm_nn_ii_ind_out
 
-        if regrid_meth >0 :
-            if config_2nd is None:
-                dat_out = dat_in
+        if config_2nd is None:
+            dat_out = dat_in
+        else:
+            if (thin_x0!=0)|(thin_y0!=0): 
+                print('thin_x0 and thin_y0 must equal 0, if not, need to work out thinning code in the regrid index method')
+                pdb.set_trace()
+
+
+
+            if regrid_meth == 1:
+                # Nearest Neighbour Interpolation   ~0.01 sec
+                #dat_out = dat_in[NWS_amm_nn_jj_ind_final,NWS_amm_nn_ii_ind_final]
+                dat_out = dat_in[NWS_amm_nn_jj_ind_out,NWS_amm_nn_ii_ind_out]
+               
+
+            elif regrid_meth == 2:
+                # Bilinear Interpolation            ~0.2sec
+
+                #tmp_T_ind =  dat_in[NWS_amm_bl_jj_ind_final ,NWS_amm_bl_ii_ind_final ].copy()
+                #NWS_amm_wgt_post_thin_0.mask = NWS_amm_wgt_post_thin_0.mask | tmp_T_ind.mask
+                #
+                #dat_out = (tmp_T_ind*NWS_amm_wgt_post_thin_0).sum(axis = 0)/(NWS_amm_wgt_post_thin_0).sum(axis = 0)
+
+
+                dat_in_selected_corners =  dat_in[NWS_amm_bl_jj_ind_out ,NWS_amm_bl_ii_ind_out ].copy()
+                NWS_amm_wgt_out.mask = NWS_amm_wgt_out.mask | dat_in_selected_corners.mask
+
+                dat_out = (dat_in_selected_corners*NWS_amm_wgt_out).sum(axis = 0)/(NWS_amm_wgt_out).sum(axis = 0)
+                
+
             else:
-                if (thin_x0!=0)|(thin_y0!=0): 
-                    print('thin_x0 and thin_y0 must equal 0, if not, need to work out thinning code in the regrid index method')
-                    pdb.set_trace()
-
-
-
-                if regrid_meth == 1:
-                    # Nearest Neighbour Interpolation   ~0.01 sec
-                    #dat_out = dat_in[NWS_amm_nn_jj_ind_final,NWS_amm_nn_ii_ind_final]
-                    dat_out = dat_in[NWS_amm_nn_jj_ind_out,NWS_amm_nn_ii_ind_out]
-                   
-
-                elif regrid_meth == 2:
-                    # Bilinear Interpolation            ~0.2sec
-  
-                    #tmp_T_ind =  dat_in[NWS_amm_bl_jj_ind_final ,NWS_amm_bl_ii_ind_final ].copy()
-                    #NWS_amm_wgt_post_thin_0.mask = NWS_amm_wgt_post_thin_0.mask | tmp_T_ind.mask
-                    #
-                    #dat_out = (tmp_T_ind*NWS_amm_wgt_post_thin_0).sum(axis = 0)/(NWS_amm_wgt_post_thin_0).sum(axis = 0)
-
-
-                    dat_in_selected_corners =  dat_in[NWS_amm_bl_jj_ind_out ,NWS_amm_bl_ii_ind_out ].copy()
-                    NWS_amm_wgt_out.mask = NWS_amm_wgt_out.mask | dat_in_selected_corners.mask
-
-                    dat_out = (dat_in_selected_corners*NWS_amm_wgt_out).sum(axis = 0)/(NWS_amm_wgt_out).sum(axis = 0)
-                    
-
-                else:
-                    print('config and config_2nd must be AMM15 and AMM7')
-                    pdb.set_trace()
+                print('config and config_2nd must be AMM15 and AMM7')
+                pdb.set_trace()
         
         if verbose_debugging:  print ('Regrid timer for method #%i: '%regrid_meth, datetime.now() - start_regrid_timer)
         return dat_out
@@ -3257,6 +3264,7 @@ def main():
         parser.add_argument('--V_fname_lst_2nd', type=str, required=False, help='Input U file list for current magnitude. Assumes file contains vomecrty, enclose in "" more than simple wild card')
 
 
+        parser.add_argument('--preload_data', type=str, required=False)
         parser.add_argument('--allow_diff_time', type=str, required=False)
 
 
@@ -3325,6 +3333,17 @@ def main():
         #
 
 
+
+        if args.preload_data is None:
+            preload_data_in=False
+        elif args.preload_data is not None:
+            if args.preload_data.upper() in ['TRUE','T']:
+                preload_data_in = bool(True)
+            elif args.preload_data.upper() in ['FALSE','F']:
+                preload_data_in = bool(False)
+            else:                
+                print(args.preload_data)
+                pdb.set_trace()
 
         if args.allow_diff_time is None:
             allow_diff_time_in=False
@@ -3493,7 +3512,7 @@ def main():
             fname_lst_2nd = fname_lst_2nd,
             U_fname_lst_2nd = U_fname_lst_2nd, V_fname_lst_2nd = V_fname_lst_2nd,
             clim_sym = clim_sym_in, clim = args.clim, clim_pair = clim_pair_in,hov_time = hov_time_in,
-            allow_diff_time = allow_diff_time_in,
+            allow_diff_time = allow_diff_time_in,preload_data = preload_data_in,
             do_grad = do_grad_in,do_cont = do_cont_in,
             use_cmocean = use_cmocean_in, date_fmt = args.date_fmt,
             justplot = justplot_in,justplot_date_ind = args.justplot_date_ind,
