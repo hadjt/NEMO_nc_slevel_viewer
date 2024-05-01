@@ -1238,6 +1238,69 @@ def load_nn_amm7_amm15_wgt(tmpfname_out_amm7_amm15):
     return amm7_amm15_dict
     
 
+def regrid_2nd_thin_params(amm_conv_dict,thin_2nd,thin_x0_2nd,thin_y0_2nd,nlon_amm,nlat_amm, nlon_amm_2nd,nlat_amm_2nd,thin,thin_x0,thin_y0,thin_x1,thin_y1):
+
+    ##Nearest neighbour thinning
+    NWS_amm_nn_jj_ind_final = (amm_conv_dict['NWS_amm_nn_jj_ind'] - thin_y0_2nd) //thin_2nd
+    NWS_amm_nn_ii_ind_final = (amm_conv_dict['NWS_amm_nn_ii_ind'] - thin_y0_2nd) //thin_2nd
+
+
+    #tmp_arr_shape = amm_conv_dict['NWS_amm_flt_ii_ind'].shape #size of config
+    #nlat_amm,nlon_amm = tmp_arr_shape
+    NWS_amm_flt_ii_ind_thin_0 = (amm_conv_dict['NWS_amm_flt_ii_ind']- thin_x0_2nd) /thin_2nd 
+    NWS_amm_flt_jj_ind_thin_0 = (amm_conv_dict['NWS_amm_flt_jj_ind']- thin_y0_2nd) /thin_2nd
+    NWS_amm_bl_ii_ind_thin_0 = amm_conv_dict['NWS_amm_bl_ii_ind'].copy().astype('int')*0
+    NWS_amm_bl_jj_ind_thin_0 = amm_conv_dict['NWS_amm_bl_jj_ind'].copy().astype('int')*0
+    NWS_amm_bl_ii_ind_thin_0[0,:,:] = np.floor(NWS_amm_flt_ii_ind_thin_0[:,:]).astype('int') # BL, BR, TL, TR
+    NWS_amm_bl_jj_ind_thin_0[0,:,:] = np.floor(NWS_amm_flt_jj_ind_thin_0[:,:]).astype('int') # BL, BR, TL, TR
+    NWS_amm_bl_ii_ind_thin_0[1,:,:] = np.ceil( NWS_amm_flt_ii_ind_thin_0[:,:]).astype('int') # BL, BR, TL, TR
+    NWS_amm_bl_jj_ind_thin_0[1,:,:] = np.floor(NWS_amm_flt_jj_ind_thin_0[:,:]).astype('int') # BL, BR, TL, TR
+    NWS_amm_bl_ii_ind_thin_0[2,:,:] = np.floor(NWS_amm_flt_ii_ind_thin_0[:,:]).astype('int') # BL, BR, TL, TR
+    NWS_amm_bl_jj_ind_thin_0[2,:,:] = np.ceil( NWS_amm_flt_jj_ind_thin_0[:,:]).astype('int') # BL, BR, TL, TR
+    NWS_amm_bl_ii_ind_thin_0[3,:,:] = np.ceil( NWS_amm_flt_ii_ind_thin_0[:,:]).astype('int') # BL, BR, TL, TR
+    NWS_amm_bl_jj_ind_thin_0[3,:,:] = np.ceil( NWS_amm_flt_jj_ind_thin_0[:,:]).astype('int') # BL, BR, TL, TR
+
+    print()
+    #create the distance to the thinned left, right, bottom and top, and normalised by the distance to the thinned boxes.
+    #NWS_amm_lrbt_dist_thin_0 = np.zeros((4,) + tmp_arr_shape, dtype = 'float')
+    NWS_amm_lrbt_dist_thin_0 = np.zeros((4,nlat_amm,nlon_amm), dtype = 'float')
+    NWS_amm_lrbt_dist_thin_0[0,:,:] = (NWS_amm_flt_ii_ind_thin_0[:,:] - NWS_amm_bl_ii_ind_thin_0[0,:,:])/(NWS_amm_bl_ii_ind_thin_0[1,:,:] - NWS_amm_bl_ii_ind_thin_0[0,:,:]) # distance from left handside
+    NWS_amm_lrbt_dist_thin_0[1,:,:] = (NWS_amm_bl_ii_ind_thin_0[1,:,:] - NWS_amm_flt_ii_ind_thin_0[:,:])/(NWS_amm_bl_ii_ind_thin_0[1,:,:] - NWS_amm_bl_ii_ind_thin_0[0,:,:]) # distance from right handside
+    NWS_amm_lrbt_dist_thin_0[2,:,:] = (NWS_amm_flt_jj_ind_thin_0[:,:] - NWS_amm_bl_jj_ind_thin_0[0,:,:])/(NWS_amm_bl_jj_ind_thin_0[2,:,:] - NWS_amm_bl_jj_ind_thin_0[0,:,:]) # distance from bottom handside
+    NWS_amm_lrbt_dist_thin_0[3,:,:] = (NWS_amm_bl_jj_ind_thin_0[2,:,:] - NWS_amm_flt_jj_ind_thin_0[:,:])/(NWS_amm_bl_jj_ind_thin_0[2,:,:] - NWS_amm_bl_jj_ind_thin_0[0,:,:]) # distance from top handside
+    #create the weights for the thinned indices        
+    #NWS_amm_wgt_post_thin_0 = np.ma.zeros((4,) + tmp_arr_shape, dtype = 'float')
+    NWS_amm_wgt_post_thin_0 = np.ma.zeros((4,nlat_amm,nlon_amm), dtype = 'float')
+    NWS_amm_wgt_post_thin_0[0,:,:] = (NWS_amm_lrbt_dist_thin_0[1,:,:]*NWS_amm_lrbt_dist_thin_0[3,:,:]) # BL: dist to TR
+    NWS_amm_wgt_post_thin_0[1,:,:] = (NWS_amm_lrbt_dist_thin_0[0,:,:]*NWS_amm_lrbt_dist_thin_0[3,:,:]) # BR: dist to TL
+    NWS_amm_wgt_post_thin_0[2,:,:] = (NWS_amm_lrbt_dist_thin_0[1,:,:]*NWS_amm_lrbt_dist_thin_0[2,:,:]) # TL: dist to BR
+    NWS_amm_wgt_post_thin_0[3,:,:] = (NWS_amm_lrbt_dist_thin_0[0,:,:]*NWS_amm_lrbt_dist_thin_0[2,:,:]) # TR: dist to BR
+    #Catch and wrapped ii index
+    NWS_amm_bl_jj_ind_final,NWS_amm_bl_ii_ind_final = NWS_amm_bl_jj_ind_thin_0.copy(),NWS_amm_bl_ii_ind_thin_0.copy()
+    NWS_amm_bl_ii_ind_final[NWS_amm_bl_ii_ind_final<0] = 0
+    NWS_amm_bl_jj_ind_final[NWS_amm_bl_jj_ind_final<0] = 0
+    NWS_amm_bl_ii_ind_final[NWS_amm_bl_ii_ind_final>=nlon_amm_2nd//thin_2nd] = nlon_amm_2nd//thin_2nd-1
+    NWS_amm_bl_jj_ind_final[NWS_amm_bl_jj_ind_final>=nlat_amm_2nd//thin_2nd] = nlat_amm_2nd//thin_2nd-1
+    # Mask weight values where the index is out of the domain
+    NWS_amm_wgt_post_thin_0[:,(NWS_amm_bl_jj_ind_final<0).any(axis = 0)] = np.ma.masked
+    NWS_amm_wgt_post_thin_0[:,(NWS_amm_bl_ii_ind_final<0).any(axis = 0)] = np.ma.masked
+    NWS_amm_wgt_post_thin_0[:,(NWS_amm_bl_jj_ind_final>=nlat_amm_2nd//thin_2nd).any(axis = 0)] = np.ma.masked
+    NWS_amm_wgt_post_thin_0[:,(NWS_amm_bl_ii_ind_final>=nlon_amm_2nd//thin_2nd).any(axis = 0)] = np.ma.masked
+    # Mask indices where the weight is masked
+    NWS_amm_bl_jj_ind_final[NWS_amm_wgt_post_thin_0.mask == True] = 0
+    NWS_amm_bl_ii_ind_final[NWS_amm_wgt_post_thin_0.mask == True] = 0
+
+
+    #Thin for output grid
+
+    NWS_amm_bl_jj_ind_out = NWS_amm_bl_jj_ind_final[:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
+    NWS_amm_bl_ii_ind_out = NWS_amm_bl_ii_ind_final[:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
+    NWS_amm_wgt_out = NWS_amm_wgt_post_thin_0[:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
+    NWS_amm_nn_jj_ind_out = NWS_amm_nn_jj_ind_final[thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
+    NWS_amm_nn_ii_ind_out = NWS_amm_nn_ii_ind_final[thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
+    
+    return NWS_amm_bl_jj_ind_out, NWS_amm_bl_ii_ind_out, NWS_amm_wgt_out, NWS_amm_nn_jj_ind_out, NWS_amm_nn_ii_ind_out
+
 
 if __name__ == "__main__":
     main()

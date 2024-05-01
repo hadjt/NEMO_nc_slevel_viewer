@@ -13,7 +13,7 @@ import csv
 
 from NEMO_nc_slevel_viewer_lib import set_perc_clim_pcolor, get_clim_pcolor, set_clim_pcolor,set_perc_clim_pcolor_in_region,get_colorbar_values,scale_color_map,lon_lat_to_str
 from NEMO_nc_slevel_viewer_lib import interp1dmat_wgt, interp1dmat_create_weight, interp_UV_vel_to_Tgrid
-from NEMO_nc_slevel_viewer_lib import rotated_grid_from_amm15, reduce_rotamm15_grid,load_nn_amm15_amm7_wgt,load_nn_amm7_amm15_wgt
+from NEMO_nc_slevel_viewer_lib import rotated_grid_from_amm15, reduce_rotamm15_grid,regrid_2nd_thin_params
 from NEMO_nc_slevel_viewer_lib import nearbed_int_index_val
 from NEMO_nc_slevel_viewer_lib import pea_TS
 from NEMO_nc_slevel_viewer_lib import load_nc_dims,load_nc_var_name_list
@@ -104,6 +104,11 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     nav_lat_var_mat = ['nav_lat'.upper(),'lat'.upper(),'latitude'.upper()]
     time_varname_mat = ['time_counter'.upper(),'time'.upper()]
 
+
+
+
+
+
     if use_cmocean:
         
         import cmocean
@@ -183,6 +188,12 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
 
     if config_2nd is not None:
+        nlon_amm7 = 297
+        nlat_amm7 = 375
+        nlon_amm15 = 1458
+        nlat_amm15 = 1345
+
+    if config_2nd is not None:
         config_fnames_dict[config_2nd] = {}
         config_2nd_csv_fname = script_dir + 'NEMO_nc_slevel_viewer_config_%s.csv'%config_2nd.upper()
         with open(config_2nd_csv_fname, mode='r') as infile:
@@ -229,6 +240,9 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         thin_y1_2nd=None
         #if thin_2nd is None:
         #thin_2nd=1
+        
+
+        regrid_meth = 1
 
         if (config.upper() in ['AMM7','AMM15']) & (config_2nd.upper() in ['AMM7','AMM15']):  
             mesh_file_2nd = config_fnames_dict[config_2nd]['mesh_file'] 
@@ -236,14 +250,47 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
             if (config.upper() == 'AMM15') & (config_2nd.upper() == 'AMM7'):  
 
-                amm7_amm15_dict = load_nn_amm7_amm15_wgt(config_fnames_dict[config]['regrid_amm7_amm15'] )
 
                 lon = np.arange(-19.888889,12.99967+1/9.,1/9.)
                 lat = np.arange(40.066669,65+1/15.,1/15.)
 
-            if (config.upper() == 'AMM7') & (config_2nd.upper() == 'AMM15'):
 
-                amm15_amm7_dict = load_nn_amm15_amm7_wgt(config_fnames_dict[config_2nd]['regrid_amm15_amm7'])
+                amm_conv_dict = {}
+                rootgrp = Dataset(config_fnames_dict[config]['regrid_amm7_amm15'], 'r')
+                for var_conv in rootgrp.variables.keys(): amm_conv_dict[var_conv] = rootgrp.variables[var_conv][:]
+                rootgrp.close()
+    
+                nlon_amm        = nlon_amm15
+                nlat_amm        = nlat_amm15
+                nlon_amm_2nd    = nlon_amm7
+                nlat_amm_2nd    = nlat_amm7
+
+
+
+
+
+
+
+            elif (config.upper() == 'AMM7') & (config_2nd.upper() == 'AMM15'):
+
+
+                amm_conv_dict = {}
+                rootgrp = Dataset(config_fnames_dict[config_2nd]['regrid_amm15_amm7'], 'r')
+                for var_conv in rootgrp.variables.keys(): amm_conv_dict[var_conv] = rootgrp.variables[var_conv][:]
+                rootgrp.close()
+
+
+    
+                nlon_amm        = nlon_amm7
+                nlat_amm        = nlat_amm7
+                nlon_amm_2nd    = nlon_amm15
+                nlat_amm_2nd    = nlat_amm15
+
+
+
+            NWS_amm_bl_jj_ind_out, NWS_amm_bl_ii_ind_out, NWS_amm_wgt_out, NWS_amm_nn_jj_ind_out, NWS_amm_nn_ii_ind_out = regrid_2nd_thin_params(amm_conv_dict,thin_2nd,thin_x0_2nd,thin_y0_2nd,nlon_amm,nlat_amm, nlon_amm_2nd,nlat_amm_2nd,thin,thin_x0,thin_y0,thin_x1,thin_y1)
+
+    
 
 
     print ('xarray open_mfdataset, Start',datetime.now())
@@ -869,7 +916,6 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
     func_names_lst = ['Hov/Time','ColScl','Reset zoom', 'Zoom', 'Clim: Reset','Clim: Zoom','Clim: Expand','Clim: pair','Clim: sym','Surface', 'Near-Bed', 'Surface-Bed','Depth-Mean','Depth level','Contours','Grad','Save Figure','Quit']
 
-    
     if load_2nd_files == False:
         func_names_lst.remove('Clim: pair')
 
@@ -877,7 +923,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
     # if a secondary data set, give ability to change data sets. 
     if load_2nd_files:
-        func_names_lst = func_names_lst + secdataset_proc_list
+        func_names_lst = func_names_lst + secdataset_proc_list + ['regrid_meth']
 
     func_but_line_han,func_but_text_han = {},{}
     func_but_extent = {}
@@ -886,7 +932,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     mode_name_secdataset_proc_list = mode_name_lst
 
     if load_2nd_files: 
-        mode_name_secdataset_proc_list = mode_name_secdataset_proc_list + secdataset_proc_list
+        mode_name_secdataset_proc_list = mode_name_secdataset_proc_list + secdataset_proc_list + ['regrid_meth']
 
     #add button box
     for vi,funcname in enumerate(func_names_lst): 
@@ -946,6 +992,8 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         func_but_text_han['Grad'].set_text('Grad')
 
     func_but_text_han['ColScl'].set_text('Col: Linear')
+
+    func_but_text_han['regrid_meth'].set_text('Regrid: NN')
 
 
     # When we move to loop mode, we stop checking for button presses, 
@@ -1639,35 +1687,53 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
             elif var.upper() == 'PEAS':
                 ts_dat_2 = tmppeas_2[:,0,0] 
         return ts_dat_1, ts_dat_2 
+    
+    
 
 
 
 
     def regrid_2nd(dat_in):
-        if config_2nd is None:
-            dat_out = dat_in
-        else:
-            if (thin_x0!=0)|(thin_y0!=0): 
-                print('thin_x0 and thin_y0 must equal 0, if not, need to work out thinning code in the regrid index method')
-                pdb.set_trace()
+        start_regrid_timer = datetime.now()
 
-            if (config.upper() == 'AMM15') & (config_2nd.upper() == 'AMM7'):
+        #NWS_amm_bl_jj_ind_out, NWS_amm_bl_ii_ind_out, NWS_amm_wgt_out, NWS_amm_nn_jj_ind_out, NWS_amm_nn_ii_ind_out
 
-
-                dat_out = dat_in[(amm7_amm15_dict['amm7_amm15_jj'] - thin_y0_2nd) //thin_2nd,(amm7_amm15_dict['amm7_amm15_ii'] - thin_y0_2nd) //thin_2nd]
-                dat_out = dat_out[thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
-
-            elif (config.upper() == 'AMM7') & (config_2nd.upper() == 'AMM15'):
-                
-
-                dat_out = dat_in[(amm15_amm7_dict['amm15_amm7_jj'] - thin_y0_2nd) //thin_2nd,(amm15_amm7_dict['amm15_amm7_ii'] - thin_y0_2nd) //thin_2nd]
-
-
-                dat_out = dat_out[thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
+        if regrid_meth >0 :
+            if config_2nd is None:
+                dat_out = dat_in
             else:
-                print('config and config_2nd must be AMM15 and AMM7')
-                pdb.set_trace()
+                if (thin_x0!=0)|(thin_y0!=0): 
+                    print('thin_x0 and thin_y0 must equal 0, if not, need to work out thinning code in the regrid index method')
+                    pdb.set_trace()
 
+
+
+                if regrid_meth == 1:
+                    # Nearest Neighbour Interpolation   ~0.01 sec
+                    #dat_out = dat_in[NWS_amm_nn_jj_ind_final,NWS_amm_nn_ii_ind_final]
+                    dat_out = dat_in[NWS_amm_nn_jj_ind_out,NWS_amm_nn_ii_ind_out]
+                   
+
+                elif regrid_meth == 2:
+                    # Bilinear Interpolation            ~0.2sec
+  
+                    #tmp_T_ind =  dat_in[NWS_amm_bl_jj_ind_final ,NWS_amm_bl_ii_ind_final ].copy()
+                    #NWS_amm_wgt_post_thin_0.mask = NWS_amm_wgt_post_thin_0.mask | tmp_T_ind.mask
+                    #
+                    #dat_out = (tmp_T_ind*NWS_amm_wgt_post_thin_0).sum(axis = 0)/(NWS_amm_wgt_post_thin_0).sum(axis = 0)
+
+
+                    dat_in_selected_corners =  dat_in[NWS_amm_bl_jj_ind_out ,NWS_amm_bl_ii_ind_out ].copy()
+                    NWS_amm_wgt_out.mask = NWS_amm_wgt_out.mask | dat_in_selected_corners.mask
+
+                    dat_out = (dat_in_selected_corners*NWS_amm_wgt_out).sum(axis = 0)/(NWS_amm_wgt_out).sum(axis = 0)
+                    
+
+                else:
+                    print('config and config_2nd must be AMM15 and AMM7')
+                    pdb.set_trace()
+        
+        if verbose_debugging:  print ('Regrid timer for method #%i: '%regrid_meth, datetime.now() - start_regrid_timer)
         return dat_out
 
 
@@ -2447,7 +2513,8 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                     nz = ns_slice_y.shape[0]
                     conax.append(ax[1].contour(np.tile(ew_slice_x,(51,1)),ew_slice_y,ew_slice_dat,cont_val_lst[1], colors = contcols, linewidths = contlws, alphas = contalphas))
                     conax.append(ax[2].contour(np.tile(ns_slice_x,(51,1)),ns_slice_y,ns_slice_dat,cont_val_lst[2], colors = contcols, linewidths = contlws, alphas = contalphas))
-                    if hov_time:
+                    if hov_time & ntime>1:
+                        
                         conax.append(ax[3].contour(hov_x,hov_y,hov_dat,cont_val_lst[3], colors = contcols, linewidths = contlws, alphas = contalphas))
 
 
@@ -2753,7 +2820,15 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                             reload_hov = True
                             reload_ts = True
 
-
+                    elif but_name == 'regrid_meth':
+                        if regrid_meth == 1:
+                            func_but_text_han['regrid_meth'].set_text('Regrid: Bilin')
+                            regrid_meth = 2
+                            reload_map = True
+                        elif regrid_meth == 2:
+                            func_but_text_han['regrid_meth'].set_text('Regrid: NN')
+                            regrid_meth = 1
+                            reload_map = True
 
                     elif but_name == 'Contours':
                         if do_cont:
