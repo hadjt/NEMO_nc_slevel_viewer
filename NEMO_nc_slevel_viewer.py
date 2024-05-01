@@ -1173,18 +1173,36 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
     def reload_data_instances():
         start_time_load_inst = datetime.now()
-        if var_dim[var] == 3:
-                
-            data_inst_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-            data_inst_2 = data_inst_1
+        if var == 'baroc_mag':
+            
+            map_dat_3d_U_1 = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+            map_dat_3d_V_1 = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+            data_inst_1 = np.sqrt(map_dat_3d_U_1**2 + map_dat_3d_V_1**2)
+            del(map_dat_3d_U_1)
+            del(map_dat_3d_V_1)
+
             if load_2nd_files:
-                data_inst_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][ti,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
-                
-        if var_dim[var] == 4:
-            data_inst_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-            data_inst_2 = data_inst_1
-            if load_2nd_files:
-                data_inst_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                map_dat_3d_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                map_dat_3d_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                data_inst_2 = regrid_2nd(np.sqrt(map_dat_3d_U_2**2 + map_dat_3d_V_2**2))
+                del(map_dat_3d_U_2)
+                del(map_dat_3d_V_2)
+            else:
+                data_inst_2 = data_inst_1
+
+        else:
+            if var_dim[var] == 3:
+                    
+                data_inst_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+                data_inst_2 = data_inst_1
+                if load_2nd_files:
+                    data_inst_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][ti,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                    
+            if var_dim[var] == 4:
+                data_inst_1 = np.ma.masked_invalid(curr_tmp_data.variables[var][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+                data_inst_2 = data_inst_1
+                if load_2nd_files:
+                    data_inst_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
 
         preload_data_ti = ti
         preload_data_var = var
@@ -1296,18 +1314,24 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         # load files
 
         if var == 'baroc_mag':
-            map_dat_3d_U_1 = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][ti,0,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-            map_dat_3d_V_1 = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][ti,0,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-            map_dat_ss_1 = np.sqrt(map_dat_3d_U_1**2 + map_dat_3d_V_1**2)
-            del(map_dat_3d_U_1)
-            del(map_dat_3d_V_1)
+            if data_inst_1 is None:
+                map_dat_3d_U_1 = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][ti,0,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+                map_dat_3d_V_1 = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][ti,0,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+                map_dat_ss_1 = np.sqrt(map_dat_3d_U_1**2 + map_dat_3d_V_1**2)
+                del(map_dat_3d_U_1)
+                del(map_dat_3d_V_1)
+            else:
+                map_dat_ss_1 = data_inst_1[0]
 
             if load_2nd_files:
-                map_dat_3d_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][ti,0,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
-                map_dat_3d_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][ti,0,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
-                map_dat_ss_2 = regrid_2nd(np.sqrt(map_dat_3d_U_2**2 + map_dat_3d_V_2**2))
-                del(map_dat_3d_U_2)
-                del(map_dat_3d_V_2)
+                if data_inst_1 is None:
+                    map_dat_3d_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][ti,0,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                    map_dat_3d_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][ti,0,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                    map_dat_ss_2 = regrid_2nd(np.sqrt(map_dat_3d_U_2**2 + map_dat_3d_V_2**2))
+                    del(map_dat_3d_U_2)
+                    del(map_dat_3d_V_2)
+                else:
+                    map_dat_ss_2 = regrid_2nd(data_inst_2[0])
             else: map_dat_ss_2 = map_dat_ss_1
               
 
@@ -1335,19 +1359,26 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         # load files
 
         if var == 'baroc_mag':
-            map_dat_3d_U_1 = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-            map_dat_3d_V_1 = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-            map_dat_3d_1 = np.sqrt(map_dat_3d_U_1**2 + map_dat_3d_V_1**2)
-            del(map_dat_3d_U_1)
-            del(map_dat_3d_V_1)
+            if data_inst_1 is None:
+                map_dat_3d_U_1 = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+                map_dat_3d_V_1 = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+                map_dat_3d_1 = np.sqrt(map_dat_3d_U_1**2 + map_dat_3d_V_1**2)
+                del(map_dat_3d_U_1)
+                del(map_dat_3d_V_1)
+            else:
+                map_dat_3d_1 = data_inst_1
 
             if load_2nd_files:
-                map_dat_3d_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
-                map_dat_3d_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
-                map_dat_3d_2 = np.sqrt(map_dat_3d_U_2**2 + map_dat_3d_V_2**2)
-                del(map_dat_3d_U_2)
-                del(map_dat_3d_V_2)
-              
+                if data_inst_2 is None:
+                    map_dat_3d_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                    map_dat_3d_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                    map_dat_3d_2 = np.sqrt(map_dat_3d_U_2**2 + map_dat_3d_V_2**2)
+                    del(map_dat_3d_U_2)
+                    del(map_dat_3d_V_2)
+                else:
+                    map_dat_3d_2 = data_inst_2
+            else:
+                map_dat_3d_2 = map_dat_3d_1
 
         else:
             if data_inst_1 is None:
@@ -1410,19 +1441,25 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         
 
         if var == 'baroc_mag':
-            map_dat_3d_U_1 = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-            map_dat_3d_V_1 = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-            map_dat_3d_1 = np.sqrt(map_dat_3d_U_1**2 + map_dat_3d_V_1**2)
-            del(map_dat_3d_U_1)
-            del(map_dat_3d_V_1)
-            
+            if data_inst_1 is None:
+                map_dat_3d_U_1 = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+                map_dat_3d_V_1 = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+                map_dat_3d_1 = np.sqrt(map_dat_3d_U_1**2 + map_dat_3d_V_1**2)
+                del(map_dat_3d_U_1)
+                del(map_dat_3d_V_1)
+            else:
+                map_dat_3d_1 = data_inst_1
             if load_2nd_files:
-                map_dat_3d_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
-                map_dat_3d_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
-                map_dat_3d_2 = np.sqrt(map_dat_3d_U_2**2 + map_dat_3d_V_2**2)
-                del(map_dat_3d_U_2)
-                del(map_dat_3d_V_2)
-              
+                if data_inst_2 is None:
+                    map_dat_3d_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                    map_dat_3d_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                    map_dat_3d_2 = np.sqrt(map_dat_3d_U_2**2 + map_dat_3d_V_2**2)
+                    del(map_dat_3d_U_2)
+                    del(map_dat_3d_V_2)
+                else:
+                    map_dat_3d_2 = data_inst_2
+            else:
+                map_dat_3d_2 = map_dat_3d_1
 
         else:
             if data_inst_1 is None:
@@ -1454,19 +1491,26 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
 
         if var == 'baroc_mag':
-            map_dat_3d_U_1 = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][ti,zz,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-            map_dat_3d_V_1 = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][ti,zz,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-            map_dat_1 = np.sqrt(map_dat_3d_U_1**2 + map_dat_3d_V_1**2)
-            del(map_dat_3d_U_1)
-            del(map_dat_3d_V_1)
-
+            if data_inst_1 is None:
+                map_dat_3d_U_1 = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][ti,zz,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+                map_dat_3d_V_1 = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][ti,zz,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+                map_dat_1 = np.sqrt(map_dat_3d_U_1**2 + map_dat_3d_V_1**2)
+                del(map_dat_3d_U_1)
+                del(map_dat_3d_V_1)
+            else:
+                map_dat_1 = data_inst_1
             if load_2nd_files:
-                map_dat_3d_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
-                map_dat_3d_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
-                map_dat_2 = regrid_2nd(np.sqrt(map_dat_3d_U_2**2 + map_dat_3d_V_2**2))
-                del(map_dat_3d_U_2)
-                del(map_dat_3d_V_2)
-              
+                if data_inst_2 is None:
+                    map_dat_3d_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                    map_dat_3d_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                    map_dat_2 = regrid_2nd(np.sqrt(map_dat_3d_U_2**2 + map_dat_3d_V_2**2))
+                    del(map_dat_3d_U_2)
+                    del(map_dat_3d_V_2)
+                else:
+                    map_dat_2 = data_inst_2
+
+            else:
+                map_dat_2 = map_dat_1
         else:
 
             if data_inst_1 is None:        
@@ -1497,28 +1541,43 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
 
         if var == 'baroc_mag':
+
+
+            
             tmp_var_U, tmp_var_V = 'vozocrtx','vomecrty'
-            ew_slice_x =  nav_lon[jj,:]
-            ew_slice_y =  gdept[:,jj,:]
-            ew_slice_dat_U = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,jj,:].load())
-            ew_slice_dat_V = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,jj,:].load())
-            ew_slice_dat_1 = np.sqrt(ew_slice_dat_U**2 + ew_slice_dat_V**2)
-            ew_slice_dat_2 = ew_slice_dat_1
+            if data_inst_1 is None:  
+                ew_slice_dat_U = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,jj,:].load())
+                ew_slice_dat_V = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,jj,:].load())
+                ew_slice_dat_1 = np.sqrt(ew_slice_dat_U**2 + ew_slice_dat_V**2)
+            else:
+                ew_slice_dat_1 = np.ma.masked_invalid(data_inst_1[:,jj,:])
+                
+            #ew_slice_dat_2 = ew_slice_dat_1
             if load_2nd_files:
                 if config_2nd is None:
-                    ew_slice_dat_U = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti,:,jj,:].load())
-                    ew_slice_dat_V = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti,:,jj,:].load())
-                    ew_slice_dat_2 = np.sqrt(ew_slice_dat_U**2 + ew_slice_dat_V**2)
+                    if data_inst_2 is None: 
+                        ew_slice_dat_U = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti,:,jj,:].load())
+                        ew_slice_dat_V = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti,:,jj,:].load())
+                        ew_slice_dat_2 = np.sqrt(ew_slice_dat_U**2 + ew_slice_dat_V**2)
+                    else:
+                        ew_slice_dat_2 = np.ma.masked_invalid(data_inst_2[:,jj,:])
                 else:
-                    #pdb.set_trace()
-                    ew_slice_dat_2 = ew_slice_dat_1.copy()*np.ma.masked
-                    tmpdat_ew_slice_dat_U = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti].load())[:,ew_jj_2nd_ind,ew_ii_2nd_ind].T
-                    tmpdat_ew_slice_dat_V = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti].load())[:,ew_jj_2nd_ind,ew_ii_2nd_ind].T
-                    tmpdat_ew_slice = np.sqrt(tmpdat_ew_slice_dat_U**2 + tmpdat_ew_slice_dat_V**2)
+                    if data_inst_2 is None: 
+                        #pdb.set_trace()
+                        ew_slice_dat_2 = ew_slice_dat_1.copy()*np.ma.masked
+                        tmpdat_ew_slice_dat_U = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti].load())[:,ew_jj_2nd_ind,ew_ii_2nd_ind].T
+                        tmpdat_ew_slice_dat_V = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti].load())[:,ew_jj_2nd_ind,ew_ii_2nd_ind].T
+                        tmpdat_ew_slice = np.sqrt(tmpdat_ew_slice_dat_U**2 + tmpdat_ew_slice_dat_V**2)
+                    else:
+                        tmpdat_ew_slice = np.ma.masked_invalid(data_inst_2[:,ew_jj_2nd_ind,ew_ii_2nd_ind].T)
                     tmpdat_ew_gdept=gdept_2nd[:,ew_jj_2nd_ind,ew_ii_2nd_ind].T
                     #for i_i,(tmpdat,tmpz,tmpzorig) in enumerate(zip(tmpdat_ew_slice,tmpdat_ew_gdept,ew_slice_y.T)):ew_slice_dat_2[:,i_i] = np.ma.masked_invalid(np.interp(tmpzorig, tmpz, tmpdat))
                     #np.interp not a mask function, so set Masked valeus to NaNs
                     for i_i,(tmpdat,tmpz,tmpzorig) in enumerate(zip(tmpdat_ew_slice,tmpdat_ew_gdept,ew_slice_y.T)):ew_slice_dat_2[:,i_i] = np.ma.masked_invalid(np.interp(tmpzorig, tmpz, np.ma.array(tmpdat.copy(),fill_value=np.nan).filled()  ))
+
+            else:
+                ew_slice_dat_2 = ew_slice_dat_1
+            
 
         else:
 
@@ -1559,25 +1618,36 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         
         if var == 'baroc_mag':
             tmp_var_U, tmp_var_V = 'vozocrtx','vomecrty'
-            ns_slice_dat_U = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,:,ii].load())
-            ns_slice_dat_V = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,:,ii].load())
-            ns_slice_dat_1 = np.sqrt(ns_slice_dat_U**2 + ns_slice_dat_V**2)
-            ns_slice_dat_2 = ns_slice_dat_1
+            if data_inst_1 is None:  
+                ns_slice_dat_U = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,:,ii].load())
+                ns_slice_dat_V = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][ti,:,:,ii].load())
+                ns_slice_dat_1 = np.sqrt(ns_slice_dat_U**2 + ns_slice_dat_V**2)
+            else:
+                ns_slice_dat_1 = np.ma.masked_invalid(data_inst_1[:,:,ii])
+            
             if load_2nd_files:
                 if config_2nd is None:
-                    ns_slice_dat_U = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti,:,:,ii].load())
-                    ns_slice_dat_V = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti,:,:,ii].load())
-                    ns_slice_dat_2 = np.sqrt(ns_slice_dat_U**2 + ns_slice_dat_V**2)
-                else:
-                    
-                    ns_slice_dat_2 = ns_slice_dat_1.copy()*np.ma.masked
-                    ns_slice_dat_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti].load())[:,ns_jj_2nd_ind,ns_ii_2nd_ind].T
-                    ns_slice_dat_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti].load())[:,ns_jj_2nd_ind,ns_ii_2nd_ind].T
-                    tmpdat_ns_slice = np.sqrt(ns_slice_dat_U_2**2 + ns_slice_dat_V_2**2)
+                    if data_inst_2 is None: 
+                        ns_slice_dat_U = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti,:,:,ii].load())
+                        ns_slice_dat_V = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti,:,:,ii].load())
+                        ns_slice_dat_2 = np.sqrt(ns_slice_dat_U**2 + ns_slice_dat_V**2)
+                    else:
+                        ns_slice_dat_2 = np.ma.masked_invalid(data_inst_2[:,:,ii])
+                    if data_inst_2 is None: 
+                        
+                        ns_slice_dat_2 = ns_slice_dat_1.copy()*np.ma.masked
+                        ns_slice_dat_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti].load())[:,ns_jj_2nd_ind,ns_ii_2nd_ind].T
+                        ns_slice_dat_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti].load())[:,ns_jj_2nd_ind,ns_ii_2nd_ind].T
+                        tmpdat_ns_slice = np.sqrt(ns_slice_dat_U_2**2 + ns_slice_dat_V_2**2)
+                    else:
+                        tmpdat_ns_slice = np.ma.masked_invalid(data_inst_2[:,ns_jj_2nd_ind,ns_ii_2nd_ind].T)
+                        
                     tmpdat_ns_gdept = gdept_2nd[:,ns_jj_2nd_ind,ns_ii_2nd_ind].T
                     #for i_i,(tmpdat,tmpz,tmpzorig) in enumerate(zip(tmpdat_ns_slice,tmpdat_ns_gdept,ns_slice_y.T)):ns_slice_dat_2[:,i_i] = np.ma.masked_invalid(np.interp(tmpzorig, tmpz, tmpdat))
                     #np.interp not a mask function, so set Masked valeus to NaNs
                     for i_i,(tmpdat,tmpz,tmpzorig) in enumerate(zip(tmpdat_ns_slice,tmpdat_ns_gdept,ns_slice_y.T)):ns_slice_dat_2[:,i_i] = np.ma.masked_invalid(np.interp(tmpzorig, tmpz, np.ma.array(tmpdat.copy(),fill_value=np.nan).filled()  ))
+            else:
+                ns_slice_dat_2 = ns_slice_dat_1
 
         else:
 
@@ -2212,7 +2282,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
             stage_timer_name[4] = 'Load Instance'
 
             if preload_data:
-                if var not in deriv_var:
+                if (var not in deriv_var)| (var in ['baroc_mag']):
                     if data_inst_1 is None:
                         data_inst_1,data_inst_2 = reload_data_instances()
 
