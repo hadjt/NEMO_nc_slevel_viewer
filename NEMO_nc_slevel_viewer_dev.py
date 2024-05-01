@@ -355,12 +355,14 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
         nav_lon = np.ma.masked_invalid(rootgrp_gdept.variables['glamt'][0])
         nav_lat = np.ma.masked_invalid(rootgrp_gdept.variables['gphit'][0])
-        nav_lat_amm15 = np.ma.array(nav_lon.copy())
-        nav_lon_amm15 = np.ma.array(nav_lat.copy())
+        nav_lat_amm15 = np.ma.array(nav_lat.copy())
+        nav_lon_amm15 = np.ma.array(nav_lon.copy())
         
 
         nav_lat = np.ma.array(nav_lat[thin_y0:thin_y1:thin,thin_x0:thin_x1:thin])
         nav_lon = np.ma.array(nav_lon[thin_y0:thin_y1:thin,thin_x0:thin_x1:thin])
+
+        #pdb.set_trace()
 
     else:
         if len(tmp_data.variables[nav_lat_varname].shape) == 2:
@@ -2760,9 +2762,8 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
             # convert the mouse click into data indices, and report which axes was clicked
             sel_ax,sel_ii,sel_jj,sel_ti,sel_zz = indices_from_ginput_ax(clii,cljj, thin = thin,ew_line_x = nav_lon[jj,:],ew_line_y = nav_lat[jj,:],ns_line_x = nav_lon[:,ii],ns_line_y = nav_lat[:,ii])
 
-            
                 
-            #pdb.set_trace()
+                
             if verbose_debugging: print("selected sel_ax = %s,sel_ii = %s,sel_jj = %s,sel_ti = %s,sel_zz = %s"%(sel_ax,sel_ii,sel_jj,sel_ti,sel_zz))
 
             #print(sel_ax,sel_ii,sel_jj,sel_ti,sel_zz )
