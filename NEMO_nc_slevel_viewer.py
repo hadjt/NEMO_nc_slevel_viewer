@@ -75,6 +75,9 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
     if config.upper() in ['ORCA025','ORCA025EXT']: 
         if thin_y1 is None: thin_y1 = -2
+    if config.upper() in ['ORCA12']: 
+        if thin_y1 is None: thin_y1 = -200
+        if thin_y0 is None: thin_y1 = 1000
 
 
     if do_grad is None: do_grad = 0
@@ -210,8 +213,18 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
     z_meth_default = config_fnames_dict[config]['z_meth_default']
     ncgdept = 'gdept_0'
-    if 'ncgdept' in config_fnames_dict[config].keys():
-        ncgdept = config_fnames_dict[config]['ncgdept']
+    nce1t = 'e1t'
+    nce2t = 'e2t'
+    nce3t = 'e3t_0'
+    ncglamt = 'glamt'
+    ncgphit = 'gphit'
+
+    if 'ncgdept' in config_fnames_dict[config].keys():ncgdept = config_fnames_dict[config]['ncgdept']
+    if 'nce1t' in config_fnames_dict[config].keys():nce1t = config_fnames_dict[config]['nce1t']
+    if 'nce2t' in config_fnames_dict[config].keys():nce2t = config_fnames_dict[config]['nce2t']
+    if 'nce3t' in config_fnames_dict[config].keys():nce3t = config_fnames_dict[config]['nce3t']
+    if 'ncglamt' in config_fnames_dict[config].keys():ncglamt = config_fnames_dict[config]['ncglamt']
+    if 'ncgphit' in config_fnames_dict[config].keys():ncgphit = config_fnames_dict[config]['ncgphit']
     rootgrp_gdept = None
         
     # depth grid file
@@ -228,8 +241,8 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     elif config.upper() == 'GULF18':
 
         #grid lat lon
-        lon = rootgrp_gdept.variables['glamt'][:,0,:].ravel()
-        lat = rootgrp_gdept.variables['gphit'][:,:,0].ravel()
+        lon = rootgrp_gdept.variables[ncglamt][:,0,:].ravel()
+        lat = rootgrp_gdept.variables[ncgphit][:,:,0].ravel()
 
     if z_meth is None:
         z_meth = z_meth_default
@@ -344,10 +357,10 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     print ('xarray open_mfdataset, finish U and V',datetime.now())
 
     # load nav_lat and nav_lon
-    if config.upper() in ['ORCA025','ORCA025EXT']: 
+    if config.upper() in ['ORCA025','ORCA025EXT','ORCA12']: 
 
-        nav_lon = np.ma.masked_invalid(rootgrp_gdept.variables['glamt'][0])
-        nav_lat = np.ma.masked_invalid(rootgrp_gdept.variables['gphit'][0])
+        nav_lon = np.ma.masked_invalid(rootgrp_gdept.variables[ncglamt][0])
+        nav_lat = np.ma.masked_invalid(rootgrp_gdept.variables[ncgphit][0])
         
         # Fix Longitude, to be between -180 and 180.
         fixed_nav_lon = nav_lon.copy()
@@ -366,8 +379,8 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         
     elif config.upper() in ['CO9P2']: 
 
-        nav_lon = np.ma.masked_invalid(rootgrp_gdept.variables['glamt'][0])
-        nav_lat = np.ma.masked_invalid(rootgrp_gdept.variables['gphit'][0])
+        nav_lon = np.ma.masked_invalid(rootgrp_gdept.variables[ncglamt][0])
+        nav_lat = np.ma.masked_invalid(rootgrp_gdept.variables[ncgphit][0])
         nav_lat_amm15 = np.ma.array(nav_lat.copy())
         nav_lon_amm15 = np.ma.array(nav_lon.copy())
         
@@ -392,14 +405,12 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
             nav_lat = nav_lat_mat[thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
             nav_lon = nav_lon_mat[thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
 
-    
-
     #Check if any nav_lat or nav_lon have masked values (i.e. using land suppression)
     if ((nav_lat == 0) & (nav_lon == 0)).sum()>10:
         print('Several points (>10) for 0degN 0degW - suggesting land suppression - use glamt and gphit from mesh')
 
-        nav_lon = np.ma.masked_invalid(rootgrp_gdept.variables['glamt'][0])
-        nav_lat = np.ma.masked_invalid(rootgrp_gdept.variables['gphit'][0])
+        nav_lon = np.ma.masked_invalid(rootgrp_gdept.variables[ncglamt][0])
+        nav_lat = np.ma.masked_invalid(rootgrp_gdept.variables[ncgphit][0])
 
         nav_lat = np.ma.array(nav_lat[thin_y0:thin_y1:thin,thin_x0:thin_x1:thin])
         nav_lon = np.ma.array(nav_lon[thin_y0:thin_y1:thin,thin_x0:thin_x1:thin])
@@ -422,20 +433,19 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     
     nav_lon_2nd, nav_lat_2nd = nav_lon, nav_lat
 
-
-    e1t = rootgrp_gdept.variables['e1t'][0,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
-    e2t = rootgrp_gdept.variables['e2t'][0,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
-    e3t = rootgrp_gdept.variables['e3t_0'][0,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
+    e1t = rootgrp_gdept.variables[nce1t][0,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
+    e2t = rootgrp_gdept.variables[nce2t][0,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
+    e3t = rootgrp_gdept.variables[nce3t][0,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
 
     gdept = rootgrp_gdept.variables[ncgdept][0,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
     #gdept_2nd = rootgrp_gdept_2nd.variables[ncgdept][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
     if load_2nd_files:
         #pdb.set_trace()
         if config_2nd is None:
-            e3t_2nd = rootgrp_gdept_2nd.variables['e3t_0'][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
+            e3t_2nd = rootgrp_gdept_2nd.variables[nce3t][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
             gdept_2nd = rootgrp_gdept_2nd.variables[ncgdept][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
         else:
-            e3t_2nd = rootgrp_gdept_2nd.variables['e3t_0'][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
+            e3t_2nd = rootgrp_gdept_2nd.variables[nce3t][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
             gdept_2nd = rootgrp_gdept_2nd.variables[config_fnames_dict[config_2nd]['ncgdept']][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
 
 
@@ -1115,7 +1125,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                 ylocval = normyloc*clylim.ptp() + clylim.min()
 
                 if (thin != 1):
-                    if config.upper() not in ['AMM7','AMM15', 'CO9P2', 'ORCA025','ORCA025EXT','GULF18']:
+                    if config.upper() not in ['AMM7','AMM15', 'CO9P2', 'ORCA025','ORCA025EXT','GULF18','ORCA12']:
                         print('Thinning lon lat selection not programmed for ', config.upper())
                         pdb.set_trace()
 
@@ -1133,7 +1143,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                         lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(loni,latj)
                         sel_ii = np.minimum(np.maximum( np.round((lon_mat_rot - lon_rotamm15[thin_x0:thin_x1:thin].min())/(dlon_rotamm15*thin)).astype('int') ,0),nlon_rotamm15//thin-1)
                         sel_jj = np.minimum(np.maximum( np.round((lat_mat_rot - lat_rotamm15[thin_y0:thin_y1:thin].min())/(dlat_rotamm15*thin)).astype('int') ,0),nlat_rotamm15//thin-1)
-                    elif config.upper() in ['ORCA025','ORCA025EXT']:
+                    elif config.upper() in ['ORCA025','ORCA025EXT','ORCA12']:
                         sel_dist_mat = np.sqrt((nav_lon[:,:] - loni)**2 + (nav_lat[:,:] - latj)**2 )
                         sel_jj,sel_ii = sel_dist_mat.argmin()//sel_dist_mat.shape[1], sel_dist_mat.argmin()%sel_dist_mat.shape[1]
 
@@ -1215,7 +1225,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         elif var.upper() in ['PEA', 'PEAT','PEAS']:
 
             gdept_mat = gdept[np.newaxis]
-            dz_mat = e3t[np.newaxis]# rootgrp_gdept.variables['e3t_0'][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
+            dz_mat = e3t[np.newaxis]# rootgrp_gdept.variables[nce3t][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
 
             tmp_T_data_1 = np.ma.masked_invalid(curr_tmp_data.variables['votemper'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
             tmp_S_data_1 = np.ma.masked_invalid(curr_tmp_data.variables['vosaline'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
@@ -1249,7 +1259,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
                     
                     gdept_mat_2nd = gdept_2nd[np.newaxis]
-                    dz_mat_2nd = e3t_2nd[np.newaxis] # rootgrp_gdept_2nd.variables['e3t_0'][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
+                    dz_mat_2nd = e3t_2nd[np.newaxis] # rootgrp_gdept_2nd.variables[nce3t][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
 
 
                     tmp_T_data_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables['votemper'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
@@ -1318,7 +1328,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
             
             if data_inst_1 is None:
                 gdept_mat = gdept[np.newaxis]
-                dz_mat = e3t[np.newaxis]# rootgrp_gdept.variables['e3t_0'][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
+                dz_mat = e3t[np.newaxis]# rootgrp_gdept.variables[nce3t][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
 
                 tmp_T_data_1 = np.ma.masked_invalid(curr_tmp_data.variables['votemper'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
                 tmp_S_data_1 = np.ma.masked_invalid(curr_tmp_data.variables['vosaline'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
@@ -1354,7 +1364,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
                         
                         gdept_mat_2nd = gdept_2nd[np.newaxis]
-                        dz_mat_2nd = e3t_2nd[np.newaxis] # rootgrp_gdept_2nd.variables['e3t_0'][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
+                        dz_mat_2nd = e3t_2nd[np.newaxis] # rootgrp_gdept_2nd.variables[nce3t][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
 
 
                         tmp_T_data_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables['votemper'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
@@ -1908,7 +1918,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         
 
         gdept_mat = gdept[:,jj,ii]
-        dz_mat = e3t[:,jj,ii] # rootgrp_gdept.variables['e3t_0'][0,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,jj,ii]
+        dz_mat = e3t[:,jj,ii] # rootgrp_gdept.variables[nce3t][0,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,jj,ii]
 
         tmp_T_data_1 = np.ma.masked_invalid(curr_tmp_data.variables['votemper'][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,:,jj,ii].load())[:,:,np.newaxis,np.newaxis]
         tmp_S_data_1 = np.ma.masked_invalid(curr_tmp_data.variables['vosaline'][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,:,jj,ii].load())[:,:,np.newaxis,np.newaxis]
@@ -1944,7 +1954,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
 
                 gdept_mat_2nd = gdept_2nd[:,jj_2nd_ind,ii_2nd_ind]
-                dz_mat_2nd = e3t_2nd[:,jj_2nd_ind,ii_2nd_ind]# rootgrp_gdept_2nd.variables['e3t_0'][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,jj_2nd_ind,ii_2nd_ind]
+                dz_mat_2nd = e3t_2nd[:,jj_2nd_ind,ii_2nd_ind]# rootgrp_gdept_2nd.variables[nce3t][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,jj_2nd_ind,ii_2nd_ind]
 
  
                 gdept_mat_pea_2nd = np.tile(gdept_mat[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_pea)).T
