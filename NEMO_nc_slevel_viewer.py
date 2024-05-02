@@ -1266,9 +1266,9 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
         preload_data_ti = ti
         preload_data_var = var
-
+        print('======================================')
         print('Reloaded data instances for ti = %i, var = %s %s = %s'%(ti,var,datetime.now(),datetime.now() - start_time_load_inst))
-        return data_inst_1,data_inst_2
+        return data_inst_1,data_inst_2,preload_data_ti,preload_data_var
 
     def reload_map_data_comb():
         if var_dim[var] == 3:
@@ -1629,9 +1629,9 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                     else:
                         ew_slice_dat_2 = np.ma.masked_invalid(data_inst_2[:,jj,:])
                 else:
+                    ew_slice_dat_2 = ew_slice_dat_1.copy()*np.ma.masked
                     if data_inst_2 is None: 
                         #pdb.set_trace()
-                        ew_slice_dat_2 = ew_slice_dat_1.copy()*np.ma.masked
                         tmpdat_ew_slice_dat_U = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti].load())[:,ew_jj_2nd_ind,ew_ii_2nd_ind].T
                         tmpdat_ew_slice_dat_V = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti].load())[:,ew_jj_2nd_ind,ew_ii_2nd_ind].T
                         tmpdat_ew_slice = np.sqrt(tmpdat_ew_slice_dat_U**2 + tmpdat_ew_slice_dat_V**2)
@@ -1713,9 +1713,10 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                         ns_slice_dat_2 = np.sqrt(ns_slice_dat_U**2 + ns_slice_dat_V**2)
                     else:
                         ns_slice_dat_2 = np.ma.masked_invalid(data_inst_2[:,:,ii])
+                else:
+                    ns_slice_dat_2 = ns_slice_dat_1.copy()*np.ma.masked
                     if data_inst_2 is None: 
                         
-                        ns_slice_dat_2 = ns_slice_dat_1.copy()*np.ma.masked
                         ns_slice_dat_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti].load())[:,ns_jj_2nd_ind,ns_ii_2nd_ind].T
                         ns_slice_dat_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti].load())[:,ns_jj_2nd_ind,ns_ii_2nd_ind].T
                         tmpdat_ns_slice = np.sqrt(ns_slice_dat_U_2**2 + ns_slice_dat_V_2**2)
@@ -2332,14 +2333,14 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
             stage_timer_name[4] = 'Load Instance'
 
             if preload_data:
-                if (var not in deriv_var)| (var.upper() in ['BAROC_MAG'])| (var.upper() in ['PEA','PEAT', 'PEAS']):
-                    if data_inst_1 is None:
-                        data_inst_1,data_inst_2 = reload_data_instances()
+                #print('reload_data_instances:',var,preload_data_var,(data_inst_1 is None),(preload_data_ti != ti),(preload_data_var != var))
+                #print('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ')
 
-                    if (preload_data_ti != ti)|(preload_data_var != var):
-                        data_inst_1,data_inst_2 = reload_data_instances()
-                else:
-                    data_inst_1,data_inst_2 = None, None
+                # if data_inst_1 is None (i.e. first loop), or
+                #       if the time has changed, or
+                #       if the variable has changed
+                if  (data_inst_1 is None)|(preload_data_ti != ti)|(preload_data_var != var):
+                    data_inst_1,data_inst_2,preload_data_ti,preload_data_var= reload_data_instances()
 
 
             stage_timer[5] = datetime.now() # start data dataload
