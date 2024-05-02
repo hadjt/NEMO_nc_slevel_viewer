@@ -53,6 +53,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     hov_time = True, do_cont = True, do_grad = 1,
     allow_diff_time = False,
     preload_data = False,
+    xarr_time_slice_index = None, xarr_time_slice_var = 'time_counter',
     clim_sym = None, clim_pair = True,use_cmocean = False,
     fig_dir = None,fig_lab = 'figs',fig_cutout = True, 
     justplot = False, justplot_date_ind = None,justplot_z_meth_zz = None,justplot_secdataset_proc = None,
@@ -296,15 +297,22 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
 
 
-            NWS_amm_bl_jj_ind_out, NWS_amm_bl_ii_ind_out, NWS_amm_wgt_out, NWS_amm_nn_jj_ind_out, NWS_amm_nn_ii_ind_out = regrid_2nd_thin_params(amm_conv_dict,thin_2nd,thin_x0_2nd,thin_y0_2nd,nlon_amm,nlat_amm, nlon_amm_2nd,nlat_amm_2nd,thin,thin_x0,thin_y0,thin_x1,thin_y1)
+            (NWS_amm_bl_jj_ind_out, NWS_amm_bl_ii_ind_out, NWS_amm_wgt_out,
+            NWS_amm_nn_jj_ind_out, NWS_amm_nn_ii_ind_out) = regrid_2nd_thin_params(amm_conv_dict,
+                thin_2nd,thin_x0_2nd,thin_y0_2nd,
+                nlon_amm,nlat_amm, 
+                nlon_amm_2nd,nlat_amm_2nd,
+                thin,thin_x0,thin_y0,thin_x1,thin_y1)
 
     
 
 
     print ('xarray open_mfdataset, Start',datetime.now())
-
     # open file list with xarray
-    tmp_data = xarray.open_mfdataset(fname_lst, combine='by_coords',parallel = True) # , decode_cf=False);# parallel = True
+    if xarr_time_slice_index is None:
+        tmp_data = xarray.open_mfdataset(fname_lst, combine='by_coords',parallel = True) # , decode_cf=False);# parallel = True
+    else:
+        tmp_data = xarray.open_mfdataset(fname_lst, combine='by_coords',parallel = True, preprocess=lambda ds: ds[{xarr_time_slice_var:slice(0,0+1)}])    #ds[{'time_counter':slice(0,0+1)}]
     ncvar_mat = [ss for ss in tmp_data.variables.keys()]
   
 
@@ -325,8 +333,13 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     UV_vec = False
     if (U_fname_lst is not None) & (V_fname_lst is not None):
         UV_vec = True
-        tmp_data_U = xarray.open_mfdataset(U_fname_lst, combine='by_coords',parallel = True)
-        tmp_data_V = xarray.open_mfdataset(V_fname_lst, combine='by_coords',parallel = True)
+        
+        if xarr_time_slice_index is None:
+            tmp_data_U = xarray.open_mfdataset(U_fname_lst, combine='by_coords',parallel = True)
+            tmp_data_V = xarray.open_mfdataset(V_fname_lst, combine='by_coords',parallel = True)
+        else:
+            tmp_data_U = xarray.open_mfdataset(U_fname_lst, combine='by_coords',parallel = True, preprocess=lambda ds: ds[{xarr_time_slice_var:slice(0,0+1)}]) 
+            tmp_data_V = xarray.open_mfdataset(V_fname_lst, combine='by_coords',parallel = True, preprocess=lambda ds: ds[{xarr_time_slice_var:slice(0,0+1)}]) 
     
     print ('xarray open_mfdataset, finish U and V',datetime.now())
 
@@ -615,7 +628,10 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         
 
         print ('xarray open_mfdataset 2nd, Start',datetime.now())   
-        tmp_data_2nd = xarray.open_mfdataset(fname_lst_2nd ,combine='by_coords',parallel = True)
+        if xarr_time_slice_index is None:
+            tmp_data_2nd = xarray.open_mfdataset(fname_lst_2nd ,combine='by_coords',parallel = True)
+        else:
+            tmp_data_2nd = xarray.open_mfdataset(fname_lst_2nd ,combine='by_coords',parallel = True, preprocess=lambda ds: ds[{xarr_time_slice_var:slice(0,0+1)}]) 
         print ('xarray open_mfdataset 2nd, Finish',datetime.now())   
 
 
@@ -626,8 +642,12 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         UV_vec_2nd = False
         if (U_fname_lst_2nd is not None) & (V_fname_lst_2nd is not None):
             UV_vec_2nd = True
-            tmp_data_U_2nd = xarray.open_mfdataset(U_fname_lst_2nd, combine='by_coords',parallel = True) # , decode_cf=False)
-            tmp_data_V_2nd = xarray.open_mfdataset(V_fname_lst_2nd, combine='by_coords',parallel = True) # , decode_cf=False)
+            if xarr_time_slice_index is None:
+                tmp_data_U_2nd = xarray.open_mfdataset(U_fname_lst_2nd, combine='by_coords',parallel = True) # , decode_cf=False)
+                tmp_data_V_2nd = xarray.open_mfdataset(V_fname_lst_2nd, combine='by_coords',parallel = True) # , decode_cf=False)
+            else:
+                tmp_data_U_2nd = xarray.open_mfdataset(U_fname_lst_2nd, combine='by_coords',parallel = True, preprocess=lambda ds: ds[{xarr_time_slice_var:slice(0,0+1)}]) 
+                tmp_data_V_2nd = xarray.open_mfdataset(V_fname_lst_2nd, combine='by_coords',parallel = True, preprocess=lambda ds: ds[{xarr_time_slice_var:slice(0,0+1)}]) 
         
         print ('xarray open_mfdataset, finish 2nd U and V',datetime.now())
 
@@ -1095,7 +1115,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                 ylocval = normyloc*clylim.ptp() + clylim.min()
 
                 if (thin != 1):
-                    if config.upper() not in ['AMM7','AMM15', 'CO9P2', 'ORCA025','ORCA025EXT']:
+                    if config.upper() not in ['AMM7','AMM15', 'CO9P2', 'ORCA025','ORCA025EXT','GULF18']:
                         print('Thinning lon lat selection not programmed for ', config.upper())
                         pdb.set_trace()
 
@@ -3582,6 +3602,10 @@ def main():
         parser.add_argument('--clim_pair', type=str, required=False)
         parser.add_argument('--use_cmocean', type=str, required=False)
 
+        parser.add_argument('--xarr_time_slice_index', type=int, required=False)
+        parser.add_argument('--xarr_time_slice_var', type=str, required=False)
+
+
 
         parser.add_argument('--fig_dir', type=str, required=False, help = 'if absent, will default to $PWD/tmpfigs')
         parser.add_argument('--fig_lab', type=str, required=False, help = 'if absent, will default to figs')
@@ -3736,6 +3760,9 @@ def main():
 
         if args.fig_dir is None: args.fig_dir=script_dir + '/tmpfigs'
         if args.fig_lab is None: args.fig_lab='figs'
+        if args.xarr_time_slice_var is None: args.xarr_time_slice_var='time_counter'
+
+
 
         if args.date_fmt is None: args.date_fmt='%Y%m%d'
 
@@ -3796,7 +3823,9 @@ def main():
             ii = args.ii, jj = args.jj, ti = args.ti, zz = args.zz, 
             lon_in = args.lon, lat_in = args.lat, date_in_ind = args.date_ind,
             var = args.var, z_meth = args.z_meth,
-            xlim = args.xlim,ylim = args.ylim,secdataset_proc = args.secdataset_proc,
+            xlim = args.xlim,ylim = args.ylim,
+            secdataset_proc = args.secdataset_proc,
+            xarr_time_slice_index = args.xarr_time_slice_index, xarr_time_slice_var= args.xarr_time_slice_var,
             fig_dir = args.fig_dir, fig_lab = args.fig_lab,fig_cutout = fig_cutout_in,
             verbose_debugging = verbose_debugging_in)
 
