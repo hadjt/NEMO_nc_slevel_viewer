@@ -13,7 +13,7 @@ import csv
 
 from NEMO_nc_slevel_viewer_lib import set_perc_clim_pcolor, get_clim_pcolor, set_clim_pcolor,set_perc_clim_pcolor_in_region,get_colorbar_values,scale_color_map,lon_lat_to_str
 from NEMO_nc_slevel_viewer_lib import interp1dmat_wgt, interp1dmat_create_weight, interp_UV_vel_to_Tgrid
-from NEMO_nc_slevel_viewer_lib import rotated_grid_from_amm15, reduce_rotamm15_grid,regrid_2nd_thin_params
+from NEMO_nc_slevel_viewer_lib import rotated_grid_from_amm15, reduce_rotamm15_grid,regrid_2nd_thin_params,regrid_iijj_ew_ns
 from NEMO_nc_slevel_viewer_lib import nearbed_int_index_val
 from NEMO_nc_slevel_viewer_lib import pea_TS
 from NEMO_nc_slevel_viewer_lib import load_nc_dims,load_nc_var_name_list
@@ -1660,10 +1660,23 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                     else:
                         ew_slice_dat_2 = np.ma.masked_invalid(data_inst_2[:,jj,:])
                 else:
+
                     if data_inst_2 is None: 
                         tmpdat_ew_slice = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti].load())[:,ew_jj_2nd_ind,ew_ii_2nd_ind].T
+
                     else: 
-                        tmpdat_ew_slice = np.ma.masked_invalid(data_inst_2[:,ew_jj_2nd_ind,ew_ii_2nd_ind].T)
+                        if regrid_meth == 1:
+                            tmpdat_ew_slice = np.ma.masked_invalid(data_inst_2[:,ew_jj_2nd_ind,ew_ii_2nd_ind].T)
+                        elif regrid_meth == 2:
+                            tmpdat_ew_slice = ((data_inst_2[:,ew_bl_jj_ind_final,ew_bl_ii_ind_final]* ew_wgt).sum(axis = 1)/ew_wgt.sum(axis = 0)).T
+
+
+                            tmp_data_inst_2_bl = data_inst_2[:,ew_bl_jj_ind_final,ew_bl_ii_ind_final]
+                            tmp_ew_wgt = ew_wgt.copy()
+                            tmp_ew_wgt.mask = tmp_ew_wgt.mask | tmp_data_inst_2_bl.mask
+                            tmpdat_ew_slice = ((tmp_data_inst_2_bl* tmp_ew_wgt).sum(axis = 1)/tmp_ew_wgt.sum(axis = 0)).T
+
+
                     tmpdat_ew_gdept=gdept_2nd[:,ew_jj_2nd_ind,ew_ii_2nd_ind].T
                     ew_slice_dat_2 = np.ma.zeros(curr_tmp_data.variables[var][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].shape[1::2])*np.ma.masked
                     #for i_i,(tmpdat,tmpz,tmpzorig) in enumerate(zip(tmpdat_ew_slice,tmpdat_ew_gdept,ew_slice_y.T)):ew_slice_dat_2[:,i_i] = np.ma.masked_invalid(np.interp(tmpzorig, tmpz, tmpdat))
@@ -1733,7 +1746,15 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                     if data_inst_2 is None: 
                         tmpdat_ns_slice = np.ma.masked_invalid(curr_tmp_data_2nd.variables[var][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][ti].load())[:,ns_jj_2nd_ind,ns_ii_2nd_ind].T
                     else:
-                        tmpdat_ns_slice = np.ma.masked_invalid(data_inst_2[:,ns_jj_2nd_ind,ns_ii_2nd_ind].T)
+                        #tmpdat_ns_slice = np.ma.masked_invalid(data_inst_2[:,ns_jj_2nd_ind,ns_ii_2nd_ind].T)
+
+                        if regrid_meth == 1:
+                            tmpdat_ns_slice = np.ma.masked_invalid(data_inst_2[:,ns_jj_2nd_ind,ns_ii_2nd_ind].T)
+                        elif regrid_meth == 2:
+                            tmp_data_inst_2_bl = data_inst_2[:,ns_bl_jj_ind_final,ns_bl_ii_ind_final]
+                            tmp_ns_wgt = ns_wgt.copy()
+                            tmp_ns_wgt.mask = tmp_ns_wgt.mask | tmp_data_inst_2_bl.mask
+                            tmpdat_ns_slice = ((tmp_data_inst_2_bl* tmp_ns_wgt).sum(axis = 1)/tmp_ns_wgt.sum(axis = 0)).T
 
                     tmpdat_ns_gdept = gdept_2nd[:,ns_jj_2nd_ind,ns_ii_2nd_ind].T
                     ns_slice_dat_2 = np.ma.zeros(curr_tmp_data.variables[var][:,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].shape[1:3])*np.ma.masked
@@ -2255,88 +2276,50 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
             if config_2nd is not None:
                 if ((config.upper() == 'AMM15') & (config_2nd.upper() == 'AMM7')) | ((config.upper() == 'AMM7') & (config_2nd.upper() == 'AMM15')):
 
+
                     if ((config.upper() == 'AMM7') & (config_2nd.upper() == 'AMM15')):
 
                         lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(nav_lon[jj,ii] ,nav_lat[jj,ii])
-                        ii_2nd_ind = np.minimum(np.maximum( np.round((lon_mat_rot- lon_rotamm15[thin_x0_2nd:thin_x1_2nd:thin_2nd].min())/(dlon_rotamm15*thin_2nd)).astype('int') ,0),nlon_rotamm15//thin_2nd-1)
-                        jj_2nd_ind = np.minimum(np.maximum( np.round((lat_mat_rot -lat_rotamm15[thin_y0_2nd:thin_y1_2nd:thin_2nd].min())/(dlat_rotamm15*thin_2nd)).astype('int') ,0),nlat_rotamm15//thin_2nd-1)
-                        if verbose_debugging: print('Converted ii jj coordinates', datetime.now())
                         ew_lon_mat_rot, ew_lat_mat_rot  = rotated_grid_from_amm15(nav_lon[jj,:],nav_lat[jj,:])
-                        ew_ii_2nd_ind = np.minimum(np.maximum( np.round((ew_lon_mat_rot- lon_rotamm15[thin_x0_2nd:thin_x1_2nd:thin_2nd].min())/(dlon_rotamm15*thin_2nd)).astype('int') ,0),nlon_rotamm15//thin_2nd-1)
-                        ew_jj_2nd_ind = np.minimum(np.maximum( np.round((ew_lat_mat_rot -lat_rotamm15[thin_y0_2nd:thin_y1_2nd:thin_2nd].min())/(dlat_rotamm15*thin_2nd)).astype('int') ,0),nlat_rotamm15//thin_2nd-1)
-                        if verbose_debugging: print('Converted ew coordinates', datetime.now())
                         ns_lon_mat_rot, ns_lat_mat_rot  = rotated_grid_from_amm15(nav_lon[:,ii],nav_lat[:,ii])
-                        ns_ii_2nd_ind = np.minimum(np.maximum( np.round((ns_lon_mat_rot- lon_rotamm15[thin_x0_2nd:thin_x1_2nd:thin_2nd].min())/(dlon_rotamm15*thin_2nd)).astype('int') ,0),nlon_rotamm15//thin_2nd-1)
-                        ns_jj_2nd_ind = np.minimum(np.maximum( np.round((ns_lat_mat_rot -lat_rotamm15[thin_y0_2nd:thin_y1_2nd:thin_2nd].min())/(dlat_rotamm15*thin_2nd)).astype('int') ,0),nlat_rotamm15//thin_2nd-1)
-                        if verbose_debugging: print('Converted ns coordinates', datetime.now())
+
+                        tmp_lon_arr = lon_rotamm15
+                        tmp_lat_arr = lat_rotamm15
+
+                        tmp_lon = lon_mat_rot
+                        tmp_lat = lat_mat_rot
+                        
+                        ns_tmp_lon_arr = ns_lon_mat_rot
+                        ns_tmp_lat_arr = ns_lat_mat_rot
+                        ew_tmp_lon_arr = ew_lon_mat_rot
+                        ew_tmp_lat_arr = ew_lat_mat_rot
 
 
                     elif ((config.upper() == 'AMM15') & (config_2nd.upper() == 'AMM7')):
 
+                        tmp_lon_arr = lon
+                        tmp_lat_arr = lat
 
-                        ii_2nd_ind = (np.abs(lon[thin_y0_2nd:thin_y1_2nd:thin_2nd] - nav_lon[jj,ii])).argmin()
-                        jj_2nd_ind = (np.abs(lat[thin_y0_2nd:thin_y1_2nd:thin_2nd] - nav_lat[jj,ii])).argmin()
-                        if verbose_debugging: print('Converted ii jj coordinates', datetime.now())
-                        dlon_thin = (lon[thin_y0_2nd:thin_y1_2nd:thin_2nd][1:] - lon[thin_y0_2nd:thin_y1_2nd:thin_2nd][:-1]).mean()
-                        dlat_thin = (lat[thin_y0_2nd:thin_y1_2nd:thin_2nd][1:] - lat[thin_y0_2nd:thin_y1_2nd:thin_2nd][:-1]).mean()
-                        nlon_thin = lon[thin_y0_2nd:thin_y1_2nd:thin_2nd].size
-                        nlat_thin = lat[thin_y0_2nd:thin_y1_2nd:thin_2nd].size
-
-
-                        ew_ii_2nd_ind = ((nav_lon[jj,:] - lon[thin_y0_2nd:thin_y1_2nd:thin_2nd][0])//dlon_thin).astype('int')
-                        ew_jj_2nd_ind = ((nav_lat[jj,:] - lat[thin_y0_2nd:thin_y1_2nd:thin_2nd][0])//dlat_thin).astype('int')
-
-                        ew_ii_2nd_ind = np.minimum( np.maximum(ew_ii_2nd_ind,0),nlon_thin-1)
-                        ew_jj_2nd_ind = np.minimum( np.maximum(ew_jj_2nd_ind,0),nlon_thin-1)
-
-                        if verbose_debugging: print('Converted ii jj coordinates', datetime.now())
-
-
-                        ns_ii_2nd_ind = ((nav_lon[:,ii] - lon[thin_y0_2nd:thin_y1_2nd:thin_2nd][0])//dlon_thin).astype('int')
-                        ns_jj_2nd_ind = ((nav_lat[:,ii] - lat[thin_y0_2nd:thin_y1_2nd:thin_2nd][0])//dlat_thin).astype('int')
-
-                        ns_ii_2nd_ind = np.minimum( np.maximum(ns_ii_2nd_ind,0),nlon_thin-1)
-                        ns_jj_2nd_ind = np.minimum( np.maximum(ns_jj_2nd_ind,0),nlon_thin-1)
-
-                        if verbose_debugging: print('Converted ns coordinates', datetime.now())
-
-                  
-                    '''
-                    tmpijind = np.sqrt((nav_lon_2nd - nav_lon[jj,ii])**2 + (nav_lat_2nd - nav_lat[jj,ii])**2)
-                    tmpijindargmin = tmpijind.argmin()
-                    ii_2nd_ind = tmpijindargmin%nav_lat_2nd.shape[1]
-                    jj_2nd_ind = tmpijindargmin//nav_lat_2nd.shape[1]
-                    dd_2nd_ind = tmpijind.min()
-
-                    if verbose_debugging: print('Converted ii jj coordinates', datetime.now())
-
-                    ew_ii_2nd_ind = []
-                    ew_jj_2nd_ind = []
-                    ew_dd_2nd_ind = []
-                    for tmplon1, tmplat1 in zip(nav_lon[jj,:],nav_lat[jj,:]): 
-                        tmpijind = np.sqrt((nav_lon_2nd - tmplon1)**2 + (nav_lat_2nd - tmplat1)**2)
-                        tmpijindargmin = tmpijind.argmin()
-                        ew_ii_2nd_ind.append(tmpijindargmin%nav_lat_2nd.shape[1])
-                        ew_jj_2nd_ind.append(tmpijindargmin//nav_lat_2nd.shape[1])
-                        ew_dd_2nd_ind.append(tmpijind.min())
-
-                    if verbose_debugging: print('Converted ew coordinates', datetime.now())
-
-                    ns_ii_2nd_ind = []
-                    ns_jj_2nd_ind = []
-                    ns_dd_2nd_ind = []
-                    for tmplon1, tmplat1 in zip(nav_lon[:,ii],nav_lat[:,ii]): 
-                        tmpijind = np.sqrt((nav_lon_2nd - tmplon1)**2 + (nav_lat_2nd - tmplat1)**2)
-                        tmpijindargmin = tmpijind.argmin()
-                        ns_ii_2nd_ind.append(tmpijindargmin%nav_lat_2nd.shape[1])
-                        ns_jj_2nd_ind.append(tmpijindargmin//nav_lat_2nd.shape[1])
-                        ns_dd_2nd_ind.append(tmpijind.min())
-
-                    if verbose_debugging: print('Converted ns coordinates', datetime.now())
-
+                        tmp_lon = nav_lon[jj,ii]
+                        tmp_lat = nav_lat[jj,ii]
+                        
+                        ns_tmp_lon_arr = ns_lon_mat_rot = nav_lon[:,ii]
+                        ns_tmp_lat_arr = ns_lat_mat_rot = nav_lat[:,ii]
+                        ew_tmp_lon_arr = ew_lon_mat_rot = nav_lon[jj,:]
+                        ew_tmp_lat_arr = ew_lat_mat_rot = nav_lat[jj,:]
                     
-                    '''
-            
+                    
+                    (ii_2nd_ind,jj_2nd_ind,
+                    ew_ii_2nd_ind,ew_jj_2nd_ind,
+                    ns_ii_2nd_ind,ns_jj_2nd_ind, 
+                    ew_bl_ii_ind_final,ew_bl_jj_ind_final,ew_wgt, 
+                    ns_bl_ii_ind_final,ns_bl_jj_ind_final,ns_wgt) = regrid_iijj_ew_ns(tmp_lon,tmp_lat,
+                        tmp_lon_arr, tmp_lat_arr, 
+                        ew_tmp_lon_arr,ew_tmp_lat_arr,
+                        ns_tmp_lon_arr,ns_tmp_lat_arr,
+                        thin_2nd,thin_y0_2nd,thin_y1_2nd,regrid_meth)
+                                        
+                    
                 
             if verbose_debugging: print('Reload data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now())
             if verbose_debugging: print('Reload map, ew, ns, hov, ts',reload_map,reload_ew,reload_ns,reload_hov,reload_ts, datetime.now())
@@ -3112,10 +3095,14 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                             func_but_text_han['regrid_meth'].set_text('Regrid: Bilin')
                             regrid_meth = 2
                             reload_map = True
+                            reload_ew = True
+                            reload_ns = True
                         elif regrid_meth == 2:
                             func_but_text_han['regrid_meth'].set_text('Regrid: NN')
                             regrid_meth = 1
                             reload_map = True
+                            reload_ew = True
+                            reload_ns = True
 
                     elif but_name == 'Contours':
                         if do_cont:
@@ -3131,8 +3118,8 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                             func_but_text_han['Grad'].set_text('Horiz Grad')
                             do_grad = 1
                             reload_map = True
-                            reload_ns = True
                             reload_ew = True
+                            reload_ns = True
                             reload_hov = True
                             reload_ts = True
                         elif do_grad == 1:
@@ -3141,8 +3128,8 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
                             do_grad = 2
                             reload_map = True
-                            reload_ns = True
                             reload_ew = True
+                            reload_ns = True
                             reload_hov = True
                             reload_ts = True
                         elif do_grad == 2:
@@ -3151,8 +3138,8 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
                             do_grad = 0
                             reload_map = True
-                            reload_ns = True
                             reload_ew = True
+                            reload_ns = True
                             reload_hov = True
                             reload_ts = True
  

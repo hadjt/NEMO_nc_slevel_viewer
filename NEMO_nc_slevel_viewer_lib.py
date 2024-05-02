@@ -1301,6 +1301,146 @@ def regrid_2nd_thin_params(amm_conv_dict,thin_2nd,thin_x0_2nd,thin_y0_2nd,nlon_a
     
     return NWS_amm_bl_jj_ind_out, NWS_amm_bl_ii_ind_out, NWS_amm_wgt_out, NWS_amm_nn_jj_ind_out, NWS_amm_nn_ii_ind_out
 
+def regrid_iijj_ew_ns(tmp_lon,tmp_lat,tmp_lon_arr, tmp_lat_arr,ew_tmp_lon_arr,ew_tmp_lat_arr,ns_tmp_lon_arr,ns_tmp_lat_arr,thin_2nd,thin_y0_2nd,thin_y1_2nd,regrid_meth):
+
+
+    # Convert jj,ii index from config grid to config_2nd grid
+    ii_2nd_ind = (np.abs(tmp_lon_arr[thin_y0_2nd:thin_y1_2nd:thin_2nd] - tmp_lon)).argmin()
+    jj_2nd_ind = (np.abs(tmp_lat_arr[thin_y0_2nd:thin_y1_2nd:thin_2nd] - tmp_lat)).argmin()
+
+    
+    # Find size and resolution of thinned config2 grid
+    dlon_thin = (tmp_lon_arr[thin_y0_2nd:thin_y1_2nd:thin_2nd][1:] - tmp_lon_arr[thin_y0_2nd:thin_y1_2nd:thin_2nd][:-1]).mean()
+    dlat_thin = (tmp_lat_arr[thin_y0_2nd:thin_y1_2nd:thin_2nd][1:] - tmp_lat_arr[thin_y0_2nd:thin_y1_2nd:thin_2nd][:-1]).mean()
+    nlon_thin = tmp_lon_arr[thin_y0_2nd:thin_y1_2nd:thin_2nd].size
+    nlat_thin = tmp_lat_arr[thin_y0_2nd:thin_y1_2nd:thin_2nd].size
+
+    # convert ew slice from config to config_2nd grid
+    ew_ii_2nd_ind = ((ew_tmp_lon_arr - tmp_lon_arr[thin_y0_2nd:thin_y1_2nd:thin_2nd][0])//dlon_thin).astype('int')
+    ew_jj_2nd_ind = ((ew_tmp_lat_arr - tmp_lat_arr[thin_y0_2nd:thin_y1_2nd:thin_2nd][0])//dlat_thin).astype('int')
+
+
+
+    # convert ew slice from config to config_2nd grid
+    ns_ii_2nd_ind = ((ns_tmp_lon_arr - tmp_lon_arr[thin_y0_2nd:thin_y1_2nd:thin_2nd][0])//dlon_thin).astype('int')
+    ns_jj_2nd_ind = ((ns_tmp_lat_arr - tmp_lat_arr[thin_y0_2nd:thin_y1_2nd:thin_2nd][0])//dlat_thin).astype('int')
+
+    #Trim the output ew/nw slice to be the size of the domain.
+    ew_ii_2nd_ind = np.minimum( np.maximum(ew_ii_2nd_ind,0),nlon_thin-1)
+    ew_jj_2nd_ind = np.minimum( np.maximum(ew_jj_2nd_ind,0),nlat_thin-1)
+
+    ns_ii_2nd_ind = np.minimum( np.maximum(ns_ii_2nd_ind,0),nlon_thin-1)
+    ns_jj_2nd_ind = np.minimum( np.maximum(ns_jj_2nd_ind,0),nlat_thin-1)
+
+
+    # If using bilinear regridding, calculate the ew and nw bilinear weighings. Don't run this if unneccessary
+    if regrid_meth == 2:
+
+        ## EW
+        ########################
+        # Floating point index
+        ew_flt_ii_ind = ((ew_tmp_lon_arr - tmp_lon_arr[thin_y0_2nd:thin_y1_2nd:thin_2nd][0])/dlon_thin)
+        ew_flt_jj_ind = ((ew_tmp_lat_arr - tmp_lat_arr[thin_y0_2nd:thin_y1_2nd:thin_2nd][0])/dlat_thin)
+
+        # initialise arrays
+        ew_lrbt_dist = np.zeros(((4,)+ew_flt_ii_ind.shape), dtype = 'float')
+        ew_wgt = np.ma.zeros(((4,)+ew_flt_ii_ind.shape), dtype = 'float')
+        ew_bl_ii_ind = np.zeros(((4,)+ew_flt_ii_ind.shape), dtype = 'int')
+        ew_bl_jj_ind = np.zeros(((4,)+ew_flt_ii_ind.shape), dtype = 'int')
+
+        # Convert floating point index into the corner grid boxes (bottom left, bottom right, top left, top right) 
+        ew_bl_ii_ind[0,:] = np.floor(ew_flt_ii_ind[:]).astype('int') # BL, BR, TL, TR
+        ew_bl_jj_ind[0,:] = np.floor(ew_flt_jj_ind[:]).astype('int') # BL, BR, TL, TR
+        ew_bl_ii_ind[1,:] = np.ceil( ew_flt_ii_ind[:]).astype('int') # BL, BR, TL, TR
+        ew_bl_jj_ind[1,:] = np.floor(ew_flt_jj_ind[:]).astype('int') # BL, BR, TL, TR
+        ew_bl_ii_ind[2,:] = np.floor(ew_flt_ii_ind[:]).astype('int') # BL, BR, TL, TR
+        ew_bl_jj_ind[2,:] = np.ceil( ew_flt_jj_ind[:]).astype('int') # BL, BR, TL, TR
+        ew_bl_ii_ind[3,:] = np.ceil( ew_flt_ii_ind[:]).astype('int') # BL, BR, TL, TR
+        ew_bl_jj_ind[3,:] = np.ceil( ew_flt_jj_ind[:]).astype('int') # BL, BR, TL, TR
+
+        # Find distance from the floating point index to the corners
+        ew_lrbt_dist[0,:] = (ew_flt_ii_ind[:] - ew_bl_ii_ind[0,:])/(ew_bl_ii_ind[1,:] - ew_bl_ii_ind[0,:]) # distance from left handside
+        ew_lrbt_dist[1,:] = (ew_bl_ii_ind[1,:] - ew_flt_ii_ind[:])/(ew_bl_ii_ind[1,:] - ew_bl_ii_ind[0,:]) # distance from right handside
+        ew_lrbt_dist[2,:] = (ew_flt_jj_ind[:] - ew_bl_jj_ind[0,:])/(ew_bl_jj_ind[2,:] - ew_bl_jj_ind[0,:]) # distance from bottom handside
+        ew_lrbt_dist[3,:] = (ew_bl_jj_ind[2,:] - ew_flt_jj_ind[:])/(ew_bl_jj_ind[2,:] - ew_bl_jj_ind[0,:]) # distance from top handside
+
+        # Create the weights
+        ew_wgt[0,:] = (ew_lrbt_dist[1,:]*ew_lrbt_dist[3,:]) # BL: dist to TR
+        ew_wgt[1,:] = (ew_lrbt_dist[0,:]*ew_lrbt_dist[3,:]) # BR: dist to TL
+        ew_wgt[2,:] = (ew_lrbt_dist[1,:]*ew_lrbt_dist[2,:]) # TL: dist to BR
+        ew_wgt[3,:] = (ew_lrbt_dist[0,:]*ew_lrbt_dist[2,:]) # TR: dist to BR
+
+        #mask weights for grid size.
+        ew_bl_jj_ind_final,ew_bl_ii_ind_final = ew_bl_jj_ind.copy(),ew_bl_ii_ind.copy()
+        ew_wgt[:,(ew_bl_jj_ind_final<0).any(axis = 0)] = np.ma.masked
+        ew_wgt[:,(ew_bl_ii_ind_final<0).any(axis = 0)] = np.ma.masked
+        ew_wgt[:,(ew_bl_jj_ind_final>=nlat_thin).any(axis = 0)] = np.ma.masked
+        ew_wgt[:,(ew_bl_ii_ind_final>=nlon_thin).any(axis = 0)] = np.ma.masked
+
+        ew_bl_jj_ind_final[ew_wgt.mask == True] = 0
+        ew_bl_ii_ind_final[ew_wgt.mask == True] = 0
+
+        ############################################################
+        # NB need to still mask weights when given real data. 
+        ############################################################
+
+
+
+        ## NS
+        ########################
+        # Floating point index
+        ns_flt_ii_ind = ((ns_tmp_lon_arr - tmp_lon_arr[thin_y0_2nd:thin_y1_2nd:thin_2nd][0])/dlon_thin)
+        ns_flt_jj_ind = ((ns_tmp_lat_arr - tmp_lat_arr[thin_y0_2nd:thin_y1_2nd:thin_2nd][0])/dlat_thin)
+
+        # initialise arrays
+        ns_lrbt_dist = np.zeros(((4,)+ns_flt_ii_ind.shape), dtype = 'float')
+        ns_wgt = np.ma.zeros(((4,)+ns_flt_ii_ind.shape), dtype = 'float')
+        ns_bl_ii_ind = np.zeros(((4,)+ns_flt_ii_ind.shape), dtype = 'int')
+        ns_bl_jj_ind = np.zeros(((4,)+ns_flt_ii_ind.shape), dtype = 'int')
+
+        # Convert floating point index into the corner grid boxes (bottom left, bottom right, top left, top right) 
+        ns_bl_ii_ind[0,:] = np.floor(ns_flt_ii_ind[:]).astype('int') # BL, BR, TL, TR
+        ns_bl_jj_ind[0,:] = np.floor(ns_flt_jj_ind[:]).astype('int') # BL, BR, TL, TR
+        ns_bl_ii_ind[1,:] = np.ceil( ns_flt_ii_ind[:]).astype('int') # BL, BR, TL, TR
+        ns_bl_jj_ind[1,:] = np.floor(ns_flt_jj_ind[:]).astype('int') # BL, BR, TL, TR
+        ns_bl_ii_ind[2,:] = np.floor(ns_flt_ii_ind[:]).astype('int') # BL, BR, TL, TR
+        ns_bl_jj_ind[2,:] = np.ceil( ns_flt_jj_ind[:]).astype('int') # BL, BR, TL, TR
+        ns_bl_ii_ind[3,:] = np.ceil( ns_flt_ii_ind[:]).astype('int') # BL, BR, TL, TR
+        ns_bl_jj_ind[3,:] = np.ceil( ns_flt_jj_ind[:]).astype('int') # BL, BR, TL, TR
+
+        # Find distance from the floating point index to the corners
+        ns_lrbt_dist[0,:] = (ns_flt_ii_ind[:] - ns_bl_ii_ind[0,:])/(ns_bl_ii_ind[1,:] - ns_bl_ii_ind[0,:]) # distance from left handside
+        ns_lrbt_dist[1,:] = (ns_bl_ii_ind[1,:] - ns_flt_ii_ind[:])/(ns_bl_ii_ind[1,:] - ns_bl_ii_ind[0,:]) # distance from right handside
+        ns_lrbt_dist[2,:] = (ns_flt_jj_ind[:] - ns_bl_jj_ind[0,:])/(ns_bl_jj_ind[2,:] - ns_bl_jj_ind[0,:]) # distance from bottom handside
+        ns_lrbt_dist[3,:] = (ns_bl_jj_ind[2,:] - ns_flt_jj_ind[:])/(ns_bl_jj_ind[2,:] - ns_bl_jj_ind[0,:]) # distance from top handside
+
+        # Create the weights
+        ns_wgt[0,:] = (ns_lrbt_dist[1,:]*ns_lrbt_dist[3,:]) # BL: dist to TR
+        ns_wgt[1,:] = (ns_lrbt_dist[0,:]*ns_lrbt_dist[3,:]) # BR: dist to TL
+        ns_wgt[2,:] = (ns_lrbt_dist[1,:]*ns_lrbt_dist[2,:]) # TL: dist to BR
+        ns_wgt[3,:] = (ns_lrbt_dist[0,:]*ns_lrbt_dist[2,:]) # TR: dist to BR
+
+        #mask weights for grid size.
+        ns_bl_jj_ind_final,ns_bl_ii_ind_final = ns_bl_jj_ind.copy(),ns_bl_ii_ind.copy()
+        ns_wgt[:,(ns_bl_jj_ind_final<0).any(axis = 0)] = np.ma.masked
+        ns_wgt[:,(ns_bl_ii_ind_final<0).any(axis = 0)] = np.ma.masked
+        ns_wgt[:,(ns_bl_jj_ind_final>=nlat_thin).any(axis = 0)] = np.ma.masked
+        ns_wgt[:,(ns_bl_ii_ind_final>=nlon_thin).any(axis = 0)] = np.ma.masked
+
+        ns_bl_jj_ind_final[ns_wgt.mask == True] = 0
+        ns_bl_ii_ind_final[ns_wgt.mask == True] = 0
+
+        ############################################################
+        # NB need to still mask weights when given real data. 
+        ############################################################
+
+
+    else:
+        ew_bl_ii_ind_final,ew_bl_jj_ind_final,ew_wgt, ns_bl_ii_ind_final,ns_bl_jj_ind_final,ns_wgt = 0,0,0,0,0,0
+
+
+
+    return ii_2nd_ind,jj_2nd_ind,ew_ii_2nd_ind,ew_jj_2nd_ind,ns_ii_2nd_ind,ns_jj_2nd_ind, ew_bl_ii_ind_final,ew_bl_jj_ind_final,ew_wgt, ns_bl_ii_ind_final,ns_bl_jj_ind_final,ns_wgt
 
 if __name__ == "__main__":
     main()
