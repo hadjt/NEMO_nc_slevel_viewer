@@ -1018,7 +1018,7 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
     #   create boxes with variable names as buttons to change variables. 
     climnorm = None # matplotlib.colors.LogNorm(0.005,0.1)
     
-    print('Creating Figure')
+    print('Creating Figure', datetime.now())
 
     ax = []
     pax = []
@@ -2596,8 +2596,8 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
         
         for i_i in range(1,len(init_timer)):print('Initialisation time %02i - %02i: %s - %s - %s '%(i_i-1,i_i,init_timer[i_i][0] - init_timer[i_i-1][0], init_timer[i_i-1][1], init_timer[i_i][1]))
         print()
-        print('Initialisation: total: %s'%(init_timer[-1][0] - init_timer[0][0]))
-        print()
+    print('Initialisation: total: %s'%(init_timer[-1][0] - init_timer[0][0]))
+    if verbose_debugging:print()
 
 
 
@@ -2607,7 +2607,7 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
         stage_timer[3] = datetime.now() # start while loop
         stage_timer_name[3] = 'Start loop'
 
-        print('do_cont:',do_cont)
+        
         #try:
         if True: 
             # extract plotting data (when needed), and subtract off difference files if necessary.
@@ -3158,13 +3158,14 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
             stage_timer[12] = datetime.now() #  redrawn
             stage_timer_name[12] = 'Redrawn'
 
-            if verbose_debugging:
-                if stage_timer_name[1] is not None:
+            if stage_timer_name[1] is not None:
+                if verbose_debugging:
                     print()
                     for i_i in range(2,12+1):print('Stage time %02i - %02i: %s - %s - %s '%(i_i-1,i_i,stage_timer[i_i] - stage_timer[i_i-1], stage_timer_name[i_i-1], stage_timer_name[i_i]))
                     print()
-                    print('Stage time 1 - 12: %s'%(stage_timer[12] - stage_timer[1]))
-                    print()
+            
+                print('Stage time 1 - 12: %s'%(stage_timer[12] - stage_timer[1]))
+                if verbose_debugging: print()
 
             
             #await click with ginput
@@ -4023,7 +4024,7 @@ def main():
                 pdb.set_trace()
 
         if args.hov_time is None:
-            hov_time_in=True
+            hov_time_in=False
         elif args.hov_time is not None:
             if args.hov_time.upper() in ['TRUE','T']:
                 hov_time_in = bool(True)
@@ -4080,7 +4081,7 @@ def main():
         if args.do_grad is None:do_grad_in=0
 
         if args.do_cont is None:
-            do_cont_in=True
+            do_cont_in=False
         elif args.do_cont is not None:
             if args.do_cont.upper() in ['TRUE','T']:
                 do_cont_in = bool(True)

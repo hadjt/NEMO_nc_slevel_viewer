@@ -466,7 +466,7 @@ def get_colorbar_values(cb, verbose = False):
     '''
 
 
-    print ('Think this is simpler with Python3')
+    #print ('Think this is simpler with Python3')
     return cb.ax.get_yticks()
     # cb = plt.colorbar()
 
