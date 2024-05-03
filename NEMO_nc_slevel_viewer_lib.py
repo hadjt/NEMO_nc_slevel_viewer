@@ -1442,5 +1442,18 @@ def regrid_iijj_ew_ns(tmp_lon,tmp_lat,tmp_lon_arr, tmp_lat_arr,ew_tmp_lon_arr,ew
 
     return ii_2nd_ind,jj_2nd_ind,ew_ii_2nd_ind,ew_jj_2nd_ind,ns_ii_2nd_ind,ns_jj_2nd_ind, ew_bl_ii_ind_final,ew_bl_jj_ind_final,ew_wgt, ns_bl_ii_ind_final,ns_bl_jj_ind_final,ns_wgt
 
+def vector_div(tmpU, tmpV, tmpdx, tmpdy):
+    div_out = (np.gradient(tmpU, axis=0)/tmpdx) + (np.gradient(tmpV, axis=1)/tmpdy)
+
+    return div_out
+
+
+
+def vector_curl(tmpU, tmpV, tmpdx, tmpdy):
+    curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
+
+    return curl_out
+
+
 if __name__ == "__main__":
     main()

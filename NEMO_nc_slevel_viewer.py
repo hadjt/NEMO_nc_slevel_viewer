@@ -18,6 +18,8 @@ from NEMO_nc_slevel_viewer_lib import nearbed_int_index_val
 from NEMO_nc_slevel_viewer_lib import pea_TS
 from NEMO_nc_slevel_viewer_lib import load_nc_dims,load_nc_var_name_list
 from NEMO_nc_slevel_viewer_lib import field_gradient_2d,weighted_depth_mean_masked_var
+from NEMO_nc_slevel_viewer_lib import vector_div, vector_curl
+
 
 letter_mat = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
 
@@ -371,6 +373,71 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
             tmp_data_U = xarray.open_mfdataset(U_fname_lst, combine='by_coords',parallel = True, preprocess=lambda ds: ds[{xarr_time_slice_var:slice(0,0+1)}]) 
             tmp_data_V = xarray.open_mfdataset(V_fname_lst, combine='by_coords',parallel = True, preprocess=lambda ds: ds[{xarr_time_slice_var:slice(0,0+1)}]) 
     
+
+    '''
+    pdb.set_trace()
+
+    tmpu = tmp_data_U.var
+    
+    map_dat_3d_U_1 = np.ma.masked_invalid(tmp_data_U.variables[tmp_var_U][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+    map_dat_3d_V_1 = np.ma.masked_invalid(tmp_data_V.variables[tmp_var_V][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+
+    F = [map_dat_3d_U_1,map_dat_3d_V_1]
+
+    tmpdiv = divergence(F)
+
+    e1t = rootgrp_gdept.variables[nce1t][0,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
+    e2t = rootgrp_gdept.variables[nce2t][0,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
+    e3t = rootgrp_gdept.variables[nce3t][0,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
+
+    tmpdiv1 =  (np.ma.diff(map_dat_3d_U_1, axis=0+1)/ e1t[:-1,:] )[:,:,:-1] + (np.ma.diff(map_dat_3d_V_1, axis=1+1)/ e2t[:,:-1])[:,:-1,:]
+    tmpdiv2 = (np.gradient(map_dat_3d_U_1, axis=0)/e1t) + (np.gradient(map_dat_3d_V_1, axis=1)/e2t)
+  
+
+    dudx = (map_dat_3d_U_1[:,:,:-2] - map_dat_3d_U_1[:,:,2:])/((e1t[:,:-2] + e1t[:,2:])/2)
+    dvdy = (map_dat_3d_V_1[:,:-2,:] - map_dat_3d_V_1[:,2:,:])/((e2t[:-2,:] + e2t[2:,:])/2)
+    tmpdiv3 = dudx[:,1:-1,:] + dvdy[:,:,1:-1] 
+
+
+
+tmpU, tmpV, tmpdx, tmpdy = map_dat_3d_U_1[0,:,:],map_dat_3d_V_1[0,:,:],e1t,e2t
+div_out = (np.gradient(tmpU, axis=0)/tmpdx) + (np.gradient(tmpV, axis=1)/tmpdy)
+curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
+
+       
+    ax = plt.subplot(1,3,1)
+    plt.pcolormesh(tmpdiv1[0])
+    plt.colorbar()
+    set_perc_clim_pcolor(5,95, sym = True)
+    plt.subplot(1,3,2, sharex = ax, sharey = ax)
+    plt.pcolormesh(tmpdiv2[0])
+    plt.colorbar()
+    set_perc_clim_pcolor(5,95, sym = True)
+    plt.subplot(1,3,3, sharex = ax, sharey = ax)
+    plt.pcolormesh(tmpdiv3[0])
+    plt.colorbar()
+    set_perc_clim_pcolor(5,95, sym = True)
+    plt.show()
+ 
+    ax = plt.subplot(1,3,1)
+    plt.pcolormesh(tmpdiv2[0])
+    plt.colorbar()
+    set_perc_clim_pcolor(5,95, sym = True)
+    plt.subplot(1,3,2, sharex = ax, sharey = ax)
+    plt.pcolormesh(div_out[0])
+    plt.colorbar()
+    set_perc_clim_pcolor(5,95, sym = True)
+    plt.subplot(1,3,3, sharex = ax, sharey = ax)
+    plt.pcolormesh(curl_out[0])
+    plt.colorbar()
+    set_perc_clim_pcolor(5,95, sym = True)
+    plt.show()
+
+
+    map_dat_UV_div_1 = (np.gradient(map_dat_3d_U_1, axis=0)/e1t) + (np.gradient(map_dat_3d_V_1, axis=1)/e2t)
+
+
+    '''
     init_timer.append((datetime.now(),'xarray open_mfdataset UV connected'))
     print ('xarray open_mfdataset, Finish U and V',datetime.now())
 
@@ -873,24 +940,26 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
 
     if ('vozocrtx' in var_mat) & ('vomecrty' in var_mat):
-        ss = 'baroc_mag'
-        var_mat = np.append(var_mat,ss)
-        if load_2nd_files:
-            if ('vozocrtx' in var_mat_2nd) & ('vomecrty' in var_mat_2nd):
-                var_mat_2nd = np.append(var_mat_2nd,ss)
-        var_dim[ss] = 4
-        var_grid[ss] = 'UV'
-        deriv_var.append(ss)
+        for ss in ['baroc_mag', 'baroc_div', 'baroc_curl']: 
+            #ss = 'baroc_mag'
+            var_mat = np.append(var_mat,ss)
+            if load_2nd_files:
+                if ('vozocrtx' in var_mat_2nd) & ('vomecrty' in var_mat_2nd):
+                    var_mat_2nd = np.append(var_mat_2nd,ss)
+            var_dim[ss] = 4
+            var_grid[ss] = 'UV'
+            deriv_var.append(ss)
 
     if ('ubar' in var_mat) & ('vbar' in var_mat):
-        ss = 'barot_mag'
-        var_mat = np.append(var_mat,ss)
-        if load_2nd_files:
-            if ('ubar' in var_mat_2nd) & ('vbar' in var_mat_2nd):
-                var_mat_2nd = np.append(var_mat_2nd,ss)
-        var_dim[ss] = 3
-        var_grid[ss] = 'UV'
-        deriv_var.append(ss)
+        for ss in ['barot_mag', 'barot_div', 'barot_curl']: 
+            #ss = 'barot_mag'
+            var_mat = np.append(var_mat,ss)
+            if load_2nd_files:
+                if ('ubar' in var_mat_2nd) & ('vbar' in var_mat_2nd):
+                    var_mat_2nd = np.append(var_mat_2nd,ss)
+            var_dim[ss] = 3
+            var_grid[ss] = 'UV'
+            deriv_var.append(ss)
 
 
     if ('N3n' in var_mat) & ('N1p' in var_mat):
@@ -1339,11 +1408,13 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                 del(map_dat_P_1)
             else:
                 data_inst_2 = data_inst_1
-        elif var == 'baroc_mag':
+        elif var in ['baroc_mag','baroc_div','baroc_curl']:
             
             map_dat_3d_U_1 = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
             map_dat_3d_V_1 = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-            data_inst_1 = np.sqrt(map_dat_3d_U_1**2 + map_dat_3d_V_1**2)
+            if    var == 'baroc_mag': data_inst_1 = np.sqrt(map_dat_3d_U_1**2 + map_dat_3d_V_1**2)
+            elif  var == 'baroc_div': data_inst_1 = vector_div(map_dat_3d_U_1, map_dat_3d_V_1,e1t,e2t)
+            elif var == 'baroc_curl': data_inst_1 = vector_curl(map_dat_3d_U_1, map_dat_3d_V_1,e1t,e2t)
             del(map_dat_3d_U_1)
             del(map_dat_3d_V_1)
 
@@ -1351,26 +1422,35 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                 map_dat_3d_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
                 map_dat_3d_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
                 data_inst_2 = np.sqrt(map_dat_3d_U_2**2 + map_dat_3d_V_2**2)
+                if    var == 'baroc_mag': data_inst_2 = np.sqrt(map_dat_3d_U_2**2 + map_dat_3d_V_2**2)
+                elif  var == 'baroc_div': data_inst_2 = vector_div(map_dat_3d_U_2, map_dat_3d_V_2,e1t,e2t)
+                elif var == 'baroc_curl': data_inst_2 = vector_curl(map_dat_3d_U_2, map_dat_3d_V_2,e1t,e2t)
                 del(map_dat_3d_U_2)
                 del(map_dat_3d_V_2)
             else:
                 data_inst_2 = data_inst_1
 
-
-        elif var == 'barot_mag':
+    
+        elif var in ['barot_mag','barot_div','barot_curl']:
+        #elif var == 'barot_mag':
             tmp_var_Ubar = 'ubar'
             tmp_var_Vbar = 'vbar'
             
             map_dat_2d_U_1 = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_Ubar][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
             map_dat_2d_V_1 = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_Vbar][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
-            data_inst_1 = np.sqrt(map_dat_2d_U_1**2 + map_dat_2d_V_1**2)
+            if    var == 'baroc_mag': data_inst_1 = np.sqrt(map_dat_2d_U_1**2 + map_dat_2d_V_1**2)
+            elif  var == 'baroc_div': data_inst_1 = vector_div(map_dat_2d_U_1, map_dat_2d_V_1,e1t,e2t)
+            elif var == 'baroc_curl': data_inst_1 = vector_curl(map_dat_2d_U_1, map_dat_2d_V_1,e1t,e2t)
             del(map_dat_2d_U_1)
             del(map_dat_2d_V_1)
 
             if load_2nd_files:
                 map_dat_2d_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_Ubar][ti,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
                 map_dat_2d_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_Vbar][ti,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
-                data_inst_2 = np.sqrt(map_dat_2d_U_2**2 + map_dat_2d_V_2**2)
+                #data_inst_2 = np.sqrt(map_dat_2d_U_2**2 + map_dat_2d_V_2**2)
+                if    var == 'baroc_mag': data_inst_2 = np.sqrt(map_dat_2d_U_2**2 + map_dat_2d_V_2**2)
+                elif  var == 'baroc_div': data_inst_2 = vector_div(map_dat_2d_U_2, map_dat_2d_V_2,e1t,e2t)
+                elif var == 'baroc_curl': data_inst_2 = vector_curl(map_dat_2d_U_2, map_dat_2d_V_2,e1t,e2t)
                 del(map_dat_2d_U_2)
                 del(map_dat_2d_V_2)
             else:
