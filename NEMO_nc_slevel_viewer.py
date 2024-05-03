@@ -74,7 +74,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     if U_fname_lst_2nd is not None: U_fname_lst_2nd = U_fname_lst_2nd[thin_files_0:thin_files_1:thin_files]
     if V_fname_lst_2nd is not None: V_fname_lst_2nd = V_fname_lst_2nd[thin_files_0:thin_files_1:thin_files]
 
-
+    axis_scale = 'Auto'
 
     if thin_x0 is None: thin_x0 = 0
     if thin_y0 is None: thin_y0 = 0
@@ -1008,6 +1008,23 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
                 nlat_rotamm15 = lat_rotamm15.size
 
 
+    # find variables common to both data sets, and use them for the buttons
+    
+    var_but_mat = var_mat.copy()
+    # If two datasets, find variables in both datasets
+    if load_2nd_files:   
+        var_but_mat = np.intersect1d(var_mat, var_mat_2nd)
+        
+        # sort them to match the order of the first dataset
+        var_but_mat_order = []
+        for var_but in var_but_mat:var_but_mat_order.append(np.where(var_mat == var_but )[0][0])
+        var_but_mat = var_but_mat[np.argsort(var_but_mat_order)]
+
+    nbutvar = var_but_mat.size
+
+
+    
+
     
     init_timer.append((datetime.now(),'AMM15 grid rotated'))
 
@@ -1040,7 +1057,7 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
     fig.suptitle(fig_tit_str_int + '\n' + fig_tit_str_lab, fontsize=14)
     fig.set_figheight(12)
     fig.set_figwidth(18)
-    if nvar <nvarbutcol:
+    if nbutvar <nvarbutcol:
         plt.subplots_adjust(top=0.88,bottom=0.1,left=0.09,right=0.91,hspace=0.2,wspace=0.065)
     else:
         plt.subplots_adjust(top=0.88,bottom=0.1,left=0.15,right=0.91,hspace=0.2,wspace=0.065)
@@ -1050,7 +1067,7 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
     hgap = 0.04
     dyhig = 0.17
     axwid = 0.4
-    if nvar <nvarbutcol:
+    if nbutvar <nvarbutcol:
         axwid = 0.39
         leftgap = 0.09
     else:
@@ -1109,16 +1126,6 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
     but_dy = 0.04
     but_ysp = 0.01 
 
-    var_but_mat = var_mat.copy()
-    # If two datasets, find variables in both datasets
-    if load_2nd_files:   
-        var_but_mat = np.intersect1d(var_mat, var_mat_2nd)
-        
-        # sort them to match the order of the first dataset
-        var_but_mat_order = []
-        for var_but in var_but_mat:var_but_mat_order.append(np.where(var_mat == var_but )[0][0])
-        var_but_mat = var_but_mat[np.argsort(var_but_mat_order)]
-
 
     but_extent = {}
     but_line_han,but_text_han = {},{}
@@ -1148,7 +1155,7 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
 
     mode_name_lst = ['Click','Loop']
 
-    func_names_lst = ['Hov/Time','ColScl','Reset zoom', 'Zoom', 'Clim: Reset','Clim: Zoom','Clim: Expand','Clim: pair','Clim: sym','Surface', 'Near-Bed', 'Surface-Bed','Depth-Mean','Depth level','Contours','Grad','Save Figure','Quit']
+    func_names_lst = ['Hov/Time','ColScl','Reset zoom', 'Zoom', 'Axis','Clim: Reset','Clim: Zoom','Clim: Expand','Clim: pair','Clim: sym','Surface', 'Near-Bed', 'Surface-Bed','Depth-Mean','Depth level','Contours','Grad','Save Figure','Quit']
 
     if load_2nd_files == False:
         func_names_lst.remove('Clim: pair')
@@ -1227,6 +1234,8 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
         func_but_text_han['Grad'].set_text('Grad')
 
     func_but_text_han['ColScl'].set_text('Col: Linear')
+
+    func_but_text_han['Axis'].set_text('Axis: Auto')
 
     init_timer.append((datetime.now(),'Added functions boxes'))
 
@@ -3398,6 +3407,21 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
                                     cur_ylim = np.array([nav_lat[zoom0_jj,zoom0_ii],nav_lat[zoom1_jj,zoom1_ii]])
                                 
                                             
+                    elif but_name == 'Axis':
+                        if axis_scale == 'Auto':
+
+                            func_but_text_han['Axis'].set_text('Axis: Equal')
+                            ax[0].axis('equal')
+                            axis_scale = 'Equal'
+                        elif axis_scale == 'Equal':
+
+                            func_but_text_han['Axis'].set_text('Axis: Auto')
+                            axis_scale = 'Auto'
+                            ax[0].axis('auto')
+                            #cur_xlim = np.array([nav_lon.min(),nav_lon.max()])
+                            #cur_ylim = np.array([nav_lat.min(),nav_lat.max()])
+
+
                     elif but_name == 'Clim: Reset':
                         clim = None
                     
@@ -3481,6 +3505,7 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
                         else:
                             func_but_text_han['Contours'].set_color('darkgreen')
                             do_cont = True
+
 
                     elif but_name == 'Grad':
                         if do_grad == 0:
