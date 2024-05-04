@@ -1359,6 +1359,7 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
                     else:
                         print('config not supported:', config)
                         pdb.set_trace()
+                    sel_zz = int( (1-normyloc)*clylim.ptp() + clylim.min() )
                     
                     
                 elif ai in [2]:
@@ -1375,6 +1376,7 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
                     else:
                         print('config not supported:', config)
                         pdb.set_trace()
+                    sel_zz = int( (1-normyloc)*clylim.ptp() + clylim.min() )
 
                 elif ai in [3]:
                     # if in hov/time series, change map, and slices
@@ -2959,7 +2961,7 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
             if verbose_debugging: print('Set x y lims', datetime.now())
 
             # set minimum depth if keyword set
-            xlim_min = 1
+            zlim_min = 1
             if zlim_max == None:
                 tmpew_xlim = ax[1].get_xlim()
                 tmpns_xlim = ax[2].get_xlim()
@@ -2967,13 +2969,13 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
                 tmpns_visible_ind = (ns_slice_x>=tmpns_xlim[0]) & (ns_slice_x<=tmpns_xlim[1]) 
 
 
-                ax[1].set_ylim([ew_slice_y[:,tmpew_visible_ind].max(),xlim_min])
-                ax[2].set_ylim([ns_slice_y[:,tmpns_visible_ind].max(),xlim_min])
-                ax[3].set_ylim([hov_y.max(),xlim_min])
+                ax[1].set_ylim([ew_slice_y[:,tmpew_visible_ind].max(),zlim_min])
+                ax[2].set_ylim([ns_slice_y[:,tmpns_visible_ind].max(),zlim_min])
+                ax[3].set_ylim([hov_y.max(),zlim_min])
             else:
-                ax[1].set_ylim([zlim_max,xlim_min])
-                ax[2].set_ylim([zlim_max,xlim_min])
-                ax[3].set_ylim([np.minimum(zlim_max,hov_y.max()),xlim_min])
+                ax[1].set_ylim([zlim_max,zlim_min])
+                ax[2].set_ylim([zlim_max,zlim_min])
+                ax[3].set_ylim([np.minimum(zlim_max,hov_y.max()),zlim_min])
 
 
             stage_timer[9] = datetime.now() #  starting clims
@@ -3377,11 +3379,34 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
                         # set xlim and ylim to max size possible from nav_lat and nav_lon
                         cur_xlim = np.array([nav_lon.min(),nav_lon.max()])
                         cur_ylim = np.array([nav_lat.min(),nav_lat.max()])
+                        zlim_max = None
                     elif but_name in 'Zoom':
                         # use ginput to take two clicks as zoom region. 
                         # only coded for main axes
                         
-                        
+                        plt.sca(clickax)
+                        tmpzoom0 = plt.ginput(1)
+                        zoom0_ax,zoom0_ii,zoom0_jj,zoom0_ti,zoom0_zz = indices_from_ginput_ax(tmpzoom0[0][0],tmpzoom0[0][1], thin = thin)
+                        if zoom0_ax in [1,2,3]:
+                            zlim_max = zoom0_zz
+                        elif zoom0_ax in [0]:
+                            tmpzoom1 = plt.ginput(1)
+                            zoom1_ax,zoom1_ii,zoom1_jj,zoom1_ti,zoom1_zz = indices_from_ginput_ax(tmpzoom1[0][0],tmpzoom1[0][1], thin = thin)
+                                
+                            if verbose_debugging: print(zoom0_ax,zoom0_ii,zoom0_jj,zoom0_ti,zoom0_zz)
+                            if verbose_debugging: print(zoom1_ax,zoom1_ii,zoom1_jj,zoom1_ti,zoom1_zz)
+                            if verbose_debugging: print(cur_xlim)
+                            if verbose_debugging: print(cur_ylim)
+                            # if both clicks in main axes, use clicks for the new x and ylims
+                            if (zoom0_ax is not None) & (zoom0_ax is not None):
+                                if zoom0_ax == zoom1_ax:
+                                    if zoom0_ax == 0:
+                                        cur_xlim = np.array([nav_lon[zoom0_jj,zoom0_ii],nav_lon[zoom1_jj,zoom1_ii]])
+                                        cur_ylim = np.array([nav_lat[zoom0_jj,zoom0_ii],nav_lat[zoom1_jj,zoom1_ii]])
+                                        cur_xlim.sort()
+                                        cur_ylim.sort()
+                                        
+                        '''
                         plt.sca(clickax)
                         tmpzoom = plt.ginput(2)
 
@@ -3405,7 +3430,7 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
                                 if zoom0_ax == 0:
                                     cur_xlim = np.array([nav_lon[zoom0_jj,zoom0_ii],nav_lon[zoom1_jj,zoom1_ii]])
                                     cur_ylim = np.array([nav_lat[zoom0_jj,zoom0_ii],nav_lat[zoom1_jj,zoom1_ii]])
-                                
+                        '''        
                                             
                     elif but_name == 'Axis':
                         if axis_scale == 'Auto':
