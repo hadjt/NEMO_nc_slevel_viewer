@@ -2708,6 +2708,13 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
             stage_timer[4] = datetime.now() # start data instance load, finished converting data location from config to config2
             stage_timer_name[4] = 'Load Instance'
 
+
+            #### Load data
+            ####    (if necess)
+            ###################################################################################################
+            ###          Preload data
+            ###################################################################################################
+
             if preload_data:
                 #print('reload_data_instances:',var,preload_data_var,(data_inst_1 is None),(preload_data_ti != ti),(preload_data_var != var))
                 #print('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ')
@@ -2717,6 +2724,12 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
                 #       if the variable has changed
                 if  (data_inst_1 is None)|(preload_data_ti != ti)|(preload_data_var != var):
                     data_inst_1,data_inst_2,preload_data_ti,preload_data_var= reload_data_instances()
+
+
+            
+            ###################################################################################################
+            ### Slice data for plotting 
+            ###################################################################################################
 
             #pdb.set_trace()
             stage_timer[5] = datetime.now() # start data dataload
@@ -2799,6 +2812,13 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
 
             stage_timer[6] = datetime.now() #  dataload reloaded
             stage_timer_name[6] = 'Data sliced'
+
+
+
+            
+            ###################################################################################################
+            ### Check colormaps 
+            ###################################################################################################
             
             if verbose_debugging: print('Choose cmap based on secdataset_proc:',secdataset_proc, datetime.now())
 
@@ -2819,9 +2839,13 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
                 print(secdataset_proc)
                 pdb.set_trace()
 
-            #plot data
-            pax = []
-        
+            
+            
+            ###################################################################################################
+            ### Choose which dataset to use
+            ###################################################################################################
+
+            pax = []        
             map_dat = map_dat_1
             if var_dim[var] == 4:
                 ns_slice_dat = ns_slice_dat_1
@@ -2860,6 +2884,9 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
                     ts_dat = ts_dat_2 - ts_dat_1
             
 
+            ###################################################################################################
+            ### Replot data 
+            ###################################################################################################
 
             
             stage_timer[7] = datetime.now() #  Starting Plotting data
@@ -2890,7 +2917,10 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
                     tsax   = ax[4].plot(ts_x,ts_dat_2,'b')
                     tsax2 = ax[4].plot(ts_x,ts_dat_1,'r', lw = 0.5)
 
-
+            
+            ###################################################################################################
+            ### Title String 
+            ###################################################################################################
             
             stage_timer[8] = datetime.now() #  Plotted data
             stage_timer_name[8] = 'Data Plotted'
@@ -2911,9 +2941,10 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
             ax[0].set_title(map_title_str)
             
 
+            ###################################################################################################
+            ### add colorbars axes and colorbars
+            ###################################################################################################
 
-            if verbose_debugging: print('Set limits ', datetime.now())
-            # add colorbars
             if verbose_debugging: print('add colorbars', datetime.now(), 'len(ax):',len(ax))            
             cax = []      
 
@@ -2935,6 +2966,12 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
                 for ai in [0]: cax.append(plt.colorbar(pax[ai], ax = ax[ai], cax = cbarax[ai]))
             if verbose_debugging: print('added colorbars', datetime.now(), 'len(ax):',len(ax),'len(cax):',len(cax))
             # apply xlim/ylim if keyword set
+
+            ###################################################################################################
+            ### Set x/ylims
+            ###################################################################################################
+
+
             if cur_xlim is not None:ax[0].set_xlim(cur_xlim)
             if cur_ylim is not None:ax[0].set_ylim(cur_ylim)
             if cur_xlim is not None:ax[1].set_xlim(cur_xlim)
@@ -2976,6 +3013,12 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
                 ax[1].set_ylim([zlim_max,zlim_min])
                 ax[2].set_ylim([zlim_max,zlim_min])
                 ax[3].set_ylim([np.minimum(zlim_max,hov_y.max()),zlim_min])
+
+
+        
+            ###################################################################################################
+            ### add color lims
+            ###################################################################################################
 
 
             stage_timer[9] = datetime.now() #  starting clims
@@ -3100,6 +3143,11 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
             stage_timer[10] = datetime.now() #  set clims
             stage_timer_name[10] = 'Set clim'
 
+    
+            ###################################################################################################
+            ### add current loc lines
+            ###################################################################################################
+
             if verbose_debugging: print('Plot location lines for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now())
             
             ## add lines to show current point. 
@@ -3117,6 +3165,13 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
             cs_line.append(ax[3].axhline(zz,color = '0.5', alpha = 0.5))
 
 
+
+
+            
+            ###################################################################################################
+            ### add dataset labels
+            ###################################################################################################
+
             if fig_fname_lab: tsaxtx1.set_text(fig_fname_lab)
 
             if load_2nd_files:                
@@ -3131,7 +3186,12 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
                     tsaxtx3.set_text(' ')
                     tsaxtx3.set_color('w')
 
-            conax = [] # define it out
+
+            
+            ###################################################################################################
+            ### add contours
+            ###################################################################################################
+            conax = [] # define it outside if statement
             if do_cont:
 
 
@@ -3150,12 +3210,14 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
                         conax.append(ax[3].contour(hov_x,hov_y,hov_dat,cont_val_lst[3], colors = contcols, linewidths = contlws, alphas = contalphas))
 
 
+            ###################################################################################################
+            ### Redraw canvas
+            ###################################################################################################
             if verbose_debugging: print('Canvas draw', datetime.now())
 
             stage_timer[11] = datetime.now() #  redraw
             stage_timer_name[11] = 'Redraw'
-            # Redraw canvas
-            #==================
+
             fig.canvas.draw()
             if verbose_debugging: print('Canvas flush', datetime.now())
             fig.canvas.flush_events()
@@ -3164,7 +3226,10 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
             # set current axes to hidden full screen axes for click interpretation
             plt.sca(clickax)
             
-
+    
+            ###################################################################################################
+            ### Runtime stats
+            ###################################################################################################
 
             stage_timer[12] = datetime.now() #  redrawn
             stage_timer_name[12] = 'Redrawn'
@@ -3184,6 +3249,9 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
             if verbose_debugging: print('mode', mode,'mouse_in_Click',mouse_in_Click,datetime.now())
             
 
+            ###################################################################################################
+            ### if click mode, ginput
+            ###################################################################################################
 
             if mode == 'Loop':
                 if mouse_in_Click:
@@ -3203,6 +3271,9 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
                 press_ginput = press_ginput
             else:
                 press_ginput = tmp_press
+
+
+
             if verbose_debugging: print('')
             if verbose_debugging: print('')
             if verbose_debugging: print('')
@@ -3211,8 +3282,16 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
             stage_timer[1] = datetime.now() # after button pressed
             stage_timer_name[1] = 'Button Pressed'
 
-            clii,cljj = press_ginput[0][0],press_ginput[0][1]
+            ###################################################################################################
+            ### Find where clicked
+            ###################################################################################################
 
+            clii,cljj = press_ginput[0][0],press_ginput[0][1]
+                
+            
+            ###################################################################################################
+            ### If justplot, hijack code
+            ###################################################################################################
 
             if justplot:
                 save_figure_funct()
@@ -3241,6 +3320,10 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
                 just_plt_cnt += 1
 
 
+            
+            ###################################################################################################
+            ### get and set current xylims
+            ###################################################################################################
 
 
 
@@ -3254,6 +3337,13 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
             ax[0].set_xlim(cur_xlim)
             ax[0].set_ylim(cur_ylim)
 
+
+
+            
+            
+            ###################################################################################################
+            ### Get click coords
+            ###################################################################################################
             #find clicked axes:
             is_in_axes = False
             
@@ -3269,6 +3359,9 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
             if sel_ax is not None :  is_in_axes = True 
 
             
+            ###################################################################################################
+            ### If axes clicked, change ind, decide what data to reload
+            ###################################################################################################
             if verbose_debugging: print('Interpret Mouse click: figure axes, location change', datetime.now())
 
             if sel_ax == 0:               
@@ -3338,6 +3431,13 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
             if verbose_debugging: print('Interpret Mouse click: Change Variable', datetime.now())
 
             
+            
+            ###################################################################################################
+            ### If var clicked, change var
+            ###################################################################################################
+
+
+            
             for but_name in but_extent.keys():
                 
                 but_pos_x0,but_pos_x1,but_pos_y0,but_pos_y1 = but_extent[but_name]
@@ -3367,6 +3467,10 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
                         reload_ns = True
                         reload_hov = True
                         reload_ts = True
+
+            ###################################################################################################
+            ### If function clicked, call function
+            ###################################################################################################
 
             if verbose_debugging: print('Interpret Mouse click: Functions', datetime.now())
             for but_name in func_but_extent.keys():
@@ -3651,6 +3755,10 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
 
             plt.sca(ax[0])
                     
+            
+            ###################################################################################################
+            ### remove contours, colorbars, images, lines, text, ready for next cycle
+            ###################################################################################################
 
             
             if verbose_debugging: print('Interpret Mouse click: remove lines and axes', datetime.now())
