@@ -1286,6 +1286,10 @@ def regrid_2nd_thin_params(amm_conv_dict,thin_2nd,thin_x0_2nd,thin_y0_2nd,nlon_a
     NWS_amm_wgt_post_thin_0[:,(NWS_amm_bl_ii_ind_final<0).any(axis = 0)] = np.ma.masked
     NWS_amm_wgt_post_thin_0[:,(NWS_amm_bl_jj_ind_final>=nlat_amm_2nd//thin_2nd).any(axis = 0)] = np.ma.masked
     NWS_amm_wgt_post_thin_0[:,(NWS_amm_bl_ii_ind_final>=nlon_amm_2nd//thin_2nd).any(axis = 0)] = np.ma.masked
+
+    #respect initial mask, so no extrapolation
+    NWS_amm_wgt_post_thin_0.mask = NWS_amm_wgt_post_thin_0.mask|amm_conv_dict['NWS_amm_wgt'].mask
+    
     # Mask indices where the weight is masked
     NWS_amm_bl_jj_ind_final[NWS_amm_wgt_post_thin_0.mask == True] = 0
     NWS_amm_bl_ii_ind_final[NWS_amm_wgt_post_thin_0.mask == True] = 0
@@ -1298,6 +1302,9 @@ def regrid_2nd_thin_params(amm_conv_dict,thin_2nd,thin_x0_2nd,thin_y0_2nd,nlon_a
     NWS_amm_wgt_out = NWS_amm_wgt_post_thin_0[:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
     NWS_amm_nn_jj_ind_out = NWS_amm_nn_jj_ind_final[thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
     NWS_amm_nn_ii_ind_out = NWS_amm_nn_ii_ind_final[thin_y0:thin_y1:thin,thin_x0:thin_x1:thin]
+
+
+    #pdb.set_trace()
     
     return NWS_amm_bl_jj_ind_out, NWS_amm_bl_ii_ind_out, NWS_amm_wgt_out, NWS_amm_nn_jj_ind_out, NWS_amm_nn_ii_ind_out
 

@@ -1451,8 +1451,8 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
             map_dat_3d_U_1 = np.ma.masked_invalid(curr_tmp_data_U.variables[tmp_var_U][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
             map_dat_3d_V_1 = np.ma.masked_invalid(curr_tmp_data_V.variables[tmp_var_V][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
             if    var == 'baroc_mag': data_inst_1 = np.sqrt(map_dat_3d_U_1**2 + map_dat_3d_V_1**2)
-            elif  var == 'baroc_div': data_inst_1 = vector_div(map_dat_3d_U_1, map_dat_3d_V_1,e1t,e2t)
-            elif var == 'baroc_curl': data_inst_1 = vector_curl(map_dat_3d_U_1, map_dat_3d_V_1,e1t,e2t)
+            elif  var == 'baroc_div': data_inst_1 = vector_div(map_dat_3d_U_1, map_dat_3d_V_1,e1t*thin,e2t*thin)
+            elif var == 'baroc_curl': data_inst_1 = vector_curl(map_dat_3d_U_1, map_dat_3d_V_1,e1t*thin,e2t*thin)
             del(map_dat_3d_U_1)
             del(map_dat_3d_V_1)
 
@@ -1462,8 +1462,8 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
                 data_inst_2 = np.sqrt(map_dat_3d_U_2**2 + map_dat_3d_V_2**2)
                 #pdb.set_trace()
                 if    var == 'baroc_mag': data_inst_2 = np.sqrt(map_dat_3d_U_2**2 + map_dat_3d_V_2**2)
-                elif  var == 'baroc_div': data_inst_2 = vector_div(map_dat_3d_U_2, map_dat_3d_V_2,e1t_2nd,e2t_2nd)
-                elif var == 'baroc_curl': data_inst_2 = vector_curl(map_dat_3d_U_2, map_dat_3d_V_2,e1t_2nd,e2t_2nd)
+                elif  var == 'baroc_div': data_inst_2 = vector_div(map_dat_3d_U_2, map_dat_3d_V_2,e1t_2nd,e2t_2nd*thin_2nd)
+                elif var == 'baroc_curl': data_inst_2 = vector_curl(map_dat_3d_U_2, map_dat_3d_V_2,e1t_2nd,e2t_2nd*thin_2nd)
                 del(map_dat_3d_U_2)
                 del(map_dat_3d_V_2)
             else:
@@ -2336,7 +2336,7 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
     def regrid_2nd(dat_in):
         start_regrid_timer = datetime.now()
 
-        #NWS_amm_bl_jj_ind_out, NWS_amm_bl_ii_ind_out, NWS_amm_wgt_out, NWS_amm_nn_jj_ind_out, NWS_amm_nn_ii_ind_out
+        NWS_amm_bl_jj_ind_out, NWS_amm_bl_ii_ind_out, NWS_amm_wgt_out, NWS_amm_nn_jj_ind_out, NWS_amm_nn_ii_ind_out
 
         if config_2nd is None:
             dat_out = dat_in
@@ -2345,13 +2345,13 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
                 print('thin_x0 and thin_y0 must equal 0, if not, need to work out thinning code in the regrid index method')
                 pdb.set_trace()
 
-
+            #pdb.set_trace()
 
             if regrid_meth == 1:
                 # Nearest Neighbour Interpolation   ~0.01 sec
                 #dat_out = dat_in[NWS_amm_nn_jj_ind_final,NWS_amm_nn_ii_ind_final]
                 dat_out = dat_in[NWS_amm_nn_jj_ind_out,NWS_amm_nn_ii_ind_out]
-               
+                dat_out.mask = dat_out.mask|NWS_amm_wgt_out.mask.sum(axis =0)
 
             elif regrid_meth == 2:
                 # Bilinear Interpolation            ~0.2sec
