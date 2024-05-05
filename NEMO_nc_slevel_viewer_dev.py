@@ -540,9 +540,13 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
     if load_2nd_files:
         #pdb.set_trace()
         if config_2nd is None:
+            e1t_2nd = rootgrp_gdept_2nd.variables[nce1t][0,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
+            e2t_2nd = rootgrp_gdept_2nd.variables[nce2t][0,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
             e3t_2nd = rootgrp_gdept_2nd.variables[nce3t][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
             gdept_2nd = rootgrp_gdept_2nd.variables[ncgdept][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
         else:
+            e1t_2nd = rootgrp_gdept_2nd.variables[nce1t][0,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
+            e2t_2nd = rootgrp_gdept_2nd.variables[nce2t][0,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
             e3t_2nd = rootgrp_gdept_2nd.variables[nce3t][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
             gdept_2nd = rootgrp_gdept_2nd.variables[config_fnames_dict[config_2nd]['ncgdept']][0,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
 
@@ -1456,9 +1460,10 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
                 map_dat_3d_U_2 = np.ma.masked_invalid(curr_tmp_data_U_2nd.variables[tmp_var_U][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
                 map_dat_3d_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_V][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
                 data_inst_2 = np.sqrt(map_dat_3d_U_2**2 + map_dat_3d_V_2**2)
+                #pdb.set_trace()
                 if    var == 'baroc_mag': data_inst_2 = np.sqrt(map_dat_3d_U_2**2 + map_dat_3d_V_2**2)
-                elif  var == 'baroc_div': data_inst_2 = vector_div(map_dat_3d_U_2, map_dat_3d_V_2,e1t,e2t)
-                elif var == 'baroc_curl': data_inst_2 = vector_curl(map_dat_3d_U_2, map_dat_3d_V_2,e1t,e2t)
+                elif  var == 'baroc_div': data_inst_2 = vector_div(map_dat_3d_U_2, map_dat_3d_V_2,e1t_2nd,e2t_2nd)
+                elif var == 'baroc_curl': data_inst_2 = vector_curl(map_dat_3d_U_2, map_dat_3d_V_2,e1t_2nd,e2t_2nd)
                 del(map_dat_3d_U_2)
                 del(map_dat_3d_V_2)
             else:
@@ -1483,8 +1488,8 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
                 map_dat_2d_V_2 = np.ma.masked_invalid(curr_tmp_data_V_2nd.variables[tmp_var_Vbar][ti,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
                 #data_inst_2 = np.sqrt(map_dat_2d_U_2**2 + map_dat_2d_V_2**2)
                 if    var == 'baroc_mag': data_inst_2 = np.sqrt(map_dat_2d_U_2**2 + map_dat_2d_V_2**2)
-                elif  var == 'baroc_div': data_inst_2 = vector_div(map_dat_2d_U_2, map_dat_2d_V_2,e1t,e2t)
-                elif var == 'baroc_curl': data_inst_2 = vector_curl(map_dat_2d_U_2, map_dat_2d_V_2,e1t,e2t)
+                elif  var == 'baroc_div': data_inst_2 = vector_div(map_dat_2d_U_2, map_dat_2d_V_2,e1t_2nd,e2t_2nd)
+                elif var == 'baroc_curl': data_inst_2 = vector_curl(map_dat_2d_U_2, map_dat_2d_V_2,e1t_2nd,e2t_2nd)
                 del(map_dat_2d_U_2)
                 del(map_dat_2d_V_2)
             else:
