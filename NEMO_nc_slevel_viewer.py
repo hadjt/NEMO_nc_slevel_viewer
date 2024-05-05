@@ -1172,7 +1172,12 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
     func_names_lst = ['Hov/Time','ColScl','Reset zoom', 'Zoom', 'Axis','Clim: Reset','Clim: Zoom','Clim: Expand','Clim: pair','Clim: sym','Surface', 'Near-Bed', 'Surface-Bed','Depth-Mean','Depth level','Contours','Grad','TS Diag','Save Figure','Quit']
 
 
-    if not add_TSProf:func_names_lst.remove('TS Diag')
+    if add_TSProf:
+        #ts_diag_coord = np.ma.ones(3)*np.ma.masked
+        figts = None
+    else:
+        func_names_lst.remove('TS Diag')
+        
 
     if load_2nd_files == False:
         func_names_lst.remove('Clim: pair')
@@ -3290,16 +3295,19 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
                 if justplot == False:
                     
                     #if verbose_debugging: print('justplot false, ginput:',justplot, datetime.now())
+                    
                     tmp_press = plt.ginput(1)
             # if tmp_press is empty (button press detected from another window, persist previous location. 
             #    Previously a empty array led to a continue, which led to the bug where additional colorbar were added
             if len(tmp_press) == 0:
                 press_ginput = press_ginput
+                button_press = False
             else:
                 press_ginput = tmp_press
+                button_press = True
 
 
-
+            print('button_press',button_press)
             if verbose_debugging: print('')
             if verbose_debugging: print('')
             if verbose_debugging: print('')
@@ -3582,102 +3590,111 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
 
 
                     elif but_name == 'TS Diag':
-                        secondary_fig = True
-                        #pdb.set_trace()
-                        tmp_T_data_1 = np.ma.masked_invalid(tmp_data.variables['votemper'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,jj,ii].load())
-                        tmp_S_data_1 = np.ma.masked_invalid(tmp_data.variables['vosaline'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,jj,ii].load())
-                        tmp_gdept_1 = gdept[:,jj,ii]
-                        tmp_mld1_data_1 = np.ma.masked
-                        tmp_mld2_data_1 = np.ma.masked
-                        if 'mld25h_1' in var_mat: tmp_mld1_data_1 = np.ma.masked_invalid(tmp_data.variables['mld25h_1'][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][jj,ii].load())
-                        if 'mld25h_2' in var_mat: tmp_mld2_data_1 = np.ma.masked_invalid(tmp_data.variables['mld25h_2'][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][jj,ii].load())
-
-                        tmp_T_data_2 = tmp_T_data_1.copy()*np.ma.masked
-                        tmp_S_data_2 = tmp_S_data_1.copy()*np.ma.masked
-                        tmp_mld1_data_2 = tmp_mld1_data_1.copy()*np.ma.masked
-                        tmp_mld2_data_2 = tmp_mld2_data_1.copy()*np.ma.masked
-
-
-
-                        if load_2nd_files:
-                            if config_2nd is None:
-                                if 'votemper' in var_mat_2nd:tmp_T_data_2   = np.ma.masked_invalid(tmp_data_2nd.variables['votemper'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,jj,ii].load())
-                                if 'vosaline' in var_mat_2nd:tmp_S_data_2   = np.ma.masked_invalid(tmp_data_2nd.variables['vosaline'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,jj,ii].load())
-                                if 'mld25h_1' in var_mat_2nd:tmp_mld1_data_2 = np.ma.masked_invalid(tmp_data_2nd.variables['mld25h_1'][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][jj,ii].load())
-                                if 'mld25h_2' in var_mat_2nd:tmp_mld2_data_2 = np.ma.masked_invalid(tmp_data_2nd.variables['mld25h_2'][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][jj,ii].load())
-
-                                tmp_gdept_2 = tmp_gdept_1
-                            else:
+                        if figts is not None:
+                            if plt.fignum_exists(figts.number):
+                                plt.close(figts)
                             
-                                if 'votemper' in var_mat_2nd:tmp_T_data_2 = np.ma.masked_invalid(tmp_data_2nd.variables['votemper'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,jj_2nd_ind,ii_2nd_ind].load())
-                                if 'vosaline' in var_mat_2nd:tmp_S_data_2 = np.ma.masked_invalid(tmp_data_2nd.variables['vosaline'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,jj_2nd_ind,ii_2nd_ind].load())
-                                if 'mld25h_1' in var_mat_2nd:tmp_mld1_data_2 = np.ma.masked_invalid(tmp_data_2nd.variables['mld25h_1'][ti,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][jj_2nd_ind,ii_2nd_ind].load())
-                                if 'mld25h_2' in var_mat_2nd:tmp_mld2_data_2 = np.ma.masked_invalid(tmp_data_2nd.variables['mld25h_2'][ti,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][jj_2nd_ind,ii_2nd_ind].load())
-                                tmp_gdept_2 =  gdept_2nd[:,jj_2nd_ind,ii_2nd_ind]               
 
-                        
-                        tmp_rho_data_1 = sw_dens(tmp_T_data_1,tmp_S_data_1)
-                        tmp_rho_data_2 = sw_dens(tmp_T_data_2,tmp_S_data_2)
+                        #pdb.set_trace()
+                        if button_press:
+                        #if ts_diag_coord.mask.all() 
+                        #    if ((ts_diag_coord == np.ma.array([ii,jj,ti])).all() == False):
+                            secondary_fig = True
+                            #pdb.set_trace()
+                            tmp_T_data_1 = np.ma.masked_invalid(tmp_data.variables['votemper'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,jj,ii].load())
+                            tmp_S_data_1 = np.ma.masked_invalid(tmp_data.variables['vosaline'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,jj,ii].load())
+                            tmp_gdept_1 = gdept[:,jj,ii]
+                            tmp_mld1_data_1 = np.ma.masked
+                            tmp_mld2_data_1 = np.ma.masked
+                            if 'mld25h_1' in var_mat: tmp_mld1_data_1 = np.ma.masked_invalid(tmp_data.variables['mld25h_1'][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][jj,ii].load())
+                            if 'mld25h_2' in var_mat: tmp_mld2_data_1 = np.ma.masked_invalid(tmp_data.variables['mld25h_2'][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][jj,ii].load())
 
-                        tmp_t_arr = np.arange(0,30,.1)
-                        tmp_s_arr = np.arange(15,40,.1)
+                            tmp_T_data_2 = tmp_T_data_1.copy()*np.ma.masked
+                            tmp_S_data_2 = tmp_S_data_1.copy()*np.ma.masked
+                            tmp_mld1_data_2 = tmp_mld1_data_1.copy()*np.ma.masked
+                            tmp_mld2_data_2 = tmp_mld2_data_1.copy()*np.ma.masked
 
-                        #tmp_t_mat,tmp_s_mat = np.meshgrid(tmp_t_arr,tmp_s_arr)
-                        tmp_s_mat,tmp_t_mat = np.meshgrid(tmp_s_arr,tmp_t_arr)
-                        tmp_rho_mat = sw_dens(tmp_t_mat,tmp_s_mat)
-                        
 
-                        figts = plt.figure()
-                        figts.set_figheight(8)
-                        figts.set_figwidth(6)
-                        axsp = figts.add_axes([0.1, 0.10, 0.3,  0.75])
-                        axts = figts.add_axes([0.5, 0.55, 0.4,  0.30])
-                        plt.subplots_adjust(top=0.8,bottom=0.11,left=0.125,right=0.9,hspace=0.2,wspace=0.6)
-                        axsp.plot(tmp_S_data_1,tmp_gdept_1,'g')                          
-                        if load_2nd_files: axsp.plot(tmp_S_data_2,tmp_gdept_2,'g--')
-                        axsp.axhline(tmp_mld1_data_1, color = '0.5')
-                        axsp.axhline(tmp_mld2_data_1, color = '0.25')
-                        axsp.axhline(tmp_mld1_data_2, color = '0.5', ls = '--')
-                        axsp.axhline(tmp_mld2_data_2, color = '0.25', ls = '--')
-                        axsp.spines['bottom'].set_color('g')
-                        axsp.spines['top'].set_visible(False)
-                        axsp.set_xlabel('Salinity')  
-                        axsp.xaxis.label.set_color('g')
-                        axsp.tick_params(axis = 'x',colors = 'g')
-                        axsp.invert_yaxis()
-                        #
-                        axtp = axsp.twiny()
-                        axtp.plot(tmp_T_data_1,tmp_gdept_1,'r')
-                        if load_2nd_files: axtp.plot(tmp_T_data_2,tmp_gdept_2,'r--')
-                        axtp.set_xlabel('Temperature')
-                        axtp.spines['top'].set_color('r')
-                        axtp.tick_params(axis = 'x',colors = 'r')
-                        axtp.spines['bottom'].set_visible(False)
-                        axtp.xaxis.label.set_color('r')
-                        axrp = axsp.twiny()
-                        axrp.plot(tmp_rho_data_1,tmp_gdept_1,'b', lw = 0.5)
-                        if load_2nd_files: axrp.plot(tmp_rho_data_2,tmp_gdept_2,'b--', lw = 0.5)
-                        axrp.set_xlabel('Density')
-                        axrp.spines['top'].set_color('b')
-                        axrp.tick_params(axis = 'x',colors = 'b')
-                        axrp.spines['bottom'].set_visible(False)
-                        axrp.xaxis.label.set_color('b')
-                        axrp.spines['top'].set_position(('axes', 1.1))
-                        #
-                        axts.plot(tmp_S_data_1,tmp_T_data_1,'b')
-                        if load_2nd_files: axts.plot(tmp_S_data_2,tmp_T_data_2,'b--')
-                        axts.set_xlabel('Salinity')
-                        axts.set_ylabel('Temperature')
-                        tmprhoxlim = axts.get_xlim()
-                        tmprhoylim = axts.get_ylim()
-                        axts.contour(tmp_s_mat,tmp_t_mat,tmp_rho_mat, np.arange(0,50,0.1), colors = 'k', linewidths = 0.5, alphas = 0.5, linestyles = '--')
-                        axts.set_xlim(tmprhoxlim)
-                        axts.set_ylim(tmprhoylim)
-                        figts_lab_str = '%s\n\n%s\n\n%s'%(lon_lat_to_str(nav_lon[jj,ii],nav_lat[jj,ii])[0],time_datetime[ti],fig_fname_lab)
-                        if load_2nd_files: figts_lab_str = figts_lab_str + '\n\n%s (dashed)'%fig_fname_lab_2nd
-                        plt.text(0.5, 0.1, figts_lab_str, fontsize=14, transform=figts.transFigure, ha = 'left', va = 'bottom')
-                        figts.show()
 
+                            if load_2nd_files:
+                                if config_2nd is None:
+                                    if 'votemper' in var_mat_2nd:tmp_T_data_2   = np.ma.masked_invalid(tmp_data_2nd.variables['votemper'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,jj,ii].load())
+                                    if 'vosaline' in var_mat_2nd:tmp_S_data_2   = np.ma.masked_invalid(tmp_data_2nd.variables['vosaline'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,jj,ii].load())
+                                    if 'mld25h_1' in var_mat_2nd:tmp_mld1_data_2 = np.ma.masked_invalid(tmp_data_2nd.variables['mld25h_1'][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][jj,ii].load())
+                                    if 'mld25h_2' in var_mat_2nd:tmp_mld2_data_2 = np.ma.masked_invalid(tmp_data_2nd.variables['mld25h_2'][ti,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][jj,ii].load())
+
+                                    tmp_gdept_2 = tmp_gdept_1
+                                else:
+                                
+                                    if 'votemper' in var_mat_2nd:tmp_T_data_2 = np.ma.masked_invalid(tmp_data_2nd.variables['votemper'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,jj_2nd_ind,ii_2nd_ind].load())
+                                    if 'vosaline' in var_mat_2nd:tmp_S_data_2 = np.ma.masked_invalid(tmp_data_2nd.variables['vosaline'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,jj_2nd_ind,ii_2nd_ind].load())
+                                    if 'mld25h_1' in var_mat_2nd:tmp_mld1_data_2 = np.ma.masked_invalid(tmp_data_2nd.variables['mld25h_1'][ti,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][jj_2nd_ind,ii_2nd_ind].load())
+                                    if 'mld25h_2' in var_mat_2nd:tmp_mld2_data_2 = np.ma.masked_invalid(tmp_data_2nd.variables['mld25h_2'][ti,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][jj_2nd_ind,ii_2nd_ind].load())
+                                    tmp_gdept_2 =  gdept_2nd[:,jj_2nd_ind,ii_2nd_ind]               
+
+                            
+                            tmp_rho_data_1 = sw_dens(tmp_T_data_1,tmp_S_data_1)
+                            tmp_rho_data_2 = sw_dens(tmp_T_data_2,tmp_S_data_2)
+
+                            tmp_t_arr = np.arange(0,30,.1)
+                            tmp_s_arr = np.arange(15,40,.1)
+
+                            #tmp_t_mat,tmp_s_mat = np.meshgrid(tmp_t_arr,tmp_s_arr)
+                            tmp_s_mat,tmp_t_mat = np.meshgrid(tmp_s_arr,tmp_t_arr)
+                            tmp_rho_mat = sw_dens(tmp_t_mat,tmp_s_mat)
+                            
+
+                            figts = plt.figure()
+                            figts.set_figheight(8)
+                            figts.set_figwidth(6)
+                            axsp = figts.add_axes([0.1, 0.10, 0.3,  0.75])
+                            axts = figts.add_axes([0.5, 0.55, 0.4,  0.30])
+                            plt.subplots_adjust(top=0.8,bottom=0.11,left=0.125,right=0.9,hspace=0.2,wspace=0.6)
+                            axsp.plot(tmp_S_data_1,tmp_gdept_1,'g')                          
+                            if load_2nd_files: axsp.plot(tmp_S_data_2,tmp_gdept_2,'g--')
+                            axsp.axhline(tmp_mld1_data_1, color = '0.5')
+                            axsp.axhline(tmp_mld2_data_1, color = '0.25')
+                            axsp.axhline(tmp_mld1_data_2, color = '0.5', ls = '--')
+                            axsp.axhline(tmp_mld2_data_2, color = '0.25', ls = '--')
+                            axsp.spines['bottom'].set_color('g')
+                            axsp.spines['top'].set_visible(False)
+                            axsp.set_xlabel('Salinity')  
+                            axsp.xaxis.label.set_color('g')
+                            axsp.tick_params(axis = 'x',colors = 'g')
+                            axsp.invert_yaxis()
+                            #
+                            axtp = axsp.twiny()
+                            axtp.plot(tmp_T_data_1,tmp_gdept_1,'r')
+                            if load_2nd_files: axtp.plot(tmp_T_data_2,tmp_gdept_2,'r--')
+                            axtp.set_xlabel('Temperature')
+                            axtp.spines['top'].set_color('r')
+                            axtp.tick_params(axis = 'x',colors = 'r')
+                            axtp.spines['bottom'].set_visible(False)
+                            axtp.xaxis.label.set_color('r')
+                            axrp = axsp.twiny()
+                            axrp.plot(tmp_rho_data_1,tmp_gdept_1,'b', lw = 0.5)
+                            if load_2nd_files: axrp.plot(tmp_rho_data_2,tmp_gdept_2,'b--', lw = 0.5)
+                            axrp.set_xlabel('Density')
+                            axrp.spines['top'].set_color('b')
+                            axrp.tick_params(axis = 'x',colors = 'b')
+                            axrp.spines['bottom'].set_visible(False)
+                            axrp.xaxis.label.set_color('b')
+                            axrp.spines['top'].set_position(('axes', 1.1))
+                            #
+                            axts.plot(tmp_S_data_1,tmp_T_data_1,'b')
+                            if load_2nd_files: axts.plot(tmp_S_data_2,tmp_T_data_2,'b--')
+                            axts.set_xlabel('Salinity')
+                            axts.set_ylabel('Temperature')
+                            tmprhoxlim = axts.get_xlim()
+                            tmprhoylim = axts.get_ylim()
+                            axts.contour(tmp_s_mat,tmp_t_mat,tmp_rho_mat, np.arange(0,50,0.1), colors = 'k', linewidths = 0.5, alphas = 0.5, linestyles = '--')
+                            axts.set_xlim(tmprhoxlim)
+                            axts.set_ylim(tmprhoylim)
+                            figts_lab_str = '%s\n\n%s\n\n%s\n\n%s'%(lon_lat_to_str(nav_lon[jj,ii],nav_lat[jj,ii])[0],time_datetime[ti],fig_fname_lab,button_press)
+                            if load_2nd_files: figts_lab_str = figts_lab_str + '\n\n%s (dashed)'%fig_fname_lab_2nd
+                            plt.text(0.5, 0.1, figts_lab_str, fontsize=14, transform=figts.transFigure, ha = 'left', va = 'bottom')
+                            figts.show()
+                            #ts_diag_coord = np.ma.array([ii,jj,ti])
 
                     elif but_name == 'Clim: Zoom': 
 
