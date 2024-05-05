@@ -18,12 +18,12 @@ from NEMO_nc_slevel_viewer_lib import nearbed_int_index_val
 from NEMO_nc_slevel_viewer_lib import pea_TS
 from NEMO_nc_slevel_viewer_lib import load_nc_dims,load_nc_var_name_list
 from NEMO_nc_slevel_viewer_lib import field_gradient_2d,weighted_depth_mean_masked_var
-from NEMO_nc_slevel_viewer_lib import vector_div, vector_curl
+from NEMO_nc_slevel_viewer_lib import vector_div, vector_curl,sw_dens
 
 
 letter_mat = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
 
-
+import time
 import argparse
 import textwrap
 
@@ -38,6 +38,9 @@ warnings.filterwarnings("ignore")
 script_dir=os.path.dirname(os.path.realpath(__file__)) + '/'
 
 global fname_lst, fname_lst_2nd,var
+
+from matplotlib import rcParams
+rcParams['font.family'] = 'serif'
 
 def nemo_slice_zlev(fname_lst, config = 'amm7',  
     zlim_max = None,var = None,
@@ -1052,6 +1055,7 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
 
 
     nvarbutcol = 16 # 18
+    nvarbutcol = 22 # 18
 
     fig = plt.figure()
     fig.suptitle(fig_tit_str_int + '\n' + fig_tit_str_lab, fontsize=14)
@@ -1124,8 +1128,12 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
     func_but_x0 = 0.94
     func_but_dx1 = func_but_x1 -func_but_x0 
     but_dy = 0.04
+    but_dy = 0.03
     but_ysp = 0.01 
-
+    but_ysp = 0.01 
+    
+    but_dysp = but_dy + but_ysp 
+    
 
     but_extent = {}
     but_line_han,but_text_han = {},{}
@@ -1140,13 +1148,14 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
 
             but_x0 = 0.01 + 0.06
             but_x1 = 0.06 + 0.06
-            
+      
+
         #note button extends (as in position.x0,x1, y0, y1)
-        but_extent[var_dat] = np.array([but_x0,but_x1,0.9 - (but_dy + vi*0.05),0.9 - (0 + vi_num*0.05)])
+        but_extent[var_dat] = np.array([but_x0,but_x1,0.9 - (but_dy + vi*but_dysp),0.9 - (0 + vi_num*but_dysp)])
         #add button box
-        but_line_han[var_dat] = clickax.plot([but_x0,but_x1,but_x1,but_x0,but_x0],0.9 - (np.array([0,0,but_dy,but_dy,0]) + vi_num*0.05),color = tmpcol)
+        but_line_han[var_dat] = clickax.plot([but_x0,but_x1,but_x1,but_x0,but_x0],0.9 - (np.array([0,0,but_dy,but_dy,0]) + vi_num*but_dysp),color = tmpcol)
         #add button names
-        but_text_han[var_dat] = clickax.text((but_x0+but_x1)/2,0.9 - ((but_dy/2) + vi_num*0.05),var_dat, ha = 'center', va = 'center')
+        but_text_han[var_dat] = clickax.text((but_x0+but_x1)/2,0.9 - ((but_dy/2) + vi_num*but_dysp),var_dat, ha = 'center', va = 'center')
 
 
     clickax.axis([0,1,0,1])
@@ -1155,7 +1164,7 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
 
     mode_name_lst = ['Click','Loop']
 
-    func_names_lst = ['Hov/Time','ColScl','Reset zoom', 'Zoom', 'Axis','Clim: Reset','Clim: Zoom','Clim: Expand','Clim: pair','Clim: sym','Surface', 'Near-Bed', 'Surface-Bed','Depth-Mean','Depth level','Contours','Grad','Save Figure','Quit']
+    func_names_lst = ['Hov/Time','ColScl','Reset zoom', 'Zoom', 'Axis','Clim: Reset','Clim: Zoom','Clim: Expand','Clim: pair','Clim: sym','Surface', 'Near-Bed', 'Surface-Bed','Depth-Mean','Depth level','Contours','Grad','TS Diag','Save Figure','Quit']
 
     if load_2nd_files == False:
         func_names_lst.remove('Clim: pair')
@@ -1179,7 +1188,8 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
     for vi,funcname in enumerate(func_names_lst): 
 
         #note button extends (as in position.x0,x1, y0, y1)
-        func_but_extent[funcname] = [func_but_x0,func_but_x1,0.9 - (but_dy + vi*0.05),0.9 - (0 + vi*0.05)]
+        #func_but_extent[funcname] = [func_but_x0,func_but_x1,0.95 - (but_dy + vi*0.05),0.95 - (0 + vi*0.05)]
+        func_but_extent[funcname] = [func_but_x0,func_but_x1,0.90 - (but_dy + vi*but_dysp),0.90 - (0 + vi*but_dysp)]
 
 
     for vi, tmp_funcname in enumerate(mode_name_secdataset_proc_list):
@@ -2610,7 +2620,7 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
     print('Initialisation: total: %s'%(init_timer[-1][0] - init_timer[0][0]))
     if verbose_debugging:print()
 
-
+    secondary_fig = None
 
 
     while ii is not None:
@@ -3253,6 +3263,11 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
             ### if click mode, ginput
             ###################################################################################################
 
+            '''
+            if secondary_fig is not None:
+                while plt.fignum_exists(figts.number):
+                     for i_i in range(1000): i_i
+            '''
             if mode == 'Loop':
                 if mouse_in_Click:
                     mode = 'Click'
@@ -3553,7 +3568,99 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
 
                     elif but_name == 'Clim: Reset':
                         clim = None
-                    
+
+
+                    elif but_name == 'TS Diag':
+                        secondary_fig = True
+                        #pdb.set_trace()
+                        tmp_T_data_1 = np.ma.masked_invalid(curr_tmp_data.variables['votemper'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,jj,ii].load())
+                        tmp_S_data_1 = np.ma.masked_invalid(curr_tmp_data.variables['vosaline'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,jj,ii].load())
+                        tmp_gdept_1 = gdept[:,jj,ii]
+
+                        if load_2nd_files:
+                            if config_2nd is None:
+                                tmp_T_data_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables['votemper'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,jj,ii].load())
+                                tmp_S_data_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables['vosaline'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin][:,jj,ii].load())
+                                tmp_gdept_2 = tmp_gdept_1
+                            else:
+                            
+                                tmp_T_data_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables['votemper'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,jj_2nd_ind,ii_2nd_ind].load())
+                                tmp_S_data_2 = np.ma.masked_invalid(curr_tmp_data_2nd.variables['vosaline'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd][:,jj_2nd_ind,ii_2nd_ind].load())
+                                tmp_gdept_2 =  gdept_2nd[:,jj_2nd_ind,ii_2nd_ind]               
+
+                        
+
+                        tmp_t_arr = np.arange(0,30,.1)
+                        tmp_s_arr = np.arange(15,40,.1)
+
+                        #tmp_t_mat,tmp_s_mat = np.meshgrid(tmp_t_arr,tmp_s_arr)
+                        tmp_s_mat,tmp_t_mat = np.meshgrid(tmp_s_arr,tmp_t_arr)
+                        tmp_rho_mat = sw_dens(tmp_t_mat,tmp_s_mat)
+                        
+                        #ax.append(fig.add_axes([leftgap + (axwid - cbwid - cbgap) + wgap, 0.73, axwid - cbwid - cbgap,  0.17]))
+                        
+
+
+
+
+                        figts = plt.figure()
+                        figts.set_figheight(8)
+                        figts.set_figwidth(6)
+                        axsp = figts.add_axes([0.1, 0.10, 0.3,  0.75])
+                        axts = figts.add_axes([0.5, 0.55, 0.4,  0.30])
+                        #figts.suptitle('TS profile and diagram', fontsize = 20 )
+                        figts.suptitle('TS profile and diagram\n%s: %s'%(lon_lat_to_str(nav_lon[jj,ii],nav_lat[jj,ii])[0],time_datetime[ti]), fontsize = 18 )
+                        plt.subplots_adjust(top=0.8,bottom=0.11,left=0.125,right=0.9,hspace=0.2,wspace=0.6)
+                        #axtp = plt.subplot(1,2,1)
+                        axsp.plot(tmp_S_data_1,-tmp_gdept_1,'g')                          
+                        if load_2nd_files: axsp.plot(tmp_S_data_2,-tmp_gdept_2,'g--')
+                        axsp.spines['bottom'].set_color('g')
+                        axsp.spines['top'].set_visible(False)
+                        axsp.set_xlim(tmp_S_data_1.min(),tmp_S_data_1.max())
+                        axsp.set_xlabel('S')  
+                        axsp.xaxis.label.set_color('g')
+                        axsp.tick_params(axis = 'x',colors = 'g')
+                        axtp = axsp.twiny()
+                        axtp.plot(tmp_T_data_1,-tmp_gdept_1,'r')
+                        if load_2nd_files: axtp.plot(tmp_T_data_2,-tmp_gdept_2,'r--')
+                        axtp.set_xlim(tmp_T_data_1.min(),tmp_T_data_1.max())
+                        axtp.set_xlabel('T')
+                        axtp.spines['top'].set_color('r')
+                        axtp.tick_params(axis = 'x',colors = 'r')
+                        axtp.spines['bottom'].set_visible(False)
+                        axtp.xaxis.label.set_color('r')
+                        #axts = plt.subplot(2,2,2)
+                        axts.plot(tmp_S_data_1,tmp_T_data_1,'b')
+                        if load_2nd_files: axts.plot(tmp_S_data_2,tmp_T_data_2,'b--')
+                        axts.set_xlabel('S')
+                        axts.set_ylabel('T')
+                        tmprhoxlim = axts.get_xlim()
+                        tmprhoylim = axts.get_ylim()
+                        axts.contour(tmp_s_mat,tmp_t_mat,tmp_rho_mat, np.arange(0,50,0.1), colors = 'k', linewidths = 0.5, alphas = 0.5, linestyles = '--')
+                        #axtp.axis('square')
+                        axts.set_xlim(tmprhoxlim)
+                        axts.set_ylim(tmprhoylim)
+
+
+
+                        plt.show(block = False)
+                        #time.sleep(5)
+                        '''
+                        try:
+                            tmptsclick = plt.ginput(1)
+                        except:
+                            print()
+
+
+
+
+
+
+
+
+
+
+                        '''
                     elif but_name == 'Clim: Zoom': 
 
 
@@ -3572,8 +3679,10 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
                             clim = np.log10(np.array([(10**clim).mean() - (10**clim).ptp(),(10**clim).mean() + (10**clim).ptp()]))
                         
                     
-                    elif but_name == 'Clim: perc': 
-                        clim = None
+                    #elif but_name == 'Clim: perc': 
+                    #    clim = None
+
+                    
 
 
                     elif but_name == 'Clim: pair':
