@@ -357,56 +357,6 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         xarr_dict['Dataset 1'][grid] = []
         xarr_dict['Dataset 2'][grid] = []
 
-
-    #if ld_lst is None:
-    #    tmp_data = xarray.open_mfdataset(fname_lst, combine='by_coords',parallel = True) # , decode_cf=False);# parallel = True
-    #else:
-    #    tmp_data = xarray.open_mfdataset(fname_lst, combine='by_coords',parallel = True, preprocess=lambda ds: ds[{ld_nctvar:slice(0,0+1)}])    #ds[{'time_counter':slice(0,0+1)}]
-    
-    '''
-    if ld_lst is not None:
-        if isinstance(ld_lst, int)):
-            ld_lst = ld_lst
-        elif isinstance(ld_lst, str)):
-            #ldi_mat = ld_lst # np.array(['-36','-12','012','036','060','084','108','132'])
-            #ldi_mat = np.array(ldi_lst)
-            ldi_lst = ld_lst.split(',')
-
-            #ldi_mat = np.array(['-36','-12','012','036','060','084','108','132'])
-            ldi_mat = np.array(ldi_lst)
-            nldi = ldi_mat.size
-    ld_lst ==ld_lst = '-36,-12,012,036,060,084,108,132'
-    ldi_lst = ld_lst.split(',')
-    ldi_mat = np.array(ldi_lst)
-    nldi = ldi_mat.size
-    ldi_ind_mat = np.arange(nldi)
-    '''
-
-    '''
-    if ld_lst is None:
-        nldi = 0
-    else:
-        if isinstance(ld_lst, int):
-            ldi_ind_mat = np.array(int(ld_lst))
-        elif isinstance(ld_lst, str):
-            ldi_lst = ld_lst.split(',')
-            ldi_ind_mat = np.array(ldi_lst)
-            nldi = ldi_ind_mat.size
-    
-    if ld_lst is None:
-        ld_lst = ['03i'%ii for ii in ldi_ind_mat]
-    
-
-    if (ld_lst is None) & (nldi == 0):
-        xarr_dict['Dataset 1']['T'].append(xarray.open_mfdataset(fname_lst, combine='by_coords',parallel = True))
-    #elif (nldi == 0):
-    #    xarr_dict['Dataset 1']['T'].append(xarray.open_mfdataset(fname_lst, combine='by_coords',parallel = True, preprocess=lambda ds: ds[{ld_nctvar:slice(ld_lst,ld_lst+1)}]))   
-    else:
-        for li,(ldi,ldilab) in enumerate(zip(ldi_ind_mat, ld_lab_mat)):xarr_dict['Dataset 1']['T'].append(xarray.open_mfdataset(fname_lst, combine='by_coords',parallel = True, preprocess=lambda ds: ds[{ld_nctvar:slice(ldi,ldi+1)}]))   
-
-
-    '''
-
     #pdb.set_trace()
     if ld_lst is None:
         nldi = 0
@@ -424,8 +374,6 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
     if nldi == 0:
         xarr_dict['Dataset 1']['T'].append(xarray.open_mfdataset(fname_lst, combine='by_coords',parallel = True))
-    #elif (nldi == 0):
-    #    xarr_dict['Dataset 1']['T'].append(xarray.open_mfdataset(fname_lst, combine='by_coords',parallel = True, preprocess=lambda ds: ds[{ld_nctvar:slice(ld_lst,ld_lst+1)}]))   
     else:
         for li,(ldi,ldilab) in enumerate(zip(ldi_ind_mat, ld_lab_mat)):xarr_dict['Dataset 1']['T'].append(xarray.open_mfdataset(fname_lst, combine='by_coords',parallel = True, preprocess=lambda ds: ds[{ld_nctvar:slice(ldi,ldi+1)}]))   
 
@@ -702,6 +650,7 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
     nice_varname_dict['pea'] = 'Potential Energy Anomaly'
     nice_varname_dict['peat'] = 'Potential Energy Anomaly (T component)'
     nice_varname_dict['peas'] = 'Potential Energy Anomaly (S component)'
+    nice_varname_dict['rho'] = 'Density'
 
     nice_varname_dict['baroc_mag'] = 'Baroclinic current magnitude'
     nice_varname_dict['barot_mag'] = 'Barotropic current magnitude'
@@ -1053,6 +1002,15 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
             deriv_var.append(ss)
 
 
+        for ss in ['rho']:
+            var_mat = np.append(var_mat,ss)
+            if load_2nd_files:
+                var_mat_2nd = np.append(var_mat_2nd,ss)
+            var_dim[ss] = 4
+            var_grid[ss] = 'T'
+            deriv_var.append(ss)
+
+
     if ('vozocrtx' in var_mat) & ('vomecrty' in var_mat):
         for ss in ['baroc_mag', 'baroc_div', 'baroc_curl']: 
             #ss = 'baroc_mag'
@@ -1138,7 +1096,7 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
     nbutvar = var_but_mat.size
 
 
-    
+    #pdb.set_trace()
 
     
     init_timer.append((datetime.now(),'AMM15 grid rotated'))
@@ -1630,43 +1588,39 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
 
             
             if load_2nd_files:
-            
-                if config_2nd is None:            
-                    tmp_T_data_2 = regrid_2nd(np.ma.masked_invalid(curr_tmp_data_2nd[ldi].variables['votemper'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load()))
-                    tmp_S_data_2 = regrid_2nd(np.ma.masked_invalid(curr_tmp_data_2nd[ldi].variables['vosaline'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load()))
-                    tmppea_2, tmppeat_2, tmppeas_2 = pea_TS(tmp_T_data_2[np.newaxis],tmp_S_data_2[np.newaxis],gdept_mat,dz_mat,calc_TS_comp = True ) 
+                tmp_T_data_2 = np.ma.masked_invalid(curr_tmp_data_2nd[ldi].variables['votemper'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                tmp_S_data_2 = np.ma.masked_invalid(curr_tmp_data_2nd[ldi].variables['vosaline'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                tmppea_2, tmppeat_2, tmppeas_2 = pea_TS(tmp_T_data_2[np.newaxis],tmp_S_data_2[np.newaxis],gdept_mat,dz_mat,calc_TS_comp = True ) 
 
 
-                    if var.upper() == 'PEA':
-                        map_dat_2 = tmppea_2[0]
-                    elif var.upper() == 'PEAT':
-                        map_dat_2 = tmppeat_2[0]
-                    elif var.upper() == 'PEAS':
-                        map_dat_2 = tmppeas_2[0]
-
-
-                else:
-
-                    
-                    gdept_mat_2nd = gdept_2nd[np.newaxis]
-                    dz_mat_2nd = e3t_2nd[np.newaxis] # rootgrp_gdept_2nd.variables[nce3t][:,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd]
-
-
-                    tmp_T_data_2 = np.ma.masked_invalid(curr_tmp_data_2nd[ldi].variables['votemper'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
-                    tmp_S_data_2 = np.ma.masked_invalid(curr_tmp_data_2nd[ldi].variables['vosaline'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
-                    #pdb.set_trace()
-                    tmppea_2, tmppeat_2, tmppeas_2 = pea_TS(tmp_T_data_2[np.newaxis],tmp_S_data_2[np.newaxis],gdept_mat_2nd,dz_mat_2nd,calc_TS_comp = True ) 
-                    
-
-                    if var.upper() == 'PEA':
-                        data_inst_2 = tmppea_2[0]
-                    elif var.upper() == 'PEAT':
-                        data_inst_2 = tmppeat_2[0]
-                    elif var.upper() == 'PEAS':
-                        data_inst_2 = tmppeas_2[0]
-
+                if var.upper() == 'PEA':
+                    data_inst_2 = tmppea_2[0]
+                elif var.upper() == 'PEAT':
+                    data_inst_2 = tmppeat_2[0]
+                elif var.upper() == 'PEAS':
+                    data_inst_2 = tmppeas_2[0]
             else:
                 data_inst_2 = data_inst_1
+
+
+
+
+        elif var.upper() in ['RHO']:
+
+            tmp_T_data_1 = np.ma.masked_invalid(curr_tmp_data[ldi].variables['votemper'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+            tmp_S_data_1 = np.ma.masked_invalid(curr_tmp_data[ldi].variables['vosaline'][ti,:,thin_y0:thin_y1:thin,thin_x0:thin_x1:thin].load())
+            data_inst_1 = sw_dens(tmp_T_data_1,tmp_S_data_1) 
+            
+            if load_2nd_files:
+                   
+                tmp_T_data_2 = np.ma.masked_invalid(curr_tmp_data_2nd[ldi].variables['votemper'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                tmp_S_data_2 = np.ma.masked_invalid(curr_tmp_data_2nd[ldi].variables['vosaline'][ti,:,thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd].load())
+                data_inst_2 = sw_dens(tmp_T_data_2,tmp_S_data_2) 
+                    
+            else:
+                data_inst_2 = data_inst_1
+
+
 
 
 
@@ -2448,8 +2402,6 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
     def regrid_2nd(dat_in):
         start_regrid_timer = datetime.now()
 
-        NWS_amm_bl_jj_ind_out, NWS_amm_bl_ii_ind_out, NWS_amm_wgt_out, NWS_amm_nn_jj_ind_out, NWS_amm_nn_ii_ind_out
-
         if config_2nd is None:
             dat_out = dat_in
         else:
@@ -2457,7 +2409,6 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
                 print('thin_x0 and thin_y0 must equal 0, if not, need to work out thinning code in the regrid index method')
                 pdb.set_trace()
 
-            #pdb.set_trace()
 
             if regrid_meth == 1:
                 # Nearest Neighbour Interpolation   ~0.01 sec
@@ -2467,12 +2418,6 @@ curl_out = (np.gradient(tmpV, axis=0)/tmpdx) - (np.gradient(tmpU, axis=1)/tmpdy)
 
             elif regrid_meth == 2:
                 # Bilinear Interpolation            ~0.2sec
-
-                #tmp_T_ind =  dat_in[NWS_amm_bl_jj_ind_final ,NWS_amm_bl_ii_ind_final ].copy()
-                #NWS_amm_wgt_post_thin_0.mask = NWS_amm_wgt_post_thin_0.mask | tmp_T_ind.mask
-                #
-                #dat_out = (tmp_T_ind*NWS_amm_wgt_post_thin_0).sum(axis = 0)/(NWS_amm_wgt_post_thin_0).sum(axis = 0)
-
 
                 dat_in_selected_corners =  dat_in[NWS_amm_bl_jj_ind_out ,NWS_amm_bl_ii_ind_out ].copy()
                 NWS_amm_wgt_out.mask = NWS_amm_wgt_out.mask | dat_in_selected_corners.mask
