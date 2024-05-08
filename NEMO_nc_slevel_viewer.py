@@ -23,7 +23,8 @@ from NEMO_nc_slevel_viewer_lib import vector_div, vector_curl,sw_dens,reload_dat
 
 from NEMO_nc_slevel_viewer_lib import reload_map_data_comb_zmeth_zindex,reload_map_data_comb_zmeth_ss_3d,reload_map_data_comb_zmeth_nb_df_zm_3d
 from NEMO_nc_slevel_viewer_lib import reload_map_data_comb_zmeth_zslice,reload_map_data_comb_2d,reload_map_data_comb,reload_ew_data_comb,reload_ns_data_comb
-from NEMO_nc_slevel_viewer_lib import reload_hov_data_comb,reload_ts_data_comb,regrid_2nd
+from NEMO_nc_slevel_viewer_lib import reload_hov_data_comb,reload_ts_data_comb
+from NEMO_nc_slevel_viewer_lib import regrid_2nd,grad_horiz_ns_data,grad_horiz_ew_data,grad_vert_ns_data,grad_vert_ew_data,grad_vert_hov_data
 
 
 letter_mat = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
@@ -44,9 +45,6 @@ script_dir=os.path.dirname(os.path.realpath(__file__)) + '/'
 
 global fname_lst, fname_lst_2nd,var
 
-#from matplotlib import rcParams
-#rcParams['font.family'] = 'serif'
-#from matplotlib import rcParams
 import matplotlib
 matplotlib.rcParams['font.family'] = 'serif'
 
@@ -87,39 +85,6 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     th['df'] = thin_files
     th['f0'] = thin_files_0
     th['f1'] = thin_files_1
-    '''
-    thin_files_0:thin_files_1:thin_files
-    th['f0']:th['f1']:th['df']
-
-    thin_x0_2nd:thin_x1_2nd:thin_2nd
-    thin_x0_2nd:thin_x1_2nd:thin_2nd
-    th['y0_2nd']:th['y1_2nd']:th['dy_2nd'],th['x0_2nd']:th['x1_2nd']:th['dx_2nd']
-    
-
-thin_y0_2nd:thin_y1_2nd:thin_2nd,thin_x0_2nd:thin_x1_2nd:thin_2nd
-th['y0_2nd']:th['y1_2nd']:th['dy_2nd'],th['x0_2nd']:th['x1_2nd']:th['dx_2nd']
-thin_y0:thin_y1:thin,thin_x0:thin_x1:thin
-th['y0']:th['y1']:th['dy'],th['x0']:th['x1']:th['dx']
-
-
-
-thin_y0_2nd:thin_y1_2nd:thin_2nd
-
-thin_x0_2nd:thin_x1_2nd:thin_2nd
-th['y0_2nd']:th['y1_2nd']:th['dy_2nd']
-
-th['x0_2nd']:th['x1_2nd']:th['dx_2nd']
-
-
-
-thin_y0:thin_y1:thin
-
-thin_x0:thin_x1:thin
-th['y0']:th['y1']:th['dy']
-
-th['x0']:th['x1']:th['dx']
-    '''
-
 
 
     
@@ -217,10 +182,6 @@ th['x0']:th['x1']:th['dx']
     time_varname_mat = ['time_counter'.upper(),'time'.upper()]
 
 
-
-
-
-
     if use_cmocean:
         
         import cmocean
@@ -273,12 +234,7 @@ th['x0']:th['x1']:th['dx']
     # if a secondary data set, give ability to change data sets. 
     secdataset_proc_list = ['Dataset 1', 'Dataset 2', 'Dat2-Dat1', 'Dat1-Dat2']
     if secdataset_proc is None: secdataset_proc = 'Dataset 1'
-    '''
-    if load_2nd_files:
-        if secdataset_proc is None: secdataset_proc = 'Dat2-Dat1'
-    else:
-        secdataset_proc = 'Dataset 1'
-    '''
+
     if load_2nd_files == False:
         clim_pair = False
     
@@ -365,17 +321,7 @@ th['x0']:th['x1']:th['dx']
 
     regrid_meth = 1
     regrid_params = None
-    '''
-    if config_2nd is not None:
 
-        thin_x0_2nd=0
-        thin_x1_2nd=None
-        thin_y0_2nd=0
-        thin_y1_2nd=None
-        #if thin_2nd is None:
-        #thin_2nd=1
-        
-    '''
     if config_2nd is not None:
 
         if (config.upper() in ['AMM7','AMM15']) & (config_2nd.upper() in ['AMM7','AMM15']):  
@@ -400,51 +346,23 @@ th['x0']:th['x1']:th['dx']
                 nlat_amm_2nd    = nlat_amm7
 
 
-
-
-
-
-
             elif (config.upper() == 'AMM7') & (config_2nd.upper() == 'AMM15'):
-
 
                 amm_conv_dict = {}
                 rootgrp = Dataset(config_fnames_dict[config_2nd]['regrid_amm15_amm7'], 'r')
                 for var_conv in rootgrp.variables.keys(): amm_conv_dict[var_conv] = rootgrp.variables[var_conv][:]
                 rootgrp.close()
-
-
     
                 nlon_amm        = nlon_amm7
                 nlat_amm        = nlat_amm7
                 nlon_amm_2nd    = nlon_amm15
                 nlat_amm_2nd    = nlat_amm15
 
-
-            '''
-            #(NWS_amm_bl_jj_ind_out, NWS_amm_bl_ii_ind_out, NWS_amm_wgt_out,
-            NWS_amm_nn_jj_ind_out, NWS_amm_nn_ii_ind_out) = regrid_2nd_thin_params(amm_conv_dict,
-                th['dx_2nd'],th['x0_2nd'],th['y0_2nd'],
-                nlon_amm,nlat_amm, 
-                nlon_amm_2nd,nlat_amm_2nd,
-                th['dx'],th['x0'],th['y0'],th['x1'],th['y1'])
-
-    
-
-            (NWS_amm_bl_jj_ind_out, NWS_amm_bl_ii_ind_out, NWS_amm_wgt_out,
-            NWS_amm_nn_jj_ind_out, NWS_amm_nn_ii_ind_out)
-            '''
             regrid_params = regrid_2nd_thin_params(amm_conv_dict,
                 th['dx_2nd'],th['x0_2nd'],th['y0_2nd'],
                 nlon_amm,nlat_amm, 
                 nlon_amm_2nd,nlat_amm_2nd,
                 th['dx'],th['x0'],th['y0'],th['x1'],th['y1'])
-
-    
-            
-
-
-
 
 
     init_timer.append((datetime.now(),'config 2 params'))
@@ -482,11 +400,7 @@ th['x0']:th['x1']:th['dx']
         xarr_dict['Dataset 1']['T'].append(xarray.open_mfdataset(fname_lst, combine='by_coords',parallel = True))
     else:
         for li,(ldi,ldilab) in enumerate(zip(ldi_ind_mat, ld_lab_mat)):xarr_dict['Dataset 1']['T'].append(xarray.open_mfdataset(fname_lst, combine='by_coords',parallel = True, preprocess=lambda ds: ds[{ld_nctvar:slice(ldi,ldi+1)}]))   
-
-
-
     ncvar_mat = [ss for ss in xarr_dict['Dataset 1']['T'][0].variables.keys()]
-
   
     init_timer.append((datetime.now(),'xarray open_mfdataset T connected'))
 
@@ -540,8 +454,6 @@ th['x0']:th['x1']:th['dx']
         nav_lat = np.ma.array(nav_lat[th['y0']:th['y1']:th['dy'],th['x0']:th['x1']:th['dx']])
         nav_lon = np.ma.array(nav_lon[th['y0']:th['y1']:th['dy'],th['x0']:th['x1']:th['dx']])
 
-        
-        
         
     elif config.upper() in ['CO9P2']: 
 
@@ -611,14 +523,8 @@ th['x0']:th['x1']:th['dx']
     grid_dict['Dataset 1']['e3t'] = rootgrp_gdept.variables[nce3t][0,:,th['y0']:th['y1']:th['dy'],th['x0']:th['x1']:th['dx']]
     grid_dict['Dataset 1']['gdept'] = rootgrp_gdept.variables[ncgdept][0,:,th['y0']:th['y1']:th['dy'],th['x0']:th['x1']:th['dx']]
 
-    #e1t = rootgrp_gdept.variables[nce1t][0,th['y0']:th['y1']:th['dy'],th['x0']:th['x1']:th['dx']]
-    #e2t = rootgrp_gdept.variables[nce2t][0,th['y0']:th['y1']:th['dy'],th['x0']:th['x1']:th['dx']]
-    #e3t = rootgrp_gdept.variables[nce3t][0,:,th['y0']:th['y1']:th['dy'],th['x0']:th['x1']:th['dx']]
-    #gdept = rootgrp_gdept.variables[ncgdept][0,:,th['y0']:th['y1']:th['dy'],th['x0']:th['x1']:th['dx']]
-
 
     nz = grid_dict['Dataset 1']['gdept'].shape[0]
-    #gdept_2nd = rootgrp_gdept_2nd.variables[ncgdept][0,:,th['y0_2nd']:th['y1_2nd']:th['dy_2nd'],th['x0_2nd']:th['x1_2nd']:th['dx_2nd']]
     if load_2nd_files:
         
 
@@ -632,19 +538,6 @@ th['x0']:th['x1']:th['dx']
         else:
             grid_dict['Dataset 2']['gdept'] = rootgrp_gdept_2nd.variables[config_fnames_dict[config_2nd]['ncgdept']][0,:,th['y0_2nd']:th['y1_2nd']:th['dy_2nd'],th['x0_2nd']:th['x1_2nd']:th['dx_2nd']]
 
-        '''
-        if config_2nd is None:
-            e1t_2nd = rootgrp_gdept_2nd.variables[nce1t][0,th['y0_2nd']:th['y1_2nd']:th['dy_2nd'],th['x0_2nd']:th['x1_2nd']:th['dx_2nd']]
-            e2t_2nd = rootgrp_gdept_2nd.variables[nce2t][0,th['y0_2nd']:th['y1_2nd']:th['dy_2nd'],th['x0_2nd']:th['x1_2nd']:th['dx_2nd']]
-            e3t_2nd = rootgrp_gdept_2nd.variables[nce3t][0,:,th['y0_2nd']:th['y1_2nd']:th['dy_2nd'],th['x0_2nd']:th['x1_2nd']:th['dx_2nd']]
-            gdept_2nd = rootgrp_gdept_2nd.variables[ncgdept][0,:,th['y0_2nd']:th['y1_2nd']:th['dy_2nd'],th['x0_2nd']:th['x1_2nd']:th['dx_2nd']]
-        else:
-            e1t_2nd = rootgrp_gdept_2nd.variables[nce1t][0,th['y0_2nd']:th['y1_2nd']:th['dy_2nd'],th['x0_2nd']:th['x1_2nd']:th['dx_2nd']]
-            e2t_2nd = rootgrp_gdept_2nd.variables[nce2t][0,th['y0_2nd']:th['y1_2nd']:th['dy_2nd'],th['x0_2nd']:th['x1_2nd']:th['dx_2nd']]
-            e3t_2nd = rootgrp_gdept_2nd.variables[nce3t][0,:,th['y0_2nd']:th['y1_2nd']:th['dy_2nd'],th['x0_2nd']:th['x1_2nd']:th['dx_2nd']]
-            gdept_2nd = rootgrp_gdept_2nd.variables[config_fnames_dict[config_2nd]['ncgdept']][0,:,th['y0_2nd']:th['y1_2nd']:th['dy_2nd'],th['x0_2nd']:th['x1_2nd']:th['dx_2nd']]
-
-        '''
 
     init_timer.append((datetime.now(),'gdept, e1t, e2t, e3t loaded'))
 
@@ -656,7 +549,6 @@ th['x0']:th['x1']:th['dx']
     var_4d_mat, var_3d_mat, var_mat, nvar4d, nvar3d, nvar, var_dim = load_nc_var_name_list(xarr_dict['Dataset 1']['T'][0], x_dim, y_dim, z_dim,t_dim)# find the variable names in the nc file
     var_grid = {}
     for ss in var_mat: var_grid[ss] = 'T'
-
 
 
     init_timer.append((datetime.now(),'var dims and names loaded'))
@@ -678,14 +570,6 @@ th['x0']:th['x1']:th['dx']
         
         for ss in U_var_mat: var_grid[ss] = 'U'
         for ss in V_var_mat: var_grid[ss] = 'V'
-        '''
-        if ('vozocrtx' in var_mat) & ('vomecrty' in var_mat):
-            ss = 'baroc_mag'
-            var_mat = np.append(var_mat,ss)
-            var_dim[ss] = 4
-            var_grid[ss] = 'UV'
-            deriv_var.append(ss)
-        '''
 
     
     init_timer.append((datetime.now(),'var dims and names loaded for UV'))
@@ -1008,32 +892,7 @@ th['x0']:th['x1']:th['dx']
             
             for ss in U_var_mat_2nd: var_grid_2nd[ss] = 'U'
             for ss in V_var_mat_2nd: var_grid_2nd[ss] = 'V'
-            '''
-            if ('vozocrtx' in var_mat_2nd) & ('vomecrty' in var_mat_2nd):
-                ss = 'baroc_mag'
-                var_mat_2nd = np.append(var_mat_2nd,ss)
-                var_dim_2nd[ss] = 4
-                var_grid_2nd[ss] = 'UV'
-                deriv_var_2nd.append(ss)
-            '''
-     
         init_timer.append((datetime.now(),'var dims and names 2nd loaded for UV'))
-    '''
-    add_PEA = False
-    if ('votemper' in var_mat) & ('vosaline' in var_mat):
-        add_PEA = True
-
-
-    if add_PEA:
-        for ss in ['pea','peat','peas']:
-            var_mat = np.append(var_mat,ss)
-            if load_2nd_files:
-                var_mat_2nd = np.append(var_mat_2nd,ss)
-            var_dim[ss] = 3
-            var_grid[ss] = 'T'
-            deriv_var.append(ss)
-
-    '''
 
     add_TSProf = False
     if ('votemper' in var_mat) & ('vosaline' in var_mat):
@@ -1444,7 +1303,7 @@ th['x0']:th['x1']:th['dx']
         in front of everything, and then use this function to turn those coordinates into the coordinates within the 
         the subplot, and the which axis/subplot it is
 
-
+ax,
         '''
         sel_ii,sel_jj,sel_ti ,sel_zz = None,None,None,None
         sel_ax = None
@@ -1652,90 +1511,6 @@ th['x0']:th['x1']:th['dx']
             pdb.set_trace()
 
 
-    def grad_horiz_ns_data():
-        ns_slice_dx =  th['dx']*((grid_dict['Dataset 1']['e2t'][2:,ii] +  grid_dict['Dataset 1']['e2t'][:-2,ii])/2 + grid_dict['Dataset 1']['e2t'][1:-1,ii])
-        dns_1 = ns_slice_dat_1[:,2:] - ns_slice_dat_1[:,:-2]
-        dns_2 = ns_slice_dat_2[:,2:] - ns_slice_dat_2[:,:-2]
-
-
-        ns_slice_dat_1[:,1:-1] = dns_1/ns_slice_dx#_1
-        ns_slice_dat_2[:,1:-1] = dns_2/ns_slice_dx#_2
-
-        ns_slice_dat_1[:,0] = np.ma.masked
-        ns_slice_dat_1[:,-1] = np.ma.masked
-        ns_slice_dat_2[:,0] = np.ma.masked
-        ns_slice_dat_2[:,-1] = np.ma.masked
-
-        return ns_slice_dat_1,ns_slice_dat_2
-
-
-    def grad_horiz_ew_data():
-        ew_slice_dx =  th['dx']*((grid_dict['Dataset 1']['e1t'][jj,2:] +  grid_dict['Dataset 1']['e1t'][jj,:-2])/2 + grid_dict['Dataset 1']['e1t'][jj,1:-1])
-        dew_1 = ew_slice_dat_1[:,2:] - ew_slice_dat_1[:,:-2]
-        dew_2 = ew_slice_dat_2[:,2:] - ew_slice_dat_2[:,:-2]
-
-        ew_slice_dat_1[:,1:-1] = dew_1/ew_slice_dx#_1
-        ew_slice_dat_2[:,1:-1] = dew_2/ew_slice_dx#_2
-
-        ew_slice_dat_1[:,0] = np.ma.masked
-        ew_slice_dat_1[:,-1] = np.ma.masked
-        ew_slice_dat_2[:,0] = np.ma.masked
-        ew_slice_dat_2[:,-1] = np.ma.masked
-
-        return ew_slice_dat_1, ew_slice_dat_2
-
-
-    def grad_vert_ns_data():
-        dns_1 = ns_slice_dat_1[2:,:] - ns_slice_dat_1[:-2,:]
-        dns_2 = ns_slice_dat_2[2:,:] - ns_slice_dat_2[:-2,:]
-        dns_z = ns_slice_y[2:,:] - ns_slice_y[:-2,:]
-
-
-
-
-        ns_slice_dat_1[1:-1,:] = dns_1/dns_z
-        ns_slice_dat_2[1:-1,:] = dns_2/dns_z
-        ns_slice_dat_1[ 0,:] = np.ma.masked
-        ns_slice_dat_1[-1,:] = np.ma.masked
-        ns_slice_dat_2[ 0,:] = np.ma.masked
-        ns_slice_dat_2[-1,:] = np.ma.masked
-
-        return ns_slice_dat_1,ns_slice_dat_2
-
-
-    def grad_vert_ew_data():
-        dew_1 = ew_slice_dat_1[2:,:] - ew_slice_dat_1[:-2,:]
-        dew_2 = ew_slice_dat_2[2:,:] - ew_slice_dat_2[:-2,:]
-        dew_z = ew_slice_y[2:,:] - ew_slice_y[:-2,:]
-
-        ew_slice_dat_1[1:-1,:] = dew_1/dew_z
-        ew_slice_dat_2[1:-1,:] = dew_2/dew_z
-
-        ew_slice_dat_1[ 0,:] = np.ma.masked
-        ew_slice_dat_1[-1,:] = np.ma.masked
-        ew_slice_dat_2[ 0,:] = np.ma.masked
-        ew_slice_dat_2[-1,:] = np.ma.masked
-
-        return ew_slice_dat_1, ew_slice_dat_2
-
-
-    def grad_vert_hov_data():
-
-
-        dhov_1 = hov_dat_1[2:,:] - hov_dat_1[:-2,:]
-        dhov_2 = hov_dat_2[2:,:] - hov_dat_2[:-2,:]
-        dhov_z = hov_y[2:] - hov_y[:-2]
-        hov_dat_1[1:-1,:] = (dhov_1.T/dhov_z).T
-        hov_dat_2[1:-1,:] = (dhov_2.T/dhov_z).T
-
-        hov_dat_1[ 0,:] = np.ma.masked
-        hov_dat_1[-1,:] = np.ma.masked
-        hov_dat_2[ 0,:] = np.ma.masked
-        hov_dat_2[-1,:] = np.ma.masked
-
-        return hov_dat_1,hov_dat_2
-
-
 
     ###########################################################################
     # Inner functions defined
@@ -1761,16 +1536,18 @@ th['x0']:th['x1']:th['dx']
 
 
     interp1d_wgtT, interp1d_wgtT_2nd = None, None
+    interp1d_ZwgtT = {}
+    interp1d_ZwgtT['Dataset 1'] = {}
+    interp1d_ZwgtT['Dataset 2'] = {}
+    
     if verbose_debugging: print('Create interpolation weights ', datetime.now())
     if z_meth_default == 'z_slice':
-        interp1d_wgtT = {}
-        interp1d_wgtT[0] = interp1dmat_create_weight(grid_dict['Dataset 1']['gdept'],0)
+        interp1d_ZwgtT['Dataset 1'][0] = interp1dmat_create_weight(grid_dict['Dataset 1']['gdept'],0)
 
         if config_2nd is None:
-            interp1d_wgtT_2nd = interp1d_wgtT
+            interp1d_ZwgtT['Dataset 2'] = interp1d_ZwgtT['Dataset 1']
         else:
-            interp1d_wgtT_2nd = {}
-            interp1d_wgtT_2nd[0] = interp1dmat_create_weight(grid_dict['Dataset 2']['gdept'],0)
+            interp1d_ZwgtT['Dataset 2'][0] = interp1dmat_create_weight(grid_dict['Dataset 2']['gdept'],0)
 
 
 
@@ -1914,7 +1691,7 @@ th['x0']:th['x1']:th['dx']
             stage_timer[5] = datetime.now() # start data dataload
             stage_timer_name[5] = 'Slice data'
             if reload_map:
-                map_dat_1,map_dat_2,map_x,map_y = reload_map_data_comb(var,ldi,ti,z_meth,zz,zi, data_inst_1, data_inst_2,var_dim,interp1d_wgtT, interp1d_wgtT_2nd,grid_dict,nav_lon,nav_lat,regrid_params,regrid_meth,th,config_2nd,load_2nd_files)
+                map_dat_1,map_dat_2,map_x,map_y = reload_map_data_comb(var,ldi,ti,z_meth,zz,zi, data_inst_1, data_inst_2,var_dim, interp1d_ZwgtT,grid_dict,nav_lon,nav_lat,regrid_params,regrid_meth,th,config_2nd,load_2nd_files)
                 reload_map = False
 
                 if do_grad == 1:
@@ -1932,9 +1709,9 @@ th['x0']:th['x1']:th['dx']
 
                 if var_dim[var] == 4:
                     if do_grad == 1:
-                        ew_slice_dat_1, ew_slice_dat_2 = grad_horiz_ew_data()
+                        ew_slice_dat_1, ew_slice_dat_2 = grad_horiz_ew_data(th,grid_dict,jj, ew_slice_dat_1,ew_slice_dat_2)
                     if do_grad == 2:
-                        ew_slice_dat_1, ew_slice_dat_2 = grad_vert_ew_data()
+                        ew_slice_dat_1, ew_slice_dat_2 = grad_vert_ew_data(ew_slice_dat_1,ew_slice_dat_2,ew_slice_y)
 
             if verbose_debugging: print('Reloaded  ew data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now(),'; dt = %s'%(datetime.now()-prevtime))
             prevtime = datetime.now()
@@ -1946,9 +1723,9 @@ th['x0']:th['x1']:th['dx']
 
                 if var_dim[var] == 4:   
                     if do_grad == 1:
-                        ns_slice_dat_1, ns_slice_dat_2 = grad_horiz_ns_data()
+                        ns_slice_dat_1, ns_slice_dat_2 = grad_horiz_ns_data(th,grid_dict,ii, ns_slice_dat_1,ns_slice_dat_2)
                     if do_grad == 2:
-                        ns_slice_dat_1, ns_slice_dat_2 = grad_vert_ns_data()
+                        ns_slice_dat_1, ns_slice_dat_2 = grad_vert_ns_data(ns_slice_dat_1,ns_slice_dat_2,ns_slice_y)
                   
 
             if verbose_debugging: print('Reloaded  ns data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now(),'; dt = %s'%(datetime.now()-prevtime))
@@ -1960,7 +1737,7 @@ th['x0']:th['x1']:th['dx']
                         hov_dat_1,hov_dat_2,hov_x,hov_y = reload_hov_data_comb(var,var_mat,var_grid,deriv_var,ldi,th, time_datetime, ii,jj,ii_2nd_ind,jj_2nd_ind,nz,ntime, grid_dict,xarr_dict,load_2nd_files,config_2nd)
 
                         if do_grad == 2:
-                            hov_dat_1,hov_dat_2 = grad_vert_hov_data()
+                            hov_dat_1,hov_dat_2 = grad_vert_hov_data(hov_dat_1,hov_dat_2,hov_y)
 
                 else:
                     

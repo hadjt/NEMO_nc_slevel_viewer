@@ -1603,14 +1603,14 @@ def reload_data_instances(var,th,ldi,ti,var_grid, xarr_dict, grid_dict,var_dim,l
     print('Reloaded data instances for ti = %i, var = %s %s = %s'%(ti,var,datetime.now(),datetime.now() - start_time_load_inst))
     return data_inst_1,data_inst_2,preload_data_ti,preload_data_var,preload_data_ldi
 
-def reload_map_data_comb(var,ldi,ti,z_meth,zz,zi, data_inst_1, data_inst_2,var_dim,interp1d_wgtT, interp1d_wgtT_2nd,grid_dict,nav_lon,nav_lat,regrid_params,regrid_meth,th,config_2nd,load_2nd_files):
+def reload_map_data_comb(var,ldi,ti,z_meth,zz,zi, data_inst_1, data_inst_2,var_dim,interp1d_ZwgtT,grid_dict,nav_lon,nav_lat,regrid_params,regrid_meth,th,config_2nd,load_2nd_files):
 
     if var_dim[var] == 3:
         map_dat_1,map_dat_2 = reload_map_data_comb_2d(var,ldi,ti, data_inst_1, data_inst_2,grid_dict,regrid_params,regrid_meth,th,config_2nd,load_2nd_files)
 
     else:
         if z_meth == 'z_slice':
-            map_dat_1,map_dat_2 = reload_map_data_comb_zmeth_zslice(zz, data_inst_1, data_inst_2,interp1d_wgtT, interp1d_wgtT_2nd,grid_dict,regrid_params,regrid_meth,th,config_2nd,load_2nd_files)
+            map_dat_1,map_dat_2 = reload_map_data_comb_zmeth_zslice(zz, data_inst_1, data_inst_2,interp1d_ZwgtT,grid_dict,regrid_params,regrid_meth,th,config_2nd,load_2nd_files)
         elif z_meth in ['nb','df','zm']:
             map_dat_1,map_dat_2 = reload_map_data_comb_zmeth_nb_df_zm_3d(z_meth, data_inst_1, data_inst_2,grid_dict,regrid_params,regrid_meth,th,config_2nd,load_2nd_files)
         elif z_meth in ['ss']:
@@ -1695,15 +1695,15 @@ def  reload_map_data_comb_zmeth_nb_df_zm_3d(z_meth, data_inst_1, data_inst_2,gri
     return map_dat_1, map_dat_2
 
 
-def reload_map_data_comb_zmeth_zslice(zz, data_inst_1, data_inst_2,interp1d_wgtT, interp1d_wgtT_2nd,grid_dict,regrid_params,regrid_meth,th,config_2nd,load_2nd_files):
+def reload_map_data_comb_zmeth_zslice(zz, data_inst_1, data_inst_2,interp1d_ZwgtT,grid_dict,regrid_params,regrid_meth,th,config_2nd,load_2nd_files):
 
 
-    if zz not in interp1d_wgtT.keys():
-        interp1d_wgtT[zz] = interp1dmat_create_weight(grid_dict['Dataset 1']['gdept'],zz)
+    if zz not in interp1d_ZwgtT['Dataset 1'].keys():
+        interp1d_ZwgtT['Dataset 1'][zz] = interp1dmat_create_weight(grid_dict['Dataset 1']['gdept'],zz)
     
     if load_2nd_files:
-        if zz not in interp1d_wgtT_2nd.keys(): 
-            interp1d_wgtT_2nd[zz] = interp1dmat_create_weight(grid_dict['Dataset 2']['gdept'],zz)
+        if zz not in interp1d_ZwgtT['Dataset 2'].keys(): 
+            interp1d_ZwgtT['Dataset 2'][zz] = interp1dmat_create_weight(grid_dict['Dataset 2']['gdept'],zz)
     
     map_dat_3d_1 = np.ma.masked_invalid(data_inst_1)
     if load_2nd_files:
@@ -1711,10 +1711,10 @@ def reload_map_data_comb_zmeth_zslice(zz, data_inst_1, data_inst_2,interp1d_wgtT
     else:
         map_dat_3d_2 = map_dat_3d_1
 
-    map_dat_1 =  interp1dmat_wgt(np.ma.masked_invalid(map_dat_3d_1),interp1d_wgtT[zz])
+    map_dat_1 =  interp1dmat_wgt(np.ma.masked_invalid(map_dat_3d_1),interp1d_ZwgtT['Dataset 1'][zz])
 
     if load_2nd_files:
-        map_dat_2 =  regrid_2nd(regrid_params,regrid_meth,th,config_2nd,interp1dmat_wgt(np.ma.masked_invalid(map_dat_3d_2),interp1d_wgtT_2nd[zz]))
+        map_dat_2 =  regrid_2nd(regrid_params,regrid_meth,th,config_2nd,interp1dmat_wgt(np.ma.masked_invalid(map_dat_3d_2),interp1d_ZwgtT['Dataset 2'][zz]))
     else:
         map_dat_2 = map_dat_1
 
@@ -2000,6 +2000,90 @@ def regrid_2nd(regrid_params,regrid_meth,th,config_2nd,dat_in): #):
 
 
 
+
+
+def grad_horiz_ns_data(th,grid_dict,ii, ns_slice_dat_1,ns_slice_dat_2):
+    ns_slice_dx =  th['dx']*((grid_dict['Dataset 1']['e2t'][2:,ii] +  grid_dict['Dataset 1']['e2t'][:-2,ii])/2 + grid_dict['Dataset 1']['e2t'][1:-1,ii])
+    dns_1 = ns_slice_dat_1[:,2:] - ns_slice_dat_1[:,:-2]
+    dns_2 = ns_slice_dat_2[:,2:] - ns_slice_dat_2[:,:-2]
+
+
+    ns_slice_dat_1[:,1:-1] = dns_1/ns_slice_dx#_1
+    ns_slice_dat_2[:,1:-1] = dns_2/ns_slice_dx#_2
+
+    ns_slice_dat_1[:,0] = np.ma.masked
+    ns_slice_dat_1[:,-1] = np.ma.masked
+    ns_slice_dat_2[:,0] = np.ma.masked
+    ns_slice_dat_2[:,-1] = np.ma.masked
+
+    return ns_slice_dat_1,ns_slice_dat_2
+
+
+def grad_horiz_ew_data(th,grid_dict,jj, ew_slice_dat_1,ew_slice_dat_2):
+    ew_slice_dx =  th['dx']*((grid_dict['Dataset 1']['e1t'][jj,2:] +  grid_dict['Dataset 1']['e1t'][jj,:-2])/2 + grid_dict['Dataset 1']['e1t'][jj,1:-1])
+    dew_1 = ew_slice_dat_1[:,2:] - ew_slice_dat_1[:,:-2]
+    dew_2 = ew_slice_dat_2[:,2:] - ew_slice_dat_2[:,:-2]
+
+    ew_slice_dat_1[:,1:-1] = dew_1/ew_slice_dx#_1
+    ew_slice_dat_2[:,1:-1] = dew_2/ew_slice_dx#_2
+
+    ew_slice_dat_1[:,0] = np.ma.masked
+    ew_slice_dat_1[:,-1] = np.ma.masked
+    ew_slice_dat_2[:,0] = np.ma.masked
+    ew_slice_dat_2[:,-1] = np.ma.masked
+
+    return ew_slice_dat_1, ew_slice_dat_2
+
+
+def grad_vert_ns_data(ns_slice_dat_1,ns_slice_dat_2,ns_slice_y):
+    dns_1 = ns_slice_dat_1[2:,:] - ns_slice_dat_1[:-2,:]
+    dns_2 = ns_slice_dat_2[2:,:] - ns_slice_dat_2[:-2,:]
+    dns_z = ns_slice_y[2:,:] - ns_slice_y[:-2,:]
+
+
+
+
+    ns_slice_dat_1[1:-1,:] = dns_1/dns_z
+    ns_slice_dat_2[1:-1,:] = dns_2/dns_z
+    ns_slice_dat_1[ 0,:] = np.ma.masked
+    ns_slice_dat_1[-1,:] = np.ma.masked
+    ns_slice_dat_2[ 0,:] = np.ma.masked
+    ns_slice_dat_2[-1,:] = np.ma.masked
+
+    return ns_slice_dat_1,ns_slice_dat_2
+
+
+def grad_vert_ew_data(ew_slice_dat_1,ew_slice_dat_2,ew_slice_y):
+    dew_1 = ew_slice_dat_1[2:,:] - ew_slice_dat_1[:-2,:]
+    dew_2 = ew_slice_dat_2[2:,:] - ew_slice_dat_2[:-2,:]
+    dew_z = ew_slice_y[2:,:] - ew_slice_y[:-2,:]
+
+    ew_slice_dat_1[1:-1,:] = dew_1/dew_z
+    ew_slice_dat_2[1:-1,:] = dew_2/dew_z
+
+    ew_slice_dat_1[ 0,:] = np.ma.masked
+    ew_slice_dat_1[-1,:] = np.ma.masked
+    ew_slice_dat_2[ 0,:] = np.ma.masked
+    ew_slice_dat_2[-1,:] = np.ma.masked
+
+    return ew_slice_dat_1, ew_slice_dat_2
+
+
+def grad_vert_hov_data(hov_dat_1,hov_dat_2,hov_y):
+
+
+    dhov_1 = hov_dat_1[2:,:] - hov_dat_1[:-2,:]
+    dhov_2 = hov_dat_2[2:,:] - hov_dat_2[:-2,:]
+    dhov_z = hov_y[2:] - hov_y[:-2]
+    hov_dat_1[1:-1,:] = (dhov_1.T/dhov_z).T
+    hov_dat_2[1:-1,:] = (dhov_2.T/dhov_z).T
+
+    hov_dat_1[ 0,:] = np.ma.masked
+    hov_dat_1[-1,:] = np.ma.masked
+    hov_dat_2[ 0,:] = np.ma.masked
+    hov_dat_2[-1,:] = np.ma.masked
+
+    return hov_dat_1,hov_dat_2
 
 
 if __name__ == "__main__":
