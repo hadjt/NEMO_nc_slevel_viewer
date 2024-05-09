@@ -1962,10 +1962,10 @@ def regrid_2nd(regrid_params,regrid_meth,th,config_2nd,dat_in): #):
     start_regrid_timer = datetime.now()
 
 
-    (NWS_amm_bl_jj_ind_out, NWS_amm_bl_ii_ind_out, NWS_amm_wgt_out, NWS_amm_nn_jj_ind_out, NWS_amm_nn_ii_ind_out) = regrid_params
     if config_2nd is None:
         dat_out = dat_in
     else:
+        (NWS_amm_bl_jj_ind_out, NWS_amm_bl_ii_ind_out, NWS_amm_wgt_out, NWS_amm_nn_jj_ind_out, NWS_amm_nn_ii_ind_out) = regrid_params
         if (th['x0']!=0)|(th['y0']!=0): 
             print('thin_x0 and thin_y0 must equal 0, if not, need to work out thinning code in the regrid index method')
             pdb.set_trace()
