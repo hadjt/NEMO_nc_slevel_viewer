@@ -25,6 +25,7 @@ from NEMO_nc_slevel_viewer_lib import reload_map_data_comb_zmeth_zindex,reload_m
 from NEMO_nc_slevel_viewer_lib import reload_map_data_comb_zmeth_zslice,reload_map_data_comb_2d,reload_map_data_comb,reload_ew_data_comb,reload_ns_data_comb
 from NEMO_nc_slevel_viewer_lib import reload_hov_data_comb,reload_ts_data_comb
 from NEMO_nc_slevel_viewer_lib import regrid_2nd,grad_horiz_ns_data,grad_horiz_ew_data,grad_vert_ns_data,grad_vert_ew_data,grad_vert_hov_data
+#from NEMO_nc_slevel_viewer_lib import indices_from_ginput_ax
 
 
 letter_mat = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
@@ -157,7 +158,11 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
     if do_grad is None: do_grad = 0
     if do_cont is None: do_cont = True
-
+    
+    # For T Diff
+    Time_Diff = False
+    data_inst_1_Tm1,data_inst_2_Tm1 = None,None
+    preload_data_ti_Tm1,preload_data_var_Tm1,preload_data_ldi_Tm1 = 0.5,'None',0.5
 
     if verbose_debugging:
         print('======================================================')
@@ -1138,8 +1143,8 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
     mode_name_lst = ['Click','Loop']
 
-    func_names_lst = ['Hov/Time','ColScl','Reset zoom', 'Zoom', 'Axis','Clim: Reset','Clim: Zoom','Clim: Expand','Clim: pair','Clim: sym','Surface', 'Near-Bed', 'Surface-Bed','Depth-Mean','Depth level','Contours','Grad','TS Diag','LD time','Fcst Diag','Save Figure','Quit']
-
+    func_names_lst = ['Hov/Time','ColScl','Reset zoom', 'Zoom', 'Axis','Clim: Reset','Clim: Zoom','Clim: Expand','Clim: pair','Clim: sym','Surface', 'Near-Bed', 'Surface-Bed','Depth-Mean','Depth level','Contours','Grad','T Diff','TS Diag','LD time','Fcst Diag','Save Figure','Quit']
+    
 
     if add_TSProf:
         #ts_diag_coord = np.ma.ones(3)*np.ma.masked
@@ -1166,7 +1171,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
     func_but_line_han,func_but_text_han = {},{}
     func_but_extent = {}
-
+    
 
     mode_name_secdataset_proc_list = mode_name_lst
 
@@ -1232,6 +1237,8 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         func_but_text_han['Grad'].set_color('0.5')
         func_but_text_han['Grad'].set_text('Grad')
 
+
+
     func_but_text_han['ColScl'].set_text('Col: Linear')
 
     func_but_text_han['Axis'].set_text('Axis: Auto')
@@ -1291,8 +1298,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     init_timer.append((datetime.now(),'Create inner functions'))
 
 
-
-    def indices_from_ginput_ax(clii,cljj,thin=th['dx'],ew_line_x = None,ew_line_y = None,ns_line_x = None,ns_line_y = None):
+    def indices_from_ginput_ax(ax,clii,cljj,th,ew_line_x = None,ew_line_y = None,ns_line_x = None,ns_line_y = None):
 
 
         '''
@@ -1322,7 +1328,7 @@ ax,
                 xlocval = normxloc*clxlim.ptp() + clxlim.min()
                 ylocval = normyloc*clylim.ptp() + clylim.min()
 
-                if (thin != 1):
+                if (th['dx'] != 1):
                     if config.upper() not in ['AMM7','AMM15', 'CO9P2', 'ORCA025','ORCA025EXT','GULF18','ORCA12']:
                         print('Thinning lon lat selection not programmed for ', config.upper())
                         pdb.set_trace()
@@ -1339,8 +1345,8 @@ ax,
                         sel_jj = (np.abs(lat[th['y0']:th['y1']:th['dy']] - latj)).argmin()
                     elif config.upper() in ['AMM15','CO9P2']:
                         lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(loni,latj)
-                        sel_ii = np.minimum(np.maximum( np.round((lon_mat_rot - lon_rotamm15[th['x0']:th['x1']:th['dx']].min())/(dlon_rotamm15*thin)).astype('int') ,0),nlon_rotamm15//thin-1)
-                        sel_jj = np.minimum(np.maximum( np.round((lat_mat_rot - lat_rotamm15[th['y0']:th['y1']:th['dy']].min())/(dlat_rotamm15*thin)).astype('int') ,0),nlat_rotamm15//thin-1)
+                        sel_ii = np.minimum(np.maximum( np.round((lon_mat_rot - lon_rotamm15[th['x0']:th['x1']:th['dx']].min())/(dlon_rotamm15*th['dx'])).astype('int') ,0),nlon_rotamm15//th['dx']-1)
+                        sel_jj = np.minimum(np.maximum( np.round((lat_mat_rot - lat_rotamm15[th['y0']:th['y1']:th['dy']].min())/(dlat_rotamm15*th['dx'])).astype('int') ,0),nlat_rotamm15//th['dx']-1)
                     elif config.upper() in ['ORCA025','ORCA025EXT','ORCA12']:
                         sel_dist_mat = np.sqrt((nav_lon[:,:] - loni)**2 + (nav_lat[:,:] - latj)**2 )
                         sel_jj,sel_ii = sel_dist_mat.argmin()//sel_dist_mat.shape[1], sel_dist_mat.argmin()%sel_dist_mat.shape[1]
@@ -1358,7 +1364,7 @@ ax,
                     elif config.upper() in ['AMM15','CO9P2']:                        
                         latj =  ew_line_y[(np.abs(ew_line_x - loni)).argmin()] 
                         lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(loni,latj)
-                        sel_ii = np.minimum(np.maximum(np.round((lon_mat_rot - lon_rotamm15[th['x0']:th['x1']:th['dx']].min())/(dlon_rotamm15*thin)).astype('int'),0),nlon_rotamm15//thin-1)
+                        sel_ii = np.minimum(np.maximum(np.round((lon_mat_rot - lon_rotamm15[th['x0']:th['x1']:th['dx']].min())/(dlon_rotamm15*th['dx'])).astype('int'),0),nlon_rotamm15//th['dx']-1)
                     elif config.upper() in ['ORCA025','ORCA025EXT','ORCA12']:
                         sel_ii = (np.abs(ew_line_x - loni)).argmin()
                     else:
@@ -1375,7 +1381,7 @@ ax,
                     elif config.upper() in ['AMM15','CO9P2']:                        
                         loni =  ns_line_x[(np.abs(ns_line_y - latj)).argmin()]
                         lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(loni,latj)
-                        sel_jj = np.minimum(np.maximum(np.round((lat_mat_rot - lat_rotamm15[th['y0']:th['y1']:th['dy']].min())/(dlat_rotamm15*thin)).astype('int'),0),nlat_rotamm15//thin-1)
+                        sel_jj = np.minimum(np.maximum(np.round((lat_mat_rot - lat_rotamm15[th['y0']:th['y1']:th['dy']].min())/(dlat_rotamm15*th['dx'])).astype('int'),0),nlat_rotamm15//th['dx']-1)
                     elif config.upper() in ['ORCA025','ORCA025EXT','ORCA12']:
                         sel_jj = (np.abs(ns_line_y - latj)).argmin()
                     else:
@@ -1403,7 +1409,6 @@ ax,
 
         
         return sel_ax,sel_ii,sel_jj,sel_ti,sel_zz
-
 
 
 
@@ -1681,6 +1686,67 @@ ax,
                 #       if the variable has changed
                 if  (data_inst_1 is None)|(preload_data_ti != ti)|(preload_data_var != var)|(preload_data_ldi != ldi):
                     data_inst_1,data_inst_2,preload_data_ti,preload_data_var,preload_data_ldi= reload_data_instances(var,th,ldi,ti,var_grid, xarr_dict, grid_dict,var_dim,load_2nd_files)
+
+                    # For T Diff
+                    data_inst_1_Tm1,data_inst_2_Tm1 = None,None
+                    preload_data_ti_Tm1,preload_data_var_Tm1,preload_data_ldi_Tm1 = 0.5,'None',0.5
+                    Time_Diff_cnt = 0
+
+
+
+            ###################################################################################################
+            ### Status of buttons
+            ###################################################################################################
+
+            if ti == 0:
+                func_but_text_han['T Diff'].set_color('0.5')
+            else:
+                if Time_Diff:
+                    func_but_text_han['T Diff'].set_color('darkgreen')
+
+                    if (data_inst_1_Tm1 is None)|(preload_data_ti_Tm1 != (ti-1))|(preload_data_var_Tm1 != var)|(preload_data_ldi_Tm1 != ldi):
+
+                        (data_inst_1_Tm1,data_inst_2_Tm1,
+                        preload_data_ti_Tm1,preload_data_var_Tm1,preload_data_ldi_Tm1) = reload_data_instances(var,th,ldi,ti-1,
+                                var_grid, xarr_dict, grid_dict,var_dim,load_2nd_files)
+
+                    #pdb.set_trace()
+                    if Time_Diff_cnt == 0:
+                        data_inst_1 = data_inst_1 - data_inst_1_Tm1
+                        data_inst_2 = data_inst_2 - data_inst_2_Tm1
+                        Time_Diff_cnt -= 1
+                    func_but_text_han['Clim: sym'].set_color('r')
+                    #curr_cmap = scnd_cmap
+                    clim_sym_but = 1
+                    #clim_sym_but_norm_val = clim_sym
+                    clim_sym = True
+
+                    reload_map = True
+                    reload_ew = True
+                    reload_ns = True
+
+                else:
+                    func_but_text_han['T Diff'].set_color('k')
+                    if (data_inst_1_Tm1 is not None):
+
+                        if Time_Diff_cnt == -1:
+                            #if (preload_data_ti_Tm1 == (ti-1))|(preload_data_var_Tm1 == var)|(preload_data_ldi_Tm1 == ldi):
+                            data_inst_1 = data_inst_1 + data_inst_1_Tm1
+                            data_inst_2 = data_inst_2 + data_inst_2_Tm1
+                            Time_Diff_cnt += 1
+
+                        func_but_text_han['Clim: sym'].set_color('k')
+                        clim_sym_but = 0
+                        
+                        reload_map = True
+                        reload_ew = True
+                        reload_ns = True
+
+                        
+
+
+
+
 
 
             
@@ -2120,8 +2186,6 @@ ax,
             cs_line.append(ax[3].axhline(zz,color = '0.5', alpha = 0.5))
 
 
-
-
             
             ###################################################################################################
             ### add dataset labels
@@ -2314,7 +2378,7 @@ ax,
             is_in_axes = False
             
             # convert the mouse click into data indices, and report which axes was clicked
-            sel_ax,sel_ii,sel_jj,sel_ti,sel_zz = indices_from_ginput_ax(clii,cljj, thin = th['dx'],ew_line_x = nav_lon[jj,:],ew_line_y = nav_lat[jj,:],ns_line_x = nav_lon[:,ii],ns_line_y = nav_lat[:,ii])
+            sel_ax,sel_ii,sel_jj,sel_ti,sel_zz = indices_from_ginput_ax(ax,clii,cljj, th,ew_line_x = nav_lon[jj,:],ew_line_y = nav_lat[jj,:],ns_line_x = nav_lon[:,ii],ns_line_y = nav_lat[:,ii])
 
                 
                 
@@ -2456,12 +2520,12 @@ ax,
                         
                         plt.sca(clickax)
                         tmpzoom0 = plt.ginput(1)
-                        zoom0_ax,zoom0_ii,zoom0_jj,zoom0_ti,zoom0_zz = indices_from_ginput_ax(tmpzoom0[0][0],tmpzoom0[0][1], thin = th['dx'],ew_line_x = nav_lon[jj,:],ew_line_y = nav_lat[jj,:],ns_line_x = nav_lon[:,ii],ns_line_y = nav_lat[:,ii])
+                        zoom0_ax,zoom0_ii,zoom0_jj,zoom0_ti,zoom0_zz = indices_from_ginput_ax(ax,tmpzoom0[0][0],tmpzoom0[0][1], th,ew_line_x = nav_lon[jj,:],ew_line_y = nav_lat[jj,:],ns_line_x = nav_lon[:,ii],ns_line_y = nav_lat[:,ii])
                         if zoom0_ax in [1,2,3]:
                             zlim_max = zoom0_zz
                         elif zoom0_ax in [0]:
                             tmpzoom1 = plt.ginput(1)
-                            zoom1_ax,zoom1_ii,zoom1_jj,zoom1_ti,zoom1_zz = indices_from_ginput_ax(tmpzoom1[0][0],tmpzoom1[0][1], thin = th['dx'],ew_line_x = nav_lon[jj,:],ew_line_y = nav_lat[jj,:],ns_line_x = nav_lon[:,ii],ns_line_y = nav_lat[:,ii])
+                            zoom1_ax,zoom1_ii,zoom1_jj,zoom1_ti,zoom1_zz = indices_from_ginput_ax(ax,tmpzoom1[0][0],tmpzoom1[0][1], th,ew_line_x = nav_lon[jj,:],ew_line_y = nav_lat[jj,:],ns_line_x = nav_lon[:,ii],ns_line_y = nav_lat[:,ii])
                                 
                             if verbose_debugging: print(zoom0_ax,zoom0_ii,zoom0_jj,zoom0_ti,zoom0_zz)
                             if verbose_debugging: print(zoom1_ax,zoom1_ii,zoom1_jj,zoom1_ti,zoom1_zz)
@@ -2476,31 +2540,6 @@ ax,
                                         cur_xlim.sort()
                                         cur_ylim.sort()
                                         
-                        '''
-                        plt.sca(clickax)
-                        tmpzoom = plt.ginput(2)
-
-                        # sort the zoom clicks, so that the x and y lims are the right way around. 
-                        tmpzoom_array = tmp = np.array(tmpzoom)     
-                        tmpzoom_array.sort(axis = 0)
-                        tmpzoom_sorted = [tuple(tmp[0,:]), tuple(tmp[1,:])]
-                        tmpzoom = tmpzoom_sorted
-                        #pdb.set_trace()
-                        
-                        #convert clicks to data indices
-                        zoom0_ax,zoom0_ii,zoom0_jj,zoom0_ti,zoom0_zz = indices_from_ginput_ax(tmpzoom[0][0],tmpzoom[0][1], thin = th['dx'])
-                        zoom1_ax,zoom1_ii,zoom1_jj,zoom1_ti,zoom1_zz = indices_from_ginput_ax(tmpzoom[1][0],tmpzoom[1][1], thin = th['dx'])
-                        if verbose_debugging: print(zoom0_ax,zoom0_ii,zoom0_jj,zoom0_ti,zoom0_zz)
-                        if verbose_debugging: print(zoom1_ax,zoom1_ii,zoom1_jj,zoom1_ti,zoom1_zz)
-                        if verbose_debugging: print(cur_xlim)
-                        if verbose_debugging: print(cur_ylim)
-                        # if both clicks in main axes, use clicks for the new x and ylims
-                        if (zoom0_ax is not None) & (zoom0_ax is not None):
-                            if zoom0_ax == zoom1_ax:
-                                if zoom0_ax == 0:
-                                    cur_xlim = np.array([nav_lon[zoom0_jj,zoom0_ii],nav_lon[zoom1_jj,zoom1_ii]])
-                                    cur_ylim = np.array([nav_lat[zoom0_jj,zoom0_ii],nav_lat[zoom1_jj,zoom1_ii]])
-                        '''        
                                             
                     elif but_name == 'Axis':
                         if axis_scale == 'Auto':
@@ -2825,6 +2864,62 @@ ax,
                             reload_hov = True
                             reload_ts = True
  
+
+                    elif but_name == 'T Diff':
+
+                        if ti == 0:
+                            func_but_text_han['T Diff'].set_color('0.5')
+                        else:
+                            if Time_Diff:
+                                Time_Diff = False
+                                func_but_text_han['T Diff'].set_color('k')
+                            else:
+                                Time_Diff = True
+                                func_but_text_han['T Diff'].set_color('darkgreen')
+
+
+                        """
+                        if ti == 0:
+                            func_but_text_han['T Diff'].set_color('0.5')
+                        else:
+                            if Time_Diff:
+                                Time_Diff = False
+                                func_but_text_han['T Diff'].set_color('k')
+                                
+                                if (data_inst_1_Tm1 is None)|(preload_data_ti_Tm1 == (ti-1))|(preload_data_var_Tm1 == var)|(preload_data_ldi_Tm1 == ldi):
+                                    data_inst_1 = data_inst_1 + data_inst_1_Tm1
+                                    data_inst_2 = data_inst_2 + data_inst_2_Tm1
+
+                                
+                                reload_map = True
+                                reload_ew = True
+                                reload_ns = True
+                            else:
+                                Time_Diff = True
+                                func_but_text_han['T Diff'].set_color('darkgreen')
+
+                                if (data_inst_1_Tm1 is None)|(preload_data_ti_Tm1 != (ti-1))|(preload_data_var_Tm1 != var)|(preload_data_ldi_Tm1 != ldi):
+
+                                    (data_inst_1_Tm1,data_inst_2_Tm1,
+                                    preload_data_ti_Tm1,preload_data_var_Tm1,preload_data_ldi_Tm1) = reload_data_instances(var,th,ldi,ti-1,
+                                            var_grid, xarr_dict, grid_dict,var_dim,load_2nd_files)
+
+
+                                data_inst_1 = data_inst_1 - data_inst_1_Tm1
+                                data_inst_2 = data_inst_2 - data_inst_2_Tm1
+                                
+                                reload_map = True
+                                reload_ew = True
+                                reload_ns = True
+                                
+                                '''
+                                reload_map = True
+                                reload_ew = True
+                                reload_ns = True
+                                reload_hov = True
+                                reload_ts = True
+                                '''
+                        """
 
                     elif but_name == 'ColScl':
                         if secdataset_proc in ['Dataset 1','Dataset 2']:

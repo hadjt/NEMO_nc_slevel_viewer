@@ -2086,5 +2086,132 @@ def grad_vert_hov_data(hov_dat_1,hov_dat_2,hov_y):
     return hov_dat_1,hov_dat_2
 
 
+
+
+
+
+
+
+
+
+
+
+
+"""
+
+def indices_from_ginput_ax(ax,clii,cljj,th,config,ew_line_x = None,ew_line_y = None,ns_line_x = None,ns_line_y = None):
+
+
+    '''
+    ginput doesn't tell you which subplot you are clicking, only the position within that subplot.
+    we need which axis is clicked as well as the cooridinates within that axis
+    
+    we therefore trick ginput to give use figure coordinate (with a dummy, invisible full figure size subplot
+    in front of everything, and then use this function to turn those coordinates into the coordinates within the 
+    the subplot, and the which axis/subplot it is
+
+ax,
+    '''
+    sel_ii,sel_jj,sel_ti ,sel_zz = None,None,None,None
+    sel_ax = None
+
+    for ai,tmpax in enumerate(ax): 
+        tmppos =  tmpax.get_position()
+        # was click within extent
+        if (clii >= tmppos.x0) & (clii <= tmppos.x1) & (cljj >= tmppos.y0) & (cljj <= tmppos.y1):
+            sel_ax = ai
+
+            #convert figure coordinate of click, into location with the axes, using data coordinates
+            clxlim = np.array(tmpax.get_xlim())
+            clylim = np.array(tmpax.get_ylim())
+            normxloc = (clii - tmppos.x0 ) / (tmppos.x1 - tmppos.x0)
+            normyloc = (cljj - tmppos.y0 ) / (tmppos.y1 - tmppos.y0)
+            xlocval = normxloc*clxlim.ptp() + clxlim.min()
+            ylocval = normyloc*clylim.ptp() + clylim.min()
+
+            if (th['dx'] != 1):
+                if config.upper() not in ['AMM7','AMM15', 'CO9P2', 'ORCA025','ORCA025EXT','GULF18','ORCA12']:
+                    print('Thinning lon lat selection not programmed for ', config.upper())
+                    pdb.set_trace()
+
+
+            # what do the local coordiantes of the click mean in terms of the data to plot.
+            # if on the map, or the slices, need to covert from lon and lat to ii and jj, which is complex for amm15.
+
+            # if in map, covert lon lat to ii,jj
+            if ai == 0:
+                loni,latj= xlocval,ylocval
+                if config.upper() in ['AMM7','GULF18']:
+                    sel_ii = (np.abs(lon[th['x0']:th['x1']:th['dx']] - loni)).argmin()
+                    sel_jj = (np.abs(lat[th['y0']:th['y1']:th['dy']] - latj)).argmin()
+                elif config.upper() in ['AMM15','CO9P2']:
+                    lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(loni,latj)
+                    sel_ii = np.minimum(np.maximum( np.round((lon_mat_rot - lon_rotamm15[th['x0']:th['x1']:th['dx']].min())/(dlon_rotamm15*th['dx'])).astype('int') ,0),nlon_rotamm15//th['dx']-1)
+                    sel_jj = np.minimum(np.maximum( np.round((lat_mat_rot - lat_rotamm15[th['y0']:th['y1']:th['dy']].min())/(dlat_rotamm15*th['dx'])).astype('int') ,0),nlat_rotamm15//th['dx']-1)
+                elif config.upper() in ['ORCA025','ORCA025EXT','ORCA12']:
+                    sel_dist_mat = np.sqrt((nav_lon[:,:] - loni)**2 + (nav_lat[:,:] - latj)**2 )
+                    sel_jj,sel_ii = sel_dist_mat.argmin()//sel_dist_mat.shape[1], sel_dist_mat.argmin()%sel_dist_mat.shape[1]
+
+                else:
+                    print('config not supported:', config)
+                    pdb.set_trace()
+                # and reload slices, and hovmuller/time series
+
+            elif ai in [1]: 
+                # if in ew slice, change ns slice, and hov/time series
+                loni= xlocval
+                if config.upper() == 'AMM7':
+                    sel_ii = (np.abs(lon[th['x0']:th['x1']:th['dx']] - loni)).argmin()
+                elif config.upper() in ['AMM15','CO9P2']:                        
+                    latj =  ew_line_y[(np.abs(ew_line_x - loni)).argmin()] 
+                    lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(loni,latj)
+                    sel_ii = np.minimum(np.maximum(np.round((lon_mat_rot - lon_rotamm15[th['x0']:th['x1']:th['dx']].min())/(dlon_rotamm15*th['dx'])).astype('int'),0),nlon_rotamm15//th['dx']-1)
+                elif config.upper() in ['ORCA025','ORCA025EXT','ORCA12']:
+                    sel_ii = (np.abs(ew_line_x - loni)).argmin()
+                else:
+                    print('config not supported:', config)
+                    pdb.set_trace()
+                sel_zz = int( (1-normyloc)*clylim.ptp() + clylim.min() )
+                
+                
+            elif ai in [2]:
+                # if in ns slice, change ew slice, and hov/time series
+                latj= xlocval
+                if config.upper() == 'AMM7':
+                    sel_jj = (np.abs(lat[th['y0']:th['y1']:th['dy']] - latj)).argmin()
+                elif config.upper() in ['AMM15','CO9P2']:                        
+                    loni =  ns_line_x[(np.abs(ns_line_y - latj)).argmin()]
+                    lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(loni,latj)
+                    sel_jj = np.minimum(np.maximum(np.round((lat_mat_rot - lat_rotamm15[th['y0']:th['y1']:th['dy']].min())/(dlat_rotamm15*th['dx'])).astype('int'),0),nlat_rotamm15//th['dx']-1)
+                elif config.upper() in ['ORCA025','ORCA025EXT','ORCA12']:
+                    sel_jj = (np.abs(ns_line_y - latj)).argmin()
+                else:
+                    print('config not supported:', config)
+                    #pdb.set_trace()
+                sel_zz = int( (1-normyloc)*clylim.ptp() + clylim.min() )
+
+            elif ai in [3]:
+                # if in hov/time series, change map, and slices
+
+                # re calculate depth values, as y scale reversed, 
+                sel_zz = int( (1-normyloc)*clylim.ptp() + clylim.min() )
+                #pdb.set_trace()
+
+
+            elif ai in [4]:
+                # if in hov/time series, change map, and slices
+                sel_ti = np.abs(xlocval - time_datetime_since_1970).argmin()
+                
+            else:
+                print('clicked in another axes??')
+                return
+                pdb.set_trace()
+
+
+    
+    return sel_ax,sel_ii,sel_jj,sel_ti,sel_zz
+
+"""
+
 if __name__ == "__main__":
     main()
