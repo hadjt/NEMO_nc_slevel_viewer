@@ -1466,6 +1466,51 @@ def vector_curl(tmpU, tmpV, tmpdx, tmpdy):
     return curl_out
 
 
+def pycnocline_params(rho_4d,gdept_3d,e3t_3d):
+
+    '''
+    N2,Pync_Z,Pync_Th,N2_max = pycnocline_params(data_inst[tmp_datstr][np.newaxis],grid_dict[tmp_datstr]['gdept'],grid_dict[tmp_datstr]['e3t'])
+
+    '''
+    #pdb.set_trace()
+    # vertical density gradient
+    drho =  rho_4d[:,2:,:,:] -  rho_4d[:,:-2,:,:]
+    dz = gdept_3d[2:,:,:] - gdept_3d[:-2,:,:]
+
+    drho_dz = drho/dz
+    
+    # N, Brunt-Vaisala frequency
+    # N**2
+    N2 = rho_4d.copy()*0*np.ma.masked
+    N2[:,1:-1,:,:]  = drho_dz*(-9.81/rho_4d[:,1:-1,:,:])
+    N2[:,0,:,:]= N2[:,1,:,:]
+
+    # https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2018JC014307
+    # Equation 14
+
+    
+    # Pycnocline Depth:
+    Pync_Z = ((N2*gdept_3d)*e3t_3d).sum(axis = 1)/(N2*e3t_3d).sum(axis = 1)
+                    
+    # Pycnocline thickness:
+    Pync_Th  = ((N2*(gdept_3d-Pync_Z)**2)*e3t_3d).sum(axis = 1)/(N2*e3t_3d).sum(axis = 1)
+
+
+    # Depth of max Nz
+    # find array size
+    n_t,n_z, n_j, n_i = rho_4d.shape
+
+    # Make dummy index array
+    n_i_mat, n_j_mat = np.meshgrid(range(n_i), range(n_j))
+
+    # find index of maximum N2 depth
+    N2_max_arg = N2.argmax(axis = 1)
+
+    # use gdept to calcuate these as a depth
+    N2_max = gdept_3d[N2_max_arg,np.tile(n_j_mat,(n_t,1,1)),np.tile(n_i_mat,(n_t,1,1))]
+
+    return N2,Pync_Z,Pync_Th,N2_max
+                      
 
 def reload_data_instances(var,thd,ldi,ti,var_grid, xarr_dict, grid_dict,var_dim,load_2nd_files):
 
@@ -1473,6 +1518,113 @@ def reload_data_instances(var,thd,ldi,ti,var_grid, xarr_dict, grid_dict,var_dim,
 
     data_inst = {}
 
+
+    start_time_load_inst = datetime.now()
+    #pdb.set_trace()
+    for tmp_datstr in xarr_dict.keys():
+        th_d_ind = int(tmp_datstr[-1])
+        if var == 'N:P':
+            
+            map_dat_N_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables['N3n'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+            map_dat_P_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables['N1p'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+            data_inst[tmp_datstr] = map_dat_N_1/map_dat_P_1
+            del(map_dat_N_1)
+            del(map_dat_P_1)
+
+        elif var in ['baroc_mag','baroc_div','baroc_curl']:
+            
+            map_dat_3d_U_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr]['U'][ldi].variables[tmp_var_U][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+            map_dat_3d_V_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr]['V'][ldi].variables[tmp_var_V][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+            if    var == 'baroc_mag': data_inst[tmp_datstr] = np.sqrt(map_dat_3d_U_1**2 + map_dat_3d_V_1**2)
+            elif  var == 'baroc_div': data_inst[tmp_datstr] = vector_div(map_dat_3d_U_1, map_dat_3d_V_1,grid_dict[tmp_datstr]['e1t']*thd[th_d_ind]['dx'],grid_dict[tmp_datstr]['e2t']*thd[th_d_ind]['dx'])
+            elif var == 'baroc_curl': data_inst[tmp_datstr] = vector_curl(map_dat_3d_U_1, map_dat_3d_V_1,grid_dict[tmp_datstr]['e1t']*thd[th_d_ind]['dx'],grid_dict[tmp_datstr]['e2t']*thd[th_d_ind]['dx'])
+            del(map_dat_3d_U_1)
+            del(map_dat_3d_V_1)
+
+
+        elif var in ['barot_mag','barot_div','barot_curl']:
+            tmp_var_Ubar = 'ubar'
+            tmp_var_Vbar = 'vbar'
+            
+            map_dat_2d_U_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr]['U'][ldi].variables[tmp_var_Ubar][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+            map_dat_2d_V_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr]['V'][ldi].variables[tmp_var_Vbar][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+            if    var == 'barot_mag': data_inst[tmp_datstr] = np.sqrt(map_dat_2d_U_1**2 + map_dat_2d_V_1**2)
+            elif  var == 'barot_div': data_inst[tmp_datstr] = vector_div(map_dat_2d_U_1, map_dat_2d_V_1,grid_dict[tmp_datstr]['e1t'],grid_dict[tmp_datstr]['e2t'])
+            elif var == 'barot_curl': data_inst[tmp_datstr] = vector_curl(map_dat_2d_U_1, map_dat_2d_V_1,grid_dict[tmp_datstr]['e1t'],grid_dict[tmp_datstr]['e2t'])
+            del(map_dat_2d_U_1)
+            del(map_dat_2d_V_1)
+
+         
+
+        elif var.upper() in ['PEA', 'PEAT','PEAS']:
+
+            gdept_mat = grid_dict[tmp_datstr]['gdept'][np.newaxis]
+            dz_mat = grid_dict[tmp_datstr]['e3t'][np.newaxis]
+
+            tmp_T_data_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables['votemper'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+            tmp_S_data_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables['vosaline'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+            tmppea_1, tmppeat_1, tmppeas_1 = pea_TS(tmp_T_data_1[np.newaxis],tmp_S_data_1[np.newaxis],gdept_mat,dz_mat,calc_TS_comp = True ) 
+            if var.upper() == 'PEA':
+                data_inst[tmp_datstr]= tmppea_1[0]
+            elif var.upper() == 'PEAT':
+                data_inst[tmp_datstr] = tmppeat_1[0]
+            elif var.upper() == 'PEAS':
+                data_inst[tmp_datstr] = tmppeas_1[0]
+
+
+        elif var.upper() in ['RHO','N2'.upper(),'Pync_Z'.upper(),'Pync_Th'.upper()]:
+
+            tmp_rho = {}
+            for tmp_datstr in tmp_datstr_mat: 
+                tmp_T_data_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables['votemper'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+                tmp_S_data_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables['vosaline'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+                tmp_rho[tmp_datstr] = sw_dens(tmp_T_data_1,tmp_S_data_1) 
+                
+
+                if var.upper() =='RHO'.upper():
+                    data_inst[tmp_datstr]=tmp_rho[tmp_datstr]
+
+                elif var.upper() in ['N2'.upper(),'Pync_Z'.upper(),'Pync_Th'.upper()]:
+                        
+                    for tmp_datstr in tmp_datstr_mat: 
+                        N2,Pync_Z,Pync_Th,N2_max = pycnocline_params(tmp_rho[tmp_datstr][np.newaxis],grid_dict[tmp_datstr]['gdept'],grid_dict[tmp_datstr]['e3t'])
+                    
+                        if var.upper() =='N2'.upper():data_inst[tmp_datstr]=N2[0]
+                        elif var.upper() =='Pync_Z'.upper():data_inst[tmp_datstr]=Pync_Z[0]
+                        elif var.upper() =='Pync_Th'.upper():data_inst[tmp_datstr]=Pync_Th[0]
+
+      
+
+        else:
+            if var_dim[var] == 3:
+                data_inst[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables[var][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+                
+            if var_dim[var] == 4:
+                data_inst[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables[var][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+               
+
+    preload_data_ti = ti
+    preload_data_var = var
+    preload_data_ldi = ldi
+    print('======================================')
+    print('Reloaded data instances for ti = %i, var = %s %s = %s'%(ti,var,datetime.now(),datetime.now() - start_time_load_inst))
+
+
+    return data_inst,preload_data_ti,preload_data_var,preload_data_ldi
+
+
+    
+"""
+def reload_data_instances(var,thd,ldi,ti,var_grid, xarr_dict, grid_dict,var_dim,load_2nd_files):
+
+    tmp_var_U, tmp_var_V = 'vozocrtx','vomecrty'
+
+    data_inst = {}
+
+    if load_2nd_files:
+        tmp_datstr_mat = ['Dataset 1','Dataset 2']
+    else:    
+        tmp_datstr_mat = ['Dataset 1']
 
     start_time_load_inst = datetime.now()
     if var == 'N:P':
@@ -1571,20 +1723,28 @@ def reload_data_instances(var,thd,ldi,ti,var_grid, xarr_dict, grid_dict,var_dim,
         else:
             data_inst['Dataset 2'] = data_inst['Dataset 1']
 
+    elif var.upper() in ['RHO','N2'.upper(),'Pync_Z'.upper(),'Pync_Th'.upper()]:
 
-    elif var.upper() in ['RHO']:
+        tmp_rho = {}
+        for tmp_datstr in tmp_datstr_mat: 
+            tmp_T_data_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables['votemper'][ti,:,thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']].load())
+            tmp_S_data_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables['vosaline'][ti,:,thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']].load())
+            tmp_rho[tmp_datstr] = sw_dens(tmp_T_data_1,tmp_S_data_1) 
+            
 
-        tmp_T_data_1 = np.ma.masked_invalid(xarr_dict['Dataset 1'][var_grid[var]][ldi].variables['votemper'][ti,:,thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']].load())
-        tmp_S_data_1 = np.ma.masked_invalid(xarr_dict['Dataset 1'][var_grid[var]][ldi].variables['vosaline'][ti,:,thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']].load())
-        data_inst['Dataset 1'] = sw_dens(tmp_T_data_1,tmp_S_data_1) 
-        
-        if load_2nd_files:
-               
-            tmp_T_data_2 = np.ma.masked_invalid(xarr_dict['Dataset 2'][var_grid[var]][ldi].variables['votemper'][ti,:,thd[2]['y0']:thd[2]['y1']:thd[2]['dy'],thd[2]['x0']:thd[2]['x1']:thd[2]['dx']].load())
-            tmp_S_data_2 = np.ma.masked_invalid(xarr_dict['Dataset 2'][var_grid[var]][ldi].variables['vosaline'][ti,:,thd[2]['y0']:thd[2]['y1']:thd[2]['dy'],thd[2]['x0']:thd[2]['x1']:thd[2]['dx']].load())
-            data_inst['Dataset 2'] = sw_dens(tmp_T_data_2,tmp_S_data_2) 
+            if var.upper() =='RHO'.upper():
+                data_inst[tmp_datstr]=tmp_rho[tmp_datstr]
+
+            elif var.upper() in ['N2'.upper(),'Pync_Z'.upper(),'Pync_Th'.upper()]:
+                    
+                for tmp_datstr in tmp_datstr_mat: 
+                    N2,Pync_Z,Pync_Th,N2_max = pycnocline_params(tmp_rho[tmp_datstr][np.newaxis],grid_dict[tmp_datstr]['gdept'],grid_dict[tmp_datstr]['e3t'])
                 
-        else:
+                    if var.upper() =='N2'.upper():data_inst[tmp_datstr]=N2[0]
+                    elif var.upper() =='Pync_Z'.upper():data_inst[tmp_datstr]=Pync_Z[0]
+                    elif var.upper() =='Pync_Th'.upper():data_inst[tmp_datstr]=Pync_Th[0]
+
+        if load_2nd_files == False:
             data_inst['Dataset 2'] = data_inst['Dataset 1']
 
 
@@ -1608,6 +1768,9 @@ def reload_data_instances(var,thd,ldi,ti,var_grid, xarr_dict, grid_dict,var_dim,
     print('======================================')
     print('Reloaded data instances for ti = %i, var = %s %s = %s'%(ti,var,datetime.now(),datetime.now() - start_time_load_inst))
     return data_inst,preload_data_ti,preload_data_var,preload_data_ldi
+
+
+"""
 
 def reload_map_data_comb(var,ldi,ti,z_meth,zz,zi, data_inst,var_dim,interp1d_ZwgtT,grid_dict,nav_lon,nav_lat,regrid_params,regrid_meth,thd,configd,load_2nd_files):
 
@@ -1869,12 +2032,21 @@ def reload_hov_data_comb(var,var_mat,var_grid,deriv_var,ldi,thd,time_datetime, i
         hov_dat_2 = np.ma.zeros((nz,ntime))*np.ma.masked
         
     hov_stop = datetime.now()
+    hov_dat = {}
+    hov_dat['Dataset 1'] = hov_dat_1
+    hov_dat['Dataset 2'] = hov_dat_2
+    hov_dat['x'] = hov_x
+    hov_dat['y'] = hov_y
 
-    return hov_dat_1,hov_dat_2,hov_x,hov_y
+    return hov_dat
 
-
-def reload_ts_data_comb(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_1,hov_dat_2,hov_y,time_datetime,z_meth,zz,xarr_dict,grid_dict,thd,var_mat,deriv_var,nz,ntime,configd,load_2nd_files):
+def reload_ts_data_comb(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,time_datetime,z_meth,zz,xarr_dict,grid_dict,thd,var_mat,deriv_var,nz,ntime,configd,load_2nd_files):
     ts_x = time_datetime
+
+    hov_y =  hov_dat_dict['y']
+    hov_dat_1 = hov_dat_dict['Dataset 1']
+    if load_2nd_files:
+        hov_dat_2 = hov_dat_dict['Dataset 2']
 
     if load_2nd_files:
         ii_2nd_ind,jj_2nd_ind = iijj_ind['Dataset 2']['ii'],iijj_ind['Dataset 2']['jj']
@@ -1970,7 +2142,12 @@ def reload_ts_data_comb(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_1,hov_da
 
             ts_dat_1 = hov_dat_1[zi,:]
             ts_dat_2 = hov_dat_2[zi,:]
-    return ts_dat_1, ts_dat_2,ts_x 
+
+    ts_dat = {}
+    ts_dat['Dataset 1'] = ts_dat_1
+    ts_dat['Dataset 2'] = ts_dat_2
+    ts_dat['x'] = ts_x
+    return ts_dat 
 
 def regrid_2nd(regrid_params,regrid_meth,thd,configd,dat_in): #):
     start_regrid_timer = datetime.now()
