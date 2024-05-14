@@ -1746,7 +1746,8 @@ def reload_ew_data_comb(ii,jj,ti,thd, data_inst, nav_lon, nav_lat, grid_dict,reg
     reload the data for the E-W cross-section
 
     '''
-    ew_ii_2nd_ind,ew_jj_2nd_ind,ew_bl_jj_ind_final,ew_bl_ii_ind_final,ew_wgt = iijj_ind['Dataset 2']['ew_ii'],iijj_ind['Dataset 2']['ew_jj'], iijj_ind['Dataset 2']['ew_bl_jj'],iijj_ind['Dataset 2']['ew_bl_ii'],iijj_ind['Dataset 2']['ew_wgt']
+    if load_2nd_files:
+        ew_ii_2nd_ind,ew_jj_2nd_ind,ew_bl_jj_ind_final,ew_bl_ii_ind_final,ew_wgt = iijj_ind['Dataset 2']['ew_ii'],iijj_ind['Dataset 2']['ew_jj'], iijj_ind['Dataset 2']['ew_bl_jj'],iijj_ind['Dataset 2']['ew_bl_ii'],iijj_ind['Dataset 2']['ew_wgt']
 
     ew_slice_x =  nav_lon[jj,:]
     ew_slice_y =  grid_dict['Dataset 1']['gdept'][:,jj,:]
@@ -1778,7 +1779,8 @@ def reload_ns_data_comb(ii,jj,ti,thd, data_inst, nav_lon, nav_lat, grid_dict, re
     reload the data for the N-S cross-section
 
     '''
-    ns_ii_2nd_ind,ns_jj_2nd_ind,ns_bl_jj_ind_final,ns_bl_ii_ind_final,ns_wgt = iijj_ind['Dataset 2']['ns_ii'],iijj_ind['Dataset 2']['ns_jj'], iijj_ind['Dataset 2']['ns_bl_jj'],iijj_ind['Dataset 2']   ['ns_bl_ii'],iijj_ind['Dataset 2']['ns_wgt']
+    if load_2nd_files:
+        ns_ii_2nd_ind,ns_jj_2nd_ind,ns_bl_jj_ind_final,ns_bl_ii_ind_final,ns_wgt = iijj_ind['Dataset 2']['ns_ii'],iijj_ind['Dataset 2']['ns_jj'], iijj_ind['Dataset 2']['ns_bl_jj'],iijj_ind['Dataset 2']   ['ns_bl_ii'],iijj_ind['Dataset 2']['ns_wgt']
    
     ns_slice_x =  nav_lat[:,ii]
     ns_slice_y =  grid_dict['Dataset 1']['gdept'][:,:,ii]
@@ -1818,7 +1820,8 @@ def reload_hov_data_comb(var,var_mat,var_grid,deriv_var,ldi,thd,time_datetime, i
     '''
     reload the data for the Hovmuller plot
     '''
-    ii_2nd_ind,jj_2nd_ind = iijj_ind['Dataset 2']['ii'],iijj_ind['Dataset 2']['jj']
+    if load_2nd_files:
+        ii_2nd_ind,jj_2nd_ind = iijj_ind['Dataset 2']['ii'],iijj_ind['Dataset 2']['jj']
     hov_x = time_datetime
     hov_y =  grid_dict['Dataset 1']['gdept'][:,jj,ii]
 
@@ -1873,7 +1876,8 @@ def reload_hov_data_comb(var,var_mat,var_grid,deriv_var,ldi,thd,time_datetime, i
 def reload_ts_data_comb(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_1,hov_dat_2,hov_y,time_datetime,z_meth,zz,xarr_dict,grid_dict,thd,var_mat,deriv_var,nz,ntime,configd,load_2nd_files):
     ts_x = time_datetime
 
-    ii_2nd_ind,jj_2nd_ind = iijj_ind['Dataset 2']['ii'],iijj_ind['Dataset 2']['jj']
+    if load_2nd_files:
+        ii_2nd_ind,jj_2nd_ind = iijj_ind['Dataset 2']['ii'],iijj_ind['Dataset 2']['jj']
 
     if var_dim[var] == 3:
 

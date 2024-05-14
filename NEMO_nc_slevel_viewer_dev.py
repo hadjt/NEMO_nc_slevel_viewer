@@ -204,17 +204,27 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     del(thin_files_1)
 
 
+    lon_d = {}
+    lat_d = {}
+    '''
+    lon_d[1] = nav_lon
+    lon_d[2] = nav_lon_2nd
+    lat_d[1] = nav_lat
+    lat_d[2] = nav_lat_2nd
+    if (configd[1].upper() in ['AMM15','CO9P2']):
+        lat_d['amm15'] = nav_lat_amm15
+        lon_d['amm15'] = nav_lon_amm15
+    if configd[2] is not None:
+        if (configd[2].upper() in ['AMM15','CO9P2']): 
+            lat_d['amm15'] = nav_lat_amm15
+            lon_d['amm15'] = nav_lon_amm15
+    '''
+
     axis_scale = 'Auto'
 
     if do_grad is None: do_grad = 0
     if do_cont is None: do_cont = True
     
-    # For T Diff
-    Time_Diff = False
-    data_inst_Tm1 = {}
-    data_inst_Tm1['Dataset 1'],data_inst_Tm1['Dataset 2'] = None,None
-    preload_data_ti_Tm1,preload_data_var_Tm1,preload_data_ldi_Tm1 = 0.5,'None',0.5
-
     if verbose_debugging:
         print('======================================================')
         print('======================================================')
@@ -365,7 +375,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         z_meth = z_meth_default
 
 
-    global rootgrp_gdept_2nd, nav_lon_2nd, nav_lat_2nd
+    #global rootgrp_gdept_2nd, nav_lon_2nd, nav_lat_2nd
 
     rootgrp_gdept_dict['Dataset 2'] = rootgrp_gdept_dict['Dataset 1']
 
@@ -493,39 +503,39 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     # load nav_lat and nav_lon
     if configd[1].upper() in ['ORCA025','ORCA025EXT','ORCA12']: 
 
-        nav_lon = np.ma.masked_invalid(rootgrp_gdept_dict['Dataset 1'].variables[ncglamt][0])
-        nav_lat = np.ma.masked_invalid(rootgrp_gdept_dict['Dataset 1'].variables[ncgphit][0])
+        lon_d[1] = np.ma.masked_invalid(rootgrp_gdept_dict['Dataset 1'].variables[ncglamt][0])
+        lat_d[1] = np.ma.masked_invalid(rootgrp_gdept_dict['Dataset 1'].variables[ncgphit][0])
         
         # Fix Longitude, to be between -180 and 180.
-        fixed_nav_lon = nav_lon.copy()
-        for i, start in enumerate(np.argmax(np.abs(np.diff(nav_lon)) > 180, axis=1)):            fixed_nav_lon[i, start+1:] += 360
+        fixed_nav_lon = lon_d[1].copy()
+        for i, start in enumerate(np.argmax(np.abs(np.diff(lon_d[1])) > 180, axis=1)):            fixed_nav_lon[i, start+1:] += 360
         fixed_nav_lon -=360
         fixed_nav_lon[fixed_nav_lon<-287.25] +=360
         fixed_nav_lon[fixed_nav_lon>73] -=360
-        nav_lon = fixed_nav_lon.copy()
+        lon_d[1] = fixed_nav_lon.copy()
 
 
-        nav_lat = np.ma.array(nav_lat[thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']])
-        nav_lon = np.ma.array(nav_lon[thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']])
+        lat_d[1] = np.ma.array(lat_d[1][thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']])
+        lon_d[1] = np.ma.array(lon_d[1][thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']])
 
         
     elif configd[1].upper() in ['CO9P2']: 
 
-        nav_lon = np.ma.masked_invalid(rootgrp_gdept_dict['Dataset 1'].variables[ncglamt][0])
-        nav_lat = np.ma.masked_invalid(rootgrp_gdept_dict['Dataset 1'].variables[ncgphit][0])
-        nav_lat_amm15 = np.ma.array(nav_lat.copy())
-        nav_lon_amm15 = np.ma.array(nav_lon.copy())
+        lon_d[1] = np.ma.masked_invalid(rootgrp_gdept_dict['Dataset 1'].variables[ncglamt][0])
+        lat_d[1] = np.ma.masked_invalid(rootgrp_gdept_dict['Dataset 1'].variables[ncgphit][0])
+        lat_d['amm15'] = np.ma.array(lat_d[1].copy())
+        lon_d['amm15'] = np.ma.array(lon_d[1].copy())
         
 
-        nav_lat = np.ma.array(nav_lat[thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']])
-        nav_lon = np.ma.array(nav_lon[thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']])
+        lat_d[1] = np.ma.array(lat_d[1][thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']])
+        lon_d[1] = np.ma.array(lon_d[1][thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']])
 
         #pdb.set_trace()
 
     else:
         if len(xarr_dict['Dataset 1']['T'][0].variables[nav_lat_varname].shape) == 2:
-            nav_lon = np.ma.masked_invalid(xarr_dict['Dataset 1']['T'][0].variables[nav_lon_varname][thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']].load())
-            nav_lat = np.ma.masked_invalid(xarr_dict['Dataset 1']['T'][0].variables[nav_lat_varname][thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']].load())
+            lon_d[1] = np.ma.masked_invalid(xarr_dict['Dataset 1']['T'][0].variables[nav_lon_varname][thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']].load())
+            lat_d[1] = np.ma.masked_invalid(xarr_dict['Dataset 1']['T'][0].variables[nav_lat_varname][thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']].load())
         else:
             # if only 1d lon and lat
             tmp_nav_lon = np.ma.masked_invalid(xarr_dict['Dataset 1']['T'][0].variables[nav_lon_varname].load())
@@ -534,22 +544,22 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
             nav_lon_mat, nav_lat_mat = np.meshgrid(tmp_nav_lon,tmp_nav_lat)
 
 
-            nav_lat = nav_lat_mat[thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']]
-            nav_lon = nav_lon_mat[thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']]
+            lat_d[1] = nav_lat_mat[thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']]
+            lon_d[1] = nav_lon_mat[thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']]
 
     #Check if any nav_lat or nav_lon have masked values (i.e. using land suppression)
-    if ((nav_lat == 0) & (nav_lon == 0)).sum()>10:
+    if ((lat_d[1] == 0) & (lon_d[1] == 0)).sum()>10:
         print('Several points (>10) for 0degN 0degW - suggesting land suppression - use glamt and gphit from mesh')
 
-        nav_lon = np.ma.masked_invalid(rootgrp_gdept_dict['Dataset 1'].variables[ncglamt][0])
-        nav_lat = np.ma.masked_invalid(rootgrp_gdept_dict['Dataset 1'].variables[ncgphit][0])
+        lon_d[1] = np.ma.masked_invalid(rootgrp_gdept_dict['Dataset 1'].variables[ncglamt][0])
+        lat_d[1] = np.ma.masked_invalid(rootgrp_gdept_dict['Dataset 1'].variables[ncgphit][0])
 
-        nav_lat = np.ma.array(nav_lat[thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']])
-        nav_lon = np.ma.array(nav_lon[thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']])
+        lat_d[1] = np.ma.array(lat_d[1][thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']])
+        lon_d[1] = np.ma.array(lon_d[1][thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']])
 
 
 
-    if ((nav_lat == 0) & (nav_lon == 0)).sum()>10:
+    if ((lat_d[1] == 0) & (lon_d[1] == 0)).sum()>10:
         # If there are still (0,0) pairs in nav_lat and nav_lon, coming from glamt and gphit, we can approixmate the field analytically
         if configd[1].upper() in ['AMM7']:
             # as AMM7 is a regular lat and lon grid, with a linear grid, re can use a simple linear equation, and then use mesh grid
@@ -557,13 +567,13 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
             lon_amm7 = np.arange(-19.888889,12.99967+1/9.,1/9.)
             lat_amm7 = np.arange(40.066669,65+1/15.,1/15.)
 
-            nav_lon, nav_lat = np.meshgrid(lon_amm7,lat_amm7)
+            lon_d[1], lat_d[1] = np.meshgrid(lon_amm7,lat_amm7)
 
-            nav_lon = np.ma.masked_invalid(nav_lon)
-            nav_lat = np.ma.masked_invalid(nav_lat)
+            lon_d[1] = np.ma.masked_invalid(lon_d[1])
+            lat_d[1] = np.ma.masked_invalid(lat_d[1])
 
-            nav_lat = np.ma.array(nav_lat[thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']])
-            nav_lon = np.ma.array(nav_lon[thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']])
+            lat_d[1] = np.ma.array(lat_d[1][thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']])
+            lon_d[1] = np.ma.array(lon_d[1][thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']])
 
         if configd[1].upper() in ['AMM15', 'CO9P2']:
             # AMM15 is more complicated, as its on a rotated grid, however once unrotated, it can be treated as AMM7
@@ -607,13 +617,13 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
             lon_mat_unrot_mat_rot,lat_mat_unrot_mat_rot = rotated_grid_to_amm15(lon_mat_unrot_mat,lat_mat_unrot_mat)
 
             #thin the lats and lons. 
-            nav_lat = np.ma.array(lat_mat_unrot_mat_rot[thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']])
-            nav_lon = np.ma.array(lon_mat_unrot_mat_rot[thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']])
+            lat_d[1] = np.ma.array(lat_mat_unrot_mat_rot[thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']])
+            lon_d[1] = np.ma.array(lon_mat_unrot_mat_rot[thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']])
 
     if configd[1].upper() in ['AMM15']: 
         # AMM15 lon and lats are always 2d
-        nav_lat_amm15 = np.ma.masked_invalid(xarr_dict['Dataset 1']['T'][0].variables[nav_lat_varname].load())
-        nav_lon_amm15 = np.ma.masked_invalid(xarr_dict['Dataset 1']['T'][0].variables[nav_lon_varname].load())
+        lat_d['amm15'] = np.ma.masked_invalid(xarr_dict['Dataset 1']['T'][0].variables[nav_lat_varname].load())
+        lon_d['amm15'] = np.ma.masked_invalid(xarr_dict['Dataset 1']['T'][0].variables[nav_lon_varname].load())
 
     
 
@@ -621,10 +631,10 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     if (lon_in is not None) & (lat_in is not None):
         #pdb.set_trace()
 
-        lonlatin_dist_mat = np.sqrt((nav_lon - lon_in)**2 + (nav_lat - lat_in)**2)
-        jj,ii = lonlatin_dist_mat.argmin()//nav_lon.shape[1], lonlatin_dist_mat.argmin()%nav_lon.shape[1]
+        lonlatin_dist_mat = np.sqrt((lon_d[1] - lon_in)**2 + (lat_d[1] - lat_in)**2)
+        jj,ii = lonlatin_dist_mat.argmin()//lon_d[1].shape[1], lonlatin_dist_mat.argmin()%lon_d[1].shape[1]
     
-    nav_lon_2nd, nav_lat_2nd = nav_lon, nav_lat
+    lon_d[2], lat_d[2] = lon_d[1], lat_d[1]
 
 
     init_timer.append((datetime.now(),'Lon/Lats loaded'))
@@ -895,8 +905,8 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
 
         if len(xarr_dict['Dataset 2']['T'][0].variables[nav_lat_varname].shape) == 2:
-            nav_lat_2nd = np.ma.masked_invalid(xarr_dict['Dataset 2']['T'][0].variables[nav_lat_varname][thd[2]['y0']:thd[2]['y1']:thd[2]['dy'],thd[2]['x0']:thd[2]['x1']:thd[2]['dx']].load())
-            nav_lon_2nd = np.ma.masked_invalid(xarr_dict['Dataset 2']['T'][0].variables[nav_lon_varname][thd[2]['y0']:thd[2]['y1']:thd[2]['dy'],thd[2]['x0']:thd[2]['x1']:thd[2]['dx']].load())
+            lat_d[2] = np.ma.masked_invalid(xarr_dict['Dataset 2']['T'][0].variables[nav_lat_varname][thd[2]['y0']:thd[2]['y1']:thd[2]['dy'],thd[2]['x0']:thd[2]['x1']:thd[2]['dx']].load())
+            lon_d[2] = np.ma.masked_invalid(xarr_dict['Dataset 2']['T'][0].variables[nav_lon_varname][thd[2]['y0']:thd[2]['y1']:thd[2]['dy'],thd[2]['x0']:thd[2]['x1']:thd[2]['dx']].load())
         else:
             # if only 1d lon and lat
             tmp_nav_lon = np.ma.masked_invalid(xarr_dict['Dataset 2']['T'][0].variables[nav_lon_varname].load())
@@ -905,15 +915,15 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
             nav_lon_mat, nav_lat_mat = np.meshgrid(tmp_nav_lon,tmp_nav_lat)
 
 
-            nav_lat_2nd = nav_lat_mat[thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']]
-            nav_lon_2nd = nav_lon_mat[thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']]
+            lat_d[2] = nav_lat_mat[thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']]
+            lon_d[2] = nav_lon_mat[thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']]
 
         
         if load_second_files:
             if configd[2] is not None:
                 if configd[2].upper() in ['AMM15','CO9P2']: 
-                    nav_lat_amm15 = np.ma.masked_invalid(xarr_dict['Dataset 2']['T'][0].variables[nav_lat_varname].load())
-                    nav_lon_amm15 = np.ma.masked_invalid(xarr_dict['Dataset 2']['T'][0].variables[nav_lon_varname].load())
+                    lat_d['amm15'] = np.ma.masked_invalid(xarr_dict['Dataset 2']['T'][0].variables[nav_lat_varname].load())
+                    lon_d['amm15'] = np.ma.masked_invalid(xarr_dict['Dataset 2']['T'][0].variables[nav_lon_varname].load())
         print ('xarray start reading 2nd \nctime',datetime.now())
         init_timer.append((datetime.now(),'nc time 2nd started'))
 
@@ -978,10 +988,10 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                     pdb.set_trace()
 
         if configd[2] is None:
-            if (nav_lat != nav_lat_2nd).any():
+            if (lat_d[1] != lat_d[2]).any():
                 print('Diff nav_lat_2nd dont match')
                 pdb.set_trace()
-            if (nav_lon != nav_lon_2nd).any():
+            if (lon_d[1] != lon_d[2]).any():
                 print('Diff nav_lon_2nd dont match')
                 pdb.set_trace()
         # use a difference colormap if comparing files
@@ -1016,13 +1026,13 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         init_timer.append((datetime.now(),'var dims and names 2nd loaded for UV'))
 
 
-    var_dim
     del(U_var_dim)
     del(V_var_dim)
-    del(var_dim_2nd)
-    del(U_var_dim_2nd)
-    del(V_var_dim_2nd)
-
+    if load_second_files:
+        del(var_dim_2nd)
+        del(U_var_dim_2nd)
+        del(V_var_dim_2nd)
+    '''
     lon_d = {}
     lat_d = {}
     lon_d[1] = nav_lon
@@ -1036,13 +1046,13 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         if (configd[2].upper() in ['AMM15','CO9P2']): 
             lat_d['amm15'] = nav_lat_amm15
             lon_d['amm15'] = nav_lon_amm15
-    
     del(nav_lon)
     del(nav_lat)
     del(nav_lon_2nd)
     del(nav_lat_2nd)
     del(nav_lon_amm15)
     del(nav_lat_amm15)
+    '''
     
     add_TSProf = False
     if ('votemper' in var_d[1]['mat']) & ('vosaline' in var_d[1]['mat']):
@@ -1299,6 +1309,20 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         func_names_lst.remove('Fcst Diag')
     else:
         ldi=0
+
+
+    # For T Diff
+    if ntime < 2: # no point being able to change lead time database if only one 
+        func_names_lst.remove('T Diff')
+        do_Tdiff = False
+    else:
+        do_Tdiff = True
+
+        Time_Diff = False
+        data_inst_Tm1 = {}
+        data_inst_Tm1['Dataset 1'],data_inst_Tm1['Dataset 2'] = None,None
+        preload_data_ti_Tm1,preload_data_var_Tm1,preload_data_ldi_Tm1 = 0.5,'None',0.5
+
         
 
     if load_second_files == False:
@@ -1803,35 +1827,35 @@ ax,
                         thd[2]['dx'],thd[2]['y0'],thd[2]['y1'],regrid_meth)
             
 
-            iijj_ind = {}
-            iijj_ind['Dataset 2'] = {}
-            iijj_ind['Dataset 2']['ii'] = ii_2nd_ind
-            iijj_ind['Dataset 2']['jj'] = jj_2nd_ind
-            iijj_ind['Dataset 2']['ew_ii'] = ew_ii_2nd_ind
-            iijj_ind['Dataset 2']['ew_jj'] = ew_jj_2nd_ind
-            iijj_ind['Dataset 2']['ns_ii'] = ns_ii_2nd_ind
-            iijj_ind['Dataset 2']['ns_jj'] = ns_jj_2nd_ind
+                iijj_ind = {}
+                iijj_ind['Dataset 2'] = {}
+                iijj_ind['Dataset 2']['ii'] = ii_2nd_ind
+                iijj_ind['Dataset 2']['jj'] = jj_2nd_ind
+                iijj_ind['Dataset 2']['ew_ii'] = ew_ii_2nd_ind
+                iijj_ind['Dataset 2']['ew_jj'] = ew_jj_2nd_ind
+                iijj_ind['Dataset 2']['ns_ii'] = ns_ii_2nd_ind
+                iijj_ind['Dataset 2']['ns_jj'] = ns_jj_2nd_ind
 
-            del(ii_2nd_ind)
-            del(jj_2nd_ind)
-            del(ew_ii_2nd_ind)
-            del(ew_jj_2nd_ind)
-            del(ns_ii_2nd_ind)
-            del(ns_jj_2nd_ind)
+                del(ii_2nd_ind)
+                del(jj_2nd_ind)
+                del(ew_ii_2nd_ind)
+                del(ew_jj_2nd_ind)
+                del(ns_ii_2nd_ind)
+                del(ns_jj_2nd_ind)
 
-            iijj_ind['Dataset 2']['ew_bl_ii'] = ew_bl_ii_ind_final
-            iijj_ind['Dataset 2']['ew_bl_jj'] = ew_bl_jj_ind_final
-            iijj_ind['Dataset 2']['ew_wgt'] = ew_wgt
-            iijj_ind['Dataset 2']['ns_bl_ii'] = ns_bl_ii_ind_final
-            iijj_ind['Dataset 2']['ns_bl_jj'] = ns_bl_jj_ind_final
-            iijj_ind['Dataset 2']['ns_wgt'] = ns_wgt
+                iijj_ind['Dataset 2']['ew_bl_ii'] = ew_bl_ii_ind_final
+                iijj_ind['Dataset 2']['ew_bl_jj'] = ew_bl_jj_ind_final
+                iijj_ind['Dataset 2']['ew_wgt'] = ew_wgt
+                iijj_ind['Dataset 2']['ns_bl_ii'] = ns_bl_ii_ind_final
+                iijj_ind['Dataset 2']['ns_bl_jj'] = ns_bl_jj_ind_final
+                iijj_ind['Dataset 2']['ns_wgt'] = ns_wgt
 
-            del(ew_bl_ii_ind_final)
-            del(ew_bl_jj_ind_final)
-            del(ew_wgt)
-            del(ns_bl_ii_ind_final)
-            del(ns_bl_jj_ind_final)
-            del(ns_wgt)
+                del(ew_bl_ii_ind_final)
+                del(ew_bl_jj_ind_final)
+                del(ew_wgt)
+                del(ns_bl_ii_ind_final)
+                del(ns_bl_jj_ind_final)
+                del(ns_wgt)
 
             
             if verbose_debugging: print('Reload data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now())
@@ -1862,61 +1886,63 @@ ax,
                     data_inst,preload_data_ti,preload_data_var,preload_data_ldi= reload_data_instances(var,thd,ldi,ti,var_grid['Dataset 1'], xarr_dict, grid_dict,var_dim,load_second_files)
 
                     # For T Diff
-                    data_inst_Tm1['Dataset 1'],data_inst_Tm1['Dataset 2'] = None,None
-                    preload_data_ti_Tm1,preload_data_var_Tm1,preload_data_ldi_Tm1 = 0.5,'None',0.5
-                    Time_Diff_cnt = 0
+                    if do_Tdiff:
+                        data_inst_Tm1['Dataset 1'],data_inst_Tm1['Dataset 2'] = None,None
+                        preload_data_ti_Tm1,preload_data_var_Tm1,preload_data_ldi_Tm1 = 0.5,'None',0.5
+                        Time_Diff_cnt = 0
 
 
 
             ###################################################################################################
             ### Status of buttons
             ###################################################################################################
-
-            if ti == 0:
-                func_but_text_han['T Diff'].set_color('0.5')
-            else:
-                if Time_Diff:
-                    func_but_text_han['T Diff'].set_color('darkgreen')
-
-                    if (data_inst_Tm1['Dataset 1'] is None)|(preload_data_ti_Tm1 != (ti-1))|(preload_data_var_Tm1 != var)|(preload_data_ldi_Tm1 != ldi):
-
-                        (data_inst_Tm1['Dataset 1'],data_inst_Tm1['Dataset 2'],
-                        preload_data_ti_Tm1,preload_data_var_Tm1,preload_data_ldi_Tm1) = reload_data_instances(var,thd,ldi,ti-1,
-                                var_grid['Dataset 1'], xarr_dict, grid_dict,var_dim,load_second_files)
-
-                    #pdb.set_trace()
-                    if Time_Diff_cnt == 0:
-                        data_inst['Dataset 1'] = data_inst['Dataset 1'] - data_inst_Tm1['Dataset 1']
-                        data_inst['Dataset 2'] = data_inst['Dataset 2'] - data_inst_Tm1['Dataset 2']
-                        Time_Diff_cnt -= 1
-                    func_but_text_han['Clim: sym'].set_color('r')
-                    #curr_cmap = scnd_cmap
-                    clim_sym_but = 1
-                    #clim_sym_but_norm_val = clim_sym
-                    clim_sym = True
-
-                    reload_map = True
-                    reload_ew = True
-                    reload_ns = True
-
+            
+            if do_Tdiff:
+                if ti == 0:
+                    func_but_text_han['T Diff'].set_color('0.5')
                 else:
-                    func_but_text_han['T Diff'].set_color('k')
-                    if (data_inst_Tm1['Dataset 1'] is not None):
+                    if Time_Diff:
+                        func_but_text_han['T Diff'].set_color('darkgreen')
 
-                        if Time_Diff_cnt == -1:
-                            #if (preload_data_ti_Tm1 == (ti-1))|(preload_data_var_Tm1 == var)|(preload_data_ldi_Tm1 == ldi):
-                            data_inst['Dataset 1'] = data_inst['Dataset 1'] + data_inst_Tm1['Dataset 1']
-                            data_inst['Dataset 2'] = data_inst['Dataset 2'] + data_inst_Tm1['Dataset 2']
-                            Time_Diff_cnt += 1
+                        if (data_inst_Tm1['Dataset 1'] is None)|(preload_data_ti_Tm1 != (ti-1))|(preload_data_var_Tm1 != var)|(preload_data_ldi_Tm1 != ldi):
 
-                        func_but_text_han['Clim: sym'].set_color('k')
-                        clim_sym_but = 0
-                        
+                            (data_inst_Tm1['Dataset 1'],data_inst_Tm1['Dataset 2'],
+                            preload_data_ti_Tm1,preload_data_var_Tm1,preload_data_ldi_Tm1) = reload_data_instances(var,thd,ldi,ti-1,
+                                    var_grid['Dataset 1'], xarr_dict, grid_dict,var_dim,load_second_files)
+
+                        #pdb.set_trace()
+                        if Time_Diff_cnt == 0:
+                            data_inst['Dataset 1'] = data_inst['Dataset 1'] - data_inst_Tm1['Dataset 1']
+                            data_inst['Dataset 2'] = data_inst['Dataset 2'] - data_inst_Tm1['Dataset 2']
+                            Time_Diff_cnt -= 1
+                        func_but_text_han['Clim: sym'].set_color('r')
+                        #curr_cmap = scnd_cmap
+                        clim_sym_but = 1
+                        #clim_sym_but_norm_val = clim_sym
+                        clim_sym = True
+
                         reload_map = True
                         reload_ew = True
                         reload_ns = True
 
-                        
+                    else:
+                        func_but_text_han['T Diff'].set_color('k')
+                        if (data_inst_Tm1['Dataset 1'] is not None):
+
+                            if Time_Diff_cnt == -1:
+                                #if (preload_data_ti_Tm1 == (ti-1))|(preload_data_var_Tm1 == var)|(preload_data_ldi_Tm1 == ldi):
+                                data_inst['Dataset 1'] = data_inst['Dataset 1'] + data_inst_Tm1['Dataset 1']
+                                data_inst['Dataset 2'] = data_inst['Dataset 2'] + data_inst_Tm1['Dataset 2']
+                                Time_Diff_cnt += 1
+
+                            func_but_text_han['Clim: sym'].set_color('k')
+                            clim_sym_but = 0
+                            
+                            reload_map = True
+                            reload_ew = True
+                            reload_ns = True
+
+                            
 
 
 
@@ -2453,7 +2479,7 @@ ax,
                 if secondary_fig:
                     time.sleep(5)
                     secondary_fig = False
-
+            pdb.set_trace()# for ss in locals().keys(): print(ss)
             if mode == 'Loop':
                 if mouse_in_Click:
                     mode = 'Click'
