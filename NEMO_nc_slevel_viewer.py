@@ -2662,7 +2662,7 @@ ax,
                             axts.set_xlim(tmprhoxlim)
                             axts.set_ylim(tmprhoylim)
                             figts_lab_str = '%s\n\n%s\n\n%s'%(lon_lat_to_str(nav_lon[jj,ii],nav_lat[jj,ii])[0],time_datetime[ti],fig_fname_lab)
-                            if load_2nd_files: figts_lab_str = figts_lab_str + '\n\n%s (dashed)'%fig_fname_lab_2nd
+                            if load_2nd_files: figts_lab_str = figts_lab_str + '\n\n%s\n(dashed)'%fig_fname_lab_2nd
                             plt.text(0.5, 0.1, figts_lab_str, fontsize=14, transform=figts.transFigure, ha = 'left', va = 'bottom')
                             figts.show()
                             #ts_diag_coord = np.ma.array([ii,jj,ti])
