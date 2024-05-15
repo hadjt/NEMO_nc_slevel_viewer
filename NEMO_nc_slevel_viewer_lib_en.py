@@ -2442,9 +2442,89 @@ def regrid_2nd(regrid_params,regrid_meth,thd,configd,dat_in): #):
 
 
 
+def grad_horiz_ns_data(thd,grid_dict,ii, ns_slice_dict):
+    tmp_datstr_mat = [ss for ss in ns_slice_dict.keys()] 
+    tmp_datstr_mat.remove('x')
+    tmp_datstr_mat.remove('y')
+
+
+    ns_slice_dx =  thd[1]['dx']*((grid_dict['Dataset 1']['e2t'][2:,ii] +  grid_dict['Dataset 1']['e2t'][:-2,ii])/2 + grid_dict['Dataset 1']['e2t'][1:-1,ii])
+
+    for tmp_datstr in tmp_datstr_mat:
+
+        dns_1 = ns_slice_dict[tmp_datstr][:,2:] - ns_slice_dict[tmp_datstr][:,:-2]
+
+        ns_slice_dict[tmp_datstr][:,1:-1] = dns_1/ns_slice_dx#_1
+
+        ns_slice_dict[tmp_datstr][:,0] = np.ma.masked
+        ns_slice_dict[tmp_datstr][:,-1] = np.ma.masked
+
+    return ns_slice_dict
+
+
+def grad_horiz_ew_data(thd,grid_dict,jj, ew_slice_dict):
+    tmp_datstr_mat = [ss for ss in ew_slice_dict.keys()] 
+    tmp_datstr_mat.remove('x')
+    tmp_datstr_mat.remove('y')
+
+
+    ew_slice_dx =  thd[1]['dx']*((grid_dict['Dataset 1']['e1t'][jj,2:] +  grid_dict['Dataset 1']['e1t'][jj,:-2])/2 + grid_dict['Dataset 1']['e1t'][jj,1:-1])
+
+    for tmp_datstr in tmp_datstr_mat:
+
+        dew_1 = ew_slice_dict[tmp_datstr][:,2:] - ew_slice_dict[tmp_datstr][:,:-2]
+
+        ew_slice_dict[tmp_datstr][:,1:-1] = dew_1/ew_slice_dx#_1
+
+        ew_slice_dict[tmp_datstr][:,0] = np.ma.masked
+        ew_slice_dict[tmp_datstr][:,-1] = np.ma.masked
+
+    return ew_slice_dict
+
+
+def grad_vert_ns_data(ns_slice_dict):
+    tmp_datstr_mat = [ss for ss in ns_slice_dict.keys()] 
+    tmp_datstr_mat.remove('x')
+    tmp_datstr_mat.remove('y')
+
+    ns_slice_y = ns_slice_dict['y']
+    dns_z = ns_slice_y[2:,:] - ns_slice_y[:-2,:]
+
+    for tmp_datstr in tmp_datstr_mat:
+
+        dns_1 = ns_slice_dict[tmp_datstr][2:,:] - ns_slice_dict[tmp_datstr][:-2,:]
+
+        ns_slice_dict[tmp_datstr][1:-1,:] = dns_1/dns_z
+
+        ns_slice_dict[tmp_datstr][ 0,:] = np.ma.masked
+        ns_slice_dict[tmp_datstr][-1,:] = np.ma.masked
+
+    return ns_slice_dict
+
+
+def grad_vert_ew_data(ew_slice_dict):
+    tmp_datstr_mat = [ss for ss in ew_slice_dict.keys()] 
+    tmp_datstr_mat.remove('x')
+    tmp_datstr_mat.remove('y')
+
+    ew_slice_y = ew_slice_dict['y']
+    dew_z = ew_slice_y[2:,:] - ew_slice_y[:-2,:]
+
+    for tmp_datstr in tmp_datstr_mat:
+
+        dew_1 = ew_slice_dict[tmp_datstr][2:,:] - ew_slice_dict[tmp_datstr][:-2,:]
+
+        ew_slice_dict[tmp_datstr][1:-1,:] = dew_1/dew_z
+
+        ew_slice_dict[tmp_datstr][ 0,:] = np.ma.masked
+        ew_slice_dict[tmp_datstr][-1,:] = np.ma.masked
+
+    return ew_slice_dict
 
 
 
+
+"""
 
 
 
@@ -2515,12 +2595,17 @@ def grad_vert_ew_data(ew_slice_dat_1,ew_slice_dat_2,ew_slice_y):
     return ew_slice_dat_1, ew_slice_dat_2
 
 
+
+"""
+
 #def grad_vert_hov_data(hov_dat_1,hov_dat_2,hov_y):
 def grad_vert_hov_data(hov_dat_dict):
 
     #hov_dat_dict['Dataset 1'],hov_dat_dict['Dataset 2'] = grad_vert_hov_data(hov_dat_dict['Dataset 1'],hov_dat_dict['Dataset 2'],hov_dat_dict['y'])
 
-    tmp_datstr_mat = [ss for ss in hov_dat_dict.keys()]
+    tmp_datstr_mat = [ss for ss in hov_dat_dict.keys()]   
+    tmp_datstr_mat.remove('x')       
+    tmp_datstr_mat.remove('y')    
 
 
     hov_y = hov_dat_dict['y']

@@ -518,11 +518,13 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
 
             
-
+    for ss in var_d[1]:
+        for tmpgrid in var_d[1].keys():
+            for ss in var_d[1][tmpgrid]: var_grid['Dataset 1'][ss] = tmpgrid
     
-    for ss in var_d[1]['T']: var_grid['Dataset 1'][ss] = 'T'
-    for ss in var_d[1]['U']: var_grid['Dataset 1'][ss] = 'U'
-    for ss in var_d[1]['V']: var_grid['Dataset 1'][ss] = 'V'
+    #for ss in var_d[1]['T']: var_grid['Dataset 1'][ss] = 'T'
+    #for ss in var_d[1]['U']: var_grid['Dataset 1'][ss] = 'U'
+    #for ss in var_d[1]['V']: var_grid['Dataset 1'][ss] = 'V'
 
     
 
@@ -553,17 +555,17 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     init_timer.append((datetime.now(),'xarray open_mfdataset UV connecting'))
     print ('xarray open_mfdataset, Finish',datetime.now())
     #Add baroclinic velocity magnitude
-    UV_vec = False
-    if (fname_dict['Dataset 1']['U'] is not None) & (fname_dict['Dataset 1']['V'] is not None):
-        UV_vec = True
-        '''
+    #UV_vec = False
+    #if (fname_dict['Dataset 1']['U'] is not None) & (fname_dict['Dataset 1']['V'] is not None):
+    #    UV_vec = True
+    '''
         if nldi == 0 :
             xarr_dict['Dataset 1']['U'].append(xarray.open_mfdataset(fname_dict['Dataset 1']['U'], combine='by_coords',parallel = True))
             xarr_dict['Dataset 1']['V'].append(xarray.open_mfdataset(fname_dict['Dataset 1']['V'], combine='by_coords',parallel = True))
         else:
             for li,(ldi,ldilab) in enumerate(zip(ldi_ind_mat, ld_lab_mat)):xarr_dict['Dataset 1']['U'].append(xarray.open_mfdataset(fname_dict['Dataset 1']['U'], combine='by_coords',parallel = True, preprocess=lambda ds: ds[{ld_nctvar:slice(ldi,ldi+1)}]) )
             for li,(ldi,ldilab) in enumerate(zip(ldi_ind_mat, ld_lab_mat)):xarr_dict['Dataset 1']['V'].append(xarray.open_mfdataset(fname_dict['Dataset 1']['V'], combine='by_coords',parallel = True, preprocess=lambda ds: ds[{ld_nctvar:slice(ldi,ldi+1)}]) )
-        '''
+    '''
 
 
     #pdb.set_trace()    
@@ -588,7 +590,6 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         lat_d[1] = np.ma.array(lat_d[1][thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']])
         lon_d[1] = np.ma.array(lon_d[1][thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']])
 
-        
     elif configd[1].upper() in ['CO9P2']: 
 
         lon_d[1] = np.ma.masked_invalid(rootgrp_gdept_dict['Dataset 1'].variables[ncglamt][0])
@@ -601,7 +602,6 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         lon_d[1] = np.ma.array(lon_d[1][thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']])
 
         #pdb.set_trace()
-
     else:
         if len(xarr_dict['Dataset 1']['T'][0].variables[nav_lat_varname].shape) == 2:
             lon_d[1] = np.ma.masked_invalid(xarr_dict['Dataset 1']['T'][0].variables[nav_lon_varname][thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']].load())
@@ -616,9 +616,9 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
             lat_d[1] = nav_lat_mat[thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']]
             lon_d[1] = nav_lon_mat[thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']]
-
+    #pdb.set_trace()
     #Check if any nav_lat or nav_lon have masked values (i.e. using land suppression)
-    if ((lat_d[1] == 0) & (lon_d[1] == 0)).sum()>10:
+    if ( ((lat_d[1] == 0) & (lon_d[1] == 0)).sum()>10) |  (lat_d[1] == lon_d[1]).sum()> 100:
         print('Several points (>10) for 0degN 0degW - suggesting land suppression - use glamt and gphit from mesh')
 
         lon_d[1] = np.ma.masked_invalid(rootgrp_gdept_dict['Dataset 1'].variables[ncglamt][0])
@@ -628,9 +628,10 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         lon_d[1] = np.ma.array(lon_d[1][thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']])
 
 
-
-    if ((lat_d[1] == 0) & (lon_d[1] == 0)).sum()>10:
+    #pdb.set_trace()
+    if (((lat_d[1] == 0) & (lon_d[1] == 0)).sum()>10) |  (lat_d[1] == lon_d[1]).sum()> 100:
         # If there are still (0,0) pairs in nav_lat and nav_lon, coming from glamt and gphit, we can approixmate the field analytically
+        print('Several points (>10) for 0degN 0degW - suggesting land suppression - calc grid mesh')
         if configd[1].upper() in ['AMM7']:
             # as AMM7 is a regular lat and lon grid, with a linear grid, re can use a simple linear equation, and then use mesh grid
 
@@ -689,13 +690,17 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
             #thin the lats and lons. 
             lat_d[1] = np.ma.array(lat_mat_unrot_mat_rot[thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']])
             lon_d[1] = np.ma.array(lon_mat_unrot_mat_rot[thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']])
-
-    if configd[1].upper() in ['AMM15']: 
+    '''
+    if configd[1].upper() in ['AMM15','CO9P2']: 
         # AMM15 lon and lats are always 2d
         lat_d['amm15'] = np.ma.masked_invalid(xarr_dict['Dataset 1']['T'][0].variables[nav_lat_varname].load())
         lon_d['amm15'] = np.ma.masked_invalid(xarr_dict['Dataset 1']['T'][0].variables[nav_lon_varname].load())
-
+    '''
     
+    if configd[1].upper() in ['AMM15','CO9P2']: 
+        # AMM15 lon and lats are always 2d
+        lat_d['amm15'] = lat_d[1]
+        lon_d['amm15'] = lon_d[1]
 
     # if lon_in and lat_in are present, use them
     if (lon_in is not None) & (lat_in is not None):
@@ -1654,6 +1659,8 @@ ax,
                         lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(loni,latj)
                         sel_ii = np.minimum(np.maximum( np.round((lon_mat_rot - lon_rotamm15[thd[1]['x0']:thd[1]['x1']:thd[1]['dx']].min())/(dlon_rotamm15*thd[1]['dx'])).astype('int') ,0),nlon_rotamm15//thd[1]['dx']-1)
                         sel_jj = np.minimum(np.maximum( np.round((lat_mat_rot - lat_rotamm15[thd[1]['y0']:thd[1]['y1']:thd[1]['dy']].min())/(dlat_rotamm15*thd[1]['dx'])).astype('int') ,0),nlat_rotamm15//thd[1]['dx']-1)
+
+
                     elif configd[1].upper() in ['ORCA025','ORCA025EXT','ORCA12']:
                         sel_dist_mat = np.sqrt((lon_d[1][:,:] - loni)**2 + (lat_d[1][:,:] - latj)**2 )
                         sel_jj,sel_ii = sel_dist_mat.argmin()//sel_dist_mat.shape[1], sel_dist_mat.argmin()%sel_dist_mat.shape[1]
@@ -2105,8 +2112,11 @@ ax,
                 reload_map = False
 
                 if do_grad == 1:
-                    map_dat_dict['Dataset 1'] = field_gradient_2d(map_dat_dict['Dataset 1'], thd[1]['dx']*grid_dict['Dataset 1']['e1t'],thd[1]['dx']*grid_dict['Dataset 1']['e2t']) # scale up widths between grid boxes
-                    map_dat_dict['Dataset 2'] = field_gradient_2d(map_dat_dict['Dataset 2'], thd[1]['dx']*grid_dict['Dataset 1']['e1t'],thd[1]['dx']*grid_dict['Dataset 1']['e2t']) # map 2 aleady on map1 grid, so use grid_dict['Dataset 1']['e1t'] not grid_dict['Dataset 2']['e1t']
+                    
+                    for tmp_datstr in  Dataset_lst:
+                        map_dat_dict[tmp_datstr] = field_gradient_2d(map_dat_dict[tmp_datstr], thd[1]['dx']*grid_dict[tmp_datstr]['e1t'],thd[1]['dx']*grid_dict[tmp_datstr]['e2t']) # scale up widths between grid boxes
+                    #map_dat_dict['Dataset 1'] = field_gradient_2d(map_dat_dict['Dataset 1'], thd[1]['dx']*grid_dict['Dataset 1']['e1t'],thd[1]['dx']*grid_dict['Dataset 1']['e2t']) # scale up widths between grid boxes
+                    #map_dat_dict['Dataset 2'] = field_gradient_2d(map_dat_dict['Dataset 2'], thd[1]['dx']*grid_dict['Dataset 1']['e1t'],thd[1]['dx']*grid_dict['Dataset 1']['e2t']) # map 2 aleady on map1 grid, so use grid_dict['Dataset 1']['e1t'] not grid_dict['Dataset 2']['e1t']
             #pdb.set_trace()
 
             if verbose_debugging: print('Reloaded map data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now(),'; dt = %s'%(datetime.now()-prevtime))
@@ -2119,9 +2129,11 @@ ax,
 
                 if var_dim[var] == 4:
                     if do_grad == 1:
-                        ew_slice_dict['Dataset 1'], ew_slice_dict['Dataset 2'] = grad_horiz_ew_data(thd,grid_dict,jj, ew_slice_dict['Dataset 1'],ew_slice_dict['Dataset 2'])
+                        #ew_slice_dict['Dataset 1'], ew_slice_dict['Dataset 2'] = grad_horiz_ew_data(thd,grid_dict,jj, ew_slice_dict['Dataset 1'],ew_slice_dict['Dataset 2'])
+                        ew_slice_dict = grad_horiz_ew_data(thd,grid_dict,jj, ew_slice_dict)
                     if do_grad == 2:
-                        ew_slice_dict['Dataset 1'], ew_slice_dict['Dataset 2'] = grad_vert_ew_data(ew_slice_dict['Dataset 1'],ew_slice_dict['Dataset 2'],ew_slice_dict['y'])
+                        #ew_slice_dict['Dataset 1'], ew_slice_dict['Dataset 2'] = grad_vert_ew_data(ew_slice_dict['Dataset 1'],ew_slice_dict['Dataset 2'],ew_slice_dict['y'])
+                        ew_slice_dict = grad_vert_ew_data(ew_slice_dict)
 
             if verbose_debugging: print('Reloaded  ew data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now(),'; dt = %s'%(datetime.now()-prevtime))
             prevtime = datetime.now()
@@ -2133,9 +2145,11 @@ ax,
 
                 if var_dim[var] == 4:   
                     if do_grad == 1:
-                        ns_slice_dict['Dataset 1'], ns_slice_dict['Dataset 2'] = grad_horiz_ns_data(thd,grid_dict,ii, ns_slice_dict['Dataset 1'],ns_slice_dict['Dataset 2'])
+                        #ns_slice_dict['Dataset 1'], ns_slice_dict['Dataset 2'] = grad_horiz_ns_data(thd,grid_dict,ii, ns_slice_dict['Dataset 1'],ns_slice_dict['Dataset 2'])
+                        ns_slice_dict = grad_horiz_ns_data(thd,grid_dict,ii, ns_slice_dict)
                     if do_grad == 2:
-                        ns_slice_dict['Dataset 1'], ns_slice_dict['Dataset 2'] = grad_vert_ns_data(ns_slice_dict['Dataset 1'],ns_slice_dict['Dataset 2'],ns_slice_dict['y'])
+                        #ns_slice_dict['Dataset 1'], ns_slice_dict['Dataset 2'] = grad_vert_ns_data(ns_slice_dict['Dataset 1'],ns_slice_dict['Dataset 2'],ns_slice_dict['y'])
+                        ns_slice_dict = grad_vert_ns_data(ns_slice_dict)
                   
 
             if verbose_debugging: print('Reloaded  ns data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now(),'; dt = %s'%(datetime.now()-prevtime))
