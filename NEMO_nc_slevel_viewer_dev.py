@@ -2091,13 +2091,13 @@ ax,
             stage_timer[5] = datetime.now() # start data dataload
             stage_timer_name[5] = 'Slice data'
             if reload_map:
-                map_dat_1,map_dat_2,map_x,map_y = reload_map_data_comb(var,ldi,ti,z_meth,zz,zi, data_inst,var_dim, interp1d_ZwgtT,grid_dict,lon_d[1],lat_d[1],regrid_params,regrid_meth,thd,configd,load_second_files)
+                map_dat_dict = reload_map_data_comb(var,ldi,ti,z_meth,zz,zi, data_inst,var_dim, interp1d_ZwgtT,grid_dict,lon_d[1],lat_d[1],regrid_params,regrid_meth,thd,configd,load_second_files)
                 reload_map = False
 
                 if do_grad == 1:
-                    map_dat_1 = field_gradient_2d(map_dat_1, thd[1]['dx']*grid_dict['Dataset 1']['e1t'],thd[1]['dx']*grid_dict['Dataset 1']['e2t']) # scale up widths between grid boxes
-                    map_dat_2 = field_gradient_2d(map_dat_2, thd[1]['dx']*grid_dict['Dataset 1']['e1t'],thd[1]['dx']*grid_dict['Dataset 1']['e2t']) # map 2 aleady on map1 grid, so use grid_dict['Dataset 1']['e1t'] not grid_dict['Dataset 2']['e1t']
-
+                    map_dat_dict['Dataset 1'] = field_gradient_2d(map_dat_dict['Dataset 1'], thd[1]['dx']*grid_dict['Dataset 1']['e1t'],thd[1]['dx']*grid_dict['Dataset 1']['e2t']) # scale up widths between grid boxes
+                    map_dat_dict['Dataset 2'] = field_gradient_2d(map_dat_dict['Dataset 2'], thd[1]['dx']*grid_dict['Dataset 1']['e1t'],thd[1]['dx']*grid_dict['Dataset 1']['e2t']) # map 2 aleady on map1 grid, so use grid_dict['Dataset 1']['e1t'] not grid_dict['Dataset 2']['e1t']
+            #pdb.set_trace()
 
             if verbose_debugging: print('Reloaded map data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now(),'; dt = %s'%(datetime.now()-prevtime))
             prevtime = datetime.now()
@@ -2202,7 +2202,7 @@ ax,
             ###################################################################################################
 
             pax = []        
-            map_dat = map_dat_1
+            map_dat = map_dat_dict['Dataset 1']
             if var_dim[var] == 4:
                 ns_slice_dat = ns_slice_dat_1
                 ew_slice_dat = ew_slice_dat_1
@@ -2211,28 +2211,28 @@ ax,
 
             if load_second_files:
                 if secdataset_proc == 'Dataset 1':
-                    map_dat = map_dat_1
+                    map_dat = map_dat_dict['Dataset 1']
                     if var_dim[var] == 4:
                         ns_slice_dat = ns_slice_dat_1
                         ew_slice_dat = ew_slice_dat_1
                         hov_dat = hov_dat_dict['Dataset 1']
                     ts_dat = ts_dat_dict['Dataset 1']
                 elif secdataset_proc == 'Dataset 2':
-                    map_dat = map_dat_2
+                    map_dat = map_dat_dict['Dataset 2']
                     if var_dim[var] == 4:
                         ns_slice_dat = ns_slice_dat_2
                         ew_slice_dat = ew_slice_dat_2
                         hov_dat = hov_dat_dict['Dataset 2']
                     ts_dat = ts_dat_dict['Dataset 2']
                 elif secdataset_proc == 'Dat1-Dat2':
-                    map_dat = map_dat_1 - map_dat_2
+                    map_dat = map_dat_dict['Dataset 1'] - map_dat_dict['Dataset 2']
                     if var_dim[var] == 4:
                         ns_slice_dat = ns_slice_dat_1 - ns_slice_dat_2
                         ew_slice_dat = ew_slice_dat_1 - ew_slice_dat_2
                         hov_dat = hov_dat_dict['Dataset 1'] - hov_dat_dict['Dataset 2']
                     ts_dat = ts_dat_dict['Dataset 1'] - ts_dat_dict['Dataset 2']
                 elif secdataset_proc == 'Dat2-Dat1':
-                    map_dat = map_dat_2 - map_dat_1
+                    map_dat = map_dat_dict['Dataset 2'] - map_dat_dict['Dataset 1']
                     if var_dim[var] == 4:
                         ns_slice_dat = ns_slice_dat_2 - ns_slice_dat_1
                         ew_slice_dat = ew_slice_dat_2 - ew_slice_dat_1
@@ -2251,7 +2251,7 @@ ax,
 
 
             if verbose_debugging: print("Do pcolormesh for ii = %i,jj = %i,ti = %i,zz = %i, var = '%s'"%(ii,jj, ti, zz,var), datetime.now())
-            pax.append(ax[0].pcolormesh(map_x,map_y,map_dat,cmap = curr_cmap,norm = climnorm))
+            pax.append(ax[0].pcolormesh(map_dat_dict['x'],map_dat_dict['y'],map_dat,cmap = curr_cmap,norm = climnorm))
             if var_dim[var] == 4:
                 pax.append(ax[1].pcolormesh(ew_slice_x,ew_slice_y,ew_slice_dat,cmap = curr_cmap,norm = climnorm))
                 pax.append(ax[2].pcolormesh(ns_slice_x,ns_slice_y,ns_slice_dat,cmap = curr_cmap,norm = climnorm))
@@ -2394,12 +2394,12 @@ ax,
 
                     map_dat_reg_mask_1 = (lon_d[1]>tmpxlim[0]) & (lon_d[1]<tmpxlim[1]) & (lat_d[1]>tmpylim[0]) & (lat_d[1]<tmpylim[1])
                     #map_dat_reg_mask_2 = (lon_d[2]>xlim[0]) & (lon_d[2]<xlim[1]) & (lat_d[2]>ylim[0]) & (lat_d[2]<ylim[1])
-                    tmp_map_dat_1 = map_dat_1[map_dat_reg_mask_1]
+                    tmp_map_dat_1 = map_dat_dict['Dataset 1'][map_dat_reg_mask_1]
                     #tmp_map_dat_2 = map_dat_2[map_dat_reg_mask_2]
-                    if map_dat_1.size != map_dat_2.size:
+                    if map_dat_dict['Dataset 1'].size != map_dat_dict['Dataset 2'].size:
                         print('clim exception save, map 1 and 2 different size')
                         pdb.set_trace()
-                    tmp_map_dat_2 = map_dat_2[map_dat_reg_mask_1]
+                    tmp_map_dat_2 = map_dat_dict['Dataset 2'][map_dat_reg_mask_1]
 
                     tmp_map_dat_1 = tmp_map_dat_1[tmp_map_dat_1.mask == False]
                     tmp_map_dat_2 = tmp_map_dat_2[tmp_map_dat_2.mask == False]
@@ -2554,7 +2554,7 @@ ax,
                 
                 for tmpcax in cax:cont_val_lst.append(get_colorbar_values(tmpcax))
                 
-                conax.append(ax[0].contour(map_x,map_y,map_dat,cont_val_lst[0], colors = contcols, linewidths = contlws, alphas = contalphas))
+                conax.append(ax[0].contour(map_dat_dict['x'],map_dat_dict['y'],map_dat,cont_val_lst[0], colors = contcols, linewidths = contlws, alphas = contalphas))
                 if var_dim[var] == 4: 
                     #nz = ns_slice_y.shape[0]
                     conax.append(ax[1].contour(np.tile(ew_slice_x,(nz,1)),ew_slice_y,ew_slice_dat,cont_val_lst[1], colors = contcols, linewidths = contlws, alphas = contalphas))

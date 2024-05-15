@@ -1153,7 +1153,7 @@ def pea_TS(T_in,S_in,gdept,e3t_in,tmask = None,calc_TS_comp = False, zcutoff = 4
 
     #3d density field
     #rho = calc_sigma0(T,S)
-    from NEMO_nc_slevel_viewer_lib import sw_dens
+    #from NEMO_nc_slevel_viewer_lib import sw_dens
     rho = sw_dens(T,S) 
 
 
@@ -1773,42 +1773,65 @@ def reload_data_instances(var,thd,ldi,ti,var_grid, xarr_dict, grid_dict,var_dim,
 def reload_map_data_comb(var,ldi,ti,z_meth,zz,zi, data_inst,var_dim,interp1d_ZwgtT,grid_dict,nav_lon,nav_lat,regrid_params,regrid_meth,thd,configd,load_2nd_files):
 
     if var_dim[var] == 3:
-        map_dat_1,map_dat_2 = reload_map_data_comb_2d(var,ldi,ti, data_inst,grid_dict,regrid_params,regrid_meth ,thd,configd[2],load_2nd_files)
+        map_dat_dict = reload_map_data_comb_2d(var,ldi,ti, data_inst,grid_dict,regrid_params,regrid_meth ,thd,configd[2],load_2nd_files)
 
     else:
         if z_meth == 'z_slice':
-            map_dat_1,map_dat_2 = reload_map_data_comb_zmeth_zslice(zz, data_inst,interp1d_ZwgtT,grid_dict,regrid_params,regrid_meth ,thd,configd[2],load_2nd_files)
+            map_dat_dict = reload_map_data_comb_zmeth_zslice(zz, data_inst,interp1d_ZwgtT,grid_dict,regrid_params,regrid_meth ,thd,configd[2],load_2nd_files)
         elif z_meth in ['nb','df','zm']:
-            map_dat_1,map_dat_2 = reload_map_data_comb_zmeth_nb_df_zm_3d(z_meth, data_inst,grid_dict,regrid_params,regrid_meth ,thd,configd[2],load_2nd_files)
+            map_dat_dict = reload_map_data_comb_zmeth_nb_df_zm_3d(z_meth, data_inst,grid_dict,regrid_params,regrid_meth ,thd,configd[2],load_2nd_files)
         elif z_meth in ['ss']:
-            map_dat_1,map_dat_2 = reload_map_data_comb_zmeth_ss_3d(data_inst,regrid_params,regrid_meth,thd,configd[2],load_2nd_files)
+            map_dat_dict = reload_map_data_comb_zmeth_ss_3d(data_inst,regrid_params,regrid_meth,thd,configd[2],load_2nd_files)
         elif z_meth == 'z_index':
-            map_dat_1,map_dat_2 = reload_map_data_comb_zmeth_zindex(data_inst,zi,regrid_params,regrid_meth,thd,configd[2],load_2nd_files)
+            map_dat_dict = reload_map_data_comb_zmeth_zindex(data_inst,zi,regrid_params,regrid_meth,thd,configd[2],load_2nd_files)
         else:
             print('z_meth not supported:',z_meth)
             pdb.set_trace()
 
-    map_x = nav_lon
-    map_y = nav_lat
-    
-    return map_dat_1,map_dat_2,map_x,map_y
+    map_dat_dict['x'] = nav_lon
+    map_dat_dict['y'] = nav_lat
+
+    return map_dat_dict
             
 
 
 def reload_map_data_comb_2d(var,ldi,ti, data_inst,grid_dict,regrid_params,regrid_meth,thd,configd,load_2nd_files): # ,
- 
+    tmp_datstr_mat = [ss for ss in data_inst.keys()]
+    tmp_datstr_mat_secondary = tmp_datstr_mat
+    tmp_datstr_mat_secondary.remove('Dataset 1')
+
+    map_dat_dict= {}
+    map_dat_dict['Dataset 1'] = data_inst['Dataset 1']
+    for tmp_datstr in tmp_datstr_mat_secondary:
+        map_dat_dict[tmp_datstr] = regrid_2nd(regrid_params,regrid_meth,thd,configd,data_inst[tmp_datstr])
+
+    '''
     map_dat_1 = data_inst['Dataset 1']
     map_dat_2 = map_dat_1
     
     if load_2nd_files:
         map_dat_2 = regrid_2nd(regrid_params,regrid_meth,thd,configd,data_inst['Dataset 2'])
         
-
-    return map_dat_1,map_dat_2
+    map_dat_dict= {}
+    map_dat_dict['Dataset 1'] = map_dat_1
+    map_dat_dict['Dataset 2'] = map_dat_2
+    '''
+    
+    return map_dat_dict
 
 
 
 def  reload_map_data_comb_zmeth_ss_3d(data_inst,regrid_params,regrid_meth,thd,configd,load_2nd_files):
+    tmp_datstr_mat = [ss for ss in data_inst.keys()]
+    tmp_datstr_mat_secondary = tmp_datstr_mat
+    tmp_datstr_mat_secondary.remove('Dataset 1')
+
+    map_dat_dict= {}
+    map_dat_dict['Dataset 1'] = data_inst['Dataset 1'][0]
+    for tmp_datstr in tmp_datstr_mat_secondary:
+        map_dat_dict[tmp_datstr] = regrid_2nd(regrid_params,regrid_meth,thd,configd,data_inst[tmp_datstr][0])
+
+    '''
 
     # load files
     map_dat_ss_1 = data_inst['Dataset 1'][0]
@@ -1817,17 +1840,25 @@ def  reload_map_data_comb_zmeth_ss_3d(data_inst,regrid_params,regrid_meth,thd,co
     else: 
         map_dat_ss_2 = map_dat_ss_1
 
-    return map_dat_ss_1, map_dat_ss_2
+    map_dat_dict= {}
+    map_dat_dict['Dataset 1'] = map_dat_1
+    map_dat_dict['Dataset 2'] = map_dat_2
 
-def  reload_map_data_comb_zmeth_nb_df_zm_3d(z_meth, data_inst,grid_dict,regrid_params,regrid_meth,thd,configd,load_2nd_files):
+    '''
+
+    return map_dat_dict
+
+def reload_map_data_comb_zmeth_nb_df_zm_3d(z_meth, data_inst,grid_dict,regrid_params,regrid_meth,thd,configd,load_2nd_files):
+    tmp_datstr_mat = [ss for ss in data_inst.keys()]
+    tmp_datstr_mat_secondary = tmp_datstr_mat
+    tmp_datstr_mat_secondary.remove('Dataset 1')
+
+    map_dat_dict= {}
+
 
     # load files
     map_dat_3d_1 = data_inst['Dataset 1']
     
-    if load_2nd_files:
-       map_dat_3d_2 = data_inst['Dataset 2']
-    else:
-        map_dat_3d_2 = map_dat_3d_1
 
     # process onto 2d levels
     map_dat_ss_1 = map_dat_3d_1[0]
@@ -1835,74 +1866,84 @@ def  reload_map_data_comb_zmeth_nb_df_zm_3d(z_meth, data_inst,grid_dict,regrid_p
     map_dat_zm_1 = weighted_depth_mean_masked_var(map_dat_3d_1,grid_dict['Dataset 1']['e3t'])
     del(map_dat_3d_1)
     map_dat_df_1 = map_dat_ss_1 - map_dat_nb_1
- 
-    if load_2nd_files:
+
+
+    if z_meth == 'nb': map_dat_dict['Dataset 1'] = map_dat_nb_1
+    if z_meth == 'df': map_dat_dict['Dataset 1'] = map_dat_ss_1 - map_dat_nb_1
+    if z_meth == 'zm': map_dat_dict['Dataset 1'] = map_dat_zm_1
+
+    for tmp_datstr in tmp_datstr_mat_secondary:
     
+        map_dat_3d_2 = np.ma.masked_invalid(data_inst[tmp_datstr])
+
         map_dat_ss_2 = regrid_2nd(regrid_params,regrid_meth,thd,configd,map_dat_3d_2[0])
         map_dat_nb_2 = regrid_2nd(regrid_params,regrid_meth,thd,configd,nearbed_int_index_val(map_dat_3d_2))
         map_dat_zm_2 = regrid_2nd(regrid_params,regrid_meth,thd,configd,weighted_depth_mean_masked_var(map_dat_3d_2,grid_dict['Dataset 2']['e3t']))
         del(map_dat_3d_2)
         map_dat_df_2 = map_dat_ss_2 - map_dat_nb_2
-    else:
-
-        map_dat_ss_2 = map_dat_ss_1
-        map_dat_nb_2 = map_dat_nb_1
-        map_dat_df_2 = map_dat_df_1
-        map_dat_zm_2 = map_dat_zm_1
-
+        if z_meth == 'nb': map_dat_dict[tmp_datstr] = map_dat_nb_2
+        if z_meth == 'df': map_dat_dict[tmp_datstr] = map_dat_ss_2 - map_dat_nb_2
+        if z_meth == 'zm': map_dat_dict[tmp_datstr] = map_dat_zm_2
 
         
-    if z_meth == 'nb': map_dat_1 = map_dat_nb_1
-    if z_meth == 'df': map_dat_1 = map_dat_ss_1 - map_dat_nb_1
-    if z_meth == 'zm': map_dat_1 = map_dat_zm_1
-    if z_meth == 'nb': map_dat_2 = map_dat_nb_2
-    if z_meth == 'df': map_dat_2 = map_dat_ss_2 - map_dat_nb_2
-    if z_meth == 'zm': map_dat_2 = map_dat_zm_2
-
-    return map_dat_1, map_dat_2
+    return map_dat_dict
 
 
 def reload_map_data_comb_zmeth_zslice(zz, data_inst,interp1d_ZwgtT,grid_dict,regrid_params,regrid_meth,thd,configd,load_2nd_files):
+    tmp_datstr_mat = [ss for ss in data_inst.keys()]
+    tmp_datstr_mat_secondary = tmp_datstr_mat
+    tmp_datstr_mat_secondary.remove('Dataset 1')
+
+    map_dat_dict= {}
 
 
     if zz not in interp1d_ZwgtT['Dataset 1'].keys():
         interp1d_ZwgtT['Dataset 1'][zz] = interp1dmat_create_weight(grid_dict['Dataset 1']['gdept'],zz)
-    
-    if load_2nd_files:
-        if zz not in interp1d_ZwgtT['Dataset 2'].keys(): 
-            interp1d_ZwgtT['Dataset 2'][zz] = interp1dmat_create_weight(grid_dict['Dataset 2']['gdept'],zz)
-    
+
+
     map_dat_3d_1 = np.ma.masked_invalid(data_inst['Dataset 1'])
     if load_2nd_files:
         map_dat_3d_2 = np.ma.masked_invalid(data_inst['Dataset 2'])
     else:
         map_dat_3d_2 = map_dat_3d_1
 
-    map_dat_1 =  interp1dmat_wgt(np.ma.masked_invalid(map_dat_3d_1),interp1d_ZwgtT['Dataset 1'][zz])
+    map_dat_dict['Dataset 1'] =  interp1dmat_wgt(np.ma.masked_invalid(map_dat_3d_1),interp1d_ZwgtT['Dataset 1'][zz])
 
-    if load_2nd_files:
-        map_dat_2 =  regrid_2nd(regrid_params,regrid_meth,thd,configd,interp1dmat_wgt(np.ma.masked_invalid(map_dat_3d_2),interp1d_ZwgtT['Dataset 2'][zz]))
-    else:
-        map_dat_2 = map_dat_1
+    
+    for tmp_datstr in tmp_datstr_mat_secondary:
+    
+        if zz not in interp1d_ZwgtT[tmp_datstr].keys(): 
+            interp1d_ZwgtT[tmp_datstr][zz] = interp1dmat_create_weight(grid_dict[tmp_datstr]['gdept'],zz)
+        
+        map_dat_dict[tmp_datstr] = regrid_2nd(regrid_params,regrid_meth,thd,configd,interp1dmat_wgt(np.ma.masked_invalid(map_dat_3d_2),interp1d_ZwgtT[tmp_datstr][zz]))
+       
 
-
-    return map_dat_1,map_dat_2
+    return map_dat_dict
 
 
 def reload_map_data_comb_zmeth_zindex(data_inst,zi,regrid_params,regrid_meth,thd,configd,load_2nd_files):
+    tmp_datstr_mat = [ss for ss in data_inst.keys()]
+    tmp_datstr_mat_secondary = tmp_datstr_mat
+    tmp_datstr_mat_secondary.remove('Dataset 1')
+
+    map_dat_dict= {}
 
 
-    map_dat_1 = np.ma.masked_invalid(data_inst['Dataset 1'][zi])
-    if load_2nd_files:
-        map_dat_2 = np.ma.masked_invalid(regrid_2nd(regrid_params,regrid_meth,thd,configd,data_inst['Dataset 2'][zi]))
-    else:
-        map_dat_2 = map_dat_1
-    return map_dat_1,map_dat_2
+    map_dat_dict['Dataset 1'] = np.ma.masked_invalid(data_inst['Dataset 1'][zi])
+    for tmp_datstr in tmp_datstr_mat_secondary:
+    
+        map_dat_dict[tmp_datstr]  = np.ma.masked_invalid(regrid_2nd(regrid_params,regrid_meth,thd,configd,data_inst[tmp_datstr][zi]))
+
+
+    return map_dat_dict
 
 
 
 
 def reload_ew_data_comb(ii,jj,ti,thd, data_inst, nav_lon, nav_lat, grid_dict,regrid_meth, iijj_ind,load_2nd_files,configd):
+    tmp_datstr_mat = [ss for ss in data_inst.keys()]
+    tmp_datstr_mat_secondary = tmp_datstr_mat
+    tmp_datstr_mat_secondary.remove('Dataset 1')
     '''
     reload the data for the E-W cross-section
 
@@ -1935,7 +1976,10 @@ def reload_ew_data_comb(ii,jj,ti,thd, data_inst, nav_lon, nav_lat, grid_dict,reg
 
     return ew_slice_dat_1,ew_slice_dat_2,ew_slice_x, ew_slice_y
 
-def reload_ns_data_comb(ii,jj,ti,thd, data_inst, nav_lon, nav_lat, grid_dict, regrid_meth,iijj_ind,load_2nd_files,configd):              
+def reload_ns_data_comb(ii,jj,ti,thd, data_inst, nav_lon, nav_lat, grid_dict, regrid_meth,iijj_ind,load_2nd_files,configd):        
+    tmp_datstr_mat = [ss for ss in data_inst.keys()]      
+    tmp_datstr_mat_secondary = tmp_datstr_mat
+    tmp_datstr_mat_secondary.remove('Dataset 1')
     '''
     reload the data for the N-S cross-section
 
