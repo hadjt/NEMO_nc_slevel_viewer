@@ -26,6 +26,7 @@ from NEMO_nc_slevel_viewer_lib_en import reload_map_data_comb_zmeth_zslice,reloa
 from NEMO_nc_slevel_viewer_lib_en import reload_hov_data_comb,reload_ts_data_comb
 from NEMO_nc_slevel_viewer_lib_en import regrid_2nd,grad_horiz_ns_data,grad_horiz_ew_data,grad_vert_ns_data,grad_vert_ew_data,grad_vert_hov_data
 #from NEMO_nc_slevel_viewer_lib_en import indices_from_ginput_ax
+from NEMO_nc_slevel_viewer_lib_en import extract_time_from_xarr
 
 
 letter_mat = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
@@ -134,10 +135,13 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         if U_fname_lst is not None: fname_dict['Dataset 2']['U'] = U_fname_lst_2nd
         if V_fname_lst is not None: fname_dict['Dataset 2']['V'] = V_fname_lst_2nd
 
+    Dataset_lst = []
+
     # open file list with xarray
     xarr_dict = {}
     for tmp_datstr in fname_dict.keys():
         xarr_dict[tmp_datstr] = {}
+        Dataset_lst.append(tmp_datstr)
         for tmpgrid in fname_dict[tmp_datstr].keys():
             xarr_dict[tmp_datstr][tmpgrid] = []
     
@@ -465,6 +469,8 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     var_d['d'] = []
     var_dim = {}
     var_grid = {}
+    ncvar_d = {}
+    ncdim_d = {}
 
     # open file list with xarray
     #xarr_dict = {}
@@ -474,6 +480,8 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         var_d[th_d_ind] = {}
         var_d[th_d_ind]['mat'] = np.array([])
         var_grid[tmp_datstr] = {}
+        ncvar_d[tmp_datstr] = {}
+        ncdim_d[tmp_datstr] = {}
         #xarr_dict[tmp_datstr] = {}
         for tmpgrid in xarr_dict[tmp_datstr].keys():
 
@@ -483,12 +491,19 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
                 for li,(ldi,ldilab) in enumerate(zip(ldi_ind_mat, ld_lab_mat)):xarr_dict[tmp_datstr][tmpgrid].append(xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], combine='by_coords',parallel = True, preprocess=lambda ds: ds[{ld_nctvar:slice(ldi,ldi+1)}]))   
             init_timer.append((datetime.now(),'xarray open_mfdataset %s %s connected'%(tmp_datstr,tmpgrid)))
             print ('xarray open_mfdataset, Start',datetime.now())
+
             ncvar_mat = [ss for ss in xarr_dict[tmp_datstr][tmpgrid][0].variables.keys()]
             
     
-        
+            ncvar_d[tmp_datstr][tmpgrid] = ncvar_mat
             tmp_x_dim, tmp_y_dim, tmp_z_dim, tmp_t_dim  = load_nc_dims(xarr_dict[tmp_datstr][tmpgrid][0]) #  find the names of the x, y, z and t dimensions.
             tmp_var_names = load_nc_var_name_list(xarr_dict[tmp_datstr][tmpgrid][0], tmp_x_dim, tmp_y_dim, tmp_z_dim,tmp_t_dim)# find the variable names in the nc file # var_4d_mat, var_3d_mat, var_d[1]['T'], nvar4d, nvar3d, nvar, var_dim = 
+        
+            ncdim_d[tmp_datstr][tmpgrid]  = {}
+            ncdim_d[tmp_datstr][tmpgrid]['t'] = tmp_t_dim
+            ncdim_d[tmp_datstr][tmpgrid]['z'] = tmp_z_dim
+            ncdim_d[tmp_datstr][tmpgrid]['y'] = tmp_y_dim
+            ncdim_d[tmp_datstr][tmpgrid]['x'] = tmp_x_dim
         
             var_d[th_d_ind][tmpgrid] = tmp_var_names[2]
             tmp_var_dim = tmp_var_names[6]
@@ -499,6 +514,11 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
             var_d[th_d_ind]['mat'] = np.append(var_d[th_d_ind]['mat'] , var_d[th_d_ind][tmpgrid])
 
+
+
+
+            
+
     
     for ss in var_d[1]['T']: var_grid['Dataset 1'][ss] = 'T'
     for ss in var_d[1]['U']: var_grid['Dataset 1'][ss] = 'U'
@@ -506,7 +526,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
     
 
-
+    
 
     '''
 
@@ -521,7 +541,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     
     # check name of lon and lat ncvar in data.
     # cycle through variables and if it is a possibnle varibable name, use it
-    for ncvar in ncvar_mat: 
+    for ncvar in ncvar_d['Dataset 1']['T']: 
         if ncvar.upper() in nav_lon_var_mat: nav_lon_varname = ncvar
         if ncvar.upper() in nav_lat_var_mat: nav_lat_varname = ncvar
         if ncvar.upper() in time_varname_mat: time_varname = ncvar
@@ -814,6 +834,14 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     # needs work, xarray time is tricky
 
     init_timer.append((datetime.now(),'nc time started'))
+
+    #pdb.set_trace()
+    time_datetime,time_datetime_since_1970,ntime,ti = extract_time_from_xarr(xarr_dict['Dataset 1']['T'],fname_dict['Dataset 1']['T'][0],
+        time_varname,ncdim_d[tmp_datstr][tmpgrid]['t'],date_in_ind,date_fmt,ti,verbose_debugging)
+
+    init_timer.append((datetime.now(),'nc time completed'))
+
+    '''
     
     print ('xarray start reading nctime',datetime.now())
     nctime = xarr_dict['Dataset 1']['T'][0].variables[time_varname]
@@ -879,8 +907,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
         if date_in_ind is not None: ti = 0
     ntime = time_datetime.size
-    
-    init_timer.append((datetime.now(),'nc time completed'))
+    '''
 
     if justplot: 
         print('justplot:',justplot)
@@ -984,6 +1011,15 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         print ('xarray start reading 2nd \nctime',datetime.now())
         init_timer.append((datetime.now(),'nc time 2nd started'))
 
+
+        
+
+        time_datetime_2nd,time_datetime_since_1970_2nd,ntime_2nd,ti = extract_time_from_xarr(xarr_dict['Dataset 2']['T'],fname_dict['Dataset 2']['T'][0],
+            time_varname,ncdim_d['Dataset 2']['T']['t'],date_in_ind,date_fmt,ti,verbose_debugging)
+
+
+        '''
+
         nctime_2nd = xarr_dict['Dataset 2']['T'][0].variables[time_varname]
         try: 
             print ('xarray finish reading 2nd nctime',datetime.now())
@@ -1031,18 +1067,30 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
 
         ntime_2nd = time_datetime_2nd.size
+
+
+        '''
+
+
+
         
         # check both filessets have the same times
         if ntime_2nd != ntime:     
-            print('Diff Times have different number of files')
+            print()
+            print('Diff Times have different number of files. To Continue press c')
+            print()
             pdb.set_trace() 
         else:
             if allow_diff_time == False:
                 if (time_datetime_since_1970_2nd != time_datetime_since_1970).any():   
                     print()
-                    print("Times don't match between Dataset 1 and Dataset 2")
+                    print("Times don't match between Dataset 1 and Dataset 2. To Continue press c")
                     print()
                     pdb.set_trace()
+
+
+
+        init_timer.append((datetime.now(),'nc time 2nd completed'))
 
         if configd[2] is None:
             if (lat_d[1] != lat_d[2]).any():
@@ -1054,7 +1102,6 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         # use a difference colormap if comparing files
         curr_cmap = scnd_cmap
 
-        init_timer.append((datetime.now(),'nc time 2nd completed'))
         '''
         x_dim_2nd,y_dim_2nd,z_dim_2nd,t_dim_2nd = load_nc_dims(xarr_dict['Dataset 2']['T'][0]) #  find the names of the x, y, z and t dimensions.
         var_4d_mat_2nd,var_3d_mat_2nd,var_d[2]['T'],nvar4d_2nd,nvar3d_2nd,nvar_2nd,var_dim_2nd = load_nc_var_name_list(xarr_dict['Dataset 2']['T'][0], x_dim_2nd,y_dim_2nd,z_dim_2nd,t_dim_2nd)# find the variable names in the nc file
@@ -1199,8 +1246,6 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
     ldi = 0 
 
-    #data_inst_1 = None
-    #data_inst_2 = None
     data_inst = None
     if preload_data:
         preload_data_ti = ti
@@ -1994,14 +2039,14 @@ ax,
 
                         if (data_inst_Tm1['Dataset 1'] is None)|(preload_data_ti_Tm1 != (ti-1))|(preload_data_var_Tm1 != var)|(preload_data_ldi_Tm1 != ldi):
 
-                            (data_inst_Tm1['Dataset 1'],data_inst_Tm1['Dataset 2'],
-                            preload_data_ti_Tm1,preload_data_var_Tm1,preload_data_ldi_Tm1) = reload_data_instances(var,thd,ldi,ti-1,
+                            (data_inst_Tm1,preload_data_ti_Tm1,preload_data_var_Tm1,preload_data_ldi_Tm1) = reload_data_instances(var,thd,ldi,ti-1,
                                     var_grid['Dataset 1'], xarr_dict, grid_dict,var_dim,load_second_files)
 
                         #pdb.set_trace()
                         if Time_Diff_cnt == 0:
-                            data_inst['Dataset 1'] = data_inst['Dataset 1'] - data_inst_Tm1['Dataset 1']
-                            data_inst['Dataset 2'] = data_inst['Dataset 2'] - data_inst_Tm1['Dataset 2']
+                            #data_inst['Dataset 1'] = data_inst['Dataset 1'] - data_inst_Tm1['Dataset 1']
+                            #data_inst['Dataset 2'] = data_inst['Dataset 2'] - data_inst_Tm1['Dataset 2']
+                            for tmp_datstr in  Dataset_lst:data_inst[tmp_datstr] = data_inst[tmp_datstr] - data_inst_Tm1[tmp_datstr]
                             Time_Diff_cnt -= 1
                         func_but_text_han['Clim: sym'].set_color('r')
                         #curr_cmap = scnd_cmap
@@ -2019,8 +2064,9 @@ ax,
 
                             if Time_Diff_cnt == -1:
                                 #if (preload_data_ti_Tm1 == (ti-1))|(preload_data_var_Tm1 == var)|(preload_data_ldi_Tm1 == ldi):
-                                data_inst['Dataset 1'] = data_inst['Dataset 1'] + data_inst_Tm1['Dataset 1']
-                                data_inst['Dataset 2'] = data_inst['Dataset 2'] + data_inst_Tm1['Dataset 2']
+                                #data_inst['Dataset 1'] = data_inst['Dataset 1'] + data_inst_Tm1['Dataset 1']
+                                #data_inst['Dataset 2'] = data_inst['Dataset 2'] + data_inst_Tm1['Dataset 2']
+                                for tmp_datstr in  Dataset_lst:data_inst[tmp_datstr] = data_inst[tmp_datstr] + data_inst_Tm1[tmp_datstr]
                                 Time_Diff_cnt += 1
 
                             func_but_text_han['Clim: sym'].set_color('k')
@@ -2091,7 +2137,8 @@ ax,
                         hov_dat_dict = reload_hov_data_comb(var,var_d[1]['mat'],var_grid['Dataset 1'],var_d['d'],ldi,thd, time_datetime, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict,load_second_files,configd)
 
                         if do_grad == 2:
-                            hov_dat_dict['Dataset 1'],hov_dat_dict['Dataset 2'] = grad_vert_hov_data(hov_dat_dict['Dataset 1'],hov_dat_dict['Dataset 2'],hov_dat_dict['y'])
+                            #hov_dat_dict['Dataset 1'],hov_dat_dict['Dataset 2'] = grad_vert_hov_data(hov_dat_dict['Dataset 1'],hov_dat_dict['Dataset 2'],hov_dat_dict['y'])
+                            hov_dat_dict = grad_vert_hov_data(hov_dat_dict)
 
                 else:
                     

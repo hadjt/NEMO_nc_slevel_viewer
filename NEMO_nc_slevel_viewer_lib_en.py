@@ -1,10 +1,9 @@
 
-import pdb,sys,os
+import pdb,sys,os,cftime,socket
 
 from datetime import datetime, timedelta
 
 from netCDF4 import Dataset,num2date
-
 
 import numpy as np
 
@@ -18,7 +17,6 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap, ListedColormap
 
 
-import socket
 computername = socket.gethostname()
 comp = 'linux'
 if computername in ['xcel00','xcfl00']: comp = 'hpc'
@@ -1493,7 +1491,7 @@ def pycnocline_params(rho_4d,gdept_3d,e3t_3d):
     Pync_Z = ((N2*gdept_3d)*e3t_3d).sum(axis = 1)/(N2*e3t_3d).sum(axis = 1)
                     
     # Pycnocline thickness:
-    Pync_Th  = ((N2*(gdept_3d-Pync_Z)**2)*e3t_3d).sum(axis = 1)/(N2*e3t_3d).sum(axis = 1)
+    Pync_Th  = np.sqrt(((N2*(gdept_3d-Pync_Z)**2)*e3t_3d).sum(axis = 1)/(N2*e3t_3d).sum(axis = 1))
 
 
     # Depth of max Nz
@@ -1517,11 +1515,11 @@ def reload_data_instances(var,thd,ldi,ti,var_grid, xarr_dict, grid_dict,var_dim,
     tmp_var_U, tmp_var_V = 'vozocrtx','vomecrty'
 
     data_inst = {}
-
+    tmp_datstr_mat = [ss for ss in xarr_dict.keys()]
 
     start_time_load_inst = datetime.now()
     #pdb.set_trace()
-    for tmp_datstr in xarr_dict.keys():
+    for tmp_datstr in tmp_datstr_mat:
         th_d_ind = int(tmp_datstr[-1])
         if var == 'N:P':
             
@@ -2047,6 +2045,8 @@ def reload_ts_data_comb(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,tim
     hov_dat_1 = hov_dat_dict['Dataset 1']
     if load_2nd_files:
         hov_dat_2 = hov_dat_dict['Dataset 2']
+    else:
+        hov_dat_2 = hov_dat_1
 
     if load_2nd_files:
         ii_2nd_ind,jj_2nd_ind = iijj_ind['Dataset 2']['ii'],iijj_ind['Dataset 2']['jj']
@@ -2260,25 +2260,120 @@ def grad_vert_ew_data(ew_slice_dat_1,ew_slice_dat_2,ew_slice_y):
     return ew_slice_dat_1, ew_slice_dat_2
 
 
-def grad_vert_hov_data(hov_dat_1,hov_dat_2,hov_y):
+#def grad_vert_hov_data(hov_dat_1,hov_dat_2,hov_y):
+def grad_vert_hov_data(hov_dat_dict):
+
+    #hov_dat_dict['Dataset 1'],hov_dat_dict['Dataset 2'] = grad_vert_hov_data(hov_dat_dict['Dataset 1'],hov_dat_dict['Dataset 2'],hov_dat_dict['y'])
+
+    tmp_datstr_mat = [ss for ss in hov_dat_dict.keys()]
 
 
-    dhov_1 = hov_dat_1[2:,:] - hov_dat_1[:-2,:]
-    dhov_2 = hov_dat_2[2:,:] - hov_dat_2[:-2,:]
+    hov_y = hov_dat_dict['y']
     dhov_z = hov_y[2:] - hov_y[:-2]
-    hov_dat_1[1:-1,:] = (dhov_1.T/dhov_z).T
-    hov_dat_2[1:-1,:] = (dhov_2.T/dhov_z).T
+    
+    for tmp_datstr in tmp_datstr_mat:
 
-    hov_dat_1[ 0,:] = np.ma.masked
-    hov_dat_1[-1,:] = np.ma.masked
-    hov_dat_2[ 0,:] = np.ma.masked
-    hov_dat_2[-1,:] = np.ma.masked
-
-    return hov_dat_1,hov_dat_2
+        dhov_1 = hov_dat_dict[tmp_datstr][2:,:] - hov_dat_dict[tmp_datstr][:-2,:]
+        hov_dat_dict[tmp_datstr][1:-1,:] = (dhov_1.T/dhov_z).T
+        hov_dat_dict[tmp_datstr][ 0,:] = np.ma.masked
+        hov_dat_dict[tmp_datstr][-1,:] = np.ma.masked
 
 
+    return hov_dat_dict
 
 
+def extract_time_from_xarr(xarr_dict_in,ex_fname_in,time_varname,t_dim,date_in_ind,date_fmt,ti,verbose_debugging):
+
+    '''
+    
+    time_datetime,time_datetime_since_1970,ntime = extract_time_from_xarr(xarr_dict['Dataset 1']['T'],fname_dict['Dataset 1']['T'][0],date_in_ind,date_fmt,verbose_debugging)
+    '''
+    #pdb.set_trace()
+    
+    print ('xarray start reading nctime',datetime.now())
+    nctime = xarr_dict_in[0].variables[time_varname]
+
+    try:
+        
+        if 'time_origin' in nctime.attrs.keys():
+            nc_time_origin = nc_time_var.time_origin
+        else:
+            nc_time_origin = '1980-01-01 00:00:00'
+            print('No time origin set - set to 1/1/1980. Other Time parameters likely to be missing')
+    except:
+        print('Except: extract_time_from_xarr, couldn''t to read time_origin from xarray, using netCDF4')
+        rootgrp_hpc_time = Dataset(ex_fname_in, 'r', format='NETCDF4')
+        
+        nc_time_var = rootgrp_hpc_time.variables[time_varname]
+        if 'time_origin' in nc_time_var.ncattrs():
+            nc_time_origin = nc_time_var.time_origin
+        else:
+            nc_time_origin = '1980-01-01 00:00:00'
+            print('No time origin set - set to 1/1/1980. Other Time parameters likely to be missing')
+
+            #pdb.set_trace()
+        rootgrp_hpc_time.close()
+
+
+
+
+    #different treatment for 360 days and gregorian calendars... needs time_datetime for plotting, and time_datetime_since_1970 for index selection
+    nctime_calendar_type = None
+    try:
+        if 'calendar' in nctime.attrs.keys():
+            nctime_calendar_type = nc_time_var.calendar
+        else: 
+            print('calendar not in time info')
+    except:
+        nctime_calendar_type = None
+    
+
+    if nctime_calendar_type is None:
+        if type(np.array(nctime)[0]) is type(cftime._cftime.Datetime360Day(1980,1,1)):
+            nctime_calendar_type = '360'
+        else:
+            nctime_calendar_type = 'greg'
+
+
+    try:
+
+
+        #different treatment for 360 days and gregorian calendars... needs time_datetime for plotting, and time_datetime_since_1970 for index selection
+        if  nctime_calendar_type in ['360','360_day']:
+            # if 360 days
+
+            time_datetime_since_1970 = np.array([ss.year + (ss.month-1)/12 + (ss.day-1)/360 for ss in np.array(nctime)])
+            time_datetime = time_datetime_since_1970
+        else:
+            # if gregorian        
+            sec_since_origin = [float(ii.data - np.datetime64(nc_time_origin))/1e9 for ii in nctime]
+            time_datetime_cft = num2date(sec_since_origin,units = 'seconds since ' + nc_time_origin,calendar = 'gregorian') #nctime.calendar)
+
+            time_datetime = np.array([datetime(ss.year, ss.month,ss.day,ss.hour,ss.minute) for ss in time_datetime_cft])
+            time_datetime_since_1970 = np.array([(ss - datetime(1970,1,1,0,0)).total_seconds()/86400 for ss in time_datetime])
+
+
+        if date_in_ind is not None:
+            date_in_ind_datetime = datetime.strptime(date_in_ind,date_fmt)
+            date_in_ind_datetime_timedelta = np.array([(ss - date_in_ind_datetime).total_seconds() for ss in time_datetime])
+            ti = np.abs(date_in_ind_datetime_timedelta).argmin()
+            if verbose_debugging: print('Setting ti from date_in_ind (%s): ti = %i (%s). '%(date_in_ind,ti, time_datetime[ti]), datetime.now())
+
+    except:
+        print()
+        print()
+        print()
+        print(' Not able to read time in second data set, using dummy time')
+        print()
+        print()
+        print()
+        time_datetime = np.array([datetime(datetime.now().year, datetime.now().month, datetime.now().day) + timedelta(days = i_i) for i_i in range( xarr_dict_in[0][0].dims[t_dim])])
+        time_datetime_since_1970 = np.array([(ss - datetime(1970,1,1,0,0)).total_seconds()/86400 for ss in time_datetime])
+
+        if date_in_ind is not None: ti = 0
+    ntime = time_datetime.size
+
+    return time_datetime,time_datetime_since_1970,ntime,ti
 
 
 
