@@ -116,6 +116,8 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         thd[2]['f1'] = thin_files_1
 
     
+
+    
     fname_lst = fname_lst[thd[1]['f0']:thd[1]['f1']:thd[1]['df']]
     if load_second_files: fname_lst_2nd = fname_lst_2nd[thd[2]['f0']:thd[2]['f1']:thd[2]['df']]
     if U_fname_lst is not None: U_fname_lst = U_fname_lst[thd[1]['f0']:thd[1]['f1']:thd[1]['df']]
@@ -135,6 +137,16 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         if U_fname_lst is not None: fname_dict['Dataset 2']['U'] = U_fname_lst_2nd
         if V_fname_lst is not None: fname_dict['Dataset 2']['V'] = V_fname_lst_2nd
 
+
+
+    ######################
+    ### test 3 datasets
+    ######################
+    fname_dict['Dataset 3'] = fname_dict['Dataset 2'].copy()
+    configd[3] = configd[2].lower()
+    ######################
+
+    # Define a list of dataset names
     Dataset_lst = []
 
     # open file list with xarray
@@ -144,7 +156,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         Dataset_lst.append(tmp_datstr)
         for tmpgrid in fname_dict[tmp_datstr].keys():
             xarr_dict[tmp_datstr][tmpgrid] = []
-    
+    nDataset = len(Dataset_lst)
 
 
 
@@ -217,6 +229,11 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     del(thin_files_0)
     del(thin_files_1)
 
+    ######################
+    ### test 3 datasets
+    ######################
+    thd[3] = thd[2].copy()
+    ######################
 
     lon_d = {}
     lat_d = {}
@@ -306,8 +323,16 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
 
     # if a secondary data set, give ability to change data sets. 
-    secdataset_proc_list = ['Dataset 1', 'Dataset 2', 'Dat2-Dat1', 'Dat1-Dat2']
-    if secdataset_proc is None: secdataset_proc = 'Dataset 1'
+    #secdataset_proc_list = ['Dataset 1', 'Dataset 2', 'Dat2-Dat1', 'Dat1-Dat2']
+
+    secdataset_proc_list = Dataset_lst.copy()
+    if nDataset > 1:
+        for tmp_datstr in Dataset_lst[1:]:
+            th_d_ind = int(tmp_datstr[-1])
+            secdataset_proc_list.append('Dat%i-Dat1'%th_d_ind)
+            secdataset_proc_list.append('Dat1-Dat%i'%th_d_ind)
+
+    if secdataset_proc is None: secdataset_proc = Dataset_lst[0]
 
     if load_second_files == False:
         clim_pair = False
@@ -391,11 +416,56 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
     #global rootgrp_gdept_2nd, nav_lon_2nd, nav_lat_2nd
 
-    rootgrp_gdept_dict['Dataset 2'] = rootgrp_gdept_dict['Dataset 1']
 
 
     regrid_meth = 1
     regrid_params = None
+    regrid_params = {}
+
+
+    for tmp_datstr in Dataset_lst[1:]:
+        th_d_ind = int(tmp_datstr[-1])
+        rootgrp_gdept_dict[tmp_datstr] = rootgrp_gdept_dict['Dataset 1']
+
+        if configd[th_d_ind] is not None:
+
+            if (configd[1].upper() in ['AMM7','AMM15']) & (configd[th_d_ind].upper() in ['AMM7','AMM15']):  
+                mesh_file_2nd = config_fnames_dict[configd[th_d_ind]]['mesh_file'] 
+                rootgrp_gdept_dict[tmp_datstr] = Dataset(mesh_file_2nd, 'r', format='NETCDF4')
+
+                if (configd[1].upper() == 'AMM15') & (configd[th_d_ind].upper() == 'AMM7'):  
+
+
+                    lon = np.arange(-19.888889,12.99967+1/9.,1/9.)
+                    lat = np.arange(40.066669,65+1/15.,1/15.)
+
+
+                    amm_conv_dict = {}
+                    rootgrp = Dataset(config_fnames_dict[configd[1]]['regrid_amm7_amm15'], 'r')
+                    for var_conv in rootgrp.variables.keys(): amm_conv_dict[var_conv] = rootgrp.variables[var_conv][:]
+                    rootgrp.close()
+        
+                    nlon_amm        = nlon_amm15
+                    nlat_amm        = nlat_amm15
+                    nlon_amm_2nd    = nlon_amm7
+                    nlat_amm_2nd    = nlat_amm7
+
+
+                elif (configd[1].upper() == 'AMM7') & (configd[th_d_ind].upper() == 'AMM15'):
+
+                    amm_conv_dict = {}
+                    rootgrp = Dataset(config_fnames_dict[configd[th_d_ind]]['regrid_amm15_amm7'], 'r')
+                    for var_conv in rootgrp.variables.keys(): amm_conv_dict[var_conv] = rootgrp.variables[var_conv][:]
+                    rootgrp.close()
+        
+                    nlon_amm        = nlon_amm7
+                    nlat_amm        = nlat_amm7
+                    nlon_amm_2nd    = nlon_amm15
+                    nlat_amm_2nd    = nlat_amm15
+
+                regrid_params[tmp_datstr] = regrid_2nd_thin_params(amm_conv_dict,nlon_amm,nlat_amm, nlon_amm_2nd,nlat_amm_2nd,thd)
+                #pdb.set_trace()
+        '''
 
     if configd[2] is not None:
 
@@ -442,7 +512,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
             regrid_params = regrid_2nd_thin_params(amm_conv_dict,nlon_amm,nlat_amm, nlon_amm_2nd,nlat_amm_2nd,thd)
 
-
+    '''
     init_timer.append((datetime.now(),'config 2 params'))
 
 
@@ -474,7 +544,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
     # open file list with xarray
     #xarr_dict = {}
-    for tmp_datstr in xarr_dict.keys():
+    for tmp_datstr in Dataset_lst: # xarr_dict.keys():
         th_d_ind = int(tmp_datstr[-1])
         
         var_d[th_d_ind] = {}
@@ -572,6 +642,160 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     init_timer.append((datetime.now(),'xarray open_mfdataset UV connected'))
     print ('xarray open_mfdataset, Finish U and V',datetime.now())
 
+
+
+
+
+
+
+
+
+    for tmp_datstr in Dataset_lst:
+        th_d_ind = int(tmp_datstr[-1])
+
+
+        # load nav_lat and nav_lon
+        if configd[th_d_ind].upper() in ['ORCA025','ORCA025EXT','ORCA12']: 
+
+            lon_d[th_d_ind] = np.ma.masked_invalid(rootgrp_gdept_dict[tmp_datstr].variables[ncglamt][0])
+            lat_d[th_d_ind] = np.ma.masked_invalid(rootgrp_gdept_dict[tmp_datstr].variables[ncgphit][0])
+            
+            # Fix Longitude, to be between -180 and 180.
+            fixed_nav_lon = lon_d[th_d_ind].copy()
+            for i, start in enumerate(np.argmax(np.abs(np.diff(lon_d[th_d_ind])) > 180, axis=1)):            fixed_nav_lon[i, start+1:] += 360
+            fixed_nav_lon -=360
+            fixed_nav_lon[fixed_nav_lon<-287.25] +=360
+            fixed_nav_lon[fixed_nav_lon>73] -=360
+            lon_d[th_d_ind] = fixed_nav_lon.copy()
+
+
+            lat_d[th_d_ind] = np.ma.array(lat_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
+            lon_d[th_d_ind] = np.ma.array(lon_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
+
+        elif configd[th_d_ind].upper() in ['CO9P2']: 
+
+            lon_d[th_d_ind] = np.ma.masked_invalid(rootgrp_gdept_dict[tmp_datstr].variables[ncglamt][0])
+            lat_d[th_d_ind] = np.ma.masked_invalid(rootgrp_gdept_dict[tmp_datstr].variables[ncgphit][0])
+            lat_d['amm15'] = np.ma.array(lat_d[th_d_ind].copy())
+            lon_d['amm15'] = np.ma.array(lon_d[th_d_ind].copy())
+            
+
+            lat_d[th_d_ind] = np.ma.array(lat_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
+            lon_d[th_d_ind] = np.ma.array(lon_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
+
+            #pdb.set_trace()
+        else:
+            if len(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname].shape) == 2:
+                lon_d[th_d_ind] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lon_varname][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+                lat_d[th_d_ind] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+            else:
+                # if only 1d lon and lat
+                tmp_nav_lon = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lon_varname].load())
+                tmp_nav_lat = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname].load())
+
+                nav_lon_mat, nav_lat_mat = np.meshgrid(tmp_nav_lon,tmp_nav_lat)
+
+
+                lat_d[th_d_ind] = nav_lat_mat[thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
+                lon_d[th_d_ind] = nav_lon_mat[thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
+        #pdb.set_trace()
+        #Check if any nav_lat or nav_lon have masked values (i.e. using land suppression)
+        if ( ((lat_d[th_d_ind] == 0) & (lon_d[th_d_ind] == 0)).sum()>10) |  (lat_d[th_d_ind] == lon_d[th_d_ind]).sum()> 100:
+            print('Several points (>10) for 0degN 0degW - suggesting land suppression - use glamt and gphit from mesh')
+
+            lon_d[th_d_ind] = np.ma.masked_invalid(rootgrp_gdept_dict[tmp_datstr].variables[ncglamt][0])
+            lat_d[th_d_ind] = np.ma.masked_invalid(rootgrp_gdept_dict[tmp_datstr].variables[ncgphit][0])
+
+            lat_d[th_d_ind] = np.ma.array(lat_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
+            lon_d[th_d_ind] = np.ma.array(lon_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
+
+
+        #pdb.set_trace()
+        if (((lat_d[th_d_ind] == 0) & (lon_d[th_d_ind] == 0)).sum()>10) |  (lat_d[th_d_ind] == lon_d[th_d_ind]).sum()> 100:
+            # If there are still (0,0) pairs in nav_lat and nav_lon, coming from glamt and gphit, we can approixmate the field analytically
+            print('Several points (>10) for 0degN 0degW - suggesting land suppression - calc grid mesh')
+            if configd[th_d_ind].upper() in ['AMM7']:
+                # as AMM7 is a regular lat and lon grid, with a linear grid, re can use a simple linear equation, and then use mesh grid
+
+                lon_amm7 = np.arange(-19.888889,12.99967+1/9.,1/9.)
+                lat_amm7 = np.arange(40.066669,65+1/15.,1/15.)
+
+                lon_d[th_d_ind], lat_d[th_d_ind] = np.meshgrid(lon_amm7,lat_amm7)
+
+                lon_d[th_d_ind] = np.ma.masked_invalid(lon_d[th_d_ind])
+                lat_d[th_d_ind] = np.ma.masked_invalid(lat_d[th_d_ind])
+
+                lat_d[th_d_ind] = np.ma.array(lat_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
+                lon_d[th_d_ind] = np.ma.array(lon_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
+
+            if configd[th_d_ind].upper() in ['AMM15', 'CO9P2']:
+                # AMM15 is more complicated, as its on a rotated grid, however once unrotated, it can be treated as AMM7
+                
+                '''
+                
+                nav_lon = np.ma.masked_invalid(rootgrp_gdept_dict['Dataset 1'].variables[ncglamt][0])
+                nav_lat = np.ma.masked_invalid(rootgrp_gdept_dict['Dataset 1'].variables[ncgphit][0])
+                # unrotate the lats and lons, 
+                lon_mat_unrot, lat_mat_unrot = reduce_rotamm15_grid(nav_lon,nav_lat)
+
+                # find the linear parameters, 
+                dlat_mat_unrot = np.diff(lat_mat_unrot).mean()
+                dlon_mat_unrot = np.diff(lon_mat_unrot).mean()
+
+                nlat_mat_unrot, nlon_mat_unrot = lat_mat_unrot.size, lon_mat_unrot.size
+                lat_mat_unrot_0, lon_mat_unrot_0 = lat_mat_unrot[0], lon_mat_unrot[0]
+                # print them
+                print(lat_mat_unrot_0,nlat_mat_unrot,dlat_mat_unrot)
+                print(lon_mat_unrot_0,nlon_mat_unrot,dlon_mat_unrot)
+
+                
+                lat_mat_unrot_0,nlat_mat_unrot,dlat_mat_unrot = -7.29419849537037, 1345, 0.01349999957739065
+                lon_mat_unrot_0,nlon_mat_unrot,dlon_mat_unrot = -10.889596160548328, 1458, 0.013500078257954802
+                lat_mat_unrot_0,nlat_mat_unrot,dlat_mat_unrot = -7.2942, 1345, 0.0135 #-7.29419849537037, 1345, 0.01349999957739065
+                lon_mat_unrot_0,nlon_mat_unrot,dlon_mat_unrot = -10.889595, 1458, 0.01350#-10.889596160548328, 1458, 0.013500078257954802
+
+                '''
+                # set the linear parameters
+                lat_mat_unrot_0,nlat_mat_unrot,dlat_mat_unrot = -7.29419849537037, 1345, 0.01349999957739065
+                lon_mat_unrot_0,nlon_mat_unrot,dlon_mat_unrot = -10.889596160548328, 1458, 0.013500078257954802
+                
+                #apply a linear equation
+                lat_mat_unrot_arr = lat_mat_unrot_0 + np.arange(nlat_mat_unrot)*dlat_mat_unrot
+                lon_mat_unrot_arr = lon_mat_unrot_0 + np.arange(nlon_mat_unrot)*dlon_mat_unrot
+
+                #create a grid mesh
+                lon_mat_unrot_mat,lat_mat_unrot_mat = np.meshgrid(lon_mat_unrot_arr,lat_mat_unrot_arr)
+                
+                #then rotate it
+                lon_mat_unrot_mat_rot,lat_mat_unrot_mat_rot = rotated_grid_to_amm15(lon_mat_unrot_mat,lat_mat_unrot_mat)
+
+                #thin the lats and lons. 
+                lat_d[th_d_ind] = np.ma.array(lat_mat_unrot_mat_rot[thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
+                lon_d[th_d_ind] = np.ma.array(lon_mat_unrot_mat_rot[thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
+        '''
+        if configd[th_d_ind].upper() in ['AMM15','CO9P2']: 
+            # AMM15 lon and lats are always 2d
+            lat_d['amm15'] = np.ma.masked_invalid(xarr_dict['Dataset 1']['T'][0].variables[nav_lat_varname].load())
+            lon_d['amm15'] = np.ma.masked_invalid(xarr_dict['Dataset 1']['T'][0].variables[nav_lon_varname].load())
+        '''
+        
+        if configd[th_d_ind].upper() in ['AMM15','CO9P2']: 
+            # AMM15 lon and lats are always 2d
+            lat_d['amm15'] = lat_d[th_d_ind]
+            lon_d['amm15'] = lon_d[th_d_ind]
+
+        # if lon_in and lat_in are present, use them
+        if (lon_in is not None) & (lat_in is not None):
+            #pdb.set_trace()
+
+            lonlatin_dist_mat = np.sqrt((lon_d[th_d_ind] - lon_in)**2 + (lat_d[th_d_ind] - lat_in)**2)
+            jj,ii = lonlatin_dist_mat.argmin()//lon_d[th_d_ind].shape[th_d_ind], lonlatin_dist_mat.argmin()%lon_d[th_d_ind].shape[th_d_ind]
+    
+    #lon_d[2], lat_d[2] = lon_d[1], lat_d[1]
+
+
+
+    """
     # load nav_lat and nav_lon
     if configd[1].upper() in ['ORCA025','ORCA025EXT','ORCA12']: 
 
@@ -711,9 +935,30 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
     
     lon_d[2], lat_d[2] = lon_d[1], lat_d[1]
 
-
+    """
     init_timer.append((datetime.now(),'Lon/Lats loaded'))
 
+
+
+    
+    grid_dict = {}
+    for tmp_datstr in Dataset_lst:
+        th_d_ind = int(tmp_datstr[-1])
+
+        grid_dict[tmp_datstr] = {}
+
+        grid_dict[tmp_datstr]['e1t'] = rootgrp_gdept_dict[tmp_datstr].variables[nce1t][0,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
+        grid_dict[tmp_datstr]['e2t'] = rootgrp_gdept_dict[tmp_datstr].variables[nce2t][0,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
+        grid_dict[tmp_datstr]['e3t'] = rootgrp_gdept_dict[tmp_datstr].variables[nce3t][0,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
+        grid_dict[tmp_datstr]['gdept'] = rootgrp_gdept_dict[tmp_datstr].variables[config_fnames_dict[configd[th_d_ind]]['ncgdept']][0,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
+
+
+    nz = grid_dict[Dataset_lst[0]]['gdept'].shape[0]
+
+
+
+
+    '''
     grid_dict = {}
     grid_dict['Dataset 1'] = {}
     grid_dict['Dataset 2'] = {}
@@ -738,7 +983,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
         else:
             grid_dict['Dataset 2']['gdept'] = rootgrp_gdept_dict['Dataset 2'].variables[config_fnames_dict[configd[2]]['ncgdept']][0,:,thd[2]['y0']:thd[2]['y1']:thd[2]['dy'],thd[2]['x0']:thd[2]['x1']:thd[2]['dx']]
 
-
+    '''
     init_timer.append((datetime.now(),'gdept, e1t, e2t, e3t loaded'))
 
     '''
@@ -1854,6 +2099,27 @@ ax,
         zz = just_plt_vals[just_plt_cnt][3]
 
 
+
+    interp1d_ZwgtT = {}
+    interp1d_ZwgtT['Dataset 1'] = {}
+    if z_meth_default == 'z_slice':
+        interp1d_ZwgtT['Dataset 1'][0] = interp1dmat_create_weight(grid_dict['Dataset 1']['gdept'],0)
+
+
+    for tmp_datstr in Dataset_lst[1:]:
+        th_d_ind = int(tmp_datstr[-1])
+
+        interp1d_ZwgtT[tmp_datstr] = {}
+
+        if z_meth_default == 'z_slice':
+            if configd[th_d_ind] is None:
+                interp1d_ZwgtT[tmp_datstr] = interp1d_ZwgtT['Dataset 1']
+            else:
+                interp1d_ZwgtT[tmp_datstr][0] = interp1dmat_create_weight(grid_dict[tmp_datstr]['gdept'],0)
+
+    
+
+    '''
     #interp1d_wgtT, interp1d_wgtT_2nd = None, None
     interp1d_ZwgtT = {}
     interp1d_ZwgtT['Dataset 1'] = {}
@@ -1868,7 +2134,7 @@ ax,
         else:
             interp1d_ZwgtT['Dataset 2'][0] = interp1dmat_create_weight(grid_dict['Dataset 2']['gdept'],0)
 
-
+    '''
 
     if verbose_debugging: print('Interpolation weights created', datetime.now())
     init_timer.append((datetime.now(),'Interpolation weights created'))
@@ -1930,6 +2196,60 @@ ax,
             #ns_bl_ii_ind_final,ns_bl_jj_ind_final,ns_wgt = None, None, None
 
             iijj_ind = {}
+            for tmp_datstr in Dataset_lst:
+                th_d_ind = int(tmp_datstr[-1])
+                if configd[th_d_ind] is not None:
+                    if ((configd[1].upper() == 'AMM15') & (configd[th_d_ind].upper() == 'AMM7')) | ((configd[1].upper() == 'AMM7') & (configd[th_d_ind].upper() == 'AMM15')):
+
+                        iijj_ind[tmp_datstr] = {}
+
+                        if ((configd[1].upper() == 'AMM7') & (configd[th_d_ind].upper() == 'AMM15')):
+
+                            lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(lon_d[1][jj,ii] ,lat_d[1][jj,ii])
+                            ew_lon_mat_rot, ew_lat_mat_rot  = rotated_grid_from_amm15(lon_d[1][jj,:],lat_d[1][jj,:])
+                            ns_lon_mat_rot, ns_lat_mat_rot  = rotated_grid_from_amm15(lon_d[1][:,ii],lat_d[1][:,ii])
+
+                            tmp_lon_arr = lon_rotamm15
+                            tmp_lat_arr = lat_rotamm15
+
+                            tmp_lon = lon_mat_rot
+                            tmp_lat = lat_mat_rot
+                            
+                            ns_tmp_lon_arr = ns_lon_mat_rot
+                            ns_tmp_lat_arr = ns_lat_mat_rot
+                            ew_tmp_lon_arr = ew_lon_mat_rot
+                            ew_tmp_lat_arr = ew_lat_mat_rot
+
+
+                        elif ((configd[1].upper() == 'AMM15') & (configd[th_d_ind].upper() == 'AMM7')):
+
+                            tmp_lon_arr = lon
+                            tmp_lat_arr = lat
+
+                            tmp_lon = lon_d[1][jj,ii]
+                            tmp_lat = lat_d[1][jj,ii]
+                            
+                            ns_tmp_lon_arr = ns_lon_mat_rot = lon_d[1][:,ii]
+                            ns_tmp_lat_arr = ns_lat_mat_rot = lat_d[1][:,ii]
+                            ew_tmp_lon_arr = ew_lon_mat_rot = lon_d[1][jj,:]
+                            ew_tmp_lat_arr = ew_lat_mat_rot = lat_d[1][jj,:]
+                        
+                        
+                        (iijj_ind[tmp_datstr]['ii'],iijj_ind[tmp_datstr]['jj'],
+                        iijj_ind[tmp_datstr]['ew_ii'],iijj_ind[tmp_datstr]['ew_jj'],
+                        iijj_ind[tmp_datstr]['ns_ii'],iijj_ind[tmp_datstr]['ns_jj'], 
+                        iijj_ind[tmp_datstr]['ew_bl_ii'],iijj_ind[tmp_datstr]['ew_bl_jj'],
+                        iijj_ind[tmp_datstr]['ew_wgt'], 
+                        iijj_ind[tmp_datstr]['ns_bl_ii'],iijj_ind[tmp_datstr]['ns_bl_jj'],
+                        iijj_ind[tmp_datstr]['ns_wgt']) = regrid_iijj_ew_ns(tmp_lon,tmp_lat,
+                            tmp_lon_arr, tmp_lat_arr, 
+                            ew_tmp_lon_arr,ew_tmp_lat_arr,
+                            ns_tmp_lon_arr,ns_tmp_lat_arr,
+                            thd[2]['dx'],thd[2]['y0'],thd[2]['y1'],regrid_meth)
+                
+
+            '''
+
             if configd[2] is not None:
                 if ((configd[1].upper() == 'AMM15') & (configd[2].upper() == 'AMM7')) | ((configd[1].upper() == 'AMM7') & (configd[2].upper() == 'AMM15')):
 
@@ -2007,7 +2327,7 @@ ax,
                 del(ns_bl_jj_ind_final)
                 del(ns_wgt)
 
-            
+            '''
             if verbose_debugging: print('Reload data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now())
             if verbose_debugging: print('Reload map, ew, ns, hov, ts',reload_map,reload_ew,reload_ns,reload_hov,reload_ts, datetime.now())
             prevtime = datetime.now()
@@ -2033,11 +2353,12 @@ ax,
                 #       if the time has changed, or
                 #       if the variable has changed
                 if  (data_inst is None)|(preload_data_ti != ti)|(preload_data_var != var)|(preload_data_ldi != ldi):
-                    data_inst,preload_data_ti,preload_data_var,preload_data_ldi= reload_data_instances(var,thd,ldi,ti,var_grid['Dataset 1'], xarr_dict, grid_dict,var_dim,load_second_files)
+                    data_inst,preload_data_ti,preload_data_var,preload_data_ldi= reload_data_instances(var,thd,ldi,ti,var_grid['Dataset 1'], xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
 
                     # For T Diff
                     if do_Tdiff:
-                        data_inst_Tm1['Dataset 1'],data_inst_Tm1['Dataset 2'] = None,None
+                        #data_inst_Tm1['Dataset 1'],data_inst_Tm1['Dataset 2'] = None,None
+                        for tmp_datstr in Dataset_lst:data_inst_Tm1[tmp_datstr] = None
                         preload_data_ti_Tm1,preload_data_var_Tm1,preload_data_ldi_Tm1 = 0.5,'None',0.5
                         Time_Diff_cnt = 0
 
@@ -2057,7 +2378,7 @@ ax,
                         if (data_inst_Tm1['Dataset 1'] is None)|(preload_data_ti_Tm1 != (ti-1))|(preload_data_var_Tm1 != var)|(preload_data_ldi_Tm1 != ldi):
 
                             (data_inst_Tm1,preload_data_ti_Tm1,preload_data_var_Tm1,preload_data_ldi_Tm1) = reload_data_instances(var,thd,ldi,ti-1,
-                                    var_grid['Dataset 1'], xarr_dict, grid_dict,var_dim,load_second_files)
+                                    var_grid['Dataset 1'], xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
 
                         #pdb.set_trace()
                         if Time_Diff_cnt == 0:
@@ -2108,7 +2429,7 @@ ax,
             stage_timer[5] = datetime.now() # start data dataload
             stage_timer_name[5] = 'Slice data'
             if reload_map:
-                map_dat_dict = reload_map_data_comb(var,ldi,ti,z_meth,zz,zi, data_inst,var_dim, interp1d_ZwgtT,grid_dict,lon_d[1],lat_d[1],regrid_params,regrid_meth,thd,configd,load_second_files)
+                map_dat_dict = reload_map_data_comb(var,ldi,ti,z_meth,zz,zi, data_inst,var_dim, interp1d_ZwgtT,grid_dict,lon_d[1],lat_d[1],regrid_params,regrid_meth,thd,configd,Dataset_lst,load_second_files)
                 reload_map = False
 
                 if do_grad == 1:
@@ -2124,7 +2445,7 @@ ax,
 
             if reload_ew:
                 if var_dim[var] == 4:
-                    ew_slice_dict = reload_ew_data_comb(ii,jj,ti,thd, data_inst, lon_d[1], lat_d[1], grid_dict, regrid_meth,iijj_ind,load_second_files,configd)
+                    ew_slice_dict = reload_ew_data_comb(ii,jj,ti,thd, data_inst, lon_d[1], lat_d[1], grid_dict, regrid_meth,iijj_ind,load_second_files,Dataset_lst,configd)
                 reload_ew = False
 
                 if var_dim[var] == 4:
@@ -2140,7 +2461,7 @@ ax,
 
             if reload_ns:
                 if var_dim[var] == 4:               
-                    ns_slice_dict = reload_ns_data_comb(ii,jj,ti,thd, data_inst, lon_d[1], lat_d[1], grid_dict, regrid_meth, iijj_ind,load_second_files,configd)
+                    ns_slice_dict = reload_ns_data_comb(ii,jj,ti,thd, data_inst, lon_d[1], lat_d[1], grid_dict, regrid_meth, iijj_ind,load_second_files,Dataset_lst,configd)
                 reload_ns = False
 
                 if var_dim[var] == 4:   
@@ -2158,7 +2479,7 @@ ax,
             if reload_hov:
                 if hov_time:
                     if var_dim[var] == 4:
-                        hov_dat_dict = reload_hov_data_comb(var,var_d[1]['mat'],var_grid['Dataset 1'],var_d['d'],ldi,thd, time_datetime, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict,load_second_files,configd)
+                        hov_dat_dict = reload_hov_data_comb(var,var_d[1]['mat'],var_grid['Dataset 1'],var_d['d'],ldi,thd, time_datetime, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict,load_second_files,Dataset_lst,configd)
 
                         if do_grad == 2:
                             #hov_dat_dict['Dataset 1'],hov_dat_dict['Dataset 2'] = grad_vert_hov_data(hov_dat_dict['Dataset 1'],hov_dat_dict['Dataset 2'],hov_dat_dict['y'])
@@ -2168,19 +2489,21 @@ ax,
                     
                     hov_dat_dict['x'] = time_datetime
                     hov_dat_dict['y'] =  grid_dict['Dataset 1']['gdept'][:,jj,ii]
-                    hov_dat_dict['Dataset 1'] = np.ma.zeros((hov_dat_dict['y'].shape+hov_dat_dict['x'].shape))*np.ma.masked
-                    hov_dat_dict['Dataset 2'] = np.ma.zeros((hov_dat_dict['y'].shape+hov_dat_dict['x'].shape))*np.ma.masked
+                    #hov_dat_dict['Dataset 1'] = np.ma.zeros((hov_dat_dict['y'].shape+hov_dat_dict['x'].shape))*np.ma.masked
+                    #hov_dat_dict['Dataset 2'] = np.ma.zeros((hov_dat_dict['y'].shape+hov_dat_dict['x'].shape))*np.ma.masked
+                    for tmp_datstr in Dataset_lst:hov_dat_dict[tmp_datstr] = np.ma.zeros((hov_dat_dict['y'].shape+hov_dat_dict['x'].shape))*np.ma.masked
                 reload_hov = False
 
             if verbose_debugging: print('Reloaded hov data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now(),'; dt = %s'%(datetime.now()-prevtime))
             prevtime = datetime.now()
             if reload_ts:
                 if hov_time:
-                    ts_dat_dict = reload_ts_data_comb(var,var_dim,var_grid['Dataset 1'],ii,jj,iijj_ind,ldi,hov_dat_dict,time_datetime,z_meth,zz,zi,xarr_dict,grid_dict,thd,var_d[1]['mat'],var_d['d'],nz,ntime,configd,load_second_files)
+                    ts_dat_dict = reload_ts_data_comb(var,var_dim,var_grid['Dataset 1'],ii,jj,iijj_ind,ldi,hov_dat_dict,time_datetime,z_meth,zz,zi,xarr_dict,grid_dict,thd,var_d[1]['mat'],var_d['d'],nz,ntime,configd,Dataset_lst,load_second_files)
                 else:
                     ts_dat_dict['x'] = time_datetime
-                    ts_dat_dict['Dataset 1'] = np.ma.ones(ntime)*np.ma.masked
-                    ts_dat_dict['Dataset 2'] = np.ma.ones(ntime)*np.ma.masked
+                    #ts_dat_dict['Dataset 1'] = np.ma.ones(ntime)*np.ma.masked
+                    #ts_dat_dict['Dataset 2'] = np.ma.ones(ntime)*np.ma.masked
+                    for tmp_datstr in Dataset_lst:ts_dat_dict[tmp_datstr] = np.ma.ones(ntime)*np.ma.masked
                 reload_ts = False
                 
 
@@ -2203,7 +2526,24 @@ ax,
             if verbose_debugging: print('Choose cmap based on secdataset_proc:',secdataset_proc, datetime.now())
 
             # Choose the colormap depending on which dataset being shown
-            #if secdataset_proc in ['Dat1-Dat2','Dat2-Dat1']:
+
+
+            if (secdataset_proc in Dataset_lst) & (clim_sym_but != 1):
+                if col_scl == 0:
+                    curr_cmap = base_cmap
+                elif col_scl == 1:
+                    curr_cmap = base_cmap_high
+                elif col_scl == 2:
+                    curr_cmap = base_cmap_low
+                clim_sym = False
+            else:
+                curr_cmap = scnd_cmap
+                clim_sym = True
+            #else:
+            #    print(secdataset_proc)
+            #    pdb.set_trace()
+            '''
+
             if (secdataset_proc in ['Dat1-Dat2','Dat2-Dat1']) | (clim_sym_but == 1):
                 curr_cmap = scnd_cmap
                 clim_sym = True
@@ -2218,7 +2558,7 @@ ax,
             else:
                 print(secdataset_proc)
                 pdb.set_trace()
-
+            '''
             
             
             ###################################################################################################
@@ -2226,6 +2566,31 @@ ax,
             ###################################################################################################
 
             pax = []        
+
+            if secdataset_proc in Dataset_lst:
+                map_dat = map_dat_dict[secdataset_proc]
+                if var_dim[var] == 4:
+                    ns_slice_dat = ns_slice_dict[secdataset_proc]
+                    ew_slice_dat = ew_slice_dict[secdataset_proc]
+                    hov_dat = hov_dat_dict[secdataset_proc]
+                ts_dat = ts_dat_dict[secdataset_proc]
+            else:
+                tmpdataset_1 = 'Dataset ' + secdataset_proc[3]
+                tmpdataset_2 = 'Dataset ' + secdataset_proc[8]
+                tmpdataset_oper = secdataset_proc[4]
+                if tmpdataset_oper == '-':
+                    map_dat = map_dat_dict[tmpdataset_1] - map_dat_dict[tmpdataset_2]
+                    if var_dim[var] == 4:
+                        ns_slice_dat = ns_slice_dict[tmpdataset_1] - ns_slice_dict[tmpdataset_2]
+                        ew_slice_dat = ew_slice_dict[tmpdataset_1] - ew_slice_dict[tmpdataset_2]
+                        #pdb.set_trace()
+                        hov_dat = hov_dat_dict[tmpdataset_1] - hov_dat_dict[tmpdataset_2]
+                    ts_dat = ts_dat_dict[tmpdataset_1] - ts_dat_dict[tmpdataset_2]
+                else:
+                    pdb.set_trace()
+                    
+            '''
+
             map_dat = map_dat_dict['Dataset 1']
             if var_dim[var] == 4:
                 ns_slice_dat = ns_slice_dict['Dataset 1']
@@ -2263,6 +2628,46 @@ ax,
                         hov_dat = hov_dat_dict['Dataset 2'] - hov_dat_dict['Dataset 1']
                     ts_dat = ts_dat_dict['Dataset 2'] - ts_dat_dict['Dataset 1']
             
+            '''
+
+            '''
+            map_dat = map_dat_dict['Dataset 1']
+            if var_dim[var] == 4:
+                ns_slice_dat = ns_slice_dict['Dataset 1']
+                ew_slice_dat = ew_slice_dict['Dataset 1']
+                hov_dat = hov_dat_dict['Dataset 1']
+            ts_dat = ts_dat_dict['Dataset 1']
+
+            if load_second_files:
+                if secdataset_proc == 'Dataset 1':
+                    map_dat = map_dat_dict['Dataset 1']
+                    if var_dim[var] == 4:
+                        ns_slice_dat = ns_slice_dict['Dataset 1']
+                        ew_slice_dat = ew_slice_dict['Dataset 1']
+                        hov_dat = hov_dat_dict['Dataset 1']
+                    ts_dat = ts_dat_dict['Dataset 1']
+                elif secdataset_proc == 'Dataset 2':
+                    map_dat = map_dat_dict['Dataset 2']
+                    if var_dim[var] == 4:
+                        ns_slice_dat = ns_slice_dict['Dataset 2']
+                        ew_slice_dat = ew_slice_dict['Dataset 2']
+                        hov_dat = hov_dat_dict['Dataset 2']
+                    ts_dat = ts_dat_dict['Dataset 2']
+                elif secdataset_proc == 'Dat1-Dat2':
+                    map_dat = map_dat_dict['Dataset 1'] - map_dat_dict['Dataset 2']
+                    if var_dim[var] == 4:
+                        ns_slice_dat = ns_slice_dict['Dataset 1'] - ns_slice_dict['Dataset 2']
+                        ew_slice_dat = ew_slice_dict['Dataset 1'] - ew_slice_dict['Dataset 2']
+                        hov_dat = hov_dat_dict['Dataset 1'] - hov_dat_dict['Dataset 2']
+                    ts_dat = ts_dat_dict['Dataset 1'] - ts_dat_dict['Dataset 2']
+                elif secdataset_proc == 'Dat2-Dat1':
+                    map_dat = map_dat_dict['Dataset 2'] - map_dat_dict['Dataset 1']
+                    if var_dim[var] == 4:
+                        ns_slice_dat = ns_slice_dict['Dataset 2'] - ns_slice_dict['Dataset 1']
+                        ew_slice_dat = ew_slice_dict['Dataset 2'] - ew_slice_dict['Dataset 1']
+                        hov_dat = hov_dat_dict['Dataset 2'] - hov_dat_dict['Dataset 1']
+                    ts_dat = ts_dat_dict['Dataset 2'] - ts_dat_dict['Dataset 1']
+            '''
 
             ###################################################################################################
             ### Replot data 
@@ -2280,6 +2685,8 @@ ax,
                 pax.append(ax[1].pcolormesh(ew_slice_dict['x'],ew_slice_dict['y'],ew_slice_dat,cmap = curr_cmap,norm = climnorm))
                 pax.append(ax[2].pcolormesh(ns_slice_dict['x'],ns_slice_dict['y'],ns_slice_dat,cmap = curr_cmap,norm = climnorm))
                 pax.append(ax[3].pcolormesh(hov_dat_dict['x'],hov_dat_dict['y'],hov_dat,cmap = curr_cmap,norm = climnorm))
+
+            '''
             if load_second_files == False:
                 tsax = ax[4].plot(ts_dat_dict['x'],ts_dat,'r')
                 tsax2 = ax[4].plot(ts_dat_dict['x'],ts_dat,'r')
@@ -2296,6 +2703,34 @@ ax,
                 elif secdataset_proc == 'Dataset 2':
                     tsax   = ax[4].plot(ts_dat_dict['x'],ts_dat_dict['Dataset 2'],'b')
                     tsax2 = ax[4].plot(ts_dat_dict['x'],ts_dat_dict['Dataset 1'],'r', lw = 0.5)
+
+            '''
+
+            tsax_lst = []
+            if secdataset_proc in Dataset_lst:
+                if secdataset_proc == 'Dataset 1':
+                    tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ts_dat_dict['Dataset 1'],'r'))
+                    tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ts_dat_dict['Dataset 2'],'b', lw = 0.5))
+                elif secdataset_proc == 'Dataset 2':
+                    tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ts_dat_dict['Dataset 2'],'b'))
+                    tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ts_dat_dict['Dataset 1'],'r', lw = 0.5))
+                elif secdataset_proc == 'Dataset 3':
+                    tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ts_dat_dict['Dataset 2'],'b'))
+                    tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ts_dat_dict['Dataset 1'],'r', lw = 0.5))
+            else:
+                tmpdataset_1 = 'Dataset ' + secdataset_proc[3]
+                tmpdataset_2 = 'Dataset ' + secdataset_proc[8]
+                tmpdataset_oper = secdataset_proc[4]
+                if tmpdataset_oper == '-':
+
+                    tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ts_dat_dict[tmpdataset_1] - ts_dat_dict[tmpdataset_2],'tab:brown'))
+                    tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ts_dat_dict['Dataset 1']*0, color = '0.5', ls = '--'))
+
+                else:
+                    pdb.set_trace()
+
+
+
 
             
             ###################################################################################################
@@ -3090,11 +3525,11 @@ ax,
 
                             for fcst_ldi in range(nldi):
 
-                                fsct_hov_dat = reload_hov_data_comb(var,var_d[1]['mat'],var_grid['Dataset 1'],var_d['d'],fcst_ldi, thd,time_datetime, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict, load_second_files,configd)
+                                fsct_hov_dat = reload_hov_data_comb(var,var_d[1]['mat'],var_grid['Dataset 1'],var_d['d'],fcst_ldi, thd,time_datetime, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict, load_second_files,Dataset_lst,configd)
                                 for tmp_datstr in Dataset_lst:fsct_hov_dat_dict[tmp_datstr][fcst_ldi] = fsct_hov_dat[tmp_datstr]
                                 fsct_hov_x[fcst_ldi] = fsct_hov_dat['x'] + timedelta(hours = ld_time_offset[fcst_ldi])
             
-                                fsct_ts_dat = reload_ts_data_comb(var,var_dim,var_grid['Dataset 1'],ii,jj,iijj_ind,fcst_ldi,fsct_hov_dat,time_datetime,z_meth,zz,zi,xarr_dict,grid_dict,thd,var_d[1]['mat'],var_d['d'],nz,ntime,configd,load_second_files)
+                                fsct_ts_dat = reload_ts_data_comb(var,var_dim,var_grid['Dataset 1'],ii,jj,iijj_ind,fcst_ldi,fsct_hov_dat,time_datetime,z_meth,zz,zi,xarr_dict,grid_dict,thd,var_d[1]['mat'],var_d['d'],nz,ntime,configd,Dataset_lst,load_second_files)
                                 
                                 for tmp_datstr in Dataset_lst:fsct_ts_dat_dict[tmp_datstr][fcst_ldi] = fsct_ts_dat[tmp_datstr]
                                 fsct_ts_x[fcst_ldi] = fsct_ts_dat['x'] + timedelta(hours = ld_time_offset[fcst_ldi])
@@ -3313,10 +3748,22 @@ ax,
                     
                     elif but_name in secdataset_proc_list:
                         secdataset_proc = but_name
-                        func_but_text_han['Dat1-Dat2'].set_color('k')
-                        func_but_text_han['Dat2-Dat1'].set_color('k')
-                        func_but_text_han['Dataset 1'].set_color('k')
-                        func_but_text_han['Dataset 2'].set_color('k')
+
+
+                        for tmpsecdataset_proc in secdataset_proc_list: func_but_text_han[tmpsecdataset_proc].set_color('k')
+                        #func_but_text_han['Dat1-Dat2'].set_color('k')
+                        #func_but_text_han['Dat2-Dat1'].set_color('k')
+                        #func_but_text_han['Dataset 1'].set_color('k')
+                        #func_but_text_han['Dataset 2'].set_color('k')
+                        #if secdataset_proc in Dataset_lst:func_but_text_han[secdataset_proc].set_color('k')
+
+                        #if nDataset > 1:
+                        #    for tmp_datstr in Dataset_lst[1:]:
+                        #        th_d_ind = int(tmp_datstr[-1])
+                        #        func_but_text_han['Dat%i-Dat1'%th_d_ind].set_color('k')
+                        #        func_but_text_han['Dat1-Dat%i'%th_d_ind].set_color('k')
+
+
                         func_but_text_han[but_name].set_color('darkgreen')
 
 
@@ -3395,12 +3842,15 @@ ax,
 
             for tmp_pax in pax:tmp_pax.remove()
             for tmp_cs_line in cs_line:tmp_cs_line.remove()
-            rem_loc = tsax.pop(0)
-            rem_loc.remove()
 
 
-            rem_loc2 = tsax2.pop(0)
-            rem_loc2.remove()
+            for tsax in tsax_lst:
+                rem_loc = tsax.pop(0)
+                rem_loc.remove()
+
+
+            #rem_loc2 = tsax2.pop(0)
+            #rem_loc2.remove()
 
 
             cs_plot_1_pop = cs_plot_1.pop()
