@@ -148,6 +148,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
     # Define a list of dataset names
     Dataset_lst = []
+    Dataset_col = ['r','b','darkgreen','gold']
 
     # open file list with xarray
     xarr_dict = {}
@@ -158,7 +159,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
             xarr_dict[tmp_datstr][tmpgrid] = []
     nDataset = len(Dataset_lst)
 
-
+    
 
     del(fname_lst)
     del(U_fname_lst)
@@ -1611,8 +1612,17 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
 
     labi,labj = 0.05, 0.95
     for ai,tmpax in enumerate(ax): tmpax.text(labi,labj,'%s)'%letter_mat[ai], transform=tmpax.transAxes, ha = 'left', va = 'top', fontsize = 12,bbox=dict(facecolor='white', alpha=0.75, pad=1, edgecolor='none'))
+           
+    '''
+    tsaxtx1_lst = []
+    tsaxtx1_loc
+    for dsi,tmp_datstr in enumerate(Dataset_lst):
 
+        tsaxtx = ax[4].text(0.01,0.01,tmp_datstr, ha = 'left', va = 'bottom', transform=ax[4].transAxes, color = Dataset_col[dsi], fontsize = 12,bbox=dict(facecolor='white', alpha=0.75, pad=1, edgecolor='none'))
+    
+        if (fig_lab_d[tmp_datstr] is not None): tsaxtx.set_text(fig_lab_d[tmp_datstr])
 
+    '''
     tsaxtx1 = ax[4].text(0.01,0.01,'Dataset 1', ha = 'left', va = 'bottom', transform=ax[4].transAxes, color = 'r', fontsize = 12,bbox=dict(facecolor='white', alpha=0.75, pad=1, edgecolor='none'))
     if (fig_lab_d['Dataset 1'] is not None) : 
         tsaxtx1.set_text(fig_lab_d['Dataset 1'])
@@ -1624,8 +1634,7 @@ def nemo_slice_zlev(fname_lst, config = 'amm7',
             tsaxtx2.set_text(fig_lab_d['Dataset 2'])
 
         tsaxtx3 = ax[4].text(0.99,0.975,'Dat2-Dat1', ha = 'right', va = 'top', transform=ax[4].transAxes, color = 'g', fontsize = 12,bbox=dict(facecolor='white', alpha=0.75, pad=1, edgecolor='none'))
-                    
-
+         
     #flip depth axes
     for tmpax in ax[1:]: tmpax.invert_yaxis()
     #use log depth scale, setiched off as often causes problems (clashes with hidden axes etc).
@@ -2707,7 +2716,15 @@ ax,
             '''
 
             tsax_lst = []
+            Dataset_col = ['r','b','darkgreen','gold']
             if secdataset_proc in Dataset_lst:
+                
+                for dsi,tmp_datstr in enumerate(Dataset_lst):
+                    tmplw = 0.5
+                    if secdataset_proc == tmp_datstr:tmplw = 1
+                    tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ts_dat_dict[tmp_datstr],Dataset_col[dsi], lw = tmplw))
+
+                '''
                 if secdataset_proc == 'Dataset 1':
                     tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ts_dat_dict['Dataset 1'],'r'))
                     tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ts_dat_dict['Dataset 2'],'b', lw = 0.5))
@@ -2717,6 +2734,7 @@ ax,
                 elif secdataset_proc == 'Dataset 3':
                     tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ts_dat_dict['Dataset 2'],'b'))
                     tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ts_dat_dict['Dataset 1'],'r', lw = 0.5))
+                '''
             else:
                 tmpdataset_1 = 'Dataset ' + secdataset_proc[3]
                 tmpdataset_2 = 'Dataset ' + secdataset_proc[8]
@@ -2805,8 +2823,12 @@ ax,
                     ax[4].set_ylim((ts_dat_dict['Dataset 1'] - ts_dat_dict['Dataset 2']).min(),(ts_dat_dict['Dataset 1'] - ts_dat_dict['Dataset 2']).max())
                 elif secdataset_proc == 'Dat2-Dat1':
                     ax[4].set_ylim((ts_dat_dict['Dataset 2'] - ts_dat_dict['Dataset 1']).min(),(ts_dat_dict['Dataset 2'] - ts_dat_dict['Dataset 1']).max())
-                elif secdataset_proc in ['Dataset 1','Dataset 2']:
-                    ax[4].set_ylim(np.ma.array([ts_dat_dict['Dataset 1'],ts_dat_dict['Dataset 2']]).min(),np.ma.array([ts_dat_dict['Dataset 1'],ts_dat_dict['Dataset 2']]).max())
+                elif secdataset_proc in Dataset_lst:
+                    tmpts_minmax_lst = []
+                    for tmp_datstr in Dataset_lst:tmpts_minmax_lst.append(ts_dat_dict[tmp_datstr].min())
+                    for tmp_datstr in Dataset_lst:tmpts_minmax_lst.append(ts_dat_dict[tmp_datstr].max())
+                    ax[4].set_ylim(np.ma.array(tmpts_minmax_lst).min(),np.ma.array(tmpts_minmax_lst).max())
+                    del(tmpts_minmax_lst)
 
 
 
@@ -2842,7 +2864,108 @@ ax,
             if verbose_debugging: print('Reset colour limits', datetime.now())
             try:
 
+                if load_second_files & (clim_pair == True)&(secdataset_proc  in Dataset_lst) :
 
+                    # if no xlim present using those from the map.
+                    tmpxlim = cur_xlim
+                    tmpylim = cur_ylim
+                    if cur_xlim is None: tmpxlim = ax[0].get_xlim()#np.array([lon_d[1].min(), lon_d[1].max()])    
+                    if cur_ylim is None: tmpylim = ax[0].get_ylim()#np.array([lat_d[1].min(), lat_d[1].max()])    
+
+                    map_dat_reg_mask_1 = (lon_d[1]>tmpxlim[0]) & (lon_d[1]<tmpxlim[1]) & (lat_d[1]>tmpylim[0]) & (lat_d[1]<tmpylim[1])
+
+                    tmp_map_dat_clim_lst = []
+                    for tmp_datstr in Dataset_lst:
+                        
+                        tmp_map_dat_clim = map_dat_dict[tmp_datstr][map_dat_reg_mask_1]
+                        tmp_map_dat_clim = tmp_map_dat_clim[tmp_map_dat_clim.mask == False]
+
+                        if len(tmp_map_dat_clim)>2:
+                            tmp_map_dat_clim_lst.append(np.percentile(tmp_map_dat_clim,(5,95)))
+                        
+                        
+                    tmp_map_dat_clim_mat = np.ma.array(tmp_map_dat_clim_lst).ravel()
+                    if tmp_map_dat_clim_mat.size>1:
+                        map_clim = np.ma.array([tmp_map_dat_clim_mat.min(),tmp_map_dat_clim_mat.max()])
+
+                        if clim_sym: map_clim = np.ma.array([-1,1])*np.abs(map_clim).max()
+                        if map_clim.mask.any() == False: set_clim_pcolor(map_clim, ax = ax[0])
+
+                    
+                    # only apply to ns and ew slices, and hov if 3d variable. 
+
+                    if var_dim[var] == 4:
+
+                        ew_dat_reg_mask_1 = (ew_slice_dict['x']>tmpxlim[0]) & (ew_slice_dict['x']<tmpxlim[1]) 
+                        ns_dat_reg_mask_1 = (ns_slice_dict['x']>tmpylim[0]) & (ns_slice_dict['x']<tmpylim[1])
+                        
+                        tmp_ew_dat_clim_lst,tmp_ns_dat_clim_lst, tmp_hov_dat_clim_lst = [],[],[]
+
+                        for tmp_datstr in Dataset_lst:
+
+                            tmp_ew_dat_clim = ew_slice_dict[tmp_datstr][:,ew_dat_reg_mask_1]
+                            tmp_ns_dat_clim = ns_slice_dict[tmp_datstr][:,ns_dat_reg_mask_1]
+                            tmp_hov_dat_clim = hov_dat_dict[tmp_datstr].copy()
+
+                            tmp_ew_dat_clim = tmp_ew_dat_clim[tmp_ew_dat_clim.mask == False]
+                            tmp_ns_dat_clim = tmp_ns_dat_clim[tmp_ns_dat_clim.mask == False]
+                            tmp_hov_dat_clim = tmp_hov_dat_clim[tmp_hov_dat_clim.mask == False]
+
+
+                            if len(tmp_ew_dat_clim)>2:   
+                                tmp_ew_dat_clim_lst.append(np.percentile(tmp_ew_dat_clim,(5,95)))
+
+                            if len(tmp_ns_dat_clim)>2:   
+                                tmp_ns_dat_clim_lst.append(np.percentile(tmp_ns_dat_clim,(5,95)))
+
+                            if len(tmp_hov_dat_clim)>2:  
+                                tmp_hov_dat_clim_lst.append(np.percentile(tmp_hov_dat_clim,(5,95)))
+
+
+
+
+                        tmp_ew_dat_clim_mat =  np.ma.array(tmp_ew_dat_clim_lst).ravel()
+                        tmp_ns_dat_clim_mat =  np.ma.array(tmp_ns_dat_clim_lst).ravel()
+                        tmp_hov_dat_clim_mat = np.ma.array(tmp_hov_dat_clim_lst).ravel()
+
+
+                        if tmp_ew_dat_clim_mat.size>1:
+                            ew_clim = np.ma.array([tmp_ew_dat_clim_mat.min(),tmp_ew_dat_clim_mat.max()])
+                            if clim_sym: ew_clim = np.ma.array([-1,1])*np.abs(ew_clim).max()
+                            if ew_clim.mask.any() == False: set_clim_pcolor(ew_clim, ax = ax[1])
+
+                        if tmp_ns_dat_clim_mat.size>1:
+                            ns_clim = np.ma.array([tmp_ns_dat_clim_mat.min(),tmp_ns_dat_clim_mat.max()])
+                            if clim_sym: ns_clim = np.ma.array([-1,1])*np.abs(ns_clim).max()
+                            if ns_clim.mask.any() == False: set_clim_pcolor(ns_clim, ax = ax[2])
+
+                        if tmp_hov_dat_clim_mat.size>1:
+                            hov_clim = np.ma.array([tmp_hov_dat_clim_mat.min(),tmp_hov_dat_clim_mat.max()])
+                            if clim_sym: hov_clim = np.ma.array([-1,1])*np.abs(hov_clim).max()
+                            if hov_clim.mask.any() == False: set_clim_pcolor(hov_clim, ax = ax[3])
+#
+                            
+                else:
+                    if (clim is None)| (secdataset_proc not in Dataset_lst):
+                        for tmpax in ax[:-1]:set_perc_clim_pcolor_in_region(5,95, ax = tmpax,sym = clim_sym)
+                        
+                    elif clim is not None:
+                        if len(clim)>2:
+                            for ai,tmpax in enumerate(ax):set_clim_pcolor((clim[2*ai:2*ai+1+1]), ax = tmpax)
+                            set_clim_pcolor((clim[:2]), ax = ax[0])
+                        elif len(clim)==2:
+                            for ai,tmpax in enumerate(ax):set_clim_pcolor((clim), ax = tmpax)
+                            set_clim_pcolor((clim), ax = ax[0])
+            except:
+                print("An exception occured - probably 'IndexError: cannot do a non-empty take from an empty axes.'")
+                pdb.set_trace()
+
+
+
+            '''
+            try:
+
+            
                 if load_second_files & (clim_pair == True)&(secdataset_proc not in ['Dat1-Dat2','Dat2-Dat1']) :
 
                     # if no xlim present using those from the map.
@@ -2953,7 +3076,7 @@ ax,
             except:
                 print("An exception occured - probably 'IndexError: cannot do a non-empty take from an empty axes.'")
                 pdb.set_trace()
-        
+            '''
 
             stage_timer[10] = datetime.now() #  set clims
             stage_timer_name[10] = 'Set clim'
@@ -3728,7 +3851,7 @@ ax,
 
 
                     elif but_name == 'ColScl':
-                        if secdataset_proc in ['Dataset 1','Dataset 2']:
+                        if secdataset_proc in Dataset_lst:
                             if col_scl == 0:
                                 func_but_text_han['ColScl'].set_text('Col: High')
                                 col_scl = 1
