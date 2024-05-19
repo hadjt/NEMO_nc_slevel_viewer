@@ -26,7 +26,7 @@ from NEMO_nc_slevel_viewer_lib_en import reload_map_data_comb_zmeth_zslice,reloa
 from NEMO_nc_slevel_viewer_lib_en import reload_hov_data_comb,reload_ts_data_comb
 from NEMO_nc_slevel_viewer_lib_en import regrid_2nd,grad_horiz_ns_data,grad_horiz_ew_data,grad_vert_ns_data,grad_vert_ew_data,grad_vert_hov_data
 #from NEMO_nc_slevel_viewer_lib_en import indices_from_ginput_ax
-from NEMO_nc_slevel_viewer_lib_en import extract_time_from_xarr
+from NEMO_nc_slevel_viewer_lib_en import extract_time_from_xarr,load_nc_var_name_list_WW3
 
 
 letter_mat = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
@@ -55,15 +55,15 @@ matplotlib.use('Qt5Agg')
 #def nemo_slice_zlev(fname_lst, config = 'amm7',  
 def nemo_slice_zlev(config = 'amm7',  
     zlim_max = None,var = None,
-    fig_lab_d = None,configd = None,thd = None,fname_dict = None,
+    fig_lab_d = None,configd = None,thd = None,fname_dict = None,load_second_files = False,
     xlim = None, ylim = None, tlim = None, clim = None,
     ii = None, jj = None, ti = None, zz = None, 
     lon_in = None, lat_in = None, date_in_ind = None, date_fmt = '%Y%m%d',
     z_meth = None,
     secdataset_proc = 'Dataset 1',
-    hov_time = True, do_cont = True, do_grad = 1,
+    hov_time = False, do_cont = False, do_grad = 0,
     allow_diff_time = False,
-    preload_data = False,
+    preload_data = True,
     ld_lst = None, ld_nctvar = 'time_counter',ld_lab_lst = '-36,-12,012,036,060,084,108,132',
     clim_sym = None, clim_pair = True,use_cmocean = False,
     fig_dir = None,fig_lab = 'figs',fig_cutout = True, 
@@ -86,10 +86,10 @@ def nemo_slice_zlev(config = 'amm7',
     init_timer.append((datetime.now(),'Starting Program'))
 
 
-    load_second_files = False
+    #load_second_files = False
     # repeat if comparing two time series. 
-    if len(configd) >1:        
-        load_second_files = True
+    #if len(configd) >1:        
+    #    load_second_files = True
 
     '''
     load_second_files = False
@@ -162,6 +162,14 @@ def nemo_slice_zlev(config = 'amm7',
     # Define a list of dataset names
     Dataset_lst = []
     Dataset_col = ['r','b','darkgreen','gold']
+
+
+    
+    for tmp_datstr in fname_dict.keys():
+        for tmpgrid in fname_dict[tmp_datstr].keys():
+            th_d_ind = int(tmp_datstr[-1])
+            #pdb.set_trace()
+            fname_dict[tmp_datstr][tmpgrid] = fname_dict[tmp_datstr][tmpgrid][  thd[th_d_ind]['f0']:thd[th_d_ind]['f1']:thd[th_d_ind]['df']]
 
     # open file list with xarray
     xarr_dict = {}
@@ -443,8 +451,11 @@ def nemo_slice_zlev(config = 'amm7',
     for tmp_datstr in Dataset_lst[1:]:
         th_d_ind = int(tmp_datstr[-1])
         rootgrp_gdept_dict[tmp_datstr] = rootgrp_gdept_dict['Dataset 1']
+        
 
-        if configd[th_d_ind] is not None:
+        regrid_params[tmp_datstr] = None#(None,None,None,None,None)
+        if (configd[th_d_ind] is not None) & (configd[th_d_ind]!=configd[1]):
+        #if (configd[th_d_ind] is not None) :
 
             if (configd[1].upper() in ['AMM7','AMM15']) & (configd[th_d_ind].upper() in ['AMM7','AMM15']):  
                 mesh_file_2nd = config_fnames_dict[configd[th_d_ind]]['mesh_file'] 
@@ -592,8 +603,16 @@ def nemo_slice_zlev(config = 'amm7',
             ncdim_d[tmp_datstr][tmpgrid]['y'] = tmp_y_dim
             ncdim_d[tmp_datstr][tmpgrid]['x'] = tmp_x_dim
         
-            var_d[th_d_ind][tmpgrid] = tmp_var_names[2]
             tmp_var_dim = tmp_var_names[6]
+            var_d[th_d_ind][tmpgrid] = tmp_var_names[2]
+
+
+            if tmpgrid == 'WW3':
+                tmp_WW3_var_mat,  WW3_nvar, tmp_var_dim = load_nc_var_name_list_WW3(xarr_dict[tmp_datstr][tmpgrid][0],'seapoint',tmp_t_dim)
+                WW3_var_mat = [ss for ss in tmp_WW3_var_mat if ss in ['hs','uwnd','vwnd']]
+                var_d[th_d_ind][tmpgrid] = WW3_var_mat
+                #pdb.set_trace()
+
 
             
             for ss in tmp_var_dim: var_dim[ss] = tmp_var_dim[ss]
@@ -636,10 +655,13 @@ def nemo_slice_zlev(config = 'amm7',
         if ncvar.upper() in time_varname_mat: time_varname = ncvar
 
 
-    if nav_lon_varname not in ncvar_mat:
-        pdb.set_trace()
+    
 
-    init_timer.append((datetime.now(),'xarray open_mfdataset UV connecting'))
+    
+    if nav_lon_varname not in ncvar_d['Dataset 1']['T']:
+        pdb.set_trace()
+    
+    #init_timer.append((datetime.now(),'xarray open_mfdataset UV connecting'))
     print ('xarray open_mfdataset, Finish',datetime.now())
     #Add baroclinic velocity magnitude
     #UV_vec = False
@@ -670,9 +692,10 @@ def nemo_slice_zlev(config = 'amm7',
     for tmp_datstr in Dataset_lst:
         th_d_ind = int(tmp_datstr[-1])
 
-
+        tmp_configd = configd[th_d_ind]
+        if tmp_configd is None: tmp_configd = configd[1]
         # load nav_lat and nav_lon
-        if configd[th_d_ind].upper() in ['ORCA025','ORCA025EXT','ORCA12']: 
+        if tmp_configd.upper() in ['ORCA025','ORCA025EXT','ORCA12']: 
 
             lon_d[th_d_ind] = np.ma.masked_invalid(rootgrp_gdept_dict[tmp_datstr].variables[ncglamt][0])
             lat_d[th_d_ind] = np.ma.masked_invalid(rootgrp_gdept_dict[tmp_datstr].variables[ncgphit][0])
@@ -689,7 +712,7 @@ def nemo_slice_zlev(config = 'amm7',
             lat_d[th_d_ind] = np.ma.array(lat_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
             lon_d[th_d_ind] = np.ma.array(lon_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
 
-        elif configd[th_d_ind].upper() in ['CO9P2']: 
+        elif tmp_configd.upper() in ['CO9P2']: 
 
             lon_d[th_d_ind] = np.ma.masked_invalid(rootgrp_gdept_dict[tmp_datstr].variables[ncglamt][0])
             lat_d[th_d_ind] = np.ma.masked_invalid(rootgrp_gdept_dict[tmp_datstr].variables[ncgphit][0])
@@ -731,7 +754,7 @@ def nemo_slice_zlev(config = 'amm7',
         if (((lat_d[th_d_ind] == 0) & (lon_d[th_d_ind] == 0)).sum()>10) |  (lat_d[th_d_ind] == lon_d[th_d_ind]).sum()> 100:
             # If there are still (0,0) pairs in nav_lat and nav_lon, coming from glamt and gphit, we can approixmate the field analytically
             print('Several points (>10) for 0degN 0degW - suggesting land suppression - calc grid mesh')
-            if configd[th_d_ind].upper() in ['AMM7']:
+            if tmp_configd.upper() in ['AMM7']:
                 # as AMM7 is a regular lat and lon grid, with a linear grid, re can use a simple linear equation, and then use mesh grid
 
                 lon_amm7 = np.arange(-19.888889,12.99967+1/9.,1/9.)
@@ -745,7 +768,7 @@ def nemo_slice_zlev(config = 'amm7',
                 lat_d[th_d_ind] = np.ma.array(lat_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
                 lon_d[th_d_ind] = np.ma.array(lon_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
 
-            if configd[th_d_ind].upper() in ['AMM15', 'CO9P2']:
+            if tmp_configd.upper() in ['AMM15', 'CO9P2']:
                 # AMM15 is more complicated, as its on a rotated grid, however once unrotated, it can be treated as AMM7
                 
                 '''
@@ -796,7 +819,7 @@ def nemo_slice_zlev(config = 'amm7',
             lon_d['amm15'] = np.ma.masked_invalid(xarr_dict['Dataset 1']['T'][0].variables[nav_lon_varname].load())
         '''
         
-        if configd[th_d_ind].upper() in ['AMM15','CO9P2']: 
+        if tmp_configd.upper() in ['AMM15','CO9P2']: 
             # AMM15 lon and lats are always 2d
             lat_d['amm15'] = lat_d[th_d_ind]
             lon_d['amm15'] = lon_d[th_d_ind]
@@ -967,7 +990,9 @@ def nemo_slice_zlev(config = 'amm7',
         grid_dict[tmp_datstr]['e1t'] = rootgrp_gdept_dict[tmp_datstr].variables[nce1t][0,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
         grid_dict[tmp_datstr]['e2t'] = rootgrp_gdept_dict[tmp_datstr].variables[nce2t][0,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
         grid_dict[tmp_datstr]['e3t'] = rootgrp_gdept_dict[tmp_datstr].variables[nce3t][0,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
-        grid_dict[tmp_datstr]['gdept'] = rootgrp_gdept_dict[tmp_datstr].variables[config_fnames_dict[configd[th_d_ind]]['ncgdept']][0,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
+        tmp_configd = configd[th_d_ind]
+        if tmp_configd is None:tmp_configd = configd[1]
+        grid_dict[tmp_datstr]['gdept'] = rootgrp_gdept_dict[tmp_datstr].variables[config_fnames_dict[tmp_configd]['ncgdept']][0,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
 
 
     nz = grid_dict[Dataset_lst[0]]['gdept'].shape[0]
@@ -1427,6 +1452,29 @@ def nemo_slice_zlev(config = 'amm7',
     del(nav_lon_amm15)
     del(nav_lat_amm15)
     '''
+
+
+    time_d = {}
+    
+
+    # open file list with xarray
+    for tmp_datstr in Dataset_lst: # xarr_dict.keys():
+        time_d[tmp_datstr] = {}
+        for tmpgrid in xarr_dict[tmp_datstr].keys():
+
+            for ncvar in ncvar_d[tmp_datstr][tmpgrid]: 
+                #if ncvar.upper() in nav_lon_var_mat: nav_lon_varname = ncvar
+                #if ncvar.upper() in nav_lat_var_mat: nav_lat_varname = ncvar
+                if ncvar.upper() in time_varname_mat: tmp_time_varname = ncvar
+
+            #if ncvar.upper() in time_varname_mat: time_varname = ncvar
+
+            time_d[tmp_datstr][tmpgrid] = {}
+
+            #pdb.set_trace()
+            time_d[tmp_datstr][tmpgrid]['datetime'],time_d[tmp_datstr][tmpgrid]['datetime_since_1970'],tmp_ntime,tmp_ti = extract_time_from_xarr(xarr_dict[tmp_datstr][tmpgrid],fname_dict[tmp_datstr][tmpgrid][0], tmp_time_varname,ncdim_d[tmp_datstr][tmpgrid]['t'],date_in_ind,date_fmt,ti,verbose_debugging)
+
+
     
     add_TSProf = False
     if ('votemper' in var_d[1]['mat']) & ('vosaline' in var_d[1]['mat']):
@@ -1584,13 +1632,19 @@ def nemo_slice_zlev(config = 'amm7',
 
 
     fig_tit_str = 'Interactive figure, Select lat/lon in a); lon in b); lat  in c); depth in d) and time in e).\n'
-    if fig_lab_d['Dataset 1'] is not None: fig_tit_str = fig_tit_str + ' Dataset 1 = %s;'%fig_lab_d['Dataset 1']
-    if fig_lab_d['Dataset 2'] is not None: fig_tit_str = fig_tit_str + ' Dataset 2 = %s;'%fig_lab_d['Dataset 2']
+    #if fig_lab_d['Dataset 1'] is not None: fig_tit_str = fig_tit_str + ' Dataset 1 = %s;'%fig_lab_d['Dataset 1']
+    #if fig_lab_d['Dataset 2'] is not None: fig_tit_str = fig_tit_str + ' Dataset 2 = %s;'%fig_lab_d['Dataset 2']
+
+    for tmp_datstr in Dataset_lst:
+        if fig_lab_d[tmp_datstr] is not None: fig_tit_str = fig_tit_str + ' %s = %s;'%(tmp_datstr,fig_lab_d[tmp_datstr])
+
 
     fig_tit_str_int = 'Interactive figure, Select lat/lon in a); lon in b); lat  in c); depth in d) and time in e). %s[%i, %i, %i, %i] (thin = %i; thin_files = %i) '%(var,ii,jj,zz,ti, thd[1]['dx'], thd[1]['df'])
     fig_tit_str_lab = ''
-    if fig_lab_d['Dataset 1'] is not None: fig_tit_str_lab = fig_tit_str_lab + ' Dataset 1 = %s;'%fig_lab_d['Dataset 1']
-    if fig_lab_d['Dataset 2'] is not None: fig_tit_str_lab = fig_tit_str_lab + ' Dataset 2 = %s;'%fig_lab_d['Dataset 2']
+    #if fig_lab_d['Dataset 1'] is not None: fig_tit_str_lab = fig_tit_str_lab + ' Dataset 1 = %s;'%fig_lab_d['Dataset 1']
+    #if fig_lab_d['Dataset 2'] is not None: fig_tit_str_lab = fig_tit_str_lab + ' Dataset 2 = %s;'%fig_lab_d['Dataset 2']
+    for tmp_datstr in Dataset_lst:
+        if fig_lab_d[tmp_datstr] is not None: fig_tit_str_lab = fig_tit_str_lab + ' %s = %s;'%(tmp_datstr,fig_lab_d[tmp_datstr])
 
 
     nvarbutcol = 16 # 18
@@ -2223,6 +2277,7 @@ ax,
             iijj_ind = {}
             for tmp_datstr in Dataset_lst:
                 th_d_ind = int(tmp_datstr[-1])
+                #iijj_ind[tmp_datstr] = None
                 if configd[th_d_ind] is not None:
                     if ((configd[1].upper() == 'AMM15') & (configd[th_d_ind].upper() == 'AMM7')) | ((configd[1].upper() == 'AMM7') & (configd[th_d_ind].upper() == 'AMM15')):
 
@@ -2453,6 +2508,7 @@ ax,
 
             stage_timer[5] = datetime.now() # start data dataload
             stage_timer_name[5] = 'Slice data'
+            #pdb.set_trace()
             if reload_map:
                 map_dat_dict = reload_map_data_comb(var,ldi,ti,z_meth,zz,zi, data_inst,var_dim, interp1d_ZwgtT,grid_dict,lon_d[1],lat_d[1],regrid_params,regrid_meth,thd,configd,Dataset_lst,load_second_files)
                 reload_map = False
@@ -4558,19 +4614,26 @@ def main():
             pdb.set_trace()
 
 
+        load_second_files = False
 
         configd = {}
         configd[1] = args.config
-        if 'config_2nd' in args: configd[2] = args.config_2nd
+        configd[2] = None
+        if 'config_2nd' in args:
+            if args.config_2nd is not None: 
+                configd[2] = args.config_2nd
 
-        if 2 in configd.keys():
-            load_second_files = True
+                load_second_files = True
+        
+        #if 2 in configd.keys():
 
         fname_dict = {}
         fname_dict['Dataset 1'] = {}
         fname_dict['Dataset 1']['T'] = fname_lst
         if U_fname_lst is not None: fname_dict['Dataset 1']['U'] = U_fname_lst
         if V_fname_lst is not None: fname_dict['Dataset 1']['V'] = V_fname_lst
+
+        #pdb.set_trace()
         if load_second_files: 
             fname_dict['Dataset 2'] = {}
             fname_dict['Dataset 2']['T'] = fname_lst_2nd
@@ -4646,6 +4709,7 @@ def main():
 
     
         for cfi in configd.keys():
+            if configd[cfi] is None: continue
             if configd[cfi].upper() in ['ORCA025','ORCA025EXT']: 
                 if thd[cfi1]['y1'] is None: thd[cfi]['y1'] = -2
             if configd[cfi].upper() in ['ORCA12']: 
@@ -4837,7 +4901,7 @@ def main():
 
 
         nemo_slice_zlev(zlim_max = args.zlim_max,
-            fig_lab_d = fig_lab_d,configd = configd,thd = thd,fname_dict = fname_dict,
+            fig_lab_d = fig_lab_d,configd = configd,thd = thd,fname_dict = fname_dict,load_second_files = load_second_files,
             clim_sym = clim_sym_in, clim = args.clim, clim_pair = clim_pair_in,hov_time = hov_time_in,
             allow_diff_time = allow_diff_time_in,preload_data = preload_data_in,
             do_grad = do_grad_in,do_cont = do_cont_in,
