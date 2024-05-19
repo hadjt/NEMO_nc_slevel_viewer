@@ -1456,7 +1456,7 @@ def nemo_slice_zlev(config = 'amm7',
 
     time_d = {}
     
-
+    
     # open file list with xarray
     for tmp_datstr in Dataset_lst: # xarr_dict.keys():
         time_d[tmp_datstr] = {}
@@ -2412,8 +2412,15 @@ ax,
             if verbose_debugging: print('Reload map, ew, ns, hov, ts',reload_map,reload_ew,reload_ns,reload_hov,reload_ts, datetime.now())
             prevtime = datetime.now()
             datstarttime = prevtime
-
             
+
+            #to allow the time conversion between file sets with different times
+            tmp_current_time = time_datetime[ti]
+            time_datetime = time_d['Dataset 1'][var_grid['Dataset 1'][var]]['datetime']
+            time_datetime_since_1970 = time_d['Dataset 1'][var_grid['Dataset 1'][var]]['datetime_since_1970']
+            ti = np.array([np.abs(ss.total_seconds()) for ss in (time_datetime - tmp_current_time)]).argmin()
+            ntime = len(time_datetime)
+            #pdb.set_trace()
             
             stage_timer[4] = datetime.now() # start data instance load, finished converting data location from config to config2
             stage_timer_name[4] = 'Load Instance'
