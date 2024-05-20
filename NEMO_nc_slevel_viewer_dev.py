@@ -604,19 +604,45 @@ def nemo_slice_zlev(config = 'amm7',
                 else:
                     #pdb.set_trace()
                     '''
+                    fc_nday_ldtime = 2
+                    
+                    
                     tmp_xarr_data = xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid],combine='nested', concat_dim='time_counter', parallel = True)
-               
-                    ictc = tmptc[2::8].load()
-                    ictc_mat = np.array([ss.data  for ss in ictc for i_i in range(8)] )
-                    ldtc_mat = np.array((tmptc - ictc_mat)/86400/1e9, dtype = 'int') #(tmptc - ictc_mat)/86400/1e9
+                    tmptc_np64 = tmp_xarr_data.time_counter.load()
+                    tmptc = np.array([datetime.utcfromtimestamp(((ss.data -  np.datetime64('1970-01-01T00:00:00'))/np.timedelta64(1, 's'))) for ss in tmptc_np64])
 
-                    tmp_xarr_data = tmp_xarr_data.assign_coords(bull_time = ictc_mat)
+                    #fc_len = np.diff(np.where(np.array([ss.days for ss in np.diff(tmptc)])!=1)[0])
+                    fc_len_mat = np.diff(np.where(np.array([ss.days for ss in np.diff(tmptc)])<1)[0])
+                    
+                    if len(fc_len_mat) == 0:
+                        fc_len = 1
+                    else:
+                        if fc_len_mat.std() != 0:
+                            print('not all fc are the same length',fc_len_mat)
+                            pdb.set_trace()
+                        fc_len = ((fc_len_mat).mean()).astype('int')
+                    
+                    
+                    
+                    bltc = tmptc[2::fc_len]
+                    bltc_mat = np.array([ss  for ss in bltc for i_i in range(8)] )
+                    ldtc_mat = np.array([ss.days for ss in (tmptc - bltc_mat)])
+
+
+
+
+                    tmp_xarr_data = tmp_xarr_data.assign_coords(bull_time = bltc_mat)
                     tmp_xarr_data = tmp_xarr_data.assign_coords(lead_time = ldtc_mat)
                
                     tmpgpby_bull = tmp_xarr_data.groupby('bull_time')
                     tmpgpby_lead = tmp_xarr_data.groupby('lead_time')
 
-                    for ss in tmpgpby_lead: print (ss)
+                    for ss in tmpgpby_bull.groups: ss,tmpgpby_bull.groups[ss]
+                    for ss in tmpgpby_lead.groups: ss,tmpgpby_lead.groups[ss]
+
+                    tmp_xarr_data.votemper[tmpgpby_lead.groups[-2],:,:,:]
+                    tmp_xarr_data.votemper[tmpgpby_bull.groups[np.datetime64('2024-05-11T12:00:00.000000000')],:,:,:]
+
 
                     '''
                     for li,(ldi,ldilab) in enumerate(zip(ldi_ind_mat, ld_lab_mat)): xarr_dict[tmp_datstr][tmpgrid].append(
@@ -1185,6 +1211,9 @@ def nemo_slice_zlev(config = 'amm7',
     nice_varname_dict['Visib'] = 'Secchi depth '
     nice_varname_dict['spCO2'] = 'Surface Carbonate pCO2'
 
+    nice_varname_dict['wnd_mag'] = 'Wind speed'
+
+
     
     init_timer.append((datetime.now(),'Nice names loaded'))
 
@@ -1611,6 +1640,7 @@ def nemo_slice_zlev(config = 'amm7',
                     var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
             var_dim[ss] = 4
             var_grid['Dataset 1'][ss] = 'UV'
+            var_grid['Dataset 1'][ss] = 'U'
             var_d['d'].append(ss)
 
     if ('ubar' in var_d[1]['mat']) & ('vbar' in var_d[1]['mat']):
@@ -1621,7 +1651,20 @@ def nemo_slice_zlev(config = 'amm7',
                 if ('ubar' in var_d[2]['mat']) & ('vbar' in var_d[2]['mat']):
                     var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
             var_dim[ss] = 3
-            var_grid['Dataset 1'][ss] = 'UV'
+            #var_grid['Dataset 1'][ss] = 'UV'
+            var_grid['Dataset 1'][ss] = 'U'
+            var_d['d'].append(ss)
+
+
+    if ('uwnd' in var_d[1]['mat']) & ('vwnd' in var_d[1]['mat']):
+        for ss in ['wnd_mag']:#, 'barot_div', 'barot_curl']: 
+            #ss = 'barot_mag'
+            var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
+            if load_second_files:
+                if ('uwnd' in var_d[2]['mat']) & ('vwnd' in var_d[2]['mat']):
+                    var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
+            var_dim[ss] = 3
+            var_grid['Dataset 1'][ss] = 'WW3'
             var_d['d'].append(ss)
 
 
