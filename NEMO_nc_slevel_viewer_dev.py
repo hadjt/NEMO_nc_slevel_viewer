@@ -591,6 +591,7 @@ def nemo_slice_zlev(config = 'amm7',
                         xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], 
                         combine='by_coords',parallel = True))  
                     '''
+                    # may be required if a problem with WW3 having 25 instantaneous hours every 25 hours.
                     if grid in 'WW3':
                         xarr_dict[tmp_datstr][tmpgrid].append(
                             xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], 
@@ -601,6 +602,23 @@ def nemo_slice_zlev(config = 'amm7',
                             combine='by_coords',parallel = True))  
                     '''
                 else:
+                    #pdb.set_trace()
+                    '''
+                    tmp_xarr_data = xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid],combine='nested', concat_dim='time_counter', parallel = True)
+               
+                    ictc = tmptc[2::8].load()
+                    ictc_mat = np.array([ss.data  for ss in ictc for i_i in range(8)] )
+                    ldtc_mat = np.array((tmptc - ictc_mat)/86400/1e9, dtype = 'int') #(tmptc - ictc_mat)/86400/1e9
+
+                    tmp_xarr_data = tmp_xarr_data.assign_coords(bull_time = ictc_mat)
+                    tmp_xarr_data = tmp_xarr_data.assign_coords(lead_time = ldtc_mat)
+               
+                    tmpgpby_bull = tmp_xarr_data.groupby('bull_time')
+                    tmpgpby_lead = tmp_xarr_data.groupby('lead_time')
+
+                    for ss in tmpgpby_lead: print (ss)
+
+                    '''
                     for li,(ldi,ldilab) in enumerate(zip(ldi_ind_mat, ld_lab_mat)): xarr_dict[tmp_datstr][tmpgrid].append(
                             xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], 
                             combine='by_coords',parallel = True, preprocess=lambda ds: ds[{ld_nctvar:slice(ldi,ldi+1)}]))   

@@ -2359,7 +2359,7 @@ def reload_ts_data_comb(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,tim
                 ss_ts_dat_1 = hov_dat_dict[tmp_datstr][0,:].ravel()
                 hov_nb_ind_1 = (hov_dat_dict[tmp_datstr][:,0].mask == False).sum()-1
                 nb_ts_dat_1 = hov_dat_dict[tmp_datstr][hov_nb_ind_1,:].ravel()
-                df_ts_dat_1 = ss_ts_dat_1 - hov_nb_ind_1
+                df_ts_dat_1 = ss_ts_dat_1 - nb_ts_dat_1
 
                 
                 
