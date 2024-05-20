@@ -1547,7 +1547,7 @@ def reload_data_instances(var,thd,ldi,ti,var_grid, xarr_dict, grid_dict,var_dim,
 
     if var_grid[var] == 'WW3':
 
-        
+        '''
         tmpfname_out_WW3_amm15_bilin = '/data/cr1/hadjt/data/reffiles/SSF/regrid_WW3_amm15_nn_mask.nc'
 
         rootgrp = Dataset(tmpfname_out_WW3_amm15_bilin, 'r', format='NETCDF4')
@@ -1555,12 +1555,16 @@ def reload_data_instances(var,thd,ldi,ti,var_grid, xarr_dict, grid_dict,var_dim,
         AMM15_mask = rootgrp.variables['AMM15_mask'][:,:].astype('bool')
         rootgrp.close()  
 
+        grid_dict['WW3']['NWS_WW3_nn_ind'] = rootgrp.variables['NWS_WW3_nn_ind'][:,:]
+        grid_dict['WW3']['AMM15_mask']
+        '''
+            
         for tmp_datstr in Dataset_lst:
             th_d_ind = int(tmp_datstr[-1])
 
             tmpdat_inst = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables[var][ti,:].load()) 
 
-            data_inst[tmp_datstr] = np.ma.array(tmpdat_inst[NWS_WW3_nn_ind],mask = AMM15_mask)[thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
+            data_inst[tmp_datstr] = np.ma.array(tmpdat_inst[grid_dict['WW3']['NWS_WW3_nn_ind']],mask = grid_dict['WW3']['AMM15_mask'])[thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
    
         return data_inst,preload_data_ti,preload_data_var,preload_data_ldi
 
@@ -2257,6 +2261,39 @@ def reload_ts_data_comb(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,tim
     ts_dat_dict = {}
     ts_dat_dict['x'] = time_datetime
     #for tmp_datstr in Dataset_lst:
+
+
+    if var_grid[var] == 'WW3':
+
+        for tmp_datstr in Dataset_lst: # _secondary:
+            tmp_jj,tmp_ii = jj,ii
+
+            if tmp_datstr in Dataset_lst_secondary:
+                th_d_ind = int(tmp_datstr[-1])
+                #pdb.set_trace()
+                if configd[th_d_ind] is not None:
+                    tmp_jj,tmp_ii = iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']
+            
+            tmpind = grid_dict['WW3']['NWS_WW3_nn_ind'][tmp_jj,tmp_ii]
+            if grid_dict['WW3']['AMM15_mask'][tmp_jj,tmp_ii]:
+                ts_dat_dict[tmp_datstr] = np.ma.zeros((xarr_dict[tmp_datstr]['WW3'][ldi].variables[var].shape[0]))*np.ma.masked
+            else:
+                ts_dat_dict[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['WW3'][ldi].variables[var][:,tmpind].load())
+
+    
+        #pdb.set_trace()
+        '''
+        ts_dat_dict['Dataset 1']
+        for tmp_datstr in Dataset_lst_secondary:
+            xarr_dict[tmp_datstr]['WW3']
+            ts_dat_dict[tmp_datstr] = hov_dat_dict[tmp_datstr][zi,:]
+
+        [:,jj_2nd_ind,ii_2nd_ind].load())
+
+        grid_dict['WW3']['NWS_WW3_nn_ind'] = rootgrp.variables['NWS_WW3_nn_ind'][:,:]
+        grid_dict['WW3']['AMM15_mask'] = rootgrp.variables['AMM15_mask'][:,:].astype('bool')
+        '''
+        return ts_dat_dict 
 
     if var_dim[var] == 3:
         if var in deriv_var:

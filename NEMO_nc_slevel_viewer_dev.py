@@ -569,7 +569,7 @@ def nemo_slice_zlev(config = 'amm7',
     var_grid = {}
     ncvar_d = {}
     ncdim_d = {}
-
+    WW3_ld_nctvar = 'time'
     # open file list with xarray
     #xarr_dict = {}
     for tmp_datstr in Dataset_lst: # xarr_dict.keys():
@@ -583,10 +583,27 @@ def nemo_slice_zlev(config = 'amm7',
         #xarr_dict[tmp_datstr] = {}
         for tmpgrid in xarr_dict[tmp_datstr].keys():
 
-            if nldi == 0:
-                xarr_dict[tmp_datstr][tmpgrid].append(xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], combine='by_coords',parallel = True))
+            if nldi == 0:   
+                xarr_dict[tmp_datstr][tmpgrid].append(
+                    xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], 
+                    combine='by_coords',parallel = True))  
+                '''
+                if grid in 'WW3':
+                    xarr_dict[tmp_datstr][tmpgrid].append(
+                        xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], 
+                        combine='by_coords',parallel = True, preprocess=lambda ds: ds[{WW3_ld_nctvar:slice(1,24+1)}]))    
+                else:
+                    xarr_dict[tmp_datstr][tmpgrid].append(
+                        xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], 
+                        combine='by_coords',parallel = True))  
+                '''
             else:
-                for li,(ldi,ldilab) in enumerate(zip(ldi_ind_mat, ld_lab_mat)):xarr_dict[tmp_datstr][tmpgrid].append(xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], combine='by_coords',parallel = True, preprocess=lambda ds: ds[{ld_nctvar:slice(ldi,ldi+1)}]))   
+                for li,(ldi,ldilab) in enumerate(zip(ldi_ind_mat, ld_lab_mat)): xarr_dict[tmp_datstr][tmpgrid].append(
+                        xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], 
+                        combine='by_coords',parallel = True, preprocess=lambda ds: ds[{ld_nctvar:slice(ldi,ldi+1)}]))   
+
+
+
             init_timer.append((datetime.now(),'xarray open_mfdataset %s %s connected'%(tmp_datstr,tmpgrid)))
             print ('xarray open_mfdataset %s %s , Start'%(tmp_datstr,tmpgrid),datetime.now())
 
@@ -998,7 +1015,15 @@ def nemo_slice_zlev(config = 'amm7',
     nz = grid_dict[Dataset_lst[0]]['gdept'].shape[0]
 
 
-
+    if 'WW3' in ncdim_d['Dataset 1']:
+         
+        grid_dict['WW3'] = {}
+        tmpfname_out_WW3_amm15_bilin = '/data/cr1/hadjt/data/reffiles/SSF/regrid_WW3_amm15_nn_mask.nc'
+        rootgrp = Dataset(tmpfname_out_WW3_amm15_bilin, 'r', format='NETCDF4')
+        grid_dict['WW3']['NWS_WW3_nn_ind'] = rootgrp.variables['NWS_WW3_nn_ind'][:,:]
+        grid_dict['WW3']['AMM15_mask'] = rootgrp.variables['AMM15_mask'][:,:].astype('bool')
+        rootgrp.close()  
+        
 
     '''
     grid_dict = {}
@@ -2536,15 +2561,18 @@ ax,
             if reload_ew:
                 if var_dim[var] == 4:
                     ew_slice_dict = reload_ew_data_comb(ii,jj,ti,thd, data_inst, lon_d[1], lat_d[1], grid_dict, regrid_meth,iijj_ind,load_second_files,Dataset_lst,configd)
-                reload_ew = False
 
-                if var_dim[var] == 4:
                     if do_grad == 1:
                         #ew_slice_dict['Dataset 1'], ew_slice_dict['Dataset 2'] = grad_horiz_ew_data(thd,grid_dict,jj, ew_slice_dict['Dataset 1'],ew_slice_dict['Dataset 2'])
                         ew_slice_dict = grad_horiz_ew_data(thd,grid_dict,jj, ew_slice_dict)
                     if do_grad == 2:
                         #ew_slice_dict['Dataset 1'], ew_slice_dict['Dataset 2'] = grad_vert_ew_data(ew_slice_dict['Dataset 1'],ew_slice_dict['Dataset 2'],ew_slice_dict['y'])
                         ew_slice_dict = grad_vert_ew_data(ew_slice_dict)
+                else:
+                    ew_slice_dict = {}
+                    ew_slice_dict['x'] = lon_d[1][jj,:]
+                    ew_slice_dict['y'] = grid_dict['Dataset 1']['gdept'][:,jj,:]
+                reload_ew = False
 
             if verbose_debugging: print('Reloaded  ew data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now(),'; dt = %s'%(datetime.now()-prevtime))
             prevtime = datetime.now()
@@ -2552,16 +2580,19 @@ ax,
             if reload_ns:
                 if var_dim[var] == 4:               
                     ns_slice_dict = reload_ns_data_comb(ii,jj,ti,thd, data_inst, lon_d[1], lat_d[1], grid_dict, regrid_meth, iijj_ind,load_second_files,Dataset_lst,configd)
-                reload_ns = False
-
-                if var_dim[var] == 4:   
+ 
                     if do_grad == 1:
                         #ns_slice_dict['Dataset 1'], ns_slice_dict['Dataset 2'] = grad_horiz_ns_data(thd,grid_dict,ii, ns_slice_dict['Dataset 1'],ns_slice_dict['Dataset 2'])
                         ns_slice_dict = grad_horiz_ns_data(thd,grid_dict,ii, ns_slice_dict)
                     if do_grad == 2:
                         #ns_slice_dict['Dataset 1'], ns_slice_dict['Dataset 2'] = grad_vert_ns_data(ns_slice_dict['Dataset 1'],ns_slice_dict['Dataset 2'],ns_slice_dict['y'])
                         ns_slice_dict = grad_vert_ns_data(ns_slice_dict)
+                else:
+                    ns_slice_dict = {}
+                    ns_slice_dict['x'] = lat_d[1][:,ii]
+                    ns_slice_dict['y'] = grid_dict['Dataset 1']['gdept'][:,:,ii]
                   
+                reload_ns = False
 
             if verbose_debugging: print('Reloaded  ns data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now(),'; dt = %s'%(datetime.now()-prevtime))
             prevtime = datetime.now()
@@ -2574,6 +2605,10 @@ ax,
                         if do_grad == 2:
                             #hov_dat_dict['Dataset 1'],hov_dat_dict['Dataset 2'] = grad_vert_hov_data(hov_dat_dict['Dataset 1'],hov_dat_dict['Dataset 2'],hov_dat_dict['y'])
                             hov_dat_dict = grad_vert_hov_data(hov_dat_dict)
+                    else:
+                        hov_dat_dict = {}
+                        hov_dat_dict['x'] = time_datetime
+                        hov_dat_dict['y'] = np.ma.zeros((nz,time_datetime.size))
 
                 else:
                     
@@ -2804,6 +2839,7 @@ ax,
                     tmplw = 0.5
                     if secdataset_proc == tmp_datstr:tmplw = 1
                     tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ts_dat_dict[tmp_datstr],Dataset_col[dsi], lw = tmplw))
+                    #pdb.set_trace()
 
                 '''
                 if secdataset_proc == 'Dataset 1':
@@ -2893,8 +2929,10 @@ ax,
             if tlim is not None:ax[3].set_xlim(tlim)
             if tlim is not None:ax[4].set_xlim(tlim)
             #pdb.set_trace()
-            #reset ylim to time series to data min max
-            ax[4].set_xlim(ax[3].get_xlim())
+            #reset ylim to time series to data min max, as long as hovtime as been set once
+            #if ax[3].get_xlim() != (0,1.0):
+            if var_dim[var] == 4:
+                ax[4].set_xlim(ax[3].get_xlim())
             
 
             if load_second_files == False:
@@ -2923,15 +2961,19 @@ ax,
                 tmpew_visible_ind = (ew_slice_dict['x']>=tmpew_xlim[0]) & (ew_slice_dict['x']<=tmpew_xlim[1]) 
                 tmpns_visible_ind = (ns_slice_dict['x']>=tmpns_xlim[0]) & (ns_slice_dict['x']<=tmpns_xlim[1]) 
 
-
-                ax[1].set_ylim([ew_slice_dict['y'][:,tmpew_visible_ind].max(),zlim_min])
-                ax[2].set_ylim([ns_slice_dict['y'][:,tmpns_visible_ind].max(),zlim_min])
-                ax[3].set_ylim([hov_dat_dict['y'].max(),zlim_min])
+                tmp_ew_ylim = [0,zlim_min]
+                tmp_ns_ylim = [0,zlim_min]
+                if tmpew_visible_ind.any(): tmp_ew_ylim = [ew_slice_dict['y'][:,tmpew_visible_ind].max(),zlim_min]
+                if tmpns_visible_ind.any(): tmp_ns_ylim = [ns_slice_dict['y'][:,tmpns_visible_ind].max(),zlim_min]
+                tmp_hov_ylim = [hov_dat_dict['y'].max(),zlim_min]
+                ax[1].set_ylim(tmp_ew_ylim)
+                ax[2].set_ylim(tmp_ns_ylim)
+                ax[3].set_ylim(tmp_hov_ylim)
             else:
                 ax[1].set_ylim([zlim_max,zlim_min])
                 ax[2].set_ylim([zlim_max,zlim_min])
                 ax[3].set_ylim([np.minimum(zlim_max,hov_dat_dict['y'].max()),zlim_min])
-
+                #pdb.set_trace()
 
         
             ###################################################################################################
