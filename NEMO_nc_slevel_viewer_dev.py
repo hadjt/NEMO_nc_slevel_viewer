@@ -569,6 +569,7 @@ def nemo_slice_zlev(config = 'amm7',
     var_grid = {}
     ncvar_d = {}
     ncdim_d = {}
+    time_d = {}
     WW3_ld_nctvar = 'time'
     # open file list with xarray
     #xarr_dict = {}
@@ -580,27 +581,50 @@ def nemo_slice_zlev(config = 'amm7',
         var_grid[tmp_datstr] = {}
         ncvar_d[tmp_datstr] = {}
         ncdim_d[tmp_datstr] = {}
+        time_d[tmp_datstr] = {}
         #xarr_dict[tmp_datstr] = {}
         for tmpgrid in xarr_dict[tmp_datstr].keys():
-
-            if nldi == 0:   
-                xarr_dict[tmp_datstr][tmpgrid].append(
-                    xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], 
-                    combine='by_coords',parallel = True))  
-                '''
-                if grid in 'WW3':
-                    xarr_dict[tmp_datstr][tmpgrid].append(
-                        xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], 
-                        combine='by_coords',parallel = True, preprocess=lambda ds: ds[{WW3_ld_nctvar:slice(1,24+1)}]))    
-                else:
+            time_d[tmp_datstr][tmpgrid] = {}
+            if tmpgrid != 'I':
+                if (nldi == 0) :   
                     xarr_dict[tmp_datstr][tmpgrid].append(
                         xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], 
                         combine='by_coords',parallel = True))  
-                '''
-            else:
-                for li,(ldi,ldilab) in enumerate(zip(ldi_ind_mat, ld_lab_mat)): xarr_dict[tmp_datstr][tmpgrid].append(
-                        xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], 
-                        combine='by_coords',parallel = True, preprocess=lambda ds: ds[{ld_nctvar:slice(ldi,ldi+1)}]))   
+                    '''
+                    if grid in 'WW3':
+                        xarr_dict[tmp_datstr][tmpgrid].append(
+                            xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], 
+                            combine='by_coords',parallel = True, preprocess=lambda ds: ds[{WW3_ld_nctvar:slice(1,24+1)}]))    
+                    else:
+                        xarr_dict[tmp_datstr][tmpgrid].append(
+                            xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], 
+                            combine='by_coords',parallel = True))  
+                    '''
+                else:
+                    for li,(ldi,ldilab) in enumerate(zip(ldi_ind_mat, ld_lab_mat)): xarr_dict[tmp_datstr][tmpgrid].append(
+                            xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], 
+                            combine='by_coords',parallel = True, preprocess=lambda ds: ds[{ld_nctvar:slice(ldi,ldi+1)}]))   
+            elif tmpgrid == 'I':
+                #pdb.set_trace()
+                    
+                tmp_T_time_datetime,tmp_T_time_datetime_since_1970,ntime,ti = extract_time_from_xarr(xarr_dict['Dataset 1']['T'],fname_dict['Dataset 1']['T'][0],'time_counter','time_counter',None,'%Y%m%d',1,False)
+                if tmp_T_time_datetime.size == len(fname_dict[tmp_datstr][tmpgrid]):
+                    inc_T_time_datetime = tmp_T_time_datetime
+                    inc_T_time_datetime_since_1970 = tmp_T_time_datetime_since_1970
+                else:
+                    inc_T_time_datetime = [tmp_T_time_datetime[0] + timedelta(days = i_i) for i_i in range(len(fname_dict[tmp_datstr][tmpgrid]))]
+                    tmp_T_time_datetime_since_1970 = [tmp_T_time_datetime_since_1970[0] + i_i*86400 for i_i in range(len(fname_dict[tmp_datstr][tmpgrid]))]
+                
+                time_d[tmp_datstr][tmpgrid]['datetime'] = inc_T_time_datetime
+                time_d[tmp_datstr][tmpgrid]['datetime_since_1970'] = tmp_T_time_datetime_since_1970
+
+                tmp_xarr_data = xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid],combine='nested', concat_dim='t', parallel = True)
+                tmp_xarr_data.assign_coords(t = time_d[tmp_datstr][tmpgrid]['datetime'])
+                xarr_dict[tmp_datstr][tmpgrid].append(tmp_xarr_data)
+
+
+
+                #pdb.set_trace()
 
 
 
@@ -1479,12 +1503,12 @@ def nemo_slice_zlev(config = 'amm7',
     '''
 
 
-    time_d = {}
+    #time_d = {}
     
     
     # open file list with xarray
     for tmp_datstr in Dataset_lst: # xarr_dict.keys():
-        time_d[tmp_datstr] = {}
+        #time_d[tmp_datstr] = {}
         for tmpgrid in xarr_dict[tmp_datstr].keys():
 
             for ncvar in ncvar_d[tmp_datstr][tmpgrid]: 
@@ -1494,9 +1518,10 @@ def nemo_slice_zlev(config = 'amm7',
 
             #if ncvar.upper() in time_varname_mat: time_varname = ncvar
 
-            time_d[tmp_datstr][tmpgrid] = {}
+            #time_d[tmp_datstr][tmpgrid] = {}
 
-            #pdb.set_trace()
+            #pdb.set_trace()    
+            if tmpgrid == 'I': continue
             time_d[tmp_datstr][tmpgrid]['datetime'],time_d[tmp_datstr][tmpgrid]['datetime_since_1970'],tmp_ntime,tmp_ti = extract_time_from_xarr(xarr_dict[tmp_datstr][tmpgrid],fname_dict[tmp_datstr][tmpgrid][0], tmp_time_varname,ncdim_d[tmp_datstr][tmpgrid]['t'],date_in_ind,date_fmt,ti,verbose_debugging)
 
 
