@@ -687,7 +687,6 @@ def nemo_slice_zlev(config = 'amm7',
         th_d_ind = int(tmp_datstr[-1])
 
         grid_dict[tmp_datstr] = {}
-
         grid_dict[tmp_datstr]['e1t'] = rootgrp_gdept_dict[tmp_datstr].variables[nce1t][0,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
         grid_dict[tmp_datstr]['e2t'] = rootgrp_gdept_dict[tmp_datstr].variables[nce2t][0,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
         grid_dict[tmp_datstr]['e3t'] = rootgrp_gdept_dict[tmp_datstr].variables[nce3t][0,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
@@ -695,6 +694,22 @@ def nemo_slice_zlev(config = 'amm7',
         if tmp_configd is None:tmp_configd = configd[1]
         grid_dict[tmp_datstr]['gdept'] = rootgrp_gdept_dict[tmp_datstr].variables[config_fnames_dict[tmp_configd]['ncgdept']][0,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
 
+
+        '''
+        pdb.set_trace()
+        #tmpxarr = xarray.load(config_fnames_dict[configd[1]]['mesh_file'])
+        tmpxarr = xarray.open_dataset(config_fnames_dict[configd[1]]['mesh_file'])
+        grid_dict[tmp_datstr]['e1t'] = np.array(tmpxarr.variables[nce1t][0,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+    
+        grid_dict[tmp_datstr]['e2t'] = np.array(tmpxarr.variables[nce2t][0,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+    
+        grid_dict[tmp_datstr]['e3t'] = np.array(tmpxarr.variables[nce3t][0,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+        tmp_configd = configd[th_d_ind]
+        if tmp_configd is None:tmp_configd = configd[1]
+        grid_dict[tmp_datstr]['gdept'] = np.array(tmpxarr.[config_fnames_dict[tmp_configd]['ncgdept']][0,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+
+
+        '''
 
     nz = grid_dict[Dataset_lst[0]]['gdept'].shape[0]
 
@@ -791,8 +806,7 @@ def nemo_slice_zlev(config = 'amm7',
     init_timer.append((datetime.now(),'nc time started'))
 
     #pdb.set_trace()
-    time_datetime,time_datetime_since_1970,ntime,ti = extract_time_from_xarr(xarr_dict['Dataset 1']['T'],fname_dict['Dataset 1']['T'][0],
-        time_varname,ncdim_d[tmp_datstr][tmpgrid]['t'],date_in_ind,date_fmt,ti,verbose_debugging)
+    time_datetime,time_datetime_since_1970,ntime,ti = extract_time_from_xarr(xarr_dict['Dataset 1']['T'],fname_dict['Dataset 1']['T'][0],time_varname,ncdim_d[tmp_datstr][tmpgrid]['t'],date_in_ind,date_fmt,ti,verbose_debugging)
 
     init_timer.append((datetime.now(),'nc time completed'))
 
@@ -3769,12 +3783,12 @@ def main():
         thd[1]['y0'] = 0
         thd[1]['y1'] = None
 
-        if 'dx' in args: thd[1]['dx'] = args.thin
-        if 'dy' in args: thd[1]['dy'] = args.thin
-        if 'x0' in args: thd[1]['x0'] = args.thin_x0
-        if 'x1' in args: thd[1]['x1'] = args.thin_x1
-        if 'y0' in args: thd[1]['y0'] = args.thin_y0
-        if 'y1' in args: thd[1]['y1'] = args.thin_y1
+        if 'thin' in args: thd[1]['dx'] = args.thin
+        if 'thin' in args: thd[1]['dy'] = args.thin
+        if 'thin_x0' in args: thd[1]['x0'] = args.thin_x0
+        if 'thin_x1' in args: thd[1]['x1'] = args.thin_x1
+        if 'thin_y0' in args: thd[1]['y0'] = args.thin_y0
+        if 'thin_y1' in args: thd[1]['y1'] = args.thin_y1
 
         if load_second_files:
             thd[2] = {}
@@ -3791,204 +3805,24 @@ def main():
             if 'thin_files_2nd' in args: thd[2]['df'] = args.thin_files_2nd
             if 'thin_files_0_2nd' in args: thd[2]['f0'] = args.thin_files_0_2nd
             if 'thin_files_1_2nd' in args: thd[2]['f1'] = args.thin_files_1_2nd
-            if 'dx_2nd' in args: thd[2]['dx'] = args.thin_2nd
-            if 'dy_2nd' in args: thd[2]['dy'] = args.thin_2nd
-            if 'x0_2nd' in args: thd[2]['x0'] = args.thin_x0_2nd
-            if 'x1_2nd' in args: thd[2]['x1'] = args.thin_x1_2nd
-            if 'y0_2nd' in args: thd[2]['y0'] = args.thin_y0_2nd
-            if 'y1_2nd' in args: thd[2]['y1'] = args.thin_y1_2nd
+            if 'thin_2nd' in args: thd[2]['dx'] = args.thin_2nd
+            if 'thin_2nd' in args: thd[2]['dy'] = args.thin_2nd
+            if 'thin_x0_2nd' in args: thd[2]['x0'] = args.thin_x0_2nd
+            if 'thin_x1_2nd' in args: thd[2]['x1'] = args.thin_x1_2nd
+            if 'thin_y0_2nd' in args: thd[2]['y0'] = args.thin_y0_2nd
+            if 'thin_y1_2nd' in args: thd[2]['y1'] = args.thin_y1_2nd
 
     
         for cfi in configd.keys():
             if configd[cfi] is None: continue
             if configd[cfi].upper() in ['ORCA025','ORCA025EXT']: 
-                if thd[cfi1]['y1'] is None: thd[cfi]['y1'] = -2
+                if thd[cfi]['y1'] is None: thd[cfi]['y1'] = -2
             if configd[cfi].upper() in ['ORCA12']: 
                 if thd[cfi]['y1'] is None: thd[cfi]['y1'] = -200
                 #if thin_y1 is None: thin_y1 = -200
                 #if thin_y0 is None: thin_y1 = 1000
 
 
-        '''
-        fig_lab_d = {}
-        fig_lab_d['Dataset 1'] = None
-        fig_lab_d['Dataset 2'] = None
-        if fig_fname_lab is not None: fig_lab_d['Dataset 1'] = fig_fname_lab
-        if fig_fname_lab_2nd is not None: fig_lab_d['Dataset 2'] = fig_fname_lab_2nd
-        del(fig_fname_lab)
-        del(fig_fname_lab_2nd)
-
-        fname_lst = args.fname_lst[thd[1]['f0']:thd[1]['f1']:thd[1]['df']]
-        if load_second_files: args.fname_lst_2nd = fname_lst_2nd[thd[2]['f0']:thd[2]['f1']:thd[2]['df']]
-        if U_fname_lst is not None: U_fname_lst = args.U_fname_lst[thd[1]['f0']:thd[1]['f1']:thd[1]['df']]
-        if V_fname_lst is not None: V_fname_lst = args.V_fname_lst[thd[1]['f0']:thd[1]['f1']:thd[1]['df']]
-        if U_fname_lst_2nd is not None: U_fname_lst_2nd = args.U_fname_lst_2nd[thd[2]['f0']:thd[2]['f1']:thd[2]['df']]
-        if V_fname_lst_2nd is not None: V_fname_lst_2nd = args.V_fname_lst_2nd[thd[2]['f0']:thd[2]['f1']:thd[2]['df']]
-
-
-        fname_dict = {}
-        fname_dict['Dataset 1'] = {}
-        fname_dict['Dataset 1']['T'] = fname_lst
-        if U_fname_lst is not None: fname_dict['Dataset 1']['U'] = U_fname_lst
-        if V_fname_lst is not None: fname_dict['Dataset 1']['V'] = V_fname_lst
-        if load_second_files: 
-            fname_dict['Dataset 2'] = {}
-            fname_dict['Dataset 2']['T'] = fname_lst_2nd
-            if U_fname_lst is not None: fname_dict['Dataset 2']['U'] = U_fname_lst_2nd
-            if V_fname_lst is not None: fname_dict['Dataset 2']['V'] = V_fname_lst_2nd
-        '''
-
-        #pdb.set_trace()
-
-        """
-        
-        load_second_files = False
-        # repeat if comparing two time series. 
-        if fname_lst_2nd is not None:        
-            load_second_files = True
-
-
-        fig_fname_lab = args.fig_fname_lab
-        fig_fname_lab_2nd = args.fig_fname_lab_2nd
-
-        config = args.config
-        config_2nd = args.config_2nd
-
-        fig_lab_d = {}
-        fig_lab_d['Dataset 1'] = None
-        fig_lab_d['Dataset 2'] = None
-        if fig_fname_lab is not None: fig_lab_d['Dataset 1'] = fig_fname_lab
-        if fig_fname_lab_2nd is not None: fig_lab_d['Dataset 2'] = fig_fname_lab_2nd
-        del(fig_fname_lab)
-        del(fig_fname_lab_2nd)
-
-
-        configd = {}
-        configd[1] = config
-        if load_second_files:
-            configd[2] = config_2nd
-        else:
-            configd[2] = None
-
-        del(config)
-        del(config_2nd)
-
-        thd = {}
-        thd[1] = {}
-        thd[1]['df'] = args.thin_files
-        thd[1]['f0'] = args.thin_files_0
-        thd[1]['f1'] = args.thin_files_1
-        thd[2] = {}
-        if load_second_files: 
-            thd[2] = {}
-            thd[2]['df'] = args.thin_files
-            thd[2]['f0'] = args.thin_files_0
-            thd[2]['f1'] = args.thin_files_1
-
-        
-
-        
-        fname_lst = args.fname_lst[thd[1]['f0']:thd[1]['f1']:thd[1]['df']]
-        if load_second_files: args.fname_lst_2nd = fname_lst_2nd[thd[2]['f0']:thd[2]['f1']:thd[2]['df']]
-        if U_fname_lst is not None: U_fname_lst = args.U_fname_lst[thd[1]['f0']:thd[1]['f1']:thd[1]['df']]
-        if V_fname_lst is not None: V_fname_lst = args.V_fname_lst[thd[1]['f0']:thd[1]['f1']:thd[1]['df']]
-        if U_fname_lst_2nd is not None: U_fname_lst_2nd = args.U_fname_lst_2nd[thd[2]['f0']:thd[2]['f1']:thd[2]['df']]
-        if V_fname_lst_2nd is not None: V_fname_lst_2nd = args.V_fname_lst_2nd[thd[2]['f0']:thd[2]['f1']:thd[2]['df']]
-
-
-        fname_dict = {}
-        fname_dict['Dataset 1'] = {}
-        fname_dict['Dataset 1']['T'] = fname_lst
-        if U_fname_lst is not None: fname_dict['Dataset 1']['U'] = U_fname_lst
-        if V_fname_lst is not None: fname_dict['Dataset 1']['V'] = V_fname_lst
-        if load_second_files: 
-            fname_dict['Dataset 2'] = {}
-            fname_dict['Dataset 2']['T'] = fname_lst_2nd
-            if U_fname_lst is not None: fname_dict['Dataset 2']['U'] = U_fname_lst_2nd
-            if V_fname_lst is not None: fname_dict['Dataset 2']['V'] = V_fname_lst_2nd
-
-
-
-        ######################
-        ### test 3 datasets
-        ######################
-        #fname_dict['Dataset 3'] = fname_dict['Dataset 2'].copy()
-        #configd[3] = configd[2].lower()
-        ######################
-
-
-
-
-
-        if args.thin_x0 is None: thin_x0 = 0
-        if args.thin_y0 is None: thin_y0 = 0
-
-        if configd[1].upper() in ['ORCA025','ORCA025EXT']: 
-            if thin_y1 is None: thin_y1 = -2
-        if configd[1].upper() in ['ORCA12']: 
-            if thin_y1 is None: thin_y1 = -200
-            if thin_y0 is None: thin_y1 = 1000
-
-
-
-        thin_x0_2nd=args.thin_x0
-        thin_x1_2nd=args.thin_x1
-        thin_y0_2nd=args.thin_y0
-        thin_y1_2nd=args.thin_y1
-        if configd[2] is None:
-            thin_2nd=args.thin
-
-        if configd[2] is not None:
-
-            thin_x0_2nd=0
-            thin_x1_2nd=None
-            thin_y0_2nd=0
-            thin_y1_2nd=None
-            #if thin_2nd is None:
-            #thin_2nd=1
-
-
-        thd[1] = {}
-        thd[1]['df'] = args.thin_files
-        thd[1]['f0'] = args.thin_files_0
-        thd[1]['f1'] = args.thin_files_1
-        '''
-        thd[1]['dx'] = args.thin
-        thd[1]['dy'] = args.thin
-        thd[1]['x0'] = args.thin_x0
-        thd[1]['x1'] = args.thin_x1
-        thd[1]['y0'] = args.thin_y0
-        thd[1]['y1'] = args.thin_y1
-        thd[2]['dx'] = args.thin_2nd
-        thd[2]['dy'] = args.thin_2nd
-        thd[2]['x0'] = args.thin_x0_2nd
-        thd[2]['x1'] = args.thin_x1_2nd
-        thd[2]['y0'] = args.thin_y0_2nd
-        thd[2]['y1'] = args.thin_y1_2nd
-
-        del(thin)
-        del(thin_x0)
-        del(thin_x1)
-        del(thin_y0)
-        del(thin_y1)
-        del(thin_2nd)
-        del(thin_x0_2nd)
-        del(thin_x1_2nd)
-        del(thin_y0_2nd)
-        del(thin_y1_2nd)
-
-        del(thin_files)
-        del(thin_files_0)
-        del(thin_files_1)
-
-        '''
-
-
-
-        #thd[3] = thd[2].copy()
-
-
-        """
 
 
         nemo_slice_zlev(zlim_max = args.zlim_max,

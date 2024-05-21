@@ -1,10 +1,9 @@
 
-import pdb,sys,os
+import pdb,sys,os,cftime,socket
 
 from datetime import datetime, timedelta
 
 from netCDF4 import Dataset,num2date
-
 
 import numpy as np
 
@@ -18,7 +17,6 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap, ListedColormap
 
 
-import socket
 computername = socket.gethostname()
 comp = 'linux'
 if computername in ['xcel00','xcfl00']: comp = 'hpc'
@@ -113,6 +111,28 @@ def load_nc_var_name_list(tmp_data,x_dim, y_dim, z_dim,t_dim):
     return var_4d_mat, var_3d_mat, var_mat, nvar4d, nvar3d, nvar, var_dim
 
 
+
+
+def load_nc_var_name_list_WW3(tmp_data,sp_dim,t_dim):
+
+    # what are the4d variable names, and how many are there?
+    #var_4d_mat = np.array([ss for ss in tmp_data.variables.keys() if len(tmp_data.variables[ss].dims) == 4])
+    #var_4d_mat = np.array([ss for ss in tmp_data.variables.keys() if tmp_data.variables[ss].dims == (t_dim, z_dim,y_dim, x_dim)])
+    #nvar4d = var_4d_mat.size
+    #pdb.set_trace()
+    #var_3d_mat = np.array([ss for ss in tmp_data.variables.keys() if len(tmp_data.variables[ss].dims) == 3])
+    var_mat = np.array([ss for ss in tmp_data.variables.keys() if tmp_data.variables[ss].dims == (t_dim,sp_dim )])
+    #pdb.set_trace()
+    #nvar3d = var_mat.size
+
+    #var_mat = var_3d_mat
+    nvar = var_mat.size
+
+
+    var_dim = {}
+    for vi,var_dat in enumerate(var_mat): var_dim[var_dat] = 3
+
+    return  var_mat,  nvar, var_dim
 
 def rotated_grid_transform(grid_in, option, SP_coor):
 
@@ -1155,7 +1175,7 @@ def pea_TS(T_in,S_in,gdept,e3t_in,tmask = None,calc_TS_comp = False, zcutoff = 4
 
     #3d density field
     #rho = calc_sigma0(T,S)
-    from NEMO_nc_slevel_viewer_lib import sw_dens
+    #from NEMO_nc_slevel_viewer_lib import sw_dens
     rho = sw_dens(T,S) 
 
 
@@ -1238,7 +1258,11 @@ def load_nn_amm7_amm15_wgt(tmpfname_out_amm7_amm15):
     return amm7_amm15_dict
     
 
-def regrid_2nd_thin_params(amm_conv_dict,thin_2nd,thin_x0_2nd,thin_y0_2nd,nlon_amm,nlat_amm, nlon_amm_2nd,nlat_amm_2nd,thin,thin_x0,thin_y0,thin_x1,thin_y1):
+#def regrid_2nd_thin_params(amm_conv_dict,thin_2nd,thin_x0_2nd,thin_y0_2nd,nlon_amm,nlat_amm, nlon_amm_2nd,nlat_amm_2nd,thin,thin_x0,thin_y0,thin_x1,thin_y1):
+def regrid_2nd_thin_params(amm_conv_dict,nlon_amm,nlat_amm, nlon_amm_2nd,nlat_amm_2nd,thd):
+
+    thin_2nd,thin_x0_2nd,thin_y0_2nd =   thd[2]['dx'],thd[2]['x0'],thd[2]['y0']
+    thin,thin_x0,thin_y0,thin_x1,thin_y1 = thd[1]['dx'],thd[1]['x0'],thd[1]['y0'],thd[1]['x1'],thd[1]['y1']
 
     ##Nearest neighbour thinning
     NWS_amm_nn_jj_ind_final = (amm_conv_dict['NWS_amm_nn_jj_ind'] - thin_y0_2nd) //thin_2nd
@@ -1462,205 +1486,253 @@ def vector_curl(tmpU, tmpV, tmpdx, tmpdy):
     return curl_out
 
 
+def pycnocline_params(rho_4d,gdept_3d,e3t_3d):
 
-def reload_data_instances(var,th,ldi,ti,var_grid, xarr_dict, grid_dict,var_dim,load_2nd_files):
+    '''
+    N2,Pync_Z,Pync_Th,N2_max = pycnocline_params(data_inst[tmp_datstr][np.newaxis],grid_dict[tmp_datstr]['gdept'],grid_dict[tmp_datstr]['e3t'])
+
+    '''
+    #pdb.set_trace()
+    # vertical density gradient
+    drho =  rho_4d[:,2:,:,:] -  rho_4d[:,:-2,:,:]
+    dz = gdept_3d[2:,:,:] - gdept_3d[:-2,:,:]
+
+    drho_dz = drho/dz
+    
+    # N, Brunt-Vaisala frequency
+    # N**2
+    N2 = rho_4d.copy()*0*np.ma.masked
+    N2[:,1:-1,:,:]  = drho_dz*(-9.81/rho_4d[:,1:-1,:,:])
+    N2[:,0,:,:]= N2[:,1,:,:]
+
+    # https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2018JC014307
+    # Equation 14
+
+    
+    # Pycnocline Depth:
+    Pync_Z = ((N2*gdept_3d)*e3t_3d).sum(axis = 1)/(N2*e3t_3d).sum(axis = 1)
+                    
+    # Pycnocline thickness:
+    Pync_Th  = np.sqrt(((N2*(gdept_3d-Pync_Z)**2)*e3t_3d).sum(axis = 1)/(N2*e3t_3d).sum(axis = 1))
+
+
+    # Depth of max Nz
+    # find array size
+    n_t,n_z, n_j, n_i = rho_4d.shape
+
+    # Make dummy index array
+    n_i_mat, n_j_mat = np.meshgrid(range(n_i), range(n_j))
+
+    # find index of maximum N2 depth
+    N2_max_arg = N2.argmax(axis = 1)
+
+    # use gdept to calcuate these as a depth
+    N2_max = gdept_3d[N2_max_arg,np.tile(n_j_mat,(n_t,1,1)),np.tile(n_i_mat,(n_t,1,1))]
+
+    return N2,Pync_Z,Pync_Th,N2_max
+                      
+
+def reload_data_instances(var,thd,ldi,ti,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files):
 
     tmp_var_U, tmp_var_V = 'vozocrtx','vomecrty'
 
 
-    start_time_load_inst = datetime.now()
-    if var == 'N:P':
-        
-        map_dat_N_1 = np.ma.masked_invalid(xarr_dict['Dataset 1'][var_grid[var]][ldi].variables['N3n'][ti,:,th['y0']:th['y1']:th['dy'],th['x0']:th['x1']:th['dx']].load())
-        map_dat_P_1 = np.ma.masked_invalid(xarr_dict['Dataset 1'][var_grid[var]][ldi].variables['N1p'][ti,:,th['y0']:th['y1']:th['dy'],th['x0']:th['x1']:th['dx']].load())
-        data_inst_1 = map_dat_N_1/map_dat_P_1
-        del(map_dat_N_1)
-        del(map_dat_P_1)
 
-        if load_2nd_files:
-            map_dat_N_1 = np.ma.masked_invalid(xarr_dict['Dataset 2'][var_grid[var]][ldi].variables['N3n'][ti,:,th['y0_2nd']:th['y1_2nd']:th['dy_2nd'],th['x0_2nd']:th['x1_2nd']:th['dx_2nd']].load())
-            map_dat_P_1 = np.ma.masked_invalid(xarr_dict['Dataset 2'][var_grid[var]][ldi].variables['N1p'][ti,:,th['y0_2nd']:th['y1_2nd']:th['dy_2nd'],th['x0_2nd']:th['x1_2nd']:th['dx_2nd']].load())
-            data_inst_2 = map_dat_N_1/map_dat_P_1
-            del(map_dat_N_1)
-            del(map_dat_P_1)
-        else:
-            data_inst_2 = data_inst_1
-    elif var in ['baroc_mag','baroc_div','baroc_curl']:
-        
-        map_dat_3d_U_1 = np.ma.masked_invalid(xarr_dict['Dataset 1']['U'][ldi].variables[tmp_var_U][ti,:,th['y0']:th['y1']:th['dy'],th['x0']:th['x1']:th['dx']].load())
-        map_dat_3d_V_1 = np.ma.masked_invalid(xarr_dict['Dataset 1']['V'][ldi].variables[tmp_var_V][ti,:,th['y0']:th['y1']:th['dy'],th['x0']:th['x1']:th['dx']].load())
-        if    var == 'baroc_mag': data_inst_1 = np.sqrt(map_dat_3d_U_1**2 + map_dat_3d_V_1**2)
-        elif  var == 'baroc_div': data_inst_1 = vector_div(map_dat_3d_U_1, map_dat_3d_V_1,grid_dict['Dataset 1']['e1t']*th['dx'],grid_dict['Dataset 1']['e2t']*th['dx'])
-        elif var == 'baroc_curl': data_inst_1 = vector_curl(map_dat_3d_U_1, map_dat_3d_V_1,grid_dict['Dataset 1']['e1t']*th['dx'],grid_dict['Dataset 1']['e2t']*th['dx'])
-        del(map_dat_3d_U_1)
-        del(map_dat_3d_V_1)
-
-        if load_2nd_files:
-            map_dat_3d_U_2 = np.ma.masked_invalid(xarr_dict['Dataset 2']['U'][ldi].variables[tmp_var_U][ti,:,th['y0_2nd']:th['y1_2nd']:th['dy_2nd'],th['x0_2nd']:th['x1_2nd']:th['dx_2nd']].load())
-            map_dat_3d_V_2 = np.ma.masked_invalid(xarr_dict['Dataset 2']['V'][ldi].variables[tmp_var_V][ti,:,th['y0_2nd']:th['y1_2nd']:th['dy_2nd'],th['x0_2nd']:th['x1_2nd']:th['dx_2nd']].load())
-            data_inst_2 = np.sqrt(map_dat_3d_U_2**2 + map_dat_3d_V_2**2)
-            if    var == 'baroc_mag': data_inst_2 = np.sqrt(map_dat_3d_U_2**2 + map_dat_3d_V_2**2)
-            elif  var == 'baroc_div': data_inst_2 = vector_div(map_dat_3d_U_2, map_dat_3d_V_2,grid_dict['Dataset 2']['e1t'],grid_dict['Dataset 2']['e2t']*th['dx_2nd'])
-            elif var == 'baroc_curl': data_inst_2 = vector_curl(map_dat_3d_U_2, map_dat_3d_V_2,grid_dict['Dataset 2']['e1t'],grid_dict['Dataset 2']['e2t']*th['dx_2nd'])
-            del(map_dat_3d_U_2)
-            del(map_dat_3d_V_2)
-        else:
-            data_inst_2 = data_inst_1
-
-
-    elif var in ['barot_mag','barot_div','barot_curl']:
-        tmp_var_Ubar = 'ubar'
-        tmp_var_Vbar = 'vbar'
-        
-        map_dat_2d_U_1 = np.ma.masked_invalid(xarr_dict['Dataset 1']['U'][ldi].variables[tmp_var_Ubar][ti,th['y0']:th['y1']:th['dy'],th['x0']:th['x1']:th['dx']].load())
-        map_dat_2d_V_1 = np.ma.masked_invalid(xarr_dict['Dataset 1']['V'][ldi].variables[tmp_var_Vbar][ti,th['y0']:th['y1']:th['dy'],th['x0']:th['x1']:th['dx']].load())
-        if    var == 'barot_mag': data_inst_1 = np.sqrt(map_dat_2d_U_1**2 + map_dat_2d_V_1**2)
-        elif  var == 'barot_div': data_inst_1 = vector_div(map_dat_2d_U_1, map_dat_2d_V_1,grid_dict['Dataset 1']['e1t'],grid_dict['Dataset 1']['e2t'])
-        elif var == 'barot_curl': data_inst_1 = vector_curl(map_dat_2d_U_1, map_dat_2d_V_1,grid_dict['Dataset 1']['e1t'],grid_dict['Dataset 1']['e2t'])
-        del(map_dat_2d_U_1)
-        del(map_dat_2d_V_1)
-
-        if load_2nd_files:
-            map_dat_2d_U_2 = np.ma.masked_invalid(xarr_dict['Dataset 2']['U'][ldi].variables[tmp_var_Ubar][ti,th['y0_2nd']:th['y1_2nd']:th['dy_2nd'],th['x0_2nd']:th['x1_2nd']:th['dx_2nd']].load())
-            map_dat_2d_V_2 = np.ma.masked_invalid(xarr_dict['Dataset 2']['V'][ldi].variables[tmp_var_Vbar][ti,th['y0_2nd']:th['y1_2nd']:th['dy_2nd'],th['x0_2nd']:th['x1_2nd']:th['dx_2nd']].load())
-            if    var == 'baroc_mag': data_inst_2 = np.sqrt(map_dat_2d_U_2**2 + map_dat_2d_V_2**2)
-            elif  var == 'baroc_div': data_inst_2 = vector_div(map_dat_2d_U_2, map_dat_2d_V_2,grid_dict['Dataset 2']['e1t'],grid_dict['Dataset 2']['e2t'])
-            elif var == 'baroc_curl': data_inst_2 = vector_curl(map_dat_2d_U_2, map_dat_2d_V_2,grid_dict['Dataset 2']['e1t'],grid_dict['Dataset 2']['e2t'])
-            del(map_dat_2d_U_2)
-            del(map_dat_2d_V_2)
-        else:
-            data_inst_2 = data_inst_1
-
-
-    elif var.upper() in ['PEA', 'PEAT','PEAS']:
-
-        gdept_mat = grid_dict['Dataset 1']['gdept'][np.newaxis]
-        dz_mat = grid_dict['Dataset 1']['e3t'][np.newaxis]
-
-        tmp_T_data_1 = np.ma.masked_invalid(xarr_dict['Dataset 1'][var_grid[var]][ldi].variables['votemper'][ti,:,th['y0']:th['y1']:th['dy'],th['x0']:th['x1']:th['dx']].load())
-        tmp_S_data_1 = np.ma.masked_invalid(xarr_dict['Dataset 1'][var_grid[var]][ldi].variables['vosaline'][ti,:,th['y0']:th['y1']:th['dy'],th['x0']:th['x1']:th['dx']].load())
-        tmppea_1, tmppeat_1, tmppeas_1 = pea_TS(tmp_T_data_1[np.newaxis],tmp_S_data_1[np.newaxis],gdept_mat,dz_mat,calc_TS_comp = True ) 
-        if var.upper() == 'PEA':
-            data_inst_1= tmppea_1[0]
-        elif var.upper() == 'PEAT':
-            data_inst_1 = tmppeat_1[0]
-        elif var.upper() == 'PEAS':
-            data_inst_1 = tmppeas_1[0]
-
-        
-        if load_2nd_files:
-            gdept_mat_2nd = grid_dict['Dataset 2']['gdept'][np.newaxis]
-            dz_mat_2nd = grid_dict['Dataset 2']['e3t'][np.newaxis]
-            tmp_T_data_2 = np.ma.masked_invalid(xarr_dict['Dataset 2'][var_grid[var]][ldi].variables['votemper'][ti,:,th['y0_2nd']:th['y1_2nd']:th['dy_2nd'],th['x0_2nd']:th['x1_2nd']:th['dx_2nd']].load())
-            tmp_S_data_2 = np.ma.masked_invalid(xarr_dict['Dataset 2'][var_grid[var]][ldi].variables['vosaline'][ti,:,th['y0_2nd']:th['y1_2nd']:th['dy_2nd'],th['x0_2nd']:th['x1_2nd']:th['dx_2nd']].load())
-            tmppea_2, tmppeat_2, tmppeas_2 = pea_TS(tmp_T_data_2[np.newaxis],tmp_S_data_2[np.newaxis],gdept_mat_2nd,dz_mat_2nd,calc_TS_comp = True ) 
-
-
-            if var.upper() == 'PEA':
-                data_inst_2 = tmppea_2[0]
-            elif var.upper() == 'PEAT':
-                data_inst_2 = tmppeat_2[0]
-            elif var.upper() == 'PEAS':
-                data_inst_2 = tmppeas_2[0]
-        else:
-            data_inst_2 = data_inst_1
-
-
-    elif var.upper() in ['RHO']:
-
-        tmp_T_data_1 = np.ma.masked_invalid(xarr_dict['Dataset 1'][var_grid[var]][ldi].variables['votemper'][ti,:,th['y0']:th['y1']:th['dy'],th['x0']:th['x1']:th['dx']].load())
-        tmp_S_data_1 = np.ma.masked_invalid(xarr_dict['Dataset 1'][var_grid[var]][ldi].variables['vosaline'][ti,:,th['y0']:th['y1']:th['dy'],th['x0']:th['x1']:th['dx']].load())
-        data_inst_1 = sw_dens(tmp_T_data_1,tmp_S_data_1) 
-        
-        if load_2nd_files:
-               
-            tmp_T_data_2 = np.ma.masked_invalid(xarr_dict['Dataset 2'][var_grid[var]][ldi].variables['votemper'][ti,:,th['y0_2nd']:th['y1_2nd']:th['dy_2nd'],th['x0_2nd']:th['x1_2nd']:th['dx_2nd']].load())
-            tmp_S_data_2 = np.ma.masked_invalid(xarr_dict['Dataset 2'][var_grid[var]][ldi].variables['vosaline'][ti,:,th['y0_2nd']:th['y1_2nd']:th['dy_2nd'],th['x0_2nd']:th['x1_2nd']:th['dx_2nd']].load())
-            data_inst_2 = sw_dens(tmp_T_data_2,tmp_S_data_2) 
-                
-        else:
-            data_inst_2 = data_inst_1
-
-
-    else:
-        if var_dim[var] == 3:
-                
-            data_inst_1 = np.ma.masked_invalid(xarr_dict['Dataset 1'][var_grid[var]][ldi].variables[var][ti,th['y0']:th['y1']:th['dy'],th['x0']:th['x1']:th['dx']].load())
-            data_inst_2 = data_inst_1
-            if load_2nd_files:
-                data_inst_2 = np.ma.masked_invalid(xarr_dict['Dataset 2'][var_grid[var]][ldi].variables[var][ti,th['y0_2nd']:th['y1_2nd']:th['dy_2nd'],th['x0_2nd']:th['x1_2nd']:th['dx_2nd']].load())
-                
-        if var_dim[var] == 4:
-            data_inst_1 = np.ma.masked_invalid(xarr_dict['Dataset 1'][var_grid[var]][ldi].variables[var][ti,:,th['y0']:th['y1']:th['dy'],th['x0']:th['x1']:th['dx']].load())
-            data_inst_2 = data_inst_1
-            if load_2nd_files:
-                data_inst_2 = np.ma.masked_invalid(xarr_dict['Dataset 2'][var_grid[var]][ldi].variables[var][ti,:,th['y0_2nd']:th['y1_2nd']:th['dy_2nd'],th['x0_2nd']:th['x1_2nd']:th['dx_2nd']].load())
 
     preload_data_ti = ti
     preload_data_var = var
     preload_data_ldi = ldi
+    data_inst = {}
+    #Dataset_lst = [ss for ss in xarr_dict.keys()]
+
+    if var_grid[var] == 'WW3':
+
+        if  var in ['wnd_mag']: # ,'barot_div','barot_curl']:
+            tmp_var_Ubar = 'uwnd'
+            tmp_var_Vbar = 'vwnd'
+            map_dat_2d_U_1 = reload_data_instances('uwnd',thd,ldi,ti,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files)[0]
+            map_dat_2d_V_1 = reload_data_instances('vwnd',thd,ldi,ti,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files)[0]
+
+            
+            #map_dat_2d_U_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr]['U'][ldi].variables[tmp_var_Ubar][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+            #map_dat_2d_V_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr]['V'][ldi].variables[tmp_var_Vbar][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+            if var == 'wnd_mag': 
+                for tmp_datstr in Dataset_lst: data_inst[tmp_datstr] = np.sqrt(map_dat_2d_U_1[tmp_datstr]**2 + map_dat_2d_V_1[tmp_datstr]**2)
+            #elif  var == 'wnd_div': data_inst[tmp_datstr] = vector_div(map_dat_2d_U_1, map_dat_2d_V_1,grid_dict[tmp_datstr]['e1t'],grid_dict[tmp_datstr]['e2t'])
+            #elif var == 'wnd_curl': data_inst[tmp_datstr] = vector_curl(map_dat_2d_U_1, map_dat_2d_V_1,grid_dict[tmp_datstr]['e1t'],grid_dict[tmp_datstr]['e2t'])
+            del(map_dat_2d_U_1)
+            del(map_dat_2d_V_1)
+        else:
+
+
+                
+            for tmp_datstr in Dataset_lst:
+                th_d_ind = int(tmp_datstr[-1])
+
+                tmpdat_inst = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables[var][ti,:].load()) 
+
+                data_inst[tmp_datstr] = np.ma.array(tmpdat_inst[grid_dict['WW3']['NWS_WW3_nn_ind']],mask = grid_dict['WW3']['AMM15_mask'])[thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
+       
+        return data_inst,preload_data_ti,preload_data_var,preload_data_ldi
+
+        #pdb.set_trace()
+
+    start_time_load_inst = datetime.now()
+    #pdb.set_trace()
+    for tmp_datstr in Dataset_lst:
+        th_d_ind = int(tmp_datstr[-1])
+        if var == 'N:P':
+            
+            map_dat_N_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables['N3n'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+            map_dat_P_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables['N1p'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+            data_inst[tmp_datstr] = map_dat_N_1/map_dat_P_1
+            del(map_dat_N_1)
+            del(map_dat_P_1)
+
+        elif var in ['baroc_mag','baroc_div','baroc_curl']:
+            
+            map_dat_3d_U_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr]['U'][ldi].variables[tmp_var_U][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+            map_dat_3d_V_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr]['V'][ldi].variables[tmp_var_V][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+            if    var == 'baroc_mag': data_inst[tmp_datstr] = np.sqrt(map_dat_3d_U_1**2 + map_dat_3d_V_1**2)
+            elif  var == 'baroc_div': data_inst[tmp_datstr] = vector_div(map_dat_3d_U_1, map_dat_3d_V_1,grid_dict[tmp_datstr]['e1t']*thd[th_d_ind]['dx'],grid_dict[tmp_datstr]['e2t']*thd[th_d_ind]['dx'])
+            elif var == 'baroc_curl': data_inst[tmp_datstr] = vector_curl(map_dat_3d_U_1, map_dat_3d_V_1,grid_dict[tmp_datstr]['e1t']*thd[th_d_ind]['dx'],grid_dict[tmp_datstr]['e2t']*thd[th_d_ind]['dx'])
+            del(map_dat_3d_U_1)
+            del(map_dat_3d_V_1)
+
+
+        elif var in ['barot_mag','barot_div','barot_curl']:
+            tmp_var_Ubar = 'ubar'
+            tmp_var_Vbar = 'vbar'
+            
+            map_dat_2d_U_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr]['U'][ldi].variables[tmp_var_Ubar][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+            map_dat_2d_V_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr]['V'][ldi].variables[tmp_var_Vbar][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+            if    var == 'barot_mag': data_inst[tmp_datstr] = np.sqrt(map_dat_2d_U_1**2 + map_dat_2d_V_1**2)
+            elif  var == 'barot_div': data_inst[tmp_datstr] = vector_div(map_dat_2d_U_1, map_dat_2d_V_1,grid_dict[tmp_datstr]['e1t'],grid_dict[tmp_datstr]['e2t'])
+            elif var == 'barot_curl': data_inst[tmp_datstr] = vector_curl(map_dat_2d_U_1, map_dat_2d_V_1,grid_dict[tmp_datstr]['e1t'],grid_dict[tmp_datstr]['e2t'])
+            del(map_dat_2d_U_1)
+            del(map_dat_2d_V_1)
+
+         
+
+       
+        elif var.upper() in ['PEA', 'PEAT','PEAS']:
+
+            gdept_mat = grid_dict[tmp_datstr]['gdept'][np.newaxis]
+            dz_mat = grid_dict[tmp_datstr]['e3t'][np.newaxis]
+
+            tmp_T_data_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables['votemper'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+            tmp_S_data_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables['vosaline'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+            tmppea_1, tmppeat_1, tmppeas_1 = pea_TS(tmp_T_data_1[np.newaxis],tmp_S_data_1[np.newaxis],gdept_mat,dz_mat,calc_TS_comp = True ) 
+            if var.upper() == 'PEA':
+                data_inst[tmp_datstr]= tmppea_1[0]
+            elif var.upper() == 'PEAT':
+                data_inst[tmp_datstr] = tmppeat_1[0]
+            elif var.upper() == 'PEAS':
+                data_inst[tmp_datstr] = tmppeas_1[0]
+
+
+        elif var.upper() in ['RHO','N2'.upper(),'Pync_Z'.upper(),'Pync_Th'.upper(),'N2max'.upper()]:
+            #tmp_rho = {}
+            tmp_T_data_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables['votemper'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+            tmp_S_data_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables['vosaline'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+            tmp_rho = sw_dens(tmp_T_data_1,tmp_S_data_1) 
+            
+
+            if var.upper() =='RHO'.upper():
+                data_inst[tmp_datstr]=tmp_rho
+
+            elif var.upper() in ['N2'.upper(),'Pync_Z'.upper(),'Pync_Th'.upper(),'N2max'.upper()]:
+                
+                N2,Pync_Z,Pync_Th,N2_max = pycnocline_params(tmp_rho[np.newaxis],grid_dict[tmp_datstr]['gdept'],grid_dict[tmp_datstr]['e3t'])
+            
+                if var.upper() =='N2'.upper():data_inst[tmp_datstr]=N2[0]
+                elif var.upper() =='Pync_Z'.upper():data_inst[tmp_datstr]=Pync_Z[0]
+                elif var.upper() =='Pync_Th'.upper():data_inst[tmp_datstr]=Pync_Th[0]
+                elif var.upper() =='N2max'.upper():data_inst[tmp_datstr]=N2_max[0]
+
+        else:
+            if var_dim[var] == 3:
+                data_inst[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables[var][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+                
+            if var_dim[var] == 4:
+                data_inst[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables[var][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+               
     print('======================================')
     print('Reloaded data instances for ti = %i, var = %s %s = %s'%(ti,var,datetime.now(),datetime.now() - start_time_load_inst))
-    return data_inst_1,data_inst_2,preload_data_ti,preload_data_var,preload_data_ldi
 
-def reload_map_data_comb(var,ldi,ti,z_meth,zz,zi, data_inst_1, data_inst_2,var_dim,interp1d_ZwgtT,grid_dict,nav_lon,nav_lat,regrid_params,regrid_meth,th,config_2nd,load_2nd_files):
+
+    return data_inst,preload_data_ti,preload_data_var,preload_data_ldi
+
+
+  
+def reload_map_data_comb(var,z_meth,zz,zi, data_inst,var_dim,interp1d_ZwgtT,grid_dict,nav_lon,nav_lat,regrid_params,regrid_meth,thd,configd,Dataset_lst):
 
     if var_dim[var] == 3:
-        map_dat_1,map_dat_2 = reload_map_data_comb_2d(var,ldi,ti, data_inst_1, data_inst_2,grid_dict,regrid_params,regrid_meth,th,config_2nd,load_2nd_files)
+        map_dat_dict = reload_map_data_comb_2d(data_inst,regrid_params,regrid_meth ,thd,configd,Dataset_lst)
 
     else:
         if z_meth == 'z_slice':
-            map_dat_1,map_dat_2 = reload_map_data_comb_zmeth_zslice(zz, data_inst_1, data_inst_2,interp1d_ZwgtT,grid_dict,regrid_params,regrid_meth,th,config_2nd,load_2nd_files)
+            map_dat_dict = reload_map_data_comb_zmeth_zslice(zz, data_inst,interp1d_ZwgtT,grid_dict,regrid_params,regrid_meth ,thd,configd,Dataset_lst)
         elif z_meth in ['nb','df','zm']:
-            map_dat_1,map_dat_2 = reload_map_data_comb_zmeth_nb_df_zm_3d(z_meth, data_inst_1, data_inst_2,grid_dict,regrid_params,regrid_meth,th,config_2nd,load_2nd_files)
+            map_dat_dict = reload_map_data_comb_zmeth_nb_df_zm_3d(z_meth, data_inst,grid_dict,regrid_params,regrid_meth ,thd,configd,Dataset_lst)
         elif z_meth in ['ss']:
-            map_dat_1,map_dat_2 = reload_map_data_comb_zmeth_ss_3d(data_inst_1, data_inst_2,regrid_params,regrid_meth,th,config_2nd,load_2nd_files)
+            map_dat_dict = reload_map_data_comb_zmeth_ss_3d(data_inst,regrid_params,regrid_meth,thd,configd,Dataset_lst)
         elif z_meth == 'z_index':
-            map_dat_1,map_dat_2 = reload_map_data_comb_zmeth_zindex(data_inst_1,data_inst_2,zi,regrid_params,regrid_meth,th,config_2nd,load_2nd_files)
+            map_dat_dict = reload_map_data_comb_zmeth_zindex(data_inst,zi,regrid_params,regrid_meth,thd,configd,Dataset_lst)
         else:
             print('z_meth not supported:',z_meth)
             pdb.set_trace()
 
-    map_x = nav_lon
-    map_y = nav_lat
-    
-    return map_dat_1,map_dat_2,map_x,map_y
+    map_dat_dict['x'] = nav_lon
+    map_dat_dict['y'] = nav_lat
+
+    return map_dat_dict
             
 
 
-def reload_map_data_comb_2d(var,ldi,ti, data_inst_1, data_inst_2,grid_dict,regrid_params,regrid_meth,th,config_2nd,load_2nd_files): # ,
- 
-    map_dat_1 = data_inst_1
-    map_dat_2 = map_dat_1
+def reload_map_data_comb_2d(data_inst,regrid_params,regrid_meth,thd,configd,Dataset_lst): # ,
+    #Dataset_lst = [ss for ss in data_inst.keys()]
+    Dataset_lst_secondary = Dataset_lst.copy()
+    if 'Dataset 1' in Dataset_lst_secondary: Dataset_lst_secondary.remove('Dataset 1')  
+
+    map_dat_dict= {}
+    map_dat_dict['Dataset 1'] = data_inst['Dataset 1']
+    for tmp_datstr in Dataset_lst_secondary:
+        th_d_ind = int(tmp_datstr[-1])
+        map_dat_dict[tmp_datstr] = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd[th_d_ind],data_inst[tmp_datstr])
+
+
     
-    if load_2nd_files:
-        map_dat_2 = regrid_2nd(regrid_params,regrid_meth,th,config_2nd,data_inst_2)
-        
-
-    return map_dat_1,map_dat_2
+    return map_dat_dict
 
 
 
-def  reload_map_data_comb_zmeth_ss_3d(data_inst_1, data_inst_2,regrid_params,regrid_meth,th,config_2nd,load_2nd_files):
+def  reload_map_data_comb_zmeth_ss_3d(data_inst,regrid_params,regrid_meth,thd,configd,Dataset_lst):
+    #Dataset_lst = [ss for ss in data_inst.keys()]
+    Dataset_lst_secondary = Dataset_lst.copy()
+    if 'Dataset 1' in Dataset_lst_secondary: Dataset_lst_secondary.remove('Dataset 1')  
+
+    map_dat_dict= {}
+    map_dat_dict['Dataset 1'] = data_inst['Dataset 1'][0]
+    for tmp_datstr in Dataset_lst_secondary:
+        th_d_ind = int(tmp_datstr[-1])
+        map_dat_dict[tmp_datstr] = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd[th_d_ind],data_inst[tmp_datstr][0])
+
+
+
+    return map_dat_dict
+
+def reload_map_data_comb_zmeth_nb_df_zm_3d(z_meth, data_inst,grid_dict,regrid_params,regrid_meth,thd,configd,Dataset_lst):
+    #Dataset_lst = [ss for ss in data_inst.keys()]
+    Dataset_lst_secondary = Dataset_lst.copy()
+    if 'Dataset 1' in Dataset_lst_secondary: Dataset_lst_secondary.remove('Dataset 1')  
+
+    map_dat_dict= {}
+
 
     # load files
-    map_dat_ss_1 = data_inst_1[0]
-    if load_2nd_files:
-            map_dat_ss_2 = regrid_2nd(regrid_params,regrid_meth,th,config_2nd,data_inst_2[0])
-    else: 
-        map_dat_ss_2 = map_dat_ss_1
-
-    return map_dat_ss_1, map_dat_ss_2
-
-def  reload_map_data_comb_zmeth_nb_df_zm_3d(z_meth, data_inst_1, data_inst_2,grid_dict,regrid_params,regrid_meth,th,config_2nd,load_2nd_files):
-
-    # load files
-    map_dat_3d_1 = data_inst_1
+    map_dat_3d_1 = data_inst['Dataset 1']
     
-    if load_2nd_files:
-       map_dat_3d_2 = data_inst_2
-    else:
-        map_dat_3d_2 = map_dat_3d_1
 
     # process onto 2d levels
     map_dat_ss_1 = map_dat_3d_1[0]
@@ -1668,150 +1740,200 @@ def  reload_map_data_comb_zmeth_nb_df_zm_3d(z_meth, data_inst_1, data_inst_2,gri
     map_dat_zm_1 = weighted_depth_mean_masked_var(map_dat_3d_1,grid_dict['Dataset 1']['e3t'])
     del(map_dat_3d_1)
     map_dat_df_1 = map_dat_ss_1 - map_dat_nb_1
- 
-    if load_2nd_files:
+
+
+    if z_meth == 'nb': map_dat_dict['Dataset 1'] = map_dat_nb_1
+    if z_meth == 'df': map_dat_dict['Dataset 1'] = map_dat_ss_1 - map_dat_nb_1
+    if z_meth == 'zm': map_dat_dict['Dataset 1'] = map_dat_zm_1
+
+    for tmp_datstr in Dataset_lst_secondary:
+        th_d_ind = int(tmp_datstr[-1])
     
-        map_dat_ss_2 = regrid_2nd(regrid_params,regrid_meth,th,config_2nd,map_dat_3d_2[0])
-        map_dat_nb_2 = regrid_2nd(regrid_params,regrid_meth,th,config_2nd,nearbed_int_index_val(map_dat_3d_2))
-        map_dat_zm_2 = regrid_2nd(regrid_params,regrid_meth,th,config_2nd,weighted_depth_mean_masked_var(map_dat_3d_2,grid_dict['Dataset 2']['e3t']))
+        map_dat_3d_2 = np.ma.masked_invalid(data_inst[tmp_datstr])
+
+        map_dat_ss_2 = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd[th_d_ind],map_dat_3d_2[0])
+        map_dat_nb_2 = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd[th_d_ind],nearbed_int_index_val(map_dat_3d_2))
+        map_dat_zm_2 = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd[th_d_ind],weighted_depth_mean_masked_var(map_dat_3d_2,grid_dict[tmp_datstr]['e3t']))
         del(map_dat_3d_2)
         map_dat_df_2 = map_dat_ss_2 - map_dat_nb_2
-    else:
-
-        map_dat_ss_2 = map_dat_ss_1
-        map_dat_nb_2 = map_dat_nb_1
-        map_dat_df_2 = map_dat_df_1
-        map_dat_zm_2 = map_dat_zm_1
-
+        if z_meth == 'nb': map_dat_dict[tmp_datstr] = map_dat_nb_2
+        if z_meth == 'df': map_dat_dict[tmp_datstr] = map_dat_ss_2 - map_dat_nb_2
+        if z_meth == 'zm': map_dat_dict[tmp_datstr] = map_dat_zm_2
 
         
-    if z_meth == 'nb': map_dat_1 = map_dat_nb_1
-    if z_meth == 'df': map_dat_1 = map_dat_ss_1 - map_dat_nb_1
-    if z_meth == 'zm': map_dat_1 = map_dat_zm_1
-    if z_meth == 'nb': map_dat_2 = map_dat_nb_2
-    if z_meth == 'df': map_dat_2 = map_dat_ss_2 - map_dat_nb_2
-    if z_meth == 'zm': map_dat_2 = map_dat_zm_2
-
-    return map_dat_1, map_dat_2
+    return map_dat_dict
 
 
-def reload_map_data_comb_zmeth_zslice(zz, data_inst_1, data_inst_2,interp1d_ZwgtT,grid_dict,regrid_params,regrid_meth,th,config_2nd,load_2nd_files):
+def reload_map_data_comb_zmeth_zslice(zz, data_inst,interp1d_ZwgtT,grid_dict,regrid_params,regrid_meth,thd,configd,Dataset_lst):
+    #Dataset_lst = [ss for ss in data_inst.keys()]
+    Dataset_lst_secondary = Dataset_lst.copy()
+    if 'Dataset 1' in Dataset_lst_secondary: Dataset_lst_secondary.remove('Dataset 1')  
+
+    map_dat_dict= {}
 
 
     if zz not in interp1d_ZwgtT['Dataset 1'].keys():
         interp1d_ZwgtT['Dataset 1'][zz] = interp1dmat_create_weight(grid_dict['Dataset 1']['gdept'],zz)
+
+
+    map_dat_3d_1 = np.ma.masked_invalid(data_inst['Dataset 1'])
+
+
+    map_dat_dict['Dataset 1'] =  interp1dmat_wgt(np.ma.masked_invalid(map_dat_3d_1),interp1d_ZwgtT['Dataset 1'][zz])
+
+    #if load_2nd_files:
+    #    map_dat_3d_2 = np.ma.masked_invalid(data_inst['Dataset 2'])
+    #else:
+    #    map_dat_3d_2 = map_dat_3d_1
+
+
     
-    if load_2nd_files:
-        if zz not in interp1d_ZwgtT['Dataset 2'].keys(): 
-            interp1d_ZwgtT['Dataset 2'][zz] = interp1dmat_create_weight(grid_dict['Dataset 2']['gdept'],zz)
+    for tmp_datstr in Dataset_lst_secondary:
+        map_dat_3d_2 = np.ma.masked_invalid(data_inst[tmp_datstr])
+        th_d_ind = int(tmp_datstr[-1])
     
-    map_dat_3d_1 = np.ma.masked_invalid(data_inst_1)
-    if load_2nd_files:
-        map_dat_3d_2 = np.ma.masked_invalid(data_inst_2)
-    else:
-        map_dat_3d_2 = map_dat_3d_1
+        if zz not in interp1d_ZwgtT[tmp_datstr].keys(): 
+            interp1d_ZwgtT[tmp_datstr][zz] = interp1dmat_create_weight(grid_dict[tmp_datstr]['gdept'],zz)
+        #pdb.set_trace()
+        map_dat_dict[tmp_datstr] = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd[th_d_ind],interp1dmat_wgt(np.ma.masked_invalid(map_dat_3d_2),interp1d_ZwgtT[tmp_datstr][zz]))
+       
 
-    map_dat_1 =  interp1dmat_wgt(np.ma.masked_invalid(map_dat_3d_1),interp1d_ZwgtT['Dataset 1'][zz])
-
-    if load_2nd_files:
-        map_dat_2 =  regrid_2nd(regrid_params,regrid_meth,th,config_2nd,interp1dmat_wgt(np.ma.masked_invalid(map_dat_3d_2),interp1d_ZwgtT['Dataset 2'][zz]))
-    else:
-        map_dat_2 = map_dat_1
+    return map_dat_dict
 
 
-    return map_dat_1,map_dat_2
+def reload_map_data_comb_zmeth_zindex(data_inst,zi,regrid_params,regrid_meth,thd,configd,Dataset_lst):
+    #Dataset_lst = [ss for ss in data_inst.keys()]
+    Dataset_lst_secondary = Dataset_lst.copy()
+    if 'Dataset 1' in Dataset_lst_secondary: Dataset_lst_secondary.remove('Dataset 1')  
+
+    map_dat_dict= {}
 
 
-def reload_map_data_comb_zmeth_zindex(data_inst_1,data_inst_2,zi,regrid_params,regrid_meth,th,config_2nd,load_2nd_files):
+    map_dat_dict['Dataset 1'] = np.ma.masked_invalid(data_inst['Dataset 1'][zi])
+    for tmp_datstr in Dataset_lst_secondary:
+        th_d_ind = int(tmp_datstr[-1])
+    
+        map_dat_dict[tmp_datstr]  = np.ma.masked_invalid(regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd[th_d_ind],data_inst[tmp_datstr][zi]))
 
 
-    map_dat_1 = np.ma.masked_invalid(data_inst_1[zi])
-    if load_2nd_files:
-        map_dat_2 = np.ma.masked_invalid(regrid_2nd(regrid_params,regrid_meth,th,config_2nd,data_inst_2[zi]))
-    else:
-        map_dat_2 = map_dat_1
-    return map_dat_1,map_dat_2
-
+    return map_dat_dict
 
 
 
-def reload_ew_data_comb(ii,jj,ti,th, data_inst_1, data_inst_2, nav_lon, nav_lat, grid_dict,regrid_meth, ew_ii_2nd_ind,ew_jj_2nd_ind,ew_bl_jj_ind_final,ew_bl_ii_ind_final,ew_wgt,load_2nd_files,config_2nd):
+
+def reload_ew_data_comb(ii,jj, data_inst, nav_lon, nav_lat, grid_dict,regrid_meth, iijj_ind,Dataset_lst,configd):
+    #Dataset_lst = [ss for ss in data_inst.keys()]
+    Dataset_lst_secondary = Dataset_lst.copy()
+    if 'Dataset 1' in Dataset_lst_secondary: Dataset_lst_secondary.remove('Dataset 1')  
     '''
     reload the data for the E-W cross-section
 
+
     '''
 
-    ew_slice_x =  nav_lon[jj,:]
-    ew_slice_y =  grid_dict['Dataset 1']['gdept'][:,jj,:]
-    ew_slice_dat_1 = np.ma.masked_invalid(data_inst_1[:,jj,:])
+    ew_slice_dict = {}
 
-    if load_2nd_files:
-        if config_2nd is None:
-            ew_slice_dat_2 = np.ma.masked_invalid(data_inst_2[:,jj,:])
+
+
+    ew_slice_dict['x'] =  nav_lon[jj,:]
+    ew_slice_dict['y'] =  grid_dict['Dataset 1']['gdept'][:,jj,:]
+    ew_slice_dict['Dataset 1'] = np.ma.masked_invalid(data_inst['Dataset 1'][:,jj,:])
+
+    for tmp_datstr in Dataset_lst_secondary:
+        th_d_ind = int(tmp_datstr[-1])
+
+
+
+        if configd[th_d_ind] is None:
+            ew_slice_dict[tmp_datstr] = np.ma.masked_invalid(data_inst[tmp_datstr][:,jj,:])
         else:
+
+            ew_ii_2nd_ind,ew_jj_2nd_ind,ew_bl_jj_ind_final,ew_bl_ii_ind_final,ew_wgt = iijj_ind[tmp_datstr]['ew_ii'],iijj_ind[tmp_datstr]['ew_jj'], iijj_ind[tmp_datstr]['ew_bl_jj'],iijj_ind[tmp_datstr]['ew_bl_ii'],iijj_ind[tmp_datstr]['ew_wgt']
+
             if regrid_meth == 1:
-                tmpdat_ew_slice = np.ma.masked_invalid(data_inst_2[:,ew_jj_2nd_ind,ew_ii_2nd_ind].T)
+                tmpdat_ew_slice = np.ma.masked_invalid(data_inst[tmp_datstr][:,ew_jj_2nd_ind,ew_ii_2nd_ind].T)
             elif regrid_meth == 2:            
-                tmp_data_inst_2_bl = data_inst_2[:,ew_bl_jj_ind_final,ew_bl_ii_ind_final]
+                tmp_data_inst_2_bl = data_inst[tmp_datstr][:,ew_bl_jj_ind_final,ew_bl_ii_ind_final]
                 tmp_ew_wgt = ew_wgt.copy()
                 tmp_ew_wgt.mask = tmp_ew_wgt.mask | tmp_data_inst_2_bl.mask
                 tmpdat_ew_slice = ((tmp_data_inst_2_bl* tmp_ew_wgt).sum(axis = 1)/tmp_ew_wgt.sum(axis = 0)).T
 
 
-            tmpdat_ew_gdept=grid_dict['Dataset 2']['gdept'][:,ew_jj_2nd_ind,ew_ii_2nd_ind].T
-            ew_slice_dat_2 = np.ma.zeros(data_inst_1.shape[0::2])*np.ma.masked
-            for i_i,(tmpdat,tmpz,tmpzorig) in enumerate(zip(tmpdat_ew_slice,tmpdat_ew_gdept,ew_slice_y.T)):ew_slice_dat_2[:,i_i] = np.ma.masked_invalid(np.interp(tmpzorig, tmpz, np.ma.array(tmpdat.copy(),fill_value=np.nan).filled()  ))
-    else:
-        ew_slice_dat_2 = ew_slice_dat_1
+            tmpdat_ew_gdept=grid_dict[tmp_datstr]['gdept'][:,ew_jj_2nd_ind,ew_ii_2nd_ind].T
+            ew_slice_dict[tmp_datstr] = np.ma.zeros(data_inst['Dataset 1'].shape[0::2])*np.ma.masked
+            for i_i,(tmpdat,tmpz,tmpzorig) in enumerate(zip(tmpdat_ew_slice,tmpdat_ew_gdept,ew_slice_dict['y'].T)):ew_slice_dict[tmp_datstr][:,i_i] = np.ma.masked_invalid(np.interp(tmpzorig, tmpz, np.ma.array(tmpdat.copy(),fill_value=np.nan).filled()  ))
 
-    return ew_slice_dat_1,ew_slice_dat_2,ew_slice_x, ew_slice_y
+    return ew_slice_dict
 
-def reload_ns_data_comb(ii,jj,ti,th, data_inst_1, data_inst_2, nav_lon, nav_lat, grid_dict, regrid_meth,ns_ii_2nd_ind,ns_jj_2nd_ind,ns_bl_jj_ind_final,ns_bl_ii_ind_final,ns_wgt,load_2nd_files,config_2nd):              
+def reload_ns_data_comb(ii,jj, data_inst, nav_lon, nav_lat, grid_dict, regrid_meth,iijj_ind,Dataset_lst,configd):        
+    #Dataset_lst = [ss for ss in data_inst.keys()]      
+    Dataset_lst_secondary = Dataset_lst.copy()
+    if 'Dataset 1' in Dataset_lst_secondary: Dataset_lst_secondary.remove('Dataset 1')  
     '''
     reload the data for the N-S cross-section
 
     '''
-    ns_slice_x =  nav_lat[:,ii]
-    ns_slice_y =  grid_dict['Dataset 1']['gdept'][:,:,ii]
 
 
-    ns_slice_dat_1 = np.ma.masked_invalid(data_inst_1[:,:,ii])
 
-    if load_2nd_files:
-        if config_2nd is None:
-            ns_slice_dat_2 = np.ma.masked_invalid(data_inst_2[:,:,ii])
+
+    ns_slice_dict = {}
+   
+    ns_slice_dict['x'] =  nav_lat[:,ii]
+    ns_slice_dict['y'] =  grid_dict['Dataset 1']['gdept'][:,:,ii]
+
+
+    ns_slice_dict['Dataset 1'] = np.ma.masked_invalid(data_inst['Dataset 1'][:,:,ii])
+
+    for tmp_datstr in Dataset_lst_secondary:
+        th_d_ind = int(tmp_datstr[-1])
+
+
+
+
+        if configd[th_d_ind] is None:
+            ns_slice_dict[tmp_datstr] = np.ma.masked_invalid(data_inst[tmp_datstr][:,:,ii])
         else:
             
+
+            ns_ii_2nd_ind,ns_jj_2nd_ind,ns_bl_jj_ind_final,ns_bl_ii_ind_final,ns_wgt = iijj_ind[tmp_datstr]['ns_ii'],iijj_ind[tmp_datstr]['ns_jj'], iijj_ind[tmp_datstr]['ns_bl_jj'],iijj_ind[tmp_datstr]   ['ns_bl_ii'],iijj_ind[tmp_datstr]['ns_wgt']
             if regrid_meth == 1:
-                tmpdat_ns_slice = np.ma.masked_invalid(data_inst_2[:,ns_jj_2nd_ind,ns_ii_2nd_ind].T)
+                tmpdat_ns_slice = np.ma.masked_invalid(data_inst[tmp_datstr][:,ns_jj_2nd_ind,ns_ii_2nd_ind].T)
             elif regrid_meth == 2:
-                tmp_data_inst_2_bl = data_inst_2[:,ns_bl_jj_ind_final,ns_bl_ii_ind_final]
+                tmp_data_inst_2_bl = data_inst[tmp_datstr][:,ns_bl_jj_ind_final,ns_bl_ii_ind_final]
                 tmp_ns_wgt = ns_wgt.copy()
                 tmp_ns_wgt.mask = tmp_ns_wgt.mask | tmp_data_inst_2_bl.mask
                 tmpdat_ns_slice = ((tmp_data_inst_2_bl* tmp_ns_wgt).sum(axis = 1)/tmp_ns_wgt.sum(axis = 0)).T
 
-            tmpdat_ns_gdept = grid_dict['Dataset 2']['gdept'][:,ns_jj_2nd_ind,ns_ii_2nd_ind].T
-            ns_slice_dat_2 = np.ma.zeros(data_inst_1.shape[0:2])*np.ma.masked
-            for i_i,(tmpdat,tmpz,tmpzorig) in enumerate(zip(tmpdat_ns_slice,tmpdat_ns_gdept,ns_slice_y.T)):ns_slice_dat_2[:,i_i] = np.ma.masked_invalid(np.interp(tmpzorig, tmpz, np.ma.array(tmpdat.copy(),fill_value=np.nan).filled()  ))
+            tmpdat_ns_gdept = grid_dict[tmp_datstr]['gdept'][:,ns_jj_2nd_ind,ns_ii_2nd_ind].T
+            ns_slice_dict[tmp_datstr] = np.ma.zeros(data_inst['Dataset 1'].shape[0:2])*np.ma.masked
+            for i_i,(tmpdat,tmpz,tmpzorig) in enumerate(zip(tmpdat_ns_slice,tmpdat_ns_gdept,ns_slice_dict['y'].T)):ns_slice_dict[tmp_datstr][:,i_i] = np.ma.masked_invalid(np.interp(tmpzorig, tmpz, np.ma.array(tmpdat.copy(),fill_value=np.nan).filled()  ))
 
-    else:
-        ns_slice_dat_2 = ns_slice_dat_1
 
-    return ns_slice_dat_1,ns_slice_dat_2,ns_slice_x, ns_slice_y
+    return ns_slice_dict
 
 
 
-   
             
 
-def reload_hov_data_comb(var,var_mat,var_grid,deriv_var,ldi,th,time_datetime, ii,jj,ii_2nd_ind,jj_2nd_ind,nz,ntime, grid_dict,xarr_dict, load_2nd_files,config_2nd):    
+def reload_hov_data_comb(var,var_mat,var_grid,deriv_var,ldi,thd,time_datetime, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict, load_2nd_files,Dataset_lst,configd):       
+    #Dataset_lst = [ss for ss in xarr_dict.keys()]      
+    Dataset_lst_secondary = Dataset_lst.copy()
+    if 'Dataset 1' in Dataset_lst_secondary: Dataset_lst_secondary.remove('Dataset 1')    
             
     '''
     reload the data for the Hovmuller plot
     '''
-  
-    hov_x = time_datetime
-    hov_y =  grid_dict['Dataset 1']['gdept'][:,jj,ii]
+
+    hov_dat = {}
+
+    hov_dat['x'] = time_datetime
+    hov_dat['y'] = grid_dict['Dataset 1']['gdept'][:,jj,ii]
+
+
+
+    #hov_x = time_datetime
+    #hov_y =  grid_dict['Dataset 1']['gdept'][:,jj,ii]
 
     hov_start = datetime.now()
 
@@ -1821,152 +1943,203 @@ def reload_hov_data_comb(var,var_mat,var_grid,deriv_var,ldi,th,time_datetime, ii
         if var == 'baroc_mag':
 
             tmp_var_U, tmp_var_V = 'vozocrtx','vomecrty'
-            hov_dat_U_1,hov_dat_U_2,hov_U_x,hov_U_y = reload_hov_data_comb(tmp_var_U,var_mat,var_grid,deriv_var,ldi,th, time_datetime, ii,jj,ii_2nd_ind,jj_2nd_ind,nz,ntime, grid_dict,xarr_dict,load_2nd_files,config_2nd)
-            hov_dat_V_1,hov_dat_V_2,hov_V_x,hov_V_y = reload_hov_data_comb(tmp_var_V,var_mat,var_grid,deriv_var,ldi,th, time_datetime, ii,jj,ii_2nd_ind,jj_2nd_ind,nz,ntime, grid_dict,xarr_dict,load_2nd_files,config_2nd)
 
-            hov_dat_1 = np.sqrt(hov_dat_U_1**2 + hov_dat_V_1**2)
-            hov_dat_2 = np.sqrt(hov_dat_U_2**2 + hov_dat_V_2**2)
+            hov_dat_U_dict = reload_hov_data_comb(tmp_var_U,var_mat,var_grid,deriv_var,ldi,thd, time_datetime, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd)
+            hov_dat_V_dict = reload_hov_data_comb(tmp_var_V,var_mat,var_grid,deriv_var,ldi,thd, time_datetime, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd)
+
+            for tmp_datstr in Dataset_lst:
+                hov_dat[tmp_datstr]  = np.sqrt(hov_dat_U_dict[tmp_datstr]**2 + hov_dat_V_dict[tmp_datstr]**2)
 
        
         elif var == 'rho':
-            hov_dat_T_1,hov_dat_T_2,hov_T_x,hov_T_y = reload_hov_data_comb('votemper',var_mat,var_grid,deriv_var,ldi,th, time_datetime, ii,jj,ii_2nd_ind,jj_2nd_ind,nz,ntime, grid_dict,xarr_dict,load_2nd_files,config_2nd)
-            hov_dat_S_1,hov_dat_S_2,hov_S_x,hov_S_y = reload_hov_data_comb('vosaline',var_mat,var_grid,deriv_var,ldi,th, time_datetime, ii,jj,ii_2nd_ind,jj_2nd_ind,nz,ntime, grid_dict,xarr_dict,load_2nd_files,config_2nd)
+            hov_dat_T_dict = reload_hov_data_comb('votemper',var_mat,var_grid,deriv_var,ldi,thd, time_datetime, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd)
+            hov_dat_S_dict = reload_hov_data_comb('vosaline',var_mat,var_grid,deriv_var,ldi,thd, time_datetime, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd)
 
-            hov_dat_1 = sw_dens(hov_dat_T_1, hov_dat_S_1)
-            hov_dat_2 = sw_dens(hov_dat_T_2, hov_dat_S_2)
+            
+            for tmp_datstr in Dataset_lst:
+                hov_dat[tmp_datstr]  = sw_dens(hov_dat_T_dict[tmp_datstr], hov_dat_S_dict[tmp_datstr])
 
         else:
-            hov_dat_1 = np.ma.zeros((nz,ntime))*np.ma.masked
-            hov_dat_2 = np.ma.zeros((nz,ntime))*np.ma.masked
+            for tmp_datstr in Dataset_lst:
+                hov_dat[tmp_datstr] = np.ma.zeros((nz,ntime))*np.ma.masked
 
     elif var in var_mat:
-        hov_dat_1 = np.ma.masked_invalid(xarr_dict['Dataset 1'][var_grid[var]][ldi].variables[var][:,:,th['y0']:th['y1']:th['dy'],th['x0']:th['x1']:th['dx']][:,:,jj,ii].load()).T
+
+
+        hov_dat['Dataset 1'] = np.ma.masked_invalid(xarr_dict['Dataset 1'][var_grid[var]][ldi].variables[var][:,:,thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']][:,:,jj,ii].load()).T
         
-        if load_2nd_files:
-            if config_2nd is None:
-                hov_dat_2 = np.ma.masked_invalid(xarr_dict['Dataset 2'][var_grid[var]][ldi].variables[var][:,:,th['y0_2nd']:th['y1_2nd']:th['dy_2nd'],th['x0_2nd']:th['x1_2nd']:th['dx_2nd']][:,:,jj,ii].load()).T
+        for tmp_datstr in Dataset_lst_secondary:
+            th_d_ind = int(tmp_datstr[-1])
+            
+            if configd[th_d_ind] is None:
+                hov_dat[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables[var][:,:,thd[2]['y0']:thd[2]['y1']:thd[2]['dy'],thd[2]['x0']:thd[2]['x1']:thd[2]['dx']][:,:,jj,ii].load()).T
             else:
-                hov_dat_2 = np.ma.zeros(xarr_dict['Dataset 1'][var_grid[var]][ldi].variables[var][:,:,th['y0']:th['y1']:th['dy'],th['x0']:th['x1']:th['dx']].shape[1::-1])*np.ma.masked
-                tmpdat_hov = np.ma.masked_invalid(xarr_dict['Dataset 2'][var_grid[var]][ldi].variables[var][:,:,th['y0_2nd']:th['y1_2nd']:th['dy_2nd'],th['x0_2nd']:th['x1_2nd']:th['dx_2nd']][:,:,jj_2nd_ind,ii_2nd_ind].load())
-                tmpdat_hov_gdept =  grid_dict['Dataset 2']['gdept'][:,jj_2nd_ind,ii_2nd_ind]               
-                for i_i,(tmpdat) in enumerate(tmpdat_hov):hov_dat_2[:,i_i] = np.ma.masked_invalid(np.interp(hov_y, tmpdat_hov_gdept, tmpdat))
-        else:
-            hov_dat_2 = hov_dat_1
+                ii_2nd_ind,jj_2nd_ind = iijj_ind[tmp_datstr]['ii'],iijj_ind[tmp_datstr]['jj']
+
+                hov_dat[tmp_datstr] = np.ma.zeros(xarr_dict['Dataset 1'][var_grid[var]][ldi].variables[var][:,:,thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']].shape[1::-1])*np.ma.masked
+                tmpdat_hov = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables[var][:,:,thd[2]['y0']:thd[2]['y1']:thd[2]['dy'],thd[2]['x0']:thd[2]['x1']:thd[2]['dx']][:,:,jj_2nd_ind,ii_2nd_ind].load())
+                tmpdat_hov_gdept =  grid_dict[tmp_datstr]['gdept'][:,jj_2nd_ind,ii_2nd_ind]               
+                for i_i,(tmpdat) in enumerate(tmpdat_hov):hov_dat[tmp_datstr][:,i_i] = np.ma.masked_invalid(np.interp(hov_dat['y'], tmpdat_hov_gdept, tmpdat))
+
     else:
-        hov_dat_1 = np.ma.zeros((nz,ntime))*np.ma.masked
-        hov_dat_2 = np.ma.zeros((nz,ntime))*np.ma.masked
+        for tmp_datstr in Dataset_lst: hov_dat[tmp_datstr] = np.ma.zeros((nz,ntime))*np.ma.masked
         
     hov_stop = datetime.now()
+    return hov_dat
 
-    return hov_dat_1,hov_dat_2,hov_x,hov_y
+   
+
+def reload_ts_data_comb(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,time_datetime,z_meth,zz,zi,xarr_dict,grid_dict,thd,var_mat,deriv_var,nz,ntime,configd,Dataset_lst,load_2nd_files):
+        
+    #Dataset_lst = [ss for ss in hov_dat_dict.keys()]      
+    #Dataset_lst.remove('x')       
+    #Dataset_lst.remove('y')    
+    Dataset_lst_secondary = Dataset_lst.copy()
+    if 'Dataset 1' in Dataset_lst_secondary: Dataset_lst_secondary.remove('Dataset 1')    
+    #        
+    ts_dat_dict = {}
+    ts_dat_dict['x'] = time_datetime
+    #for tmp_datstr in Dataset_lst:
 
 
-def reload_ts_data_comb(var,var_dim,var_grid,ii,jj,ii_2nd_ind,jj_2nd_ind,ldi,hov_dat_1,hov_dat_2,hov_y,time_datetime,z_meth,zz,xarr_dict,grid_dict,th,var_mat,deriv_var,nz,ntime,config_2nd,load_2nd_files):
-    ts_x = time_datetime
+    if var_grid[var] == 'WW3':
+        if var in ['wnd_mag']:
+            #pdb.set_trace()
 
-
-    if var_dim[var] == 3:
-
-        if var.upper() in ['PEA', 'PEAT','PEAS']:
-           
-            hov_dat_T_1,hov_dat_T_2,hov_T_x,hov_T_y = reload_hov_data_comb('votemper',var_mat,var_grid,deriv_var,ldi,th, time_datetime, ii,jj,ii_2nd_ind,jj_2nd_ind,nz,ntime, grid_dict,xarr_dict,load_2nd_files,config_2nd)
-            hov_dat_S_1,hov_dat_S_2,hov_S_x,hov_S_y = reload_hov_data_comb('vosaline',var_mat,var_grid,deriv_var,ldi,th, time_datetime, ii,jj,ii_2nd_ind,jj_2nd_ind,nz,ntime, grid_dict,xarr_dict,load_2nd_files,config_2nd)
-
-            gdept_mat = grid_dict['Dataset 1']['gdept'][:,jj,ii]
-            dz_mat = grid_dict['Dataset 1']['e3t'][:,jj,ii]
-            nt_pea = hov_dat_T_1.T.shape[0]
-
-            gdept_mat_pea = np.tile(gdept_mat[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_pea)).T
-            dz_mat_pea = np.tile(dz_mat[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_pea)).T
-
-            tmppea_1, tmppeat_1, tmppeas_1 = pea_TS(hov_dat_T_1.T[:,:,np.newaxis,np.newaxis],hov_dat_S_1.T[:,:,np.newaxis,np.newaxis],gdept_mat_pea,dz_mat_pea,calc_TS_comp = True )
-            if var.upper() == 'PEA':
-                ts_dat_1 = tmppea_1[:,0,0] 
-            elif var.upper() == 'PEAT':
-                ts_dat_1 = tmppeat_1[:,0,0] 
-            elif var.upper() == 'PEAS':
-                ts_dat_1 = tmppeas_1[:,0,0] 
-
-            if load_2nd_files:
-
-                tmppea_2, tmppeat_2, tmppeas_2 = pea_TS(hov_dat_T_2.T[:,:,np.newaxis,np.newaxis],hov_dat_S_2.T[:,:,np.newaxis,np.newaxis],gdept_mat_pea,dz_mat_pea,calc_TS_comp = True )
-
-                if var.upper() == 'PEA':
-                    ts_dat_2 = tmppea_2[:,0,0] 
-                elif var.upper() == 'PEAT':
-                    ts_dat_2 = tmppeat_2[:,0,0] 
-                elif var.upper() == 'PEAS':
-                    ts_dat_2 = tmppeas_2[:,0,0] 
-
-            else:
-                ts_dat_2 = ts_dat_1#
+            ts_dat_U_1 = reload_ts_data_comb('uwnd',var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,time_datetime,z_meth,zz,zi,xarr_dict,grid_dict,thd,var_mat,deriv_var,nz,ntime,configd,Dataset_lst,load_2nd_files)
+            ts_dat_V_1 = reload_ts_data_comb('vwnd',var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,time_datetime,z_meth,zz,zi,xarr_dict,grid_dict,thd,var_mat,deriv_var,nz,ntime,configd,Dataset_lst,load_2nd_files)
+            
+            if var == 'wnd_mag': 
+                for tmp_datstr in Dataset_lst: ts_dat_dict[tmp_datstr] = np.sqrt(ts_dat_U_1[tmp_datstr]**2 + ts_dat_V_1[tmp_datstr]**2)
+            del(ts_dat_U_1)
+            del(ts_dat_V_1)
 
         else:
-            ts_dat_1 = np.ma.masked_invalid(xarr_dict['Dataset 1'][var_grid[var]][ldi].variables[var][:,th['y0']:th['y1']:th['dy'],th['x0']:th['x1']:th['dx']][:,jj,ii].load())
-            if load_2nd_files:
-                if config_2nd is None:
-                    ts_dat_2 = np.ma.masked_invalid(xarr_dict['Dataset 2'][var_grid[var]][ldi].variables[var][:,th['y0_2nd']:th['y1_2nd']:th['dy_2nd'],th['x0_2nd']:th['x1_2nd']:th['dx_2nd']][:,jj,ii].load())
+            for tmp_datstr in Dataset_lst: # _secondary:
+                tmp_jj,tmp_ii = jj,ii
+
+                if tmp_datstr in Dataset_lst_secondary:
+                    th_d_ind = int(tmp_datstr[-1])
+                    #pdb.set_trace()
+                    if configd[th_d_ind] is not None:
+                        tmp_jj,tmp_ii = iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']
+                
+                tmpind = grid_dict['WW3']['NWS_WW3_nn_ind'][tmp_jj,tmp_ii]
+                if grid_dict['WW3']['AMM15_mask'][tmp_jj,tmp_ii]:
+                    ts_dat_dict[tmp_datstr] = np.ma.zeros((xarr_dict[tmp_datstr]['WW3'][ldi].variables[var].shape[0]))*np.ma.masked
                 else:
-                    ts_dat_2 = np.ma.masked_invalid(xarr_dict['Dataset 2'][var_grid[var]][ldi].variables[var][:,th['y0_2nd']:th['y1_2nd']:th['dy_2nd'],th['x0_2nd']:th['x1_2nd']:th['dx_2nd']][:,jj_2nd_ind,ii_2nd_ind].load())
+                    ts_dat_dict[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['WW3'][ldi].variables[var][:,tmpind].load())
+
+    
+        #pdb.set_trace()
+
+        return ts_dat_dict 
+
+    if var_dim[var] == 3:
+        if var in deriv_var:
+            if var.upper() in ['PEA', 'PEAT','PEAS']:
+               
+                hov_dat_T_dict = reload_hov_data_comb('votemper',var_mat,var_grid,deriv_var,ldi,thd, time_datetime, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd)
+                hov_dat_S_dict = reload_hov_data_comb('vosaline',var_mat,var_grid,deriv_var,ldi,thd, time_datetime, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd)
+
+
+                gdept_mat = grid_dict['Dataset 1']['gdept'][:,jj,ii]
+                dz_mat = grid_dict['Dataset 1']['e3t'][:,jj,ii]
+                nt_pea = hov_dat_T_dict['Dataset 1'].T.shape[0]
+
+                gdept_mat_pea = np.tile(gdept_mat[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_pea)).T
+                dz_mat_pea = np.tile(dz_mat[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_pea)).T
+
+                tmppea_1, tmppeat_1, tmppeas_1 = pea_TS(hov_dat_T_dict['Dataset 1'].T[:,:,np.newaxis,np.newaxis],hov_dat_T_dict['Dataset 1'].T[:,:,np.newaxis,np.newaxis],gdept_mat_pea,dz_mat_pea,calc_TS_comp = True )
+                if var.upper() == 'PEA':
+                    ts_dat_dict['Dataset 1'] = tmppea_1[:,0,0] 
+                elif var.upper() == 'PEAT':
+                    ts_dat_dict['Dataset 1'] = tmppeat_1[:,0,0] 
+                elif var.upper() == 'PEAS':
+                    ts_dat_dict['Dataset 1'] = tmppeas_1[:,0,0] 
+
+                for tmp_datstr in Dataset_lst_secondary:
+                    th_d_ind = int(tmp_datstr[-1])
+
+                    tmppea_2, tmppeat_2, tmppeas_2 = pea_TS(hov_dat_T_dict[tmp_datstr].T[:,:,np.newaxis,np.newaxis],hov_dat_S_dict[tmp_datstr].T[:,:,np.newaxis,np.newaxis],gdept_mat_pea,dz_mat_pea,calc_TS_comp = True )
+
+                    if var.upper() == 'PEA':
+                        ts_dat_dict[tmp_datstr] = tmppea_2[:,0,0] 
+                    elif var.upper() == 'PEAT':
+                        ts_dat_dict[tmp_datstr] = tmppeat_2[:,0,0] 
+                    elif var.upper() == 'PEAS':
+                        ts_dat_dict[tmp_datstr] = tmppeas_2[:,0,0]
             else:
-                ts_dat_2 = ts_dat_1
+
+                for tmp_datstr in Dataset_lst: ts_dat_dict[tmp_datstr] = np.ma.zeros((ntime))*np.ma.masked
+                
+
+        else:
+            ts_dat_dict['Dataset 1'] = np.ma.masked_invalid(xarr_dict['Dataset 1'][var_grid[var]][ldi].variables[var][:,thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']][:,jj,ii].load())
+            
+            for tmp_datstr in Dataset_lst_secondary:
+                th_d_ind = int(tmp_datstr[-1])
+                if configd[th_d_ind] is None:
+                    ts_dat_dict[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables[var][:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,jj,ii].load())
+                else:
+                    ii_2nd_ind,jj_2nd_ind = iijj_ind[tmp_datstr]['ii'],iijj_ind[tmp_datstr]['jj']
+                    ts_dat_dict[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables[var][:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,jj_2nd_ind,ii_2nd_ind].load())
+
+
+
+
     elif var_dim[var] == 4:
 
         if z_meth in ['ss','nb','df','zm']:
 
-            ss_ts_dat_1 = hov_dat_1[0,:].ravel()
-            hov_nb_ind_1 = (hov_dat_1[:,0].mask == False).sum()-1
-            nb_ts_dat_1 = hov_dat_1[hov_nb_ind_1,:].ravel()
-            df_ts_dat_1 = ss_ts_dat_1 - nb_ts_dat_1
 
             
-            ss_ts_dat_2 = hov_dat_2[0,:].ravel()
-            hov_nb_ind_2 = (hov_dat_2[:,0].mask == False).sum()-1
-            nb_ts_dat_2 = hov_dat_2[hov_nb_ind_2,:].ravel()
-            df_ts_dat_2 = ss_ts_dat_2 - nb_ts_dat_2
-            
-            
-            if z_meth == 'ss':
-                ts_dat_1 = ss_ts_dat_1
-                ts_dat_2 = ss_ts_dat_2
-            if z_meth == 'nb':
-                ts_dat_1 = nb_ts_dat_1
-                ts_dat_2 = nb_ts_dat_2
-            if z_meth == 'df':
-                ts_dat_1 = df_ts_dat_1
-                ts_dat_2 = df_ts_dat_2
-            if z_meth == 'zm':
-                ts_e3t_1 = np.ma.array(grid_dict['Dataset 1']['e3t'][:,jj,ii], mask = hov_dat_2[:,0].mask)
-                ts_dm_wgt_1 = ts_e3t_1/ts_e3t_1.sum()
-                ts_dat_1 = ((hov_dat_1.T*ts_dm_wgt_1).T).sum(axis = 0)
+            for tmp_datstr in Dataset_lst:
+
+                ss_ts_dat_1 = hov_dat_dict[tmp_datstr][0,:].ravel()
+                hov_nb_ind_1 = (hov_dat_dict[tmp_datstr][:,0].mask == False).sum()-1
+                nb_ts_dat_1 = hov_dat_dict[tmp_datstr][hov_nb_ind_1,:].ravel()
+                df_ts_dat_1 = ss_ts_dat_1 - nb_ts_dat_1
+
                 
-                if load_2nd_files: # e3t_2nd only loaded if 2nd files present
-                    ts_e3t_2 = np.ma.array(grid_dict['Dataset 2']['e3t'][:,jj_2nd_ind,ii_2nd_ind], mask = hov_dat_2[:,0].mask)
-                    ts_dm_wgt_2 = ts_e3t_2/ts_e3t_2.sum()
-                    ts_dat_2 = ((hov_dat_2.T*ts_dm_wgt_2).T).sum(axis = 0)
-                else:
-                    ts_dat_2 = ts_dat_1
+                
+                if z_meth == 'ss':
+                    ts_dat_dict[tmp_datstr] = ss_ts_dat_1
+                if z_meth == 'nb':
+                    ts_dat_dict[tmp_datstr] = nb_ts_dat_1
+                if z_meth == 'df':
+                    ts_dat_dict[tmp_datstr] = df_ts_dat_1
+                if z_meth == 'zm':
+                    ts_e3t_1 = np.ma.array(grid_dict[tmp_datstr]['e3t'][:,jj,ii], mask = hov_dat_dict[tmp_datstr][:,0].mask)
+                    ts_dm_wgt_1 = ts_e3t_1/ts_e3t_1.sum()
+                    ts_dat_dict[tmp_datstr] = ((hov_dat_dict[tmp_datstr].T*ts_dm_wgt_1).T).sum(axis = 0)
+
+
         elif z_meth == 'z_slice':
-            hov_zi = (np.abs(zz - hov_y)).argmin()
-            ts_dat_1 = hov_dat_1[hov_zi,:].ravel()
-            ts_dat_2 = hov_dat_2[hov_zi,:].ravel()
+            #pdb.set_trace()
+            for tmp_datstr in Dataset_lst:
+                hov_zi = (np.abs(zz - hov_dat_dict['y'])).argmin()
+                ts_dat_dict[tmp_datstr] = hov_dat_dict[tmp_datstr][hov_zi,:].ravel()
 
 
         elif z_meth == 'z_index':
+            for tmp_datstr in Dataset_lst:
 
-            ts_dat_1 = hov_dat_1[zi,:]
-            ts_dat_2 = hov_dat_2[zi,:]
-    return ts_dat_1, ts_dat_2,ts_x 
+                ts_dat_dict[tmp_datstr] = hov_dat_dict[tmp_datstr][zi,:]
 
-def regrid_2nd(regrid_params,regrid_meth,th,config_2nd,dat_in): #):
+    return ts_dat_dict 
+
+
+
+def regrid_2nd(regrid_params_in,regrid_meth,thd,configd_in,dat_in): #):
     start_regrid_timer = datetime.now()
 
 
-    if config_2nd is None:
+    if configd_in is None:
         dat_out = dat_in
     else:
-        (NWS_amm_bl_jj_ind_out, NWS_amm_bl_ii_ind_out, NWS_amm_wgt_out, NWS_amm_nn_jj_ind_out, NWS_amm_nn_ii_ind_out) = regrid_params
-        if (th['x0']!=0)|(th['y0']!=0): 
+        (NWS_amm_bl_jj_ind_out, NWS_amm_bl_ii_ind_out, NWS_amm_wgt_out, NWS_amm_nn_jj_ind_out, NWS_amm_nn_ii_ind_out) = regrid_params_in
+        if (thd[1]['x0']!=0)|(thd[1]['y0']!=0): 
             print('thin_x0 and thin_y0 must equal 0, if not, need to work out thinning code in the regrid index method')
             pdb.set_trace()
 
@@ -1974,6 +2147,7 @@ def regrid_2nd(regrid_params,regrid_meth,th,config_2nd,dat_in): #):
         if regrid_meth == 1:
             # Nearest Neighbour Interpolation   ~0.01 sec
             #dat_out = dat_in[NWS_amm_nn_jj_ind_final,NWS_amm_nn_ii_ind_final]
+            #pdb.set_trace()
             dat_out = dat_in[NWS_amm_nn_jj_ind_out,NWS_amm_nn_ii_ind_out]
             dat_out.mask = dat_out.mask|NWS_amm_wgt_out.mask.sum(axis =0)
 
@@ -1987,7 +2161,7 @@ def regrid_2nd(regrid_params,regrid_meth,th,config_2nd,dat_in): #):
             
 
         else:
-            print('config and config_2nd must be AMM15 and AMM7')
+            print('config and configd_in must be AMM15 and AMM7')
             pdb.set_trace()
     
     #if verbose_debugging:  print ('Regrid timer for method #%i: '%regrid_meth, datetime.now() - start_regrid_timer)
@@ -1995,223 +2169,219 @@ def regrid_2nd(regrid_params,regrid_meth,th,config_2nd,dat_in): #):
 
 
 
+def grad_horiz_ns_data(thd,grid_dict,ii, ns_slice_dict):
+    Dataset_lst = [ss for ss in ns_slice_dict.keys()] 
+    Dataset_lst.remove('x')
+    Dataset_lst.remove('y')
 
 
+    ns_slice_dx =  thd[1]['dx']*((grid_dict['Dataset 1']['e2t'][2:,ii] +  grid_dict['Dataset 1']['e2t'][:-2,ii])/2 + grid_dict['Dataset 1']['e2t'][1:-1,ii])
+
+    for tmp_datstr in Dataset_lst:
+
+        dns_1 = ns_slice_dict[tmp_datstr][:,2:] - ns_slice_dict[tmp_datstr][:,:-2]
+
+        ns_slice_dict[tmp_datstr][:,1:-1] = dns_1/ns_slice_dx#_1
+
+        ns_slice_dict[tmp_datstr][:,0] = np.ma.masked
+        ns_slice_dict[tmp_datstr][:,-1] = np.ma.masked
+
+    return ns_slice_dict
 
 
+def grad_horiz_ew_data(thd,grid_dict,jj, ew_slice_dict):
+    Dataset_lst = [ss for ss in ew_slice_dict.keys()] 
+    Dataset_lst.remove('x')
+    Dataset_lst.remove('y')
 
 
+    ew_slice_dx =  thd[1]['dx']*((grid_dict['Dataset 1']['e1t'][jj,2:] +  grid_dict['Dataset 1']['e1t'][jj,:-2])/2 + grid_dict['Dataset 1']['e1t'][jj,1:-1])
 
-def grad_horiz_ns_data(th,grid_dict,ii, ns_slice_dat_1,ns_slice_dat_2):
-    ns_slice_dx =  th['dx']*((grid_dict['Dataset 1']['e2t'][2:,ii] +  grid_dict['Dataset 1']['e2t'][:-2,ii])/2 + grid_dict['Dataset 1']['e2t'][1:-1,ii])
-    dns_1 = ns_slice_dat_1[:,2:] - ns_slice_dat_1[:,:-2]
-    dns_2 = ns_slice_dat_2[:,2:] - ns_slice_dat_2[:,:-2]
+    for tmp_datstr in Dataset_lst:
 
+        dew_1 = ew_slice_dict[tmp_datstr][:,2:] - ew_slice_dict[tmp_datstr][:,:-2]
 
-    ns_slice_dat_1[:,1:-1] = dns_1/ns_slice_dx#_1
-    ns_slice_dat_2[:,1:-1] = dns_2/ns_slice_dx#_2
+        ew_slice_dict[tmp_datstr][:,1:-1] = dew_1/ew_slice_dx#_1
 
-    ns_slice_dat_1[:,0] = np.ma.masked
-    ns_slice_dat_1[:,-1] = np.ma.masked
-    ns_slice_dat_2[:,0] = np.ma.masked
-    ns_slice_dat_2[:,-1] = np.ma.masked
+        ew_slice_dict[tmp_datstr][:,0] = np.ma.masked
+        ew_slice_dict[tmp_datstr][:,-1] = np.ma.masked
 
-    return ns_slice_dat_1,ns_slice_dat_2
+    return ew_slice_dict
 
 
-def grad_horiz_ew_data(th,grid_dict,jj, ew_slice_dat_1,ew_slice_dat_2):
-    ew_slice_dx =  th['dx']*((grid_dict['Dataset 1']['e1t'][jj,2:] +  grid_dict['Dataset 1']['e1t'][jj,:-2])/2 + grid_dict['Dataset 1']['e1t'][jj,1:-1])
-    dew_1 = ew_slice_dat_1[:,2:] - ew_slice_dat_1[:,:-2]
-    dew_2 = ew_slice_dat_2[:,2:] - ew_slice_dat_2[:,:-2]
+def grad_vert_ns_data(ns_slice_dict):
+    Dataset_lst = [ss for ss in ns_slice_dict.keys()] 
+    Dataset_lst.remove('x')
+    Dataset_lst.remove('y')
 
-    ew_slice_dat_1[:,1:-1] = dew_1/ew_slice_dx#_1
-    ew_slice_dat_2[:,1:-1] = dew_2/ew_slice_dx#_2
-
-    ew_slice_dat_1[:,0] = np.ma.masked
-    ew_slice_dat_1[:,-1] = np.ma.masked
-    ew_slice_dat_2[:,0] = np.ma.masked
-    ew_slice_dat_2[:,-1] = np.ma.masked
-
-    return ew_slice_dat_1, ew_slice_dat_2
-
-
-def grad_vert_ns_data(ns_slice_dat_1,ns_slice_dat_2,ns_slice_y):
-    dns_1 = ns_slice_dat_1[2:,:] - ns_slice_dat_1[:-2,:]
-    dns_2 = ns_slice_dat_2[2:,:] - ns_slice_dat_2[:-2,:]
+    ns_slice_y = ns_slice_dict['y']
     dns_z = ns_slice_y[2:,:] - ns_slice_y[:-2,:]
 
+    for tmp_datstr in Dataset_lst:
+
+        dns_1 = ns_slice_dict[tmp_datstr][2:,:] - ns_slice_dict[tmp_datstr][:-2,:]
+
+        ns_slice_dict[tmp_datstr][1:-1,:] = dns_1/dns_z
+
+        ns_slice_dict[tmp_datstr][ 0,:] = np.ma.masked
+        ns_slice_dict[tmp_datstr][-1,:] = np.ma.masked
+
+    return ns_slice_dict
 
 
+def grad_vert_ew_data(ew_slice_dict):
+    Dataset_lst = [ss for ss in ew_slice_dict.keys()] 
+    Dataset_lst.remove('x')
+    Dataset_lst.remove('y')
 
-    ns_slice_dat_1[1:-1,:] = dns_1/dns_z
-    ns_slice_dat_2[1:-1,:] = dns_2/dns_z
-    ns_slice_dat_1[ 0,:] = np.ma.masked
-    ns_slice_dat_1[-1,:] = np.ma.masked
-    ns_slice_dat_2[ 0,:] = np.ma.masked
-    ns_slice_dat_2[-1,:] = np.ma.masked
-
-    return ns_slice_dat_1,ns_slice_dat_2
-
-
-def grad_vert_ew_data(ew_slice_dat_1,ew_slice_dat_2,ew_slice_y):
-    dew_1 = ew_slice_dat_1[2:,:] - ew_slice_dat_1[:-2,:]
-    dew_2 = ew_slice_dat_2[2:,:] - ew_slice_dat_2[:-2,:]
+    ew_slice_y = ew_slice_dict['y']
     dew_z = ew_slice_y[2:,:] - ew_slice_y[:-2,:]
 
-    ew_slice_dat_1[1:-1,:] = dew_1/dew_z
-    ew_slice_dat_2[1:-1,:] = dew_2/dew_z
+    for tmp_datstr in Dataset_lst:
 
-    ew_slice_dat_1[ 0,:] = np.ma.masked
-    ew_slice_dat_1[-1,:] = np.ma.masked
-    ew_slice_dat_2[ 0,:] = np.ma.masked
-    ew_slice_dat_2[-1,:] = np.ma.masked
+        dew_1 = ew_slice_dict[tmp_datstr][2:,:] - ew_slice_dict[tmp_datstr][:-2,:]
 
-    return ew_slice_dat_1, ew_slice_dat_2
+        ew_slice_dict[tmp_datstr][1:-1,:] = dew_1/dew_z
 
+        ew_slice_dict[tmp_datstr][ 0,:] = np.ma.masked
+        ew_slice_dict[tmp_datstr][-1,:] = np.ma.masked
 
-def grad_vert_hov_data(hov_dat_1,hov_dat_2,hov_y):
+    return ew_slice_dict
 
 
-    dhov_1 = hov_dat_1[2:,:] - hov_dat_1[:-2,:]
-    dhov_2 = hov_dat_2[2:,:] - hov_dat_2[:-2,:]
+
+
+#def grad_vert_hov_data(hov_dat_1,hov_dat_2,hov_y):
+def grad_vert_hov_data(hov_dat_dict):
+
+    #hov_dat_dict['Dataset 1'],hov_dat_dict['Dataset 2'] = grad_vert_hov_data(hov_dat_dict['Dataset 1'],hov_dat_dict['Dataset 2'],hov_dat_dict['y'])
+
+    Dataset_lst = [ss for ss in hov_dat_dict.keys()]   
+    Dataset_lst.remove('x')       
+    Dataset_lst.remove('y')    
+
+
+    hov_y = hov_dat_dict['y']
     dhov_z = hov_y[2:] - hov_y[:-2]
-    hov_dat_1[1:-1,:] = (dhov_1.T/dhov_z).T
-    hov_dat_2[1:-1,:] = (dhov_2.T/dhov_z).T
+    
+    for tmp_datstr in Dataset_lst:
 
-    hov_dat_1[ 0,:] = np.ma.masked
-    hov_dat_1[-1,:] = np.ma.masked
-    hov_dat_2[ 0,:] = np.ma.masked
-    hov_dat_2[-1,:] = np.ma.masked
-
-    return hov_dat_1,hov_dat_2
+        dhov_1 = hov_dat_dict[tmp_datstr][2:,:] - hov_dat_dict[tmp_datstr][:-2,:]
+        hov_dat_dict[tmp_datstr][1:-1,:] = (dhov_1.T/dhov_z).T
+        hov_dat_dict[tmp_datstr][ 0,:] = np.ma.masked
+        hov_dat_dict[tmp_datstr][-1,:] = np.ma.masked
 
 
+    return hov_dat_dict
 
 
-
-
-
-
-
-
-
-
-
-"""
-
-def indices_from_ginput_ax(ax,clii,cljj,th,config,ew_line_x = None,ew_line_y = None,ns_line_x = None,ns_line_y = None):
-
+def extract_time_from_xarr(xarr_dict_in,ex_fname_in,time_varname,t_dim,date_in_ind,date_fmt,ti,verbose_debugging):
 
     '''
-    ginput doesn't tell you which subplot you are clicking, only the position within that subplot.
-    we need which axis is clicked as well as the cooridinates within that axis
     
-    we therefore trick ginput to give use figure coordinate (with a dummy, invisible full figure size subplot
-    in front of everything, and then use this function to turn those coordinates into the coordinates within the 
-    the subplot, and the which axis/subplot it is
-
-ax,
+    time_datetime,time_datetime_since_1970,ntime = extract_time_from_xarr(xarr_dict['Dataset 1']['T'],fname_dict['Dataset 1']['T'][0],date_in_ind,date_fmt,verbose_debugging)
     '''
-    sel_ii,sel_jj,sel_ti ,sel_zz = None,None,None,None
-    sel_ax = None
-
-    for ai,tmpax in enumerate(ax): 
-        tmppos =  tmpax.get_position()
-        # was click within extent
-        if (clii >= tmppos.x0) & (clii <= tmppos.x1) & (cljj >= tmppos.y0) & (cljj <= tmppos.y1):
-            sel_ax = ai
-
-            #convert figure coordinate of click, into location with the axes, using data coordinates
-            clxlim = np.array(tmpax.get_xlim())
-            clylim = np.array(tmpax.get_ylim())
-            normxloc = (clii - tmppos.x0 ) / (tmppos.x1 - tmppos.x0)
-            normyloc = (cljj - tmppos.y0 ) / (tmppos.y1 - tmppos.y0)
-            xlocval = normxloc*clxlim.ptp() + clxlim.min()
-            ylocval = normyloc*clylim.ptp() + clylim.min()
-
-            if (th['dx'] != 1):
-                if config.upper() not in ['AMM7','AMM15', 'CO9P2', 'ORCA025','ORCA025EXT','GULF18','ORCA12']:
-                    print('Thinning lon lat selection not programmed for ', config.upper())
-                    pdb.set_trace()
-
-
-            # what do the local coordiantes of the click mean in terms of the data to plot.
-            # if on the map, or the slices, need to covert from lon and lat to ii and jj, which is complex for amm15.
-
-            # if in map, covert lon lat to ii,jj
-            if ai == 0:
-                loni,latj= xlocval,ylocval
-                if config.upper() in ['AMM7','GULF18']:
-                    sel_ii = (np.abs(lon[th['x0']:th['x1']:th['dx']] - loni)).argmin()
-                    sel_jj = (np.abs(lat[th['y0']:th['y1']:th['dy']] - latj)).argmin()
-                elif config.upper() in ['AMM15','CO9P2']:
-                    lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(loni,latj)
-                    sel_ii = np.minimum(np.maximum( np.round((lon_mat_rot - lon_rotamm15[th['x0']:th['x1']:th['dx']].min())/(dlon_rotamm15*th['dx'])).astype('int') ,0),nlon_rotamm15//th['dx']-1)
-                    sel_jj = np.minimum(np.maximum( np.round((lat_mat_rot - lat_rotamm15[th['y0']:th['y1']:th['dy']].min())/(dlat_rotamm15*th['dx'])).astype('int') ,0),nlat_rotamm15//th['dx']-1)
-                elif config.upper() in ['ORCA025','ORCA025EXT','ORCA12']:
-                    sel_dist_mat = np.sqrt((nav_lon[:,:] - loni)**2 + (nav_lat[:,:] - latj)**2 )
-                    sel_jj,sel_ii = sel_dist_mat.argmin()//sel_dist_mat.shape[1], sel_dist_mat.argmin()%sel_dist_mat.shape[1]
-
-                else:
-                    print('config not supported:', config)
-                    pdb.set_trace()
-                # and reload slices, and hovmuller/time series
-
-            elif ai in [1]: 
-                # if in ew slice, change ns slice, and hov/time series
-                loni= xlocval
-                if config.upper() == 'AMM7':
-                    sel_ii = (np.abs(lon[th['x0']:th['x1']:th['dx']] - loni)).argmin()
-                elif config.upper() in ['AMM15','CO9P2']:                        
-                    latj =  ew_line_y[(np.abs(ew_line_x - loni)).argmin()] 
-                    lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(loni,latj)
-                    sel_ii = np.minimum(np.maximum(np.round((lon_mat_rot - lon_rotamm15[th['x0']:th['x1']:th['dx']].min())/(dlon_rotamm15*th['dx'])).astype('int'),0),nlon_rotamm15//th['dx']-1)
-                elif config.upper() in ['ORCA025','ORCA025EXT','ORCA12']:
-                    sel_ii = (np.abs(ew_line_x - loni)).argmin()
-                else:
-                    print('config not supported:', config)
-                    pdb.set_trace()
-                sel_zz = int( (1-normyloc)*clylim.ptp() + clylim.min() )
-                
-                
-            elif ai in [2]:
-                # if in ns slice, change ew slice, and hov/time series
-                latj= xlocval
-                if config.upper() == 'AMM7':
-                    sel_jj = (np.abs(lat[th['y0']:th['y1']:th['dy']] - latj)).argmin()
-                elif config.upper() in ['AMM15','CO9P2']:                        
-                    loni =  ns_line_x[(np.abs(ns_line_y - latj)).argmin()]
-                    lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(loni,latj)
-                    sel_jj = np.minimum(np.maximum(np.round((lat_mat_rot - lat_rotamm15[th['y0']:th['y1']:th['dy']].min())/(dlat_rotamm15*th['dx'])).astype('int'),0),nlat_rotamm15//th['dx']-1)
-                elif config.upper() in ['ORCA025','ORCA025EXT','ORCA12']:
-                    sel_jj = (np.abs(ns_line_y - latj)).argmin()
-                else:
-                    print('config not supported:', config)
-                    #pdb.set_trace()
-                sel_zz = int( (1-normyloc)*clylim.ptp() + clylim.min() )
-
-            elif ai in [3]:
-                # if in hov/time series, change map, and slices
-
-                # re calculate depth values, as y scale reversed, 
-                sel_zz = int( (1-normyloc)*clylim.ptp() + clylim.min() )
-                #pdb.set_trace()
-
-
-            elif ai in [4]:
-                # if in hov/time series, change map, and slices
-                sel_ti = np.abs(xlocval - time_datetime_since_1970).argmin()
-                
-            else:
-                print('clicked in another axes??')
-                return
-                pdb.set_trace()
-
-
+    #pdb.set_trace()
     
-    return sel_ax,sel_ii,sel_jj,sel_ti,sel_zz
+    print ('xarray start reading nctime',datetime.now())
+    nctime = xarr_dict_in[0].variables[time_varname]
 
-"""
+    try:
+        
+        if 'time_origin' in nctime.attrs.keys():
+            nc_time_origin = nc_time_var.time_origin
+        else:
+            nc_time_origin = '1980-01-01 00:00:00'
+            print('No time origin set - set to 1/1/1980. Other Time parameters likely to be missing')
+    except:
+        print('Except: extract_time_from_xarr, couldn''t to read time_origin from xarray, using netCDF4')
+        rootgrp_hpc_time = Dataset(ex_fname_in, 'r', format='NETCDF4')
+        
+        nc_time_var = rootgrp_hpc_time.variables[time_varname]
+        if 'time_origin' in nc_time_var.ncattrs():
+            nc_time_origin = nc_time_var.time_origin
+        else:
+            nc_time_origin = '1980-01-01 00:00:00'
+            print('No time origin set - set to 1/1/1980. Other Time parameters likely to be missing')
+
+            #pdb.set_trace()
+        rootgrp_hpc_time.close()
+
+
+
+
+    #different treatment for 360 days and gregorian calendars... needs time_datetime for plotting, and time_datetime_since_1970 for index selection
+    nctime_calendar_type = None
+    try:
+        if 'calendar' in nctime.attrs.keys():
+            nctime_calendar_type = nc_time_var.calendar
+        else: 
+            print('calendar not in time info')
+    except:
+        nctime_calendar_type = None
+    
+
+    try:
+        if nctime.shape is not ():
+            if nctime_calendar_type is None:
+                if type(np.array(nctime)[0]) is type(cftime._cftime.Datetime360Day(1980,1,1)):
+                    nctime_calendar_type = '360'
+                else:
+                    nctime_calendar_type = 'greg'
+        else:
+            nctime_calendar_type = 'greg'
+    except:
+        print
+        nctime_calendar_type = 'greg'
+
+    try:
+
+
+        #different treatment for 360 days and gregorian calendars... needs time_datetime for plotting, and time_datetime_since_1970 for index selection
+        if  nctime_calendar_type in ['360','360_day']:
+            # if 360 days
+
+            time_datetime_since_1970 = np.array([ss.year + (ss.month-1)/12 + (ss.day-1)/360 for ss in np.array(nctime)])
+            time_datetime = time_datetime_since_1970
+        else:
+            # if gregorian        
+            sec_since_origin = [float(ii.data - np.datetime64(nc_time_origin))/1e9 for ii in nctime]
+            time_datetime_cft = num2date(sec_since_origin,units = 'seconds since ' + nc_time_origin,calendar = 'gregorian') #nctime.calendar)
+
+            time_datetime = np.array([datetime(ss.year, ss.month,ss.day,ss.hour,ss.minute) for ss in time_datetime_cft])
+            time_datetime_since_1970 = np.array([(ss - datetime(1970,1,1,0,0)).total_seconds()/86400 for ss in time_datetime])
+
+
+        if date_in_ind is not None:
+            date_in_ind_datetime = datetime.strptime(date_in_ind,date_fmt)
+            date_in_ind_datetime_timedelta = np.array([(ss - date_in_ind_datetime).total_seconds() for ss in time_datetime])
+            ti = np.abs(date_in_ind_datetime_timedelta).argmin()
+            if verbose_debugging: print('Setting ti from date_in_ind (%s): ti = %i (%s). '%(date_in_ind,ti, time_datetime[ti]), datetime.now())
+
+    except:
+        print()
+        print()
+        print()
+        print(' Not able to read time in second data set, using dummy time')
+        print()
+        print()
+        print()
+        #pdb.set_trace()
+        #try:
+        time_datetime = np.array([datetime(datetime.now().year, datetime.now().month, datetime.now().day) + timedelta(days = i_i) for i_i in range( xarr_dict_in[0].dims[t_dim])])
+        print("xarr_dict_in[0].dims[t_dim]")
+        #except:
+        #    time_datetime = np.array([datetime(datetime.now().year, datetime.now().month, datetime.now().day) + timedelta(days = i_i) for i_i in range( xarr_dict_in[0][0].dims[t_dim])])
+        #    print("xarr_dict_in[0][0].dims[t_dim]")
+        time_datetime_since_1970 = np.array([(ss - datetime(1970,1,1,0,0)).total_seconds()/86400 for ss in time_datetime])
+
+        if date_in_ind is not None: ti = 0
+    ntime = time_datetime.size
+
+    return time_datetime,time_datetime_since_1970,ntime,ti
+
+
+
 
 if __name__ == "__main__":
     main()
