@@ -694,12 +694,9 @@ def nemo_slice_zlev(config = 'amm7',
 
         # if lon_in and lat_in are present, use them
     if (lon_in is not None) & (lat_in is not None):
-        #pdb.set_trace()
 
         lonlatin_dist_mat = np.sqrt((lon_d[1] - lon_in)**2 + (lat_d[1] - lat_in)**2)
-        jj,ii = lonlatin_dist_mat.argmin()//lon_d[1].shape[1], lonlatin_dist_mat.argmin()%lon_d[1].shape[0]
-
-    #lon_d[2], lat_d[2] = lon_d[1], lat_d[1]
+        jj,ii = lonlatin_dist_mat.argmin()//lon_d[1].shape[1], lonlatin_dist_mat.argmin()%lon_d[1].shape[1]
 
 
     init_timer.append((datetime.now(),'Lon/Lats loaded'))
