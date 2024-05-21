@@ -693,12 +693,12 @@ def nemo_slice_zlev(config = 'amm7',
         #    lon_d['amm15'] = lon_d[th_d_ind]
 
         # if lon_in and lat_in are present, use them
-        if (lon_in is not None) & (lat_in is not None):
-            #pdb.set_trace()
+    if (lon_in is not None) & (lat_in is not None):
+        #pdb.set_trace()
 
-            lonlatin_dist_mat = np.sqrt((lon_d[th_d_ind] - lon_in)**2 + (lat_d[th_d_ind] - lat_in)**2)
-            jj,ii = lonlatin_dist_mat.argmin()//lon_d[th_d_ind].shape[th_d_ind], lonlatin_dist_mat.argmin()%lon_d[th_d_ind].shape[th_d_ind]
-    
+        lonlatin_dist_mat = np.sqrt((lon_d[1] - lon_in)**2 + (lat_d[1] - lat_in)**2)
+        jj,ii = lonlatin_dist_mat.argmin()//lon_d[1].shape[1], lonlatin_dist_mat.argmin()%lon_d[1].shape[0]
+
     #lon_d[2], lat_d[2] = lon_d[1], lat_d[1]
 
 
@@ -1488,10 +1488,6 @@ ax,
                         lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(loni,latj)
                         sel_ii = np.minimum(np.maximum( np.round((lon_mat_rot - lon_rotamm15[thd[1]['x0']:thd[1]['x1']:thd[1]['dx']].min())/(dlon_rotamm15*thd[1]['dx'])).astype('int') ,0),nlon_rotamm15//thd[1]['dx']-1)
                         sel_jj = np.minimum(np.maximum( np.round((lat_mat_rot - lat_rotamm15[thd[1]['y0']:thd[1]['y1']:thd[1]['dy']].min())/(dlat_rotamm15*thd[1]['dx'])).astype('int') ,0),nlat_rotamm15//thd[1]['dx']-1)
-
-                        #sel_ii = np.minimum(np.maximum( np.round((lon_mat_rot - lon_rotamm15[::thd[1]['dx']].min())/(dlon_rotamm15*thd[1]['dx'])).astype('int') ,0),nlon_rotamm15//thd[1]['dx']-1)
-                        #sel_jj = np.minimum(np.maximum( np.round((lat_mat_rot - lat_rotamm15[::thd[1]['dy']].min())/(dlat_rotamm15*thd[1]['dx'])).astype('int') ,0),nlat_rotamm15//thd[1]['dx']-1)
-
                     elif configd[1].upper() in ['ORCA025','ORCA025EXT','ORCA12']:
                         sel_dist_mat = np.sqrt((lon_d[1][:,:] - loni)**2 + (lat_d[1][:,:] - latj)**2 )
                         sel_jj,sel_ii = sel_dist_mat.argmin()//sel_dist_mat.shape[1], sel_dist_mat.argmin()%sel_dist_mat.shape[1]
@@ -1509,9 +1505,7 @@ ax,
                     elif configd[1].upper() in ['AMM15','CO9P2']:
                         latj =  ew_line_y[(np.abs(ew_line_x - loni)).argmin()] 
                         lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(loni,latj)
-                        #pdb.set_trace()
-                        sel_ii = np.minimum(np.maximum(np.round((lon_mat_rot - lon_rotamm15[thd[1]['x0']:thd[1]['x1']:thd[1]['dx']].min())/(dlon_rotamm15*thd[1]['dx'])).astype('int'),0),nlon_rotamm15//thd[1]['dx']-1)               
-                        #sel_ii = np.minimum(np.maximum(np.round((lon_mat_rot - lon_rotamm15[::thd[1]['dx']].min())/(dlon_rotamm15*thd[1]['dx'])).astype('int'),0),nlon_rotamm15//thd[1]['dx']-1)
+                        sel_ii = np.minimum(np.maximum(np.round((lon_mat_rot - lon_rotamm15[thd[1]['x0']:thd[1]['x1']:thd[1]['dx']].min())/(dlon_rotamm15*thd[1]['dx'])).astype('int'),0),nlon_rotamm15//thd[1]['dx']-1)
                     elif configd[1].upper() in ['ORCA025','ORCA025EXT','ORCA12']:
                         sel_ii = (np.abs(ew_line_x - loni)).argmin()
                     else:
@@ -1528,9 +1522,7 @@ ax,
                     elif configd[1].upper() in ['AMM15','CO9P2']:                        
                         loni =  ns_line_x[(np.abs(ns_line_y - latj)).argmin()]
                         lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(loni,latj)
-                        #pdb.set_trace()
                         sel_jj = np.minimum(np.maximum(np.round((lat_mat_rot - lat_rotamm15[thd[1]['y0']:thd[1]['y1']:thd[1]['dy']].min())/(dlat_rotamm15*thd[1]['dx'])).astype('int'),0),nlat_rotamm15//thd[1]['dx']-1)
-                        #sel_jj = np.minimum(np.maximum(np.round((lat_mat_rot - lat_rotamm15[::thd[1]['dy']].min())/(dlat_rotamm15*thd[1]['dx'])).astype('int'),0),nlat_rotamm15//thd[1]['dx']-1)
                     elif configd[1].upper() in ['ORCA025','ORCA025EXT','ORCA12']:
                         sel_jj = (np.abs(ns_line_y - latj)).argmin()
                     else:
@@ -3711,16 +3703,16 @@ def main():
 
         #print('justplot',args.justplot)
         
-        if args.thin is None: args.thin=1
-        if args.thin_2nd is None: args.thin_2nd=1
-        if args.thin_files is None: args.thin_files=1
-        if args.thin_files_0 is None: args.thin_files_0=0
-        if args.thin_files_1 is None: args.thin_files_1=None
+        #if args.thin is None: args.thin=1
+        #if args.thin_2nd is None: args.thin_2nd=1
+        #if args.thin_files is None: args.thin_files=1
+        #if args.thin_files_0 is None: args.thin_files_0=0
+        #if args.thin_files_1 is None: args.thin_files_1=None
 
-        if args.thin_x0 is None: args.thin_files_0=0
-        if args.thin_x1 is None: args.thin_files_1=None
-        if args.thin_y0 is None: args.thin_files_0=0
-        if args.thin_y1 is None: args.thin_files_1=None
+        #if args.thin_x0 is None: args.thin_files_0=0
+        #if args.thin_x1 is None: args.thin_files_1=None
+        #if args.thin_y0 is None: args.thin_files_0=0
+        #if args.thin_y1 is None: args.thin_files_1=None
 
 
 
@@ -3758,11 +3750,19 @@ def main():
         if 'config_2nd' in args:
             if args.config_2nd is not None: 
                 configd[2] = args.config_2nd
-
+        
                 load_second_files = True
         
+        
+        if 'fname_lst_2nd' in args:
+            if 'config_2nd' in args:
+                if args.config_2nd is None: 
+                    configd[2] = None
+            
+            load_second_files = True
+        
         #if 2 in configd.keys():
-
+        
         fname_dict = {}
         fname_dict['Dataset 1'] = {}
         fname_dict['Dataset 1']['T'] = fname_lst
@@ -3802,7 +3802,8 @@ def main():
         thd[1]['f0'] = 0
         thd[1]['f1'] = None
         if 'thin_files' in args: thd[1]['df'] = args.thin_files
-        if 'thin_files_0' in args: thd[1]['f0'] = args.thin_files_0
+        if 'thin_files_0' in args:
+            if args.thin_files_0 is not None: thd[1]['f0'] = args.thin_files_0
         if 'thin_files_1' in args: thd[1]['f1'] = args.thin_files_1
 
 
@@ -3816,9 +3817,11 @@ def main():
 
         if 'thin' in args: thd[1]['dx'] = args.thin
         if 'thin' in args: thd[1]['dy'] = args.thin
-        if 'thin_x0' in args: thd[1]['x0'] = args.thin_x0
+        if 'thin_x0' in args: 
+            if args.thin_x0 is not None:thd[1]['x0'] = args.thin_x0
         if 'thin_x1' in args: thd[1]['x1'] = args.thin_x1
-        if 'thin_y0' in args: thd[1]['y0'] = args.thin_y0
+        if 'thin_y0' in args:
+            if args.thin_y0 is not None:thd[1]['y0'] = args.thin_y0
         if 'thin_y1' in args: thd[1]['y1'] = args.thin_y1
 
         if load_second_files:
@@ -3836,13 +3839,15 @@ def main():
             if 'thin_files_2nd' in args: thd[2]['df'] = args.thin_files_2nd
             if 'thin_files_0_2nd' in args: thd[2]['f0'] = args.thin_files_0_2nd
             if 'thin_files_1_2nd' in args: thd[2]['f1'] = args.thin_files_1_2nd
-            if 'thin_2nd' in args: thd[2]['dx'] = args.thin_2nd
-            if 'thin_2nd' in args: thd[2]['dy'] = args.thin_2nd
+            if 'thin_2nd' in args: 
+                if args.thin_2nd is not None:
+                    thd[2]['dx'] = args.thin_2nd
+                    thd[2]['dy'] = args.thin_2nd
             if 'thin_x0_2nd' in args: thd[2]['x0'] = args.thin_x0_2nd
             if 'thin_x1_2nd' in args: thd[2]['x1'] = args.thin_x1_2nd
             if 'thin_y0_2nd' in args: thd[2]['y0'] = args.thin_y0_2nd
             if 'thin_y1_2nd' in args: thd[2]['y1'] = args.thin_y1_2nd
-
+        #pdb.set_trace()
     
         for cfi in configd.keys():
             if configd[cfi] is None: continue
