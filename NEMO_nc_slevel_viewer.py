@@ -11,22 +11,22 @@ import cftime
 import matplotlib
 import csv
 
-from NEMO_nc_slevel_viewer_lib_en import set_perc_clim_pcolor, get_clim_pcolor, set_clim_pcolor,set_perc_clim_pcolor_in_region,get_colorbar_values,scale_color_map,lon_lat_to_str
-from NEMO_nc_slevel_viewer_lib_en import interp1dmat_wgt, interp1dmat_create_weight, interp_UV_vel_to_Tgrid
-from NEMO_nc_slevel_viewer_lib_en import rotated_grid_from_amm15,rotated_grid_to_amm15, reduce_rotamm15_grid,regrid_2nd_thin_params,regrid_iijj_ew_ns
-from NEMO_nc_slevel_viewer_lib_en import nearbed_int_index_val
-from NEMO_nc_slevel_viewer_lib_en import pea_TS
-from NEMO_nc_slevel_viewer_lib_en import load_nc_dims,load_nc_var_name_list
-from NEMO_nc_slevel_viewer_lib_en import field_gradient_2d,weighted_depth_mean_masked_var
-from NEMO_nc_slevel_viewer_lib_en import vector_div, vector_curl,sw_dens,reload_data_instances
+from NEMO_nc_slevel_viewer_lib import set_perc_clim_pcolor, get_clim_pcolor, set_clim_pcolor,set_perc_clim_pcolor_in_region,get_colorbar_values,scale_color_map,lon_lat_to_str
+from NEMO_nc_slevel_viewer_lib import interp1dmat_wgt, interp1dmat_create_weight, interp_UV_vel_to_Tgrid
+from NEMO_nc_slevel_viewer_lib import rotated_grid_from_amm15,rotated_grid_to_amm15, reduce_rotamm15_grid,regrid_2nd_thin_params,regrid_iijj_ew_ns
+from NEMO_nc_slevel_viewer_lib import nearbed_int_index_val
+from NEMO_nc_slevel_viewer_lib import pea_TS
+from NEMO_nc_slevel_viewer_lib import load_nc_dims,load_nc_var_name_list
+from NEMO_nc_slevel_viewer_lib import field_gradient_2d,weighted_depth_mean_masked_var
+from NEMO_nc_slevel_viewer_lib import vector_div, vector_curl,sw_dens,reload_data_instances
 
 
-from NEMO_nc_slevel_viewer_lib_en import reload_map_data_comb_zmeth_zindex,reload_map_data_comb_zmeth_ss_3d,reload_map_data_comb_zmeth_nb_df_zm_3d
-from NEMO_nc_slevel_viewer_lib_en import reload_map_data_comb_zmeth_zslice,reload_map_data_comb_2d,reload_map_data_comb,reload_ew_data_comb,reload_ns_data_comb
-from NEMO_nc_slevel_viewer_lib_en import reload_hov_data_comb,reload_ts_data_comb
-from NEMO_nc_slevel_viewer_lib_en import regrid_2nd,grad_horiz_ns_data,grad_horiz_ew_data,grad_vert_ns_data,grad_vert_ew_data,grad_vert_hov_data
-#from NEMO_nc_slevel_viewer_lib_en import indices_from_ginput_ax
-from NEMO_nc_slevel_viewer_lib_en import extract_time_from_xarr,load_nc_var_name_list_WW3
+from NEMO_nc_slevel_viewer_lib import reload_map_data_comb_zmeth_zindex,reload_map_data_comb_zmeth_ss_3d,reload_map_data_comb_zmeth_nb_df_zm_3d
+from NEMO_nc_slevel_viewer_lib import reload_map_data_comb_zmeth_zslice,reload_map_data_comb_2d,reload_map_data_comb,reload_ew_data_comb,reload_ns_data_comb
+from NEMO_nc_slevel_viewer_lib import reload_hov_data_comb,reload_ts_data_comb
+from NEMO_nc_slevel_viewer_lib import regrid_2nd,grad_horiz_ns_data,grad_horiz_ew_data,grad_vert_ns_data,grad_vert_ew_data,grad_vert_hov_data
+#from NEMO_nc_slevel_viewer_lib import indices_from_ginput_ax
+from NEMO_nc_slevel_viewer_lib import extract_time_from_xarr,load_nc_var_name_list_WW3
 
 
 letter_mat = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
@@ -569,19 +569,42 @@ def nemo_slice_zlev(config = 'amm7',
             #pdb.set_trace()
         else:
             if len(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname].shape) == 2:
-                lon_d[th_d_ind] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lon_varname][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
-                lat_d[th_d_ind] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+
+
+                lon_d[th_d_ind] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lon_varname].load())
+                lat_d[th_d_ind] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname].load())
+
+                #if tmp_configd.upper() in ['AMM15','CO9P2']: 
+                #    # AMM15 lon and lats are always 2d
+                #    lat_d['amm15'] = lat_d[th_d_ind]
+                #    lon_d['amm15'] = lon_d[th_d_ind]
+
+                #lon_d[th_d_ind] = np.ma.masked_invalid(lon_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+                #lat_d[th_d_ind] = np.ma.masked_invalid(lat_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+
+
             else:
                 # if only 1d lon and lat
                 tmp_nav_lon = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lon_varname].load())
                 tmp_nav_lat = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname].load())
 
-                nav_lon_mat, nav_lat_mat = np.meshgrid(tmp_nav_lon,tmp_nav_lat)
+                #nav_lon_mat, nav_lat_mat = np.meshgrid(tmp_nav_lon,tmp_nav_lat)
+                lon_d[th_d_ind], lat_d[th_d_ind] = np.meshgrid(tmp_nav_lon,tmp_nav_lat)
 
 
-                lat_d[th_d_ind] = nav_lat_mat[thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
-                lon_d[th_d_ind] = nav_lon_mat[thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
-        #pdb.set_trace()
+                #lat_d[th_d_ind] = nav_lat_mat[thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
+                #lon_d[th_d_ind] = nav_lon_mat[thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
+            #pdb.set_trace()
+            if tmp_configd.upper() in ['AMM15','CO9P2']: 
+                # AMM15 lon and lats are always 2d
+                lat_d['amm15'] = lat_d[th_d_ind]
+                lon_d['amm15'] = lon_d[th_d_ind]
+
+            lon_d[th_d_ind] = np.ma.masked_invalid(lon_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
+            lat_d[th_d_ind] = np.ma.masked_invalid(lat_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
+
+
+
         #Check if any nav_lat or nav_lon have masked values (i.e. using land suppression)
         if ( ((lat_d[th_d_ind] == 0) & (lon_d[th_d_ind] == 0)).sum()>10) |  (lat_d[th_d_ind] == lon_d[th_d_ind]).sum()> 100:
             print('Several points (>10) for 0degN 0degW - suggesting land suppression - use glamt and gphit from mesh')
@@ -651,6 +674,8 @@ def nemo_slice_zlev(config = 'amm7',
                 
                 #then rotate it
                 lon_mat_unrot_mat_rot,lat_mat_unrot_mat_rot = rotated_grid_to_amm15(lon_mat_unrot_mat,lat_mat_unrot_mat)
+                lat_d['amm15'] = lat_d[th_d_ind].copy()
+                lon_d['amm15'] = lon_d[th_d_ind].copy()
 
                 #thin the lats and lons. 
                 lat_d[th_d_ind] = np.ma.array(lat_mat_unrot_mat_rot[thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
@@ -662,10 +687,10 @@ def nemo_slice_zlev(config = 'amm7',
             lon_d['amm15'] = np.ma.masked_invalid(xarr_dict['Dataset 1']['T'][0].variables[nav_lon_varname].load())
         '''
         
-        if tmp_configd.upper() in ['AMM15','CO9P2']: 
-            # AMM15 lon and lats are always 2d
-            lat_d['amm15'] = lat_d[th_d_ind]
-            lon_d['amm15'] = lon_d[th_d_ind]
+        #if tmp_configd.upper() in ['AMM15','CO9P2']: 
+        #    # AMM15 lon and lats are always 2d
+        #    lat_d['amm15'] = lat_d[th_d_ind]
+        #    lon_d['amm15'] = lon_d[th_d_ind]
 
         # if lon_in and lat_in are present, use them
         if (lon_in is not None) & (lat_in is not None):
@@ -1464,6 +1489,8 @@ ax,
                         sel_ii = np.minimum(np.maximum( np.round((lon_mat_rot - lon_rotamm15[thd[1]['x0']:thd[1]['x1']:thd[1]['dx']].min())/(dlon_rotamm15*thd[1]['dx'])).astype('int') ,0),nlon_rotamm15//thd[1]['dx']-1)
                         sel_jj = np.minimum(np.maximum( np.round((lat_mat_rot - lat_rotamm15[thd[1]['y0']:thd[1]['y1']:thd[1]['dy']].min())/(dlat_rotamm15*thd[1]['dx'])).astype('int') ,0),nlat_rotamm15//thd[1]['dx']-1)
 
+                        #sel_ii = np.minimum(np.maximum( np.round((lon_mat_rot - lon_rotamm15[::thd[1]['dx']].min())/(dlon_rotamm15*thd[1]['dx'])).astype('int') ,0),nlon_rotamm15//thd[1]['dx']-1)
+                        #sel_jj = np.minimum(np.maximum( np.round((lat_mat_rot - lat_rotamm15[::thd[1]['dy']].min())/(dlat_rotamm15*thd[1]['dx'])).astype('int') ,0),nlat_rotamm15//thd[1]['dx']-1)
 
                     elif configd[1].upper() in ['ORCA025','ORCA025EXT','ORCA12']:
                         sel_dist_mat = np.sqrt((lon_d[1][:,:] - loni)**2 + (lat_d[1][:,:] - latj)**2 )
@@ -1479,10 +1506,12 @@ ax,
                     loni= xlocval
                     if configd[1].upper() == 'AMM7':
                         sel_ii = (np.abs(lon[thd[1]['x0']:thd[1]['x1']:thd[1]['dx']] - loni)).argmin()
-                    elif configd[1].upper() in ['AMM15','CO9P2']:                        
+                    elif configd[1].upper() in ['AMM15','CO9P2']:
                         latj =  ew_line_y[(np.abs(ew_line_x - loni)).argmin()] 
                         lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(loni,latj)
-                        sel_ii = np.minimum(np.maximum(np.round((lon_mat_rot - lon_rotamm15[thd[1]['x0']:thd[1]['x1']:thd[1]['dx']].min())/(dlon_rotamm15*thd[1]['dx'])).astype('int'),0),nlon_rotamm15//thd[1]['dx']-1)
+                        #pdb.set_trace()
+                        sel_ii = np.minimum(np.maximum(np.round((lon_mat_rot - lon_rotamm15[thd[1]['x0']:thd[1]['x1']:thd[1]['dx']].min())/(dlon_rotamm15*thd[1]['dx'])).astype('int'),0),nlon_rotamm15//thd[1]['dx']-1)               
+                        #sel_ii = np.minimum(np.maximum(np.round((lon_mat_rot - lon_rotamm15[::thd[1]['dx']].min())/(dlon_rotamm15*thd[1]['dx'])).astype('int'),0),nlon_rotamm15//thd[1]['dx']-1)
                     elif configd[1].upper() in ['ORCA025','ORCA025EXT','ORCA12']:
                         sel_ii = (np.abs(ew_line_x - loni)).argmin()
                     else:
@@ -1499,7 +1528,9 @@ ax,
                     elif configd[1].upper() in ['AMM15','CO9P2']:                        
                         loni =  ns_line_x[(np.abs(ns_line_y - latj)).argmin()]
                         lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(loni,latj)
+                        #pdb.set_trace()
                         sel_jj = np.minimum(np.maximum(np.round((lat_mat_rot - lat_rotamm15[thd[1]['y0']:thd[1]['y1']:thd[1]['dy']].min())/(dlat_rotamm15*thd[1]['dx'])).astype('int'),0),nlat_rotamm15//thd[1]['dx']-1)
+                        #sel_jj = np.minimum(np.maximum(np.round((lat_mat_rot - lat_rotamm15[::thd[1]['dy']].min())/(dlat_rotamm15*thd[1]['dx'])).astype('int'),0),nlat_rotamm15//thd[1]['dx']-1)
                     elif configd[1].upper() in ['ORCA025','ORCA025EXT','ORCA12']:
                         sel_jj = (np.abs(ns_line_y - latj)).argmin()
                     else:

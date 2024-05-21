@@ -2322,7 +2322,8 @@ def extract_time_from_xarr(xarr_dict_in,ex_fname_in,time_varname,t_dim,date_in_i
     
 
     try:
-        if nctime.shape is not ():
+        #if nctime.shape is not ():
+        if nctime.shape != ():
             if nctime_calendar_type is None:
                 if type(np.array(nctime)[0]) is type(cftime._cftime.Datetime360Day(1980,1,1)):
                     nctime_calendar_type = '360'
