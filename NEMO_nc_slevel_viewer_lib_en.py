@@ -1699,7 +1699,7 @@ def reload_map_data_comb_2d(data_inst,regrid_params,regrid_meth,thd,configd,Data
     map_dat_dict['Dataset 1'] = data_inst['Dataset 1']
     for tmp_datstr in Dataset_lst_secondary:
         th_d_ind = int(tmp_datstr[-1])
-        map_dat_dict[tmp_datstr] = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,data_inst[tmp_datstr])
+        map_dat_dict[tmp_datstr] = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd[th_d_ind],data_inst[tmp_datstr])
 
 
     
@@ -1716,7 +1716,7 @@ def  reload_map_data_comb_zmeth_ss_3d(data_inst,regrid_params,regrid_meth,thd,co
     map_dat_dict['Dataset 1'] = data_inst['Dataset 1'][0]
     for tmp_datstr in Dataset_lst_secondary:
         th_d_ind = int(tmp_datstr[-1])
-        map_dat_dict[tmp_datstr] = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,data_inst[tmp_datstr][0])
+        map_dat_dict[tmp_datstr] = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd[th_d_ind],data_inst[tmp_datstr][0])
 
 
 
@@ -1751,9 +1751,9 @@ def reload_map_data_comb_zmeth_nb_df_zm_3d(z_meth, data_inst,grid_dict,regrid_pa
     
         map_dat_3d_2 = np.ma.masked_invalid(data_inst[tmp_datstr])
 
-        map_dat_ss_2 = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,map_dat_3d_2[0])
-        map_dat_nb_2 = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,nearbed_int_index_val(map_dat_3d_2))
-        map_dat_zm_2 = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,weighted_depth_mean_masked_var(map_dat_3d_2,grid_dict[tmp_datstr]['e3t']))
+        map_dat_ss_2 = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd[th_d_ind],map_dat_3d_2[0])
+        map_dat_nb_2 = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd[th_d_ind],nearbed_int_index_val(map_dat_3d_2))
+        map_dat_zm_2 = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd[th_d_ind],weighted_depth_mean_masked_var(map_dat_3d_2,grid_dict[tmp_datstr]['e3t']))
         del(map_dat_3d_2)
         map_dat_df_2 = map_dat_ss_2 - map_dat_nb_2
         if z_meth == 'nb': map_dat_dict[tmp_datstr] = map_dat_nb_2
@@ -1795,7 +1795,7 @@ def reload_map_data_comb_zmeth_zslice(zz, data_inst,interp1d_ZwgtT,grid_dict,reg
         if zz not in interp1d_ZwgtT[tmp_datstr].keys(): 
             interp1d_ZwgtT[tmp_datstr][zz] = interp1dmat_create_weight(grid_dict[tmp_datstr]['gdept'],zz)
         #pdb.set_trace()
-        map_dat_dict[tmp_datstr] = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,interp1dmat_wgt(np.ma.masked_invalid(map_dat_3d_2),interp1d_ZwgtT[tmp_datstr][zz]))
+        map_dat_dict[tmp_datstr] = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd[th_d_ind],interp1dmat_wgt(np.ma.masked_invalid(map_dat_3d_2),interp1d_ZwgtT[tmp_datstr][zz]))
        
 
     return map_dat_dict
@@ -1813,7 +1813,7 @@ def reload_map_data_comb_zmeth_zindex(data_inst,zi,regrid_params,regrid_meth,thd
     for tmp_datstr in Dataset_lst_secondary:
         th_d_ind = int(tmp_datstr[-1])
     
-        map_dat_dict[tmp_datstr]  = np.ma.masked_invalid(regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,data_inst[tmp_datstr][zi]))
+        map_dat_dict[tmp_datstr]  = np.ma.masked_invalid(regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd[th_d_ind],data_inst[tmp_datstr][zi]))
 
 
     return map_dat_dict
@@ -1844,7 +1844,7 @@ def reload_ew_data_comb(ii,jj, data_inst, nav_lon, nav_lat, grid_dict,regrid_met
 
 
 
-        if configd[th_d_ind] == configd[1]: #if configd[th_d_ind] is None:
+        if configd[th_d_ind] is None:
             ew_slice_dict[tmp_datstr] = np.ma.masked_invalid(data_inst[tmp_datstr][:,jj,:])
         else:
 
@@ -1891,7 +1891,7 @@ def reload_ns_data_comb(ii,jj, data_inst, nav_lon, nav_lat, grid_dict, regrid_me
 
 
 
-        if configd[th_d_ind] == configd[1]: #if configd[th_d_ind] is None:
+        if configd[th_d_ind] is None:
             ns_slice_dict[tmp_datstr] = np.ma.masked_invalid(data_inst[tmp_datstr][:,:,ii])
         else:
             
@@ -1916,7 +1916,7 @@ def reload_ns_data_comb(ii,jj, data_inst, nav_lon, nav_lat, grid_dict, regrid_me
 
             
 
-def reload_hov_data_comb(var,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd):       
+def reload_hov_data_comb(var,var_mat,var_grid,deriv_var,ldi,thd,time_datetime, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict, load_2nd_files,Dataset_lst,configd):       
     #Dataset_lst = [ss for ss in xarr_dict.keys()]      
     Dataset_lst_secondary = Dataset_lst.copy()
     if 'Dataset 1' in Dataset_lst_secondary: Dataset_lst_secondary.remove('Dataset 1')    
@@ -1944,16 +1944,16 @@ def reload_hov_data_comb(var,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii
 
             tmp_var_U, tmp_var_V = 'vozocrtx','vomecrty'
 
-            hov_dat_U_dict = reload_hov_data_comb(tmp_var_U,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd)
-            hov_dat_V_dict = reload_hov_data_comb(tmp_var_V,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd)
+            hov_dat_U_dict = reload_hov_data_comb(tmp_var_U,var_mat,var_grid,deriv_var,ldi,thd, time_datetime, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd)
+            hov_dat_V_dict = reload_hov_data_comb(tmp_var_V,var_mat,var_grid,deriv_var,ldi,thd, time_datetime, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd)
 
             for tmp_datstr in Dataset_lst:
                 hov_dat[tmp_datstr]  = np.sqrt(hov_dat_U_dict[tmp_datstr]**2 + hov_dat_V_dict[tmp_datstr]**2)
 
        
         elif var == 'rho':
-            hov_dat_T_dict = reload_hov_data_comb('votemper',var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd)
-            hov_dat_S_dict = reload_hov_data_comb('vosaline',var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd)
+            hov_dat_T_dict = reload_hov_data_comb('votemper',var_mat,var_grid,deriv_var,ldi,thd, time_datetime, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd)
+            hov_dat_S_dict = reload_hov_data_comb('vosaline',var_mat,var_grid,deriv_var,ldi,thd, time_datetime, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd)
 
             
             for tmp_datstr in Dataset_lst:
@@ -1971,7 +1971,7 @@ def reload_hov_data_comb(var,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii
         for tmp_datstr in Dataset_lst_secondary:
             th_d_ind = int(tmp_datstr[-1])
             
-            if configd[th_d_ind] == configd[1]: #if configd[th_d_ind] is None:
+            if configd[th_d_ind] is None:
                 hov_dat[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables[var][:,:,thd[2]['y0']:thd[2]['y1']:thd[2]['dy'],thd[2]['x0']:thd[2]['x1']:thd[2]['dx']][:,:,jj,ii].load()).T
             else:
                 ii_2nd_ind,jj_2nd_ind = iijj_ind[tmp_datstr]['ii'],iijj_ind[tmp_datstr]['jj']
@@ -2021,7 +2021,7 @@ def reload_ts_data_comb(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,tim
                 if tmp_datstr in Dataset_lst_secondary:
                     th_d_ind = int(tmp_datstr[-1])
                     #pdb.set_trace()
-                    if configd[th_d_ind] != configd[1]: #if configd[th_d_ind] is not None:
+                    if configd[th_d_ind] is not None:
                         tmp_jj,tmp_ii = iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']
                 
                 tmpind = grid_dict['WW3']['NWS_WW3_nn_ind'][tmp_jj,tmp_ii]
@@ -2038,39 +2038,9 @@ def reload_ts_data_comb(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,tim
     if var_dim[var] == 3:
         if var in deriv_var:
             if var.upper() in ['PEA', 'PEAT','PEAS']:
-
-
-                hov_dat_T_dict = reload_hov_data_comb('votemper',var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd)
-                hov_dat_S_dict = reload_hov_data_comb('vosaline',var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd)
-
-                for tmp_datstr in Dataset_lst: # _secondary:
-
-                    tmp_jj,tmp_ii = jj,ii
-
-                    if tmp_datstr in Dataset_lst_secondary:
-                        th_d_ind = int(tmp_datstr[-1])
-                        if configd[th_d_ind] != configd[1]: 
-                            tmp_jj,tmp_ii = iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']
-
-
-                    gdept_mat = grid_dict[tmp_datstr]['gdept'][:,tmp_jj,tmp_ii]
-                    dz_mat = grid_dict[tmp_datstr]['e3t'][:,tmp_jj,tmp_ii]
-                    nt_pea = hov_dat_T_dict[tmp_datstr].T.shape[0]
-
-                    gdept_mat_pea = np.tile(gdept_mat[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_pea)).T
-                    dz_mat_pea = np.tile(dz_mat[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_pea)).T
-
-                    tmppea_1, tmppeat_1, tmppeas_1 = pea_TS(hov_dat_T_dict[tmp_datstr].T[:,:,np.newaxis,np.newaxis],hov_dat_T_dict[tmp_datstr].T[:,:,np.newaxis,np.newaxis],gdept_mat_pea,dz_mat_pea,calc_TS_comp = True )
-                    if var.upper() == 'PEA':
-                        ts_dat_dict[tmp_datstr] = tmppea_1[:,0,0] 
-                    elif var.upper() == 'PEAT':
-                        ts_dat_dict[tmp_datstr] = tmppeat_1[:,0,0] 
-                    elif var.upper() == 'PEAS':
-                        ts_dat_dict[tmp_datstr] = tmppeas_1[:,0,0] 
-
-                '''
-                hov_dat_T_dict = reload_hov_data_comb('votemper',var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd)
-                hov_dat_S_dict = reload_hov_data_comb('vosaline',var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd)
+               
+                hov_dat_T_dict = reload_hov_data_comb('votemper',var_mat,var_grid,deriv_var,ldi,thd, time_datetime, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd)
+                hov_dat_S_dict = reload_hov_data_comb('vosaline',var_mat,var_grid,deriv_var,ldi,thd, time_datetime, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd)
 
 
                 gdept_mat = grid_dict['Dataset 1']['gdept'][:,jj,ii]
@@ -2099,7 +2069,6 @@ def reload_ts_data_comb(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,tim
                         ts_dat_dict[tmp_datstr] = tmppeat_2[:,0,0] 
                     elif var.upper() == 'PEAS':
                         ts_dat_dict[tmp_datstr] = tmppeas_2[:,0,0]
-                '''
             else:
 
                 for tmp_datstr in Dataset_lst: ts_dat_dict[tmp_datstr] = np.ma.zeros((ntime))*np.ma.masked
@@ -2110,7 +2079,7 @@ def reload_ts_data_comb(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,tim
             
             for tmp_datstr in Dataset_lst_secondary:
                 th_d_ind = int(tmp_datstr[-1])
-                if configd[th_d_ind] == configd[1]: #if configd[th_d_ind] is None:
+                if configd[th_d_ind] is None:
                     ts_dat_dict[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables[var][:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,jj,ii].load())
                 else:
                     ii_2nd_ind,jj_2nd_ind = iijj_ind[tmp_datstr]['ii'],iijj_ind[tmp_datstr]['jj']
@@ -2162,11 +2131,11 @@ def reload_ts_data_comb(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,tim
 
 
 
-def regrid_2nd(regrid_params_in,regrid_meth,thd,configd,th_d_ind,dat_in): #):
+def regrid_2nd(regrid_params_in,regrid_meth,thd,configd_in,dat_in): #):
     start_regrid_timer = datetime.now()
 
 
-    if configd[th_d_ind] == configd[1]:
+    if configd_in is None:
         dat_out = dat_in
     else:
         (NWS_amm_bl_jj_ind_out, NWS_amm_bl_ii_ind_out, NWS_amm_wgt_out, NWS_amm_nn_jj_ind_out, NWS_amm_nn_ii_ind_out) = regrid_params_in
@@ -2353,8 +2322,7 @@ def extract_time_from_xarr(xarr_dict_in,ex_fname_in,time_varname,t_dim,date_in_i
     
 
     try:
-        #if nctime.shape is not ():
-        if nctime.shape != ():
+        if nctime.shape is not ():
             if nctime_calendar_type is None:
                 if type(np.array(nctime)[0]) is type(cftime._cftime.Datetime360Day(1980,1,1)):
                     nctime_calendar_type = '360'
