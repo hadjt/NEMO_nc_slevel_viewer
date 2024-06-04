@@ -28,7 +28,7 @@ from NEMO_nc_slevel_viewer_lib import regrid_2nd,grad_horiz_ns_data,grad_horiz_e
 #from NEMO_nc_slevel_viewer_lib import indices_from_ginput_ax
 from NEMO_nc_slevel_viewer_lib import extract_time_from_xarr,load_nc_var_name_list_WW3
 
-from NEMO_nc_slevel_viewer_lib import trim_file_dict,create_col_lst,create_Dataset_lst,create_xarr_dict,connect_to_files_with_xarray,load_grid_dict
+from NEMO_nc_slevel_viewer_lib import trim_file_dict,remove_extra_end_file_dict,create_col_lst,create_Dataset_lst,create_xarr_dict,connect_to_files_with_xarray,load_grid_dict
 from NEMO_nc_slevel_viewer_lib import create_config_fnames_dict,create_rootgrp_gdept_dict,create_gdept_ncvarnames,create_lon_lat_dict,create_ncvar_lon_lat_time,add_derived_vars
 
 
@@ -112,6 +112,7 @@ def nemo_slice_zlev(config = 'amm7',
         if fig_lab_d[tmp_datstr] is None: fig_lab_d[tmp_datstr] = tmp_datstr
 
     '''
+    fname_dict = remove_extra_end_file_dict(fname_dict)
 
     fname_dict = trim_file_dict(fname_dict,thd)
     Dataset_lst,nDataset = create_Dataset_lst(fname_dict)
@@ -645,9 +646,9 @@ def create_config_fnames_dict(configd,Dataset_lst):
     init_timer.append((datetime.now(),'xarray open_mfdataset UV connected'))
 
 
+    #pdb.set_trace()
 
-
-    lon_d,lat_d = create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncglamt,ncgphit,nav_lon_varname,nav_lat_varname)
+    lon_d,lat_d = create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncglamt,ncgphit,nav_lon_varname,nav_lat_varname,ncdim_d)
     """
 
     for tmp_datstr in Dataset_lst:
@@ -1009,7 +1010,7 @@ def create_config_fnames_dict(configd,Dataset_lst):
         init_timer.append((datetime.now(),'xarray open_mfdataset 2nd UV connecting'))
     
 
-
+        '''
 
         if len(xarr_dict['Dataset 2']['T'][0].variables[nav_lat_varname].shape) == 2:
             lat_d[2] = np.ma.masked_invalid(xarr_dict['Dataset 2']['T'][0].variables[nav_lat_varname][thd[2]['y0']:thd[2]['y1']:thd[2]['dy'],thd[2]['x0']:thd[2]['x1']:thd[2]['dx']].load())
@@ -1031,6 +1032,7 @@ def create_config_fnames_dict(configd,Dataset_lst):
             if configd[2].upper() in ['AMM15','CO9P2']: 
                 lat_d['amm15'] = np.ma.masked_invalid(xarr_dict['Dataset 2']['T'][0].variables[nav_lat_varname].load())
                 lon_d['amm15'] = np.ma.masked_invalid(xarr_dict['Dataset 2']['T'][0].variables[nav_lon_varname].load())
+        '''
         print ('xarray start reading 2nd \nctime',datetime.now())
         init_timer.append((datetime.now(),'nc time 2nd started'))
 
@@ -1417,7 +1419,7 @@ def create_config_fnames_dict(configd,Dataset_lst):
 
     elif nDataset ==2:
         tsaxtx_lst.append(ax[4].text(0.01,0.01,fig_lab_d['Dataset 1'], ha = 'left', va = 'bottom', transform=ax[4].transAxes, color = 'r', fontsize = 12,bbox=dict(facecolor='white', alpha=0.75, pad=1, edgecolor='none')))
-        tsaxtx_lst.append(ax[4].text(0.01,0.01,fig_lab_d['Dataset 2'], ha = 'left', va = 'bottom', transform=ax[4].transAxes, color = 'b', fontsize = 12,bbox=dict(facecolor='white', alpha=0.75, pad=1, edgecolor='none')))
+        tsaxtx_lst.append(ax[4].text(0.99,0.01,fig_lab_d['Dataset 2'], ha = 'left', va = 'bottom', transform=ax[4].transAxes, color = 'b', fontsize = 12,bbox=dict(facecolor='white', alpha=0.75, pad=1, edgecolor='none')))
 
         tsaxtxd_lst.append(ax[4].text(0.99,0.975,'Dat2-Dat1', ha = 'right', va = 'top', transform=ax[4].transAxes, color = 'g', fontsize = 12,bbox=dict(facecolor='white', alpha=0.75, pad=1, edgecolor='none')))
     
@@ -4056,7 +4058,7 @@ def main():
         V_fname_lst_2nd = None
 
         load_second_files = False
-        #pdb.set_trace()
+        
         if (args.fname_lst_2nd) is not None:
             fname_lst_2nd = glob.glob(args.fname_lst_2nd)
             load_second_files = True

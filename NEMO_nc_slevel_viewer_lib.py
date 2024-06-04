@@ -2597,6 +2597,7 @@ def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_m
         #xarr_dict[tmp_datstr] = {}
         for tmpgrid in xarr_dict[tmp_datstr].keys():
             time_d[tmp_datstr][tmpgrid] = {}
+            #pdb.set_trace()
             if tmpgrid != 'I':
                 if (nldi == 0) :   
                     xarr_dict[tmp_datstr][tmpgrid].append(
@@ -2725,6 +2726,27 @@ def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_m
     return var_d,var_dim,var_grid,ncvar_d,ncdim_d,time_d
 
 
+def remove_extra_end_file_dict(fname_dict):
+    # For a given grid, if some datasets have more files than others, 
+    # remove the additional end files from the longer dataset.
+    # Often the operational system has only run AMM7 before AMM15, 
+    # so there are more amm7 files avaialble. this causes issues.
+
+    for tmpgrid in fname_dict['Dataset 1'].keys():
+        nfliles_per_grid_lst = []
+        for tmp_datstr in fname_dict.keys():
+            nfliles_per_grid_lst.append(len(fname_dict[tmp_datstr][tmpgrid]))
+        nfliles_per_grid_mat = np.array(nfliles_per_grid_lst)
+
+        if nfliles_per_grid_mat.ptp()>0:
+            print('\n\nDiffering number of files between dataset, for grid %s.\nRemoving extra end files.\n\nPress c to continue'%tmpgrid)
+            pdb.set_trace()
+            first_nfiles = nfliles_per_grid_mat.min()
+            for tmp_datstr in fname_dict.keys():
+                fname_dict[tmp_datstr][tmpgrid] = fname_dict[tmp_datstr][tmpgrid][:first_nfiles]
+
+
+    return fname_dict
 def trim_file_dict(fname_dict,thd):
 
     for tmp_datstr in fname_dict.keys():
@@ -2739,7 +2761,7 @@ def create_col_lst():
 
     Dataset_col = ['r','b','g','c','m','y']
     Dataset_col_diff = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan']
-
+    #https://matplotlib.org/3.3.3/gallery/lines_bars_and_markers/linestyles.html
     linestyle_str = [ 'solid', 'dotted','dashed','dashdot','loosely dotted',  (0, (1, 10)), (0, (5, 10)),   (0, (5, 1)), (0, (3, 10, 1, 10)) , (0, (3, 1, 1, 1)) , (0, (3, 5, 1, 5, 1, 5))  ,(0, (3, 10, 1, 10, 1, 10))  , (0, (3, 1, 1, 1, 1, 1))  ]
     return Dataset_col,Dataset_col_diff,linestyle_str
 
@@ -2880,7 +2902,7 @@ def create_ncvar_lon_lat_time(ncvar_d):
 
 
 
-def create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncglamt,ncgphit,nav_lon_varname,nav_lat_varname):
+def create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncglamt,ncgphit,nav_lon_varname,nav_lat_varname,ncdim_d):
 
     lon_d,lat_d = {},{}
 
@@ -2920,33 +2942,38 @@ def create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncg
 
             #pdb.set_trace()
         else:
-            if len(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname].shape) == 2:
+            #pdb.set_trace()
+            nav_lat_dims = list(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname].dims)
+            nav_lat_dims_no_time = nav_lat_dims.copy()
+            inc_time = False
+            if ncdim_d[tmp_datstr]['T']['t'] in nav_lat_dims_no_time:
+                nav_lat_dims_no_time.remove(ncdim_d[tmp_datstr]['T']['t'] )
+                inc_time = True
+
+            #if len(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname].shape) == 2:
 
 
-                lon_d[th_d_ind] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lon_varname].load())
-                lat_d[th_d_ind] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname].load())
+            if len(nav_lat_dims_no_time) == 2:
+                if inc_time:
+                    lon_d[th_d_ind] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lon_varname][0,:,:].load())
+                    lat_d[th_d_ind] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname][0,:,:].load())
 
-                #if tmp_configd.upper() in ['AMM15','CO9P2']: 
-                #    # AMM15 lon and lats are always 2d
-                #    lat_d['amm15'] = lat_d[th_d_ind]
-                #    lon_d['amm15'] = lon_d[th_d_ind]
-
-                #lon_d[th_d_ind] = np.ma.masked_invalid(lon_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
-                #lat_d[th_d_ind] = np.ma.masked_invalid(lat_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+                else:
+                    lon_d[th_d_ind] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lon_varname].load())
+                    lat_d[th_d_ind] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname].load())
 
 
             else:
                 # if only 1d lon and lat
-                tmp_nav_lon = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lon_varname].load())
-                tmp_nav_lat = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname].load())
+                if inc_time:
+                    tmp_nav_lon = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lon_varname].load())
+                    tmp_nav_lat = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname].load())
+                else:
+                    tmp_nav_lon = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lon_varname][0,:].load())
+                    tmp_nav_lat = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname][0,:].load())
 
-                #nav_lon_mat, nav_lat_mat = np.meshgrid(tmp_nav_lon,tmp_nav_lat)
                 lon_d[th_d_ind], lat_d[th_d_ind] = np.meshgrid(tmp_nav_lon,tmp_nav_lat)
 
-
-                #lat_d[th_d_ind] = nav_lat_mat[thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
-                #lon_d[th_d_ind] = nav_lon_mat[thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
-            #pdb.set_trace()
             if tmp_configd.upper() in ['AMM15','CO9P2']: 
                 # AMM15 lon and lats are always 2d
                 lat_d['amm15'] = lat_d[th_d_ind]
