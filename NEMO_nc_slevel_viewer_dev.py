@@ -71,7 +71,8 @@ def nemo_slice_zlev(config = 'amm7',
     clim_sym = None, clim_pair = True,use_cmocean = False,
     fig_dir = None,fig_lab = 'figs',fig_cutout = True, 
     justplot = False, justplot_date_ind = None,justplot_z_meth_zz = None,justplot_secdataset_proc = None,
-    fig_fname_lab = None, fig_fname_lab_2nd = None, 
+    fig_fname_lab = None, fig_fname_lab_2nd = None,
+    trim_extra_files = True,
     verbose_debugging = False):
 
     print('Initialise at ',datetime.now())
@@ -88,53 +89,27 @@ def nemo_slice_zlev(config = 'amm7',
     configd[3] = configd[2].lower()
     ######################
     '''
-    # Define a list of dataset names
-   
-    '''
-    for tmp_datstr in fname_dict.keys():
-        for tmpgrid in fname_dict[tmp_datstr].keys():
-            th_d_ind = int(tmp_datstr[-1])
-            #pdb.set_trace()
-            fname_dict[tmp_datstr][tmpgrid] = fname_dict[tmp_datstr][tmpgrid][  thd[th_d_ind]['f0']:thd[th_d_ind]['f1']:thd[th_d_ind]['df']]
-
-
-    # open file list with xarray
-    xarr_dict = {}
-    for tmp_datstr in fname_dict.keys():
-        xarr_dict[tmp_datstr] = {}
-        Dataset_lst.append(tmp_datstr)
-        for tmpgrid in fname_dict[tmp_datstr].keys():
-            xarr_dict[tmp_datstr][tmpgrid] = []
-    nDataset = len(Dataset_lst)
-
-    
-    for tmp_datstr in Dataset_lst:
-        if fig_lab_d[tmp_datstr] is None: fig_lab_d[tmp_datstr] = tmp_datstr
-
-    '''
+    # File name dictionary
+    #==========================================
+    # remove extra file names at the end of the list
     fname_dict = remove_extra_end_file_dict(fname_dict)
-
-    fname_dict = trim_file_dict(fname_dict,thd)
+    
+    # Trim file list, using keywords [f0:f1:df] 
+    if trim_extra_files:
+        fname_dict = trim_file_dict(fname_dict,thd)
+    # create filesname dictionary
     Dataset_lst,nDataset = create_Dataset_lst(fname_dict)
+    # create [empty] xarray handle dictionary
     xarr_dict = create_xarr_dict(fname_dict)
 
 
-
+    # create colours and line styles for plots
     Dataset_col,Dataset_col_diff,linestyle_str = create_col_lst()
 
     for tmp_datstr in Dataset_lst:
         if fig_lab_d[tmp_datstr] is None: fig_lab_d[tmp_datstr] = tmp_datstr
 
 
-    ######################
-    ### test 3 datasets
-    ######################
-    #thd[3] = thd[2].copy()
-    ######################
-
-    #lon_d = {}
-    #lat_d = {}
- 
     axis_scale = 'Auto'
 
     if do_grad is None: do_grad = 0
@@ -245,115 +220,21 @@ def nemo_slice_zlev(config = 'amm7',
     nlat_amm15 = 1345
 
 
-    
+    # create a dictionary with all the config info in it
     config_fnames_dict = create_config_fnames_dict(configd,Dataset_lst,script_dir)
 
-    '''
-
-def create_config_fnames_dict(configd,Dataset_lst):
-    
-
-    config_fnames_dict = {}
-    config_fnames_dict[configd[1]] = {}
-
-    for tmp_datstr in Dataset_lst:
-        config_fnames_dict[configd[1]] = {}
-        th_d_ind = int(tmp_datstr[-1])
-        config_csv_fname = script_dir + 'NEMO_nc_slevel_viewer_config_%s.csv'%configd[th_d_ind].upper()
-        with open(config_csv_fname, mode='r') as infile:
-            reader = csv.reader(infile)
-            for rows in reader :config_fnames_dict[configd[th_d_ind]][rows[0]] = rows[1]
-
-
-    return config_fnames_dict
-
-    config_fnames_dict = {}
-    config_fnames_dict[configd[1]] = {}
-
-    for tmp_datstr in Dataset_lst:
-        config_fnames_dict[configd[1]] = {}
-        th_d_ind = int(tmp_datstr[-1])
-        config_csv_fname = script_dir + 'NEMO_nc_slevel_viewer_config_%s.csv'%configd[th_d_ind].upper()
-        with open(config_csv_fname, mode='r') as infile:
-            reader = csv.reader(infile)
-            for rows in reader :config_fnames_dict[configd[th_d_ind]][rows[0]] = rows[1]
-
-
-    '''
-    
     init_timer.append((datetime.now(),'Indices set'))
-    '''
-    #pdb.set_trace()
-    config_csv_fname = script_dir + 'NEMO_nc_slevel_viewer_config_%s.csv'%configd[1].upper()
-    with open(config_csv_fname, mode='r') as infile:
-        reader = csv.reader(infile)
-        for rows in reader :config_fnames_dict[configd[1]][rows[0]] = rows[1]
-
-
-    #if 2 in configd.keys() is not None:
-    #if 2 in configd.keys() is not None:
-    nlon_amm7 = 297
-    nlat_amm7 = 375
-    nlon_amm15 = 1458
-    nlat_amm15 = 1345
-
-    if configd[2] is not None:
-        config_fnames_dict[configd[2]] = {}
-        config_2nd_csv_fname = script_dir + 'NEMO_nc_slevel_viewer_config_%s.csv'%configd[2].upper()
-        with open(config_2nd_csv_fname, mode='r') as infile:
-            reader = csv.reader(infile)
-            for rows in reader :config_fnames_dict[configd[2]][rows[0]] = rows[1]
-    '''
+    
     z_meth_default = config_fnames_dict[configd[1]]['z_meth_default']
     
+    #set ncvariable names for mesh files
     ncgdept,nce1t,nce2t,nce3t,ncglamt,ncgphit = create_gdept_ncvarnames(config_fnames_dict,configd)
-    '''
-    ncgdept = 'gdept_0'
-    nce1t = 'e1t'
-    nce2t = 'e2t'
-    nce3t = 'e3t_0'
-    ncglamt = 'glamt'
-    ncgphit = 'gphit'
-
-    if 'ncgdept' in config_fnames_dict[configd[1]].keys():ncgdept = config_fnames_dict[configd[1]]['ncgdept']
-    if 'nce1t' in config_fnames_dict[configd[1]].keys():nce1t = config_fnames_dict[configd[1]]['nce1t']
-    if 'nce2t' in config_fnames_dict[configd[1]].keys():nce2t = config_fnames_dict[configd[1]]['nce2t']
-    if 'nce3t' in config_fnames_dict[configd[1]].keys():nce3t = config_fnames_dict[configd[1]]['nce3t']
-    if 'ncglamt' in config_fnames_dict[configd[1]].keys():ncglamt = config_fnames_dict[configd[1]]['ncglamt']
-    if 'ncgphit' in config_fnames_dict[configd[1]].keys():ncgphit = config_fnames_dict[configd[1]]['ncgphit']
-
-
-    '''
-
-
+   
     init_timer.append((datetime.now(),'Config files read'))
+
+    # create dictionary with mesh files handles
     rootgrp_gdept_dict = create_rootgrp_gdept_dict(config_fnames_dict,Dataset_lst,configd)
-    '''
-
-
-
-    #rootgrp_gdept = None
-    rootgrp_gdept_dict = {}
-
-        
-    # depth grid file
-    rootgrp_gdept_dict['Dataset 1'] = Dataset(config_fnames_dict[configd[1]]['mesh_file'], 'r', format='NETCDF4')
-
-
-    for tmp_datstr in Dataset_lst[1:]:
-        th_d_ind = int(tmp_datstr[-1])
-        rootgrp_gdept_dict[tmp_datstr] = rootgrp_gdept_dict['Dataset 1']
-        
-
-        if (configd[th_d_ind] is not None) & (configd[th_d_ind]!=configd[1]):
-      
-            if (configd[1].upper() in ['AMM7','AMM15']) & (configd[th_d_ind].upper() in ['AMM7','AMM15']):  
-                mesh_file_2nd = config_fnames_dict[configd[th_d_ind]]['mesh_file'] 
-                rootgrp_gdept_dict[tmp_datstr] = Dataset(mesh_file_2nd, 'r', format='NETCDF4')
-
-
-
-    '''
+    
     init_timer.append((datetime.now(),'Gdept opened'))
 
 
@@ -381,18 +262,6 @@ def create_config_fnames_dict(configd,Dataset_lst):
     regrid_params = None
     regrid_params = {}  
 
-    '''
-    for tmp_datstr in Dataset_lst[1:]:
-        th_d_ind = int(tmp_datstr[-1])
-        rootgrp_gdept_dict[tmp_datstr] = rootgrp_gdept_dict['Dataset 1']
-        
-
-        if (configd[th_d_ind] is not None) & (configd[th_d_ind]!=configd[1]):
-      
-            if (configd[1].upper() in ['AMM7','AMM15']) & (configd[th_d_ind].upper() in ['AMM7','AMM15']):  
-                mesh_file_2nd = config_fnames_dict[configd[th_d_ind]]['mesh_file'] 
-                rootgrp_gdept_dict[tmp_datstr] = Dataset(mesh_file_2nd, 'r', format='NETCDF4')
-    '''
 
     for tmp_datstr in Dataset_lst[1:]:
         th_d_ind = int(tmp_datstr[-1])
@@ -462,347 +331,26 @@ def create_config_fnames_dict(configd,Dataset_lst):
         else:
             ld_lab_mat = np.array(ld_lab_lst.split(','))
 
-
+    # connect to files with xarray, and create dictionaries with vars, dims, grids, time etc. S
     var_d,var_dim,var_grid,ncvar_d,ncdim_d,time_d  = connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_mat, ld_lab_mat,ld_nctvar)
-    """
-
-
-    var_d = {}
-    var_d['d'] = []
-    var_dim = {}
-    var_grid = {}
-    ncvar_d = {}
-    ncdim_d = {}
-    time_d = {}
-    WW3_ld_nctvar = 'time'
-    # open file list with xarray
-    #xarr_dict = {}
-    for tmp_datstr in Dataset_lst: # xarr_dict.keys():
-        th_d_ind = int(tmp_datstr[-1])
-        
-        var_d[th_d_ind] = {}
-        var_d[th_d_ind]['mat'] = np.array([])
-        var_grid[tmp_datstr] = {}
-        ncvar_d[tmp_datstr] = {}
-        ncdim_d[tmp_datstr] = {}
-        time_d[tmp_datstr] = {}
-        #xarr_dict[tmp_datstr] = {}
-        for tmpgrid in xarr_dict[tmp_datstr].keys():
-            time_d[tmp_datstr][tmpgrid] = {}
-            if tmpgrid != 'I':
-                if (nldi == 0) :   
-                    xarr_dict[tmp_datstr][tmpgrid].append(
-                        xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], 
-                        combine='by_coords',parallel = True))  
-                    '''
-                    # may be required if a problem with WW3 having 25 instantaneous hours every 25 hours.
-                    if grid in 'WW3':
-                        xarr_dict[tmp_datstr][tmpgrid].append(
-                            xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], 
-                            combine='by_coords',parallel = True, preprocess=lambda ds: ds[{WW3_ld_nctvar:slice(1,24+1)}]))    
-                    else:
-                        xarr_dict[tmp_datstr][tmpgrid].append(
-                            xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], 
-                            combine='by_coords',parallel = True))  
-                    '''
-                else:
-                    #pdb.set_trace()
-                    '''
-                    fc_nday_ldtime = 2
-                    
-                    
-                    tmp_xarr_data = xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid],combine='nested', concat_dim='time_counter', parallel = True)
-                    tmptc_np64 = tmp_xarr_data.time_counter.load()
-                    tmptc = np.array([datetime.utcfromtimestamp(((ss.data -  np.datetime64('1970-01-01T00:00:00'))/np.timedelta64(1, 's'))) for ss in tmptc_np64])
-
-                    #fc_len = np.diff(np.where(np.array([ss.days for ss in np.diff(tmptc)])!=1)[0])
-                    fc_len_mat = np.diff(np.where(np.array([ss.days for ss in np.diff(tmptc)])<1)[0])
-                    
-                    if len(fc_len_mat) == 0:
-                        fc_len = 1
-                    else:
-                        if fc_len_mat.std() != 0:
-                            print('not all fc are the same length',fc_len_mat)
-                            pdb.set_trace()
-                        fc_len = ((fc_len_mat).mean()).astype('int')
-                    
-                    
-                    
-                    bltc = tmptc[2::fc_len]
-                    bltc_mat = np.array([ss  for ss in bltc for i_i in range(8)] )
-                    ldtc_mat = np.array([ss.days for ss in (tmptc - bltc_mat)])
-
-
-
-
-                    tmp_xarr_data = tmp_xarr_data.assign_coords(bull_time = bltc_mat)
-                    tmp_xarr_data = tmp_xarr_data.assign_coords(lead_time = ldtc_mat)
-               
-                    tmpgpby_bull = tmp_xarr_data.groupby('bull_time')
-                    tmpgpby_lead = tmp_xarr_data.groupby('lead_time')
-
-                    for ss in tmpgpby_bull.groups: ss,tmpgpby_bull.groups[ss]
-                    for ss in tmpgpby_lead.groups: ss,tmpgpby_lead.groups[ss]
-
-                    tmp_xarr_data.votemper[tmpgpby_lead.groups[-2],:,:,:]
-                    tmp_xarr_data.votemper[tmpgpby_bull.groups[np.datetime64('2024-05-11T12:00:00.000000000')],:,:,:]
-
-
-                    '''
-                    for li,(ldi,ldilab) in enumerate(zip(ldi_ind_mat, ld_lab_mat)): xarr_dict[tmp_datstr][tmpgrid].append(
-                            xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], 
-                            combine='by_coords',parallel = True, preprocess=lambda ds: ds[{ld_nctvar:slice(ldi,ldi+1)}]))   
-            elif tmpgrid == 'I':
-                #pdb.set_trace()
-                    
-                tmp_T_time_datetime,tmp_T_time_datetime_since_1970,ntime,ti = extract_time_from_xarr(xarr_dict['Dataset 1']['T'],fname_dict['Dataset 1']['T'][0],'time_counter','time_counter',None,'%Y%m%d',1,False)
-                if tmp_T_time_datetime.size == len(fname_dict[tmp_datstr][tmpgrid]):
-                    inc_T_time_datetime = tmp_T_time_datetime
-                    inc_T_time_datetime_since_1970 = tmp_T_time_datetime_since_1970
-                else:
-                    inc_T_time_datetime = [tmp_T_time_datetime[0] + timedelta(days = i_i) for i_i in range(len(fname_dict[tmp_datstr][tmpgrid]))]
-                    tmp_T_time_datetime_since_1970 = [tmp_T_time_datetime_since_1970[0] + i_i*86400 for i_i in range(len(fname_dict[tmp_datstr][tmpgrid]))]
-                
-                time_d[tmp_datstr][tmpgrid]['datetime'] = np.array(inc_T_time_datetime)
-                time_d[tmp_datstr][tmpgrid]['datetime_since_1970'] = np.array(tmp_T_time_datetime_since_1970)
-
-                tmp_xarr_data = xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid],combine='nested', concat_dim='t', parallel = True)
-                tmp_xarr_data.assign_coords(t = time_d[tmp_datstr][tmpgrid]['datetime'])
-                xarr_dict[tmp_datstr][tmpgrid].append(tmp_xarr_data)
-
-
-
-                #pdb.set_trace()
-
-
-
-            init_timer.append((datetime.now(),'xarray open_mfdataset %s %s connected'%(tmp_datstr,tmpgrid)))
-            print ('xarray open_mfdataset %s %s , Start'%(tmp_datstr,tmpgrid),datetime.now())
-
-            ncvar_mat = [ss for ss in xarr_dict[tmp_datstr][tmpgrid][0].variables.keys()]
-            
-    
-            ncvar_d[tmp_datstr][tmpgrid] = ncvar_mat
-            tmp_x_dim, tmp_y_dim, tmp_z_dim, tmp_t_dim  = load_nc_dims(xarr_dict[tmp_datstr][tmpgrid][0]) #  find the names of the x, y, z and t dimensions.
-            tmp_var_names = load_nc_var_name_list(xarr_dict[tmp_datstr][tmpgrid][0], tmp_x_dim, tmp_y_dim, tmp_z_dim,tmp_t_dim)# find the variable names in the nc file # var_4d_mat, var_3d_mat, var_d[1]['T'], nvar4d, nvar3d, nvar, var_dim = 
-        
-            ncdim_d[tmp_datstr][tmpgrid]  = {}
-            ncdim_d[tmp_datstr][tmpgrid]['t'] = tmp_t_dim
-            ncdim_d[tmp_datstr][tmpgrid]['z'] = tmp_z_dim
-            ncdim_d[tmp_datstr][tmpgrid]['y'] = tmp_y_dim
-            ncdim_d[tmp_datstr][tmpgrid]['x'] = tmp_x_dim
-        
-            tmp_var_dim = tmp_var_names[6]
-            var_d[th_d_ind][tmpgrid] = tmp_var_names[2]
-
-
-            if tmpgrid == 'WW3':
-                tmp_WW3_var_mat,  WW3_nvar, tmp_var_dim = load_nc_var_name_list_WW3(xarr_dict[tmp_datstr][tmpgrid][0],'seapoint',tmp_t_dim)
-                WW3_var_mat = [ss for ss in tmp_WW3_var_mat if ss in ['hs','uwnd','vwnd']]
-                var_d[th_d_ind][tmpgrid] = WW3_var_mat
-                #pdb.set_trace()
-
-
-            
-            for ss in tmp_var_dim: var_dim[ss] = tmp_var_dim[ss]
-
-
-            var_d[th_d_ind]['mat'] = np.append(var_d[th_d_ind]['mat'] , var_d[th_d_ind][tmpgrid])
-
-
-    for ss in var_d[1]:
-        for tmpgrid in var_d[1].keys():
-            for ss in var_d[1][tmpgrid]: var_grid['Dataset 1'][ss] = tmpgrid
-    """
-
+   
 
             
    
     init_timer.append((datetime.now(),'xarray open_mfdataset T connected'))
 
-    '''
 
-    '''
-
+    # get lon, lat and time names from files
     nav_lon_varname,nav_lat_varname,time_varname,nav_lon_var_mat,nav_lat_var_mat,time_varname_mat = create_ncvar_lon_lat_time(ncvar_d)
-    '''
-    # check name of lon and lat ncvar in data.
-    # cycle through variables and if it is a possibnle varibable name, use it
-    for ncvar in ncvar_d['Dataset 1']['T']: 
-        if ncvar.upper() in nav_lon_var_mat: nav_lon_varname = ncvar
-        if ncvar.upper() in nav_lat_var_mat: nav_lat_varname = ncvar
-        if ncvar.upper() in time_varname_mat: time_varname = ncvar
-   
-
     
-    if nav_lon_varname not in ncvar_d['Dataset 1']['T']:
-        pdb.set_trace()
-    
-
-    '''
-
-
     print ('xarray open_mfdataset, Finish',datetime.now())
     init_timer.append((datetime.now(),'xarray open_mfdataset UV connected'))
 
 
-    #pdb.set_trace()
-
+    # Create lon and lat dictionaries
     lon_d,lat_d = create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncglamt,ncgphit,nav_lon_varname,nav_lat_varname,ncdim_d)
-    """
-
-    for tmp_datstr in Dataset_lst:
-        th_d_ind = int(tmp_datstr[-1])
-
-        tmp_configd = configd[th_d_ind]
-        if tmp_configd is None: tmp_configd = configd[1]
-        # load nav_lat and nav_lon
-        if tmp_configd.upper() in ['ORCA025','ORCA025EXT','ORCA12']: 
-
-            lon_d[th_d_ind] = np.ma.masked_invalid(rootgrp_gdept_dict[tmp_datstr].variables[ncglamt][0])
-            lat_d[th_d_ind] = np.ma.masked_invalid(rootgrp_gdept_dict[tmp_datstr].variables[ncgphit][0])
-            
-            # Fix Longitude, to be between -180 and 180.
-            fixed_nav_lon = lon_d[th_d_ind].copy()
-            for i, start in enumerate(np.argmax(np.abs(np.diff(lon_d[th_d_ind])) > 180, axis=1)):            fixed_nav_lon[i, start+1:] += 360
-            fixed_nav_lon -=360
-            fixed_nav_lon[fixed_nav_lon<-287.25] +=360
-            fixed_nav_lon[fixed_nav_lon>73] -=360
-            lon_d[th_d_ind] = fixed_nav_lon.copy()
-
-
-            lat_d[th_d_ind] = np.ma.array(lat_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
-            lon_d[th_d_ind] = np.ma.array(lon_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
-
-        elif tmp_configd.upper() in ['CO9P2']: 
-
-            lon_d[th_d_ind] = np.ma.masked_invalid(rootgrp_gdept_dict[tmp_datstr].variables[ncglamt][0])
-            lat_d[th_d_ind] = np.ma.masked_invalid(rootgrp_gdept_dict[tmp_datstr].variables[ncgphit][0])
-            lat_d['amm15'] = np.ma.array(lat_d[th_d_ind].copy())
-            lon_d['amm15'] = np.ma.array(lon_d[th_d_ind].copy())
-            
-
-            lat_d[th_d_ind] = np.ma.array(lat_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
-            lon_d[th_d_ind] = np.ma.array(lon_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
-
-            #pdb.set_trace()
-        else:
-            if len(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname].shape) == 2:
-
-
-                lon_d[th_d_ind] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lon_varname].load())
-                lat_d[th_d_ind] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname].load())
-
-                #if tmp_configd.upper() in ['AMM15','CO9P2']: 
-                #    # AMM15 lon and lats are always 2d
-                #    lat_d['amm15'] = lat_d[th_d_ind]
-                #    lon_d['amm15'] = lon_d[th_d_ind]
-
-                #lon_d[th_d_ind] = np.ma.masked_invalid(lon_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
-                #lat_d[th_d_ind] = np.ma.masked_invalid(lat_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
-
-
-            else:
-                # if only 1d lon and lat
-                tmp_nav_lon = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lon_varname].load())
-                tmp_nav_lat = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname].load())
-
-                #nav_lon_mat, nav_lat_mat = np.meshgrid(tmp_nav_lon,tmp_nav_lat)
-                lon_d[th_d_ind], lat_d[th_d_ind] = np.meshgrid(tmp_nav_lon,tmp_nav_lat)
-
-
-                #lat_d[th_d_ind] = nav_lat_mat[thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
-                #lon_d[th_d_ind] = nav_lon_mat[thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
-            #pdb.set_trace()
-            if tmp_configd.upper() in ['AMM15','CO9P2']: 
-                # AMM15 lon and lats are always 2d
-                lat_d['amm15'] = lat_d[th_d_ind]
-                lon_d['amm15'] = lon_d[th_d_ind]
-
-            lon_d[th_d_ind] = np.ma.masked_invalid(lon_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
-            lat_d[th_d_ind] = np.ma.masked_invalid(lat_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
-
-
-
-        #Check if any nav_lat or nav_lon have masked values (i.e. using land suppression)
-        if ( ((lat_d[th_d_ind] == 0) & (lon_d[th_d_ind] == 0)).sum()>10) |  (lat_d[th_d_ind] == lon_d[th_d_ind]).sum()> 100:
-            print('Several points (>10) for 0degN 0degW - suggesting land suppression - use glamt and gphit from mesh')
-
-            lon_d[th_d_ind] = np.ma.masked_invalid(rootgrp_gdept_dict[tmp_datstr].variables[ncglamt][0])
-            lat_d[th_d_ind] = np.ma.masked_invalid(rootgrp_gdept_dict[tmp_datstr].variables[ncgphit][0])
-
-            lat_d[th_d_ind] = np.ma.array(lat_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
-            lon_d[th_d_ind] = np.ma.array(lon_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
-
-
-        #pdb.set_trace()
-        if (((lat_d[th_d_ind] == 0) & (lon_d[th_d_ind] == 0)).sum()>10) |  (lat_d[th_d_ind] == lon_d[th_d_ind]).sum()> 100:
-            # If there are still (0,0) pairs in nav_lat and nav_lon, coming from glamt and gphit, we can approixmate the field analytically
-            print('Several points (>10) for 0degN 0degW - suggesting land suppression - calc grid mesh')
-            if tmp_configd.upper() in ['AMM7']:
-                # as AMM7 is a regular lat and lon grid, with a linear grid, re can use a simple linear equation, and then use mesh grid
-
-                lon_amm7 = np.arange(-19.888889,12.99967+1/9.,1/9.)
-                lat_amm7 = np.arange(40.066669,65+1/15.,1/15.)
-
-                lon_d[th_d_ind], lat_d[th_d_ind] = np.meshgrid(lon_amm7,lat_amm7)
-
-                lon_d[th_d_ind] = np.ma.masked_invalid(lon_d[th_d_ind])
-                lat_d[th_d_ind] = np.ma.masked_invalid(lat_d[th_d_ind])
-
-                lat_d[th_d_ind] = np.ma.array(lat_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
-                lon_d[th_d_ind] = np.ma.array(lon_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
-
-            if tmp_configd.upper() in ['AMM15', 'CO9P2']:
-                # AMM15 is more complicated, as its on a rotated grid, however once unrotated, it can be treated as AMM7
-                
-                '''
-                
-                nav_lon = np.ma.masked_invalid(rootgrp_gdept_dict['Dataset 1'].variables[ncglamt][0])
-                nav_lat = np.ma.masked_invalid(rootgrp_gdept_dict['Dataset 1'].variables[ncgphit][0])
-                # unrotate the lats and lons, 
-                lon_mat_unrot, lat_mat_unrot = reduce_rotamm15_grid(nav_lon,nav_lat)
-
-                # find the linear parameters, 
-                dlat_mat_unrot = np.diff(lat_mat_unrot).mean()
-                dlon_mat_unrot = np.diff(lon_mat_unrot).mean()
-
-                nlat_mat_unrot, nlon_mat_unrot = lat_mat_unrot.size, lon_mat_unrot.size
-                lat_mat_unrot_0, lon_mat_unrot_0 = lat_mat_unrot[0], lon_mat_unrot[0]
-                # print them
-                print(lat_mat_unrot_0,nlat_mat_unrot,dlat_mat_unrot)
-                print(lon_mat_unrot_0,nlon_mat_unrot,dlon_mat_unrot)
-
-                
-                lat_mat_unrot_0,nlat_mat_unrot,dlat_mat_unrot = -7.29419849537037, 1345, 0.01349999957739065
-                lon_mat_unrot_0,nlon_mat_unrot,dlon_mat_unrot = -10.889596160548328, 1458, 0.013500078257954802
-                lat_mat_unrot_0,nlat_mat_unrot,dlat_mat_unrot = -7.2942, 1345, 0.0135 #-7.29419849537037, 1345, 0.01349999957739065
-                lon_mat_unrot_0,nlon_mat_unrot,dlon_mat_unrot = -10.889595, 1458, 0.01350#-10.889596160548328, 1458, 0.013500078257954802
-
-                '''
-                # set the linear parameters
-                lat_mat_unrot_0,nlat_mat_unrot,dlat_mat_unrot = -7.29419849537037, 1345, 0.01349999957739065
-                lon_mat_unrot_0,nlon_mat_unrot,dlon_mat_unrot = -10.889596160548328, 1458, 0.013500078257954802
-                
-                #apply a linear equation
-                lat_mat_unrot_arr = lat_mat_unrot_0 + np.arange(nlat_mat_unrot)*dlat_mat_unrot
-                lon_mat_unrot_arr = lon_mat_unrot_0 + np.arange(nlon_mat_unrot)*dlon_mat_unrot
-
-                #create a grid mesh
-                lon_mat_unrot_mat,lat_mat_unrot_mat = np.meshgrid(lon_mat_unrot_arr,lat_mat_unrot_arr)
-                
-                #then rotate it
-                lon_mat_unrot_mat_rot,lat_mat_unrot_mat_rot = rotated_grid_to_amm15(lon_mat_unrot_mat,lat_mat_unrot_mat)
-                lat_d['amm15'] = lat_d[th_d_ind].copy()
-                lon_d['amm15'] = lon_d[th_d_ind].copy()
-
-                #thin the lats and lons. 
-                lat_d[th_d_ind] = np.ma.array(lat_mat_unrot_mat_rot[thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
-                lon_d[th_d_ind] = np.ma.array(lon_mat_unrot_mat_rot[thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
-
-    
-    """
-
+  
+    # if use key words to set intial lon/lat, convert to jj/ii
     if (lon_in is not None) & (lat_in is not None):
 
         lonlatin_dist_mat = np.sqrt((lon_d[1] - lon_in)**2 + (lat_d[1] - lat_in)**2)
@@ -811,41 +359,10 @@ def create_config_fnames_dict(configd,Dataset_lst):
 
     init_timer.append((datetime.now(),'Lon/Lats loaded'))
 
+    #create depth (gdept) dictionary
     grid_dict,nz = load_grid_dict(Dataset_lst,rootgrp_gdept_dict, thd, nce1t,nce2t,nce3t,configd, config_fnames_dict)
 
-    """
-    grid_dict = {}
-    for tmp_datstr in Dataset_lst:
-        th_d_ind = int(tmp_datstr[-1])
-
-        grid_dict[tmp_datstr] = {}
-        grid_dict[tmp_datstr]['e1t'] = rootgrp_gdept_dict[tmp_datstr].variables[nce1t][0,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
-        grid_dict[tmp_datstr]['e2t'] = rootgrp_gdept_dict[tmp_datstr].variables[nce2t][0,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
-        grid_dict[tmp_datstr]['e3t'] = rootgrp_gdept_dict[tmp_datstr].variables[nce3t][0,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
-        tmp_configd = configd[th_d_ind]
-        if tmp_configd is None:tmp_configd = configd[1]
-        grid_dict[tmp_datstr]['gdept'] = rootgrp_gdept_dict[tmp_datstr].variables[config_fnames_dict[tmp_configd]['ncgdept']][0,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
-
-
-        '''
-        pdb.set_trace()
-        #tmpxarr = xarray.load(config_fnames_dict[configd[1]]['mesh_file'])
-        tmpxarr = xarray.open_dataset(config_fnames_dict[configd[1]]['mesh_file'])
-        grid_dict[tmp_datstr]['e1t'] = np.array(tmpxarr.variables[nce1t][0,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
-    
-        grid_dict[tmp_datstr]['e2t'] = np.array(tmpxarr.variables[nce2t][0,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
-    
-        grid_dict[tmp_datstr]['e3t'] = np.array(tmpxarr.variables[nce3t][0,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
-        tmp_configd = configd[th_d_ind]
-        if tmp_configd is None:tmp_configd = configd[1]
-        grid_dict[tmp_datstr]['gdept'] = np.array(tmpxarr.[config_fnames_dict[tmp_configd]['ncgdept']][0,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
-
-
-        '''
-
-    nz = grid_dict[Dataset_lst[0]]['gdept'].shape[0]
-    """
-
+    # if using WW3 grid, load regridding interpolation weights
     if 'WW3' in ncdim_d['Dataset 1']:
          
         grid_dict['WW3'] = {}
@@ -996,58 +513,18 @@ def create_config_fnames_dict(configd,Dataset_lst):
         #var_d[2] = {}
         clim_sym = True
         
-        init_timer.append((datetime.now(),'xarray open_mfdataset 2nd T connecting'))
-        print ('xarray open_mfdataset 2nd, Finish',datetime.now())   
 
-        init_timer.append((datetime.now(),'xarray open_mfdataset 2nd T connecting'))
-
-
-
-        init_timer.append((datetime.now(),'xarray open_mfdataset 2nd UV connecting'))
-        
-        print ('xarray open_mfdataset, Start 2nd U and V',datetime.now())
-
-        init_timer.append((datetime.now(),'xarray open_mfdataset 2nd UV connecting'))
-    
-
-        '''
-
-        if len(xarr_dict['Dataset 2']['T'][0].variables[nav_lat_varname].shape) == 2:
-            lat_d[2] = np.ma.masked_invalid(xarr_dict['Dataset 2']['T'][0].variables[nav_lat_varname][thd[2]['y0']:thd[2]['y1']:thd[2]['dy'],thd[2]['x0']:thd[2]['x1']:thd[2]['dx']].load())
-            lon_d[2] = np.ma.masked_invalid(xarr_dict['Dataset 2']['T'][0].variables[nav_lon_varname][thd[2]['y0']:thd[2]['y1']:thd[2]['dy'],thd[2]['x0']:thd[2]['x1']:thd[2]['dx']].load())
-        else:
-            # if only 1d lon and lat
-            tmp_nav_lon = np.ma.masked_invalid(xarr_dict['Dataset 2']['T'][0].variables[nav_lon_varname].load())
-            tmp_nav_lat = np.ma.masked_invalid(xarr_dict['Dataset 2']['T'][0].variables[nav_lat_varname].load())
-
-            nav_lon_mat, nav_lat_mat = np.meshgrid(tmp_nav_lon,tmp_nav_lat)
-
-
-            lat_d[2] = nav_lat_mat[thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']]
-            lon_d[2] = nav_lon_mat[thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']]
-
-        
-        if load_second_files:
-            #if configd[2] is not None:
-            if configd[2].upper() in ['AMM15','CO9P2']: 
-                lat_d['amm15'] = np.ma.masked_invalid(xarr_dict['Dataset 2']['T'][0].variables[nav_lat_varname].load())
-                lon_d['amm15'] = np.ma.masked_invalid(xarr_dict['Dataset 2']['T'][0].variables[nav_lon_varname].load())
-        '''
-        print ('xarray start reading 2nd \nctime',datetime.now())
         init_timer.append((datetime.now(),'nc time 2nd started'))
 
 
-        
+        # load time from second data set to check if matches with first dataset.         
 
         time_datetime_2nd,time_datetime_since_1970_2nd,ntime_2nd,ti = extract_time_from_xarr(xarr_dict['Dataset 2']['T'],fname_dict['Dataset 2']['T'][0],
             time_varname,ncdim_d['Dataset 2']['T']['t'],date_in_ind,date_fmt,ti,verbose_debugging)
 
 
-
-
-
         
-        # check both filessets have the same times
+        # check both datasets have the same times
         if ntime_2nd != ntime:     
             print()
             print('Diff Times have different number of files. To Continue press c')
@@ -1065,6 +542,7 @@ def create_config_fnames_dict(configd,Dataset_lst):
 
         init_timer.append((datetime.now(),'nc time 2nd completed'))
 
+        # check both datasets have the same lons and lats (if same config)
         #if configd[2] is None:
         #if configd[2] != configd[1]:
         if configd[2] == configd[1]:
@@ -1074,6 +552,7 @@ def create_config_fnames_dict(configd,Dataset_lst):
             if (lon_d[1] != lon_d[2]).any():
                 print('Diff nav_lon_2nd dont match')
                 pdb.set_trace()
+
         # use a difference colormap if comparing files
         curr_cmap = scnd_cmap
 
@@ -1096,178 +575,10 @@ def create_config_fnames_dict(configd,Dataset_lst):
             if tmpgrid == 'I': continue
             time_d[tmp_datstr][tmpgrid]['datetime'],time_d[tmp_datstr][tmpgrid]['datetime_since_1970'],tmp_ntime,tmp_ti = extract_time_from_xarr(xarr_dict[tmp_datstr][tmpgrid],fname_dict[tmp_datstr][tmpgrid][0], tmp_time_varname,ncdim_d[tmp_datstr][tmpgrid]['t'],date_in_ind,date_fmt,ti,verbose_debugging)
 
-    '''
-    
-    add_TSProf = False
-    if ('votemper' in var_d[1]['mat']) & ('vosaline' in var_d[1]['mat']):
-        add_TSProf = True
-        for ss in ['pea','peat','peas']:
-            var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
-            if load_second_files:
-                var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
-            var_dim[ss] = 3
-            var_grid['Dataset 1'][ss] = 'T'
-            var_d['d'].append(ss)
-
-
-        for ss in ['rho']:
-            var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
-            if load_second_files:
-                var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
-            var_dim[ss] = 4
-            var_grid['Dataset 1'][ss] = 'T'
-            var_d['d'].append(ss)
-
-
-        for ss in ['N2']:
-            var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
-            if load_second_files:
-                var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
-            var_dim[ss] = 4
-            var_grid['Dataset 1'][ss] = 'T'
-            var_d['d'].append(ss)
-
-
-        for ss in ['N2max']:
-            var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
-            if load_second_files:
-                var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
-            var_dim[ss] = 3
-            var_grid['Dataset 1'][ss] = 'T'
-            var_d['d'].append(ss)
-
-
-        for ss in ['Pync_Z']:
-            var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
-            if load_second_files:
-                var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
-            var_dim[ss] = 3
-            var_grid['Dataset 1'][ss] = 'T'
-            var_d['d'].append(ss)
-
-
-        for ss in ['Pync_Th']:
-            var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
-            if load_second_files:
-                var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
-            var_dim[ss] = 3
-            var_grid['Dataset 1'][ss] = 'T'
-            var_d['d'].append(ss)
-
-
-
-    if ('vozocrtx' in var_d[1]['mat']) & ('vomecrty' in var_d[1]['mat']):
-        for ss in ['baroc_mag', 'baroc_div', 'baroc_curl']: 
-            #ss = 'baroc_mag'
-            var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
-            if load_second_files:
-                if ('vozocrtx' in var_d[2]['mat']) & ('vomecrty' in var_d[2]['mat']):
-                    var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
-            var_dim[ss] = 4
-            var_grid['Dataset 1'][ss] = 'UV'
-            var_grid['Dataset 1'][ss] = 'U'
-            var_d['d'].append(ss)
-
-    if (('ubar' in var_d[1]['mat']) & ('vbar' in var_d[1]['mat'])) | (('vobtcrtx' in var_d[1]['mat']) & ('vobtcrty' in var_d[1]['mat'])) :
-        for ss in ['barot_mag', 'barot_div', 'barot_curl']: 
-            #ss = 'barot_mag'
-            var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
-            if load_second_files:
-                if (('ubar' in var_d[2]['mat']) & ('vbar' in var_d[2]['mat'])) | (('vobtcrtx' in var_d[2]['mat']) & ('vobtcrty' in var_d[2]['mat'])):
-                    var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
-            var_dim[ss] = 3
-            #var_grid['Dataset 1'][ss] = 'UV'
-            var_grid['Dataset 1'][ss] = 'U'
-            var_d['d'].append(ss)
-
-
-
-    if ('vocetr_eff_e3v' in var_d[1]['mat']) :
-        for ss in ['StreamFunction_e3']: 
-            #ss = 'barot_mag'
-            var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
-            if load_second_files:
-                if ('vocetr_eff_e3v' in var_d[2]['mat']) :
-                    var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
-            var_dim[ss] = 3
-            #var_grid['Dataset 1'][ss] = 'UV'
-            var_grid['Dataset 1'][ss] = 'U'
-            var_d['d'].append(ss)
-
-
-    if ('vocetr_eff' in var_d[1]['mat']) :
-        for ss in ['StreamFunction']: 
-            #ss = 'barot_mag'
-            var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
-            if load_second_files:
-                if ('vocetr_eff' in var_d[2]['mat']) :
-                    var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
-            var_dim[ss] = 3
-            #var_grid['Dataset 1'][ss] = 'UV'
-            var_grid['Dataset 1'][ss] = 'U'
-            var_d['d'].append(ss)
-
-
-    if ('uocetr_eff_e3u' in var_d[1]['mat']) & ('vocetr_eff_e3v' in var_d[1]['mat']):
-        for ss in ['VolTran_e3_mag', 'VolTran_e3_div', 'VolTran_e3_curl']: 
-            #ss = 'barot_mag'
-            var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
-            if load_second_files:
-                if ('uocetr_eff_e3u' in var_d[2]['mat']) & ('vocetr_eff_e3v' in var_d[2]['mat']):
-                    var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
-            var_dim[ss] = 3
-            #var_grid['Dataset 1'][ss] = 'UV'
-            var_grid['Dataset 1'][ss] = 'U'
-            var_d['d'].append(ss)
-
-
-
-    if ('vocetr_eff' in var_d[1]['mat']) & ('uocetr_eff' in var_d[1]['mat']):
-        for ss in ['VolTran_mag', 'VolTran_div', 'VolTran_curl']: 
-            #ss = 'barot_mag'
-            var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
-            if load_second_files:
-                if ('vocetr_eff' in var_d[2]['uocetr_eff']) & ('vbar' in var_d[2]['mat']):
-                    var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
-            var_dim[ss] = 3
-            #var_grid['Dataset 1'][ss] = 'UV'
-            var_grid['Dataset 1'][ss] = 'U'
-            var_d['d'].append(ss)
-
-
-
-
-    if ('uwnd' in var_d[1]['mat']) & ('vwnd' in var_d[1]['mat']):
-        for ss in ['wnd_mag']:#, 'barot_div', 'barot_curl']: 
-            #ss = 'barot_mag'
-            var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
-            if load_second_files:
-                if ('uwnd' in var_d[2]['mat']) & ('vwnd' in var_d[2]['mat']):
-                    var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
-            var_dim[ss] = 3
-            var_grid['Dataset 1'][ss] = 'WW3'
-            var_d['d'].append(ss)
-
-
-    if ('N3n' in var_d[1]['mat']) & ('N1p' in var_d[1]['mat']):
-        ss = 'N:P'
-        var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
-        if load_second_files:
-            if ('N3n' in var_d[2]['mat']) & ('N1p' in var_d[2]['mat']):
-                var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
-        var_dim[ss] = 4
-        var_grid['Dataset 1'][ss] = 'T'
-        var_d['d'].append(ss)
-
-
-
-    '''
-
-
-
+    # add derived variables
     var_d,var_dim, var_grid = add_derived_vars(var_d,var_dim, var_grid,load_second_files)
 
-
+    # add derived variales to nice names if mising. 
 
     for ss in var_d['d']: 
         if ss not in nice_varname_dict.keys():
@@ -1396,21 +707,7 @@ def create_config_fnames_dict(configd,Dataset_lst):
     labi,labj = 0.05, 0.95
     for ai,tmpax in enumerate(ax): tmpax.text(labi,labj,'%s)'%letter_mat[ai], transform=tmpax.transAxes, ha = 'left', va = 'top', fontsize = 12,bbox=dict(facecolor='white', alpha=0.75, pad=1, edgecolor='none'))
            
-    '''
-    
-    tsaxtx1 = ax[4].text(0.01,0.01,'Dataset 1', ha = 'left', va = 'bottom', transform=ax[4].transAxes, color = 'r', fontsize = 12,bbox=dict(facecolor='white', alpha=0.75, pad=1, edgecolor='none'))
-    if (fig_lab_d['Dataset 1'] is not None) : 
-        tsaxtx1.set_text(fig_lab_d['Dataset 1'])
-    
-    if load_second_files:                
-        tsaxtx2 = ax[4].text(0.99,0.01,'Dataset 2', ha = 'right', va = 'bottom', transform=ax[4].transAxes, color = 'b', fontsize = 12,bbox=dict(facecolor='white', alpha=0.75, pad=1, edgecolor='none'))
-    
-        if (fig_lab_d['Dataset 2'] is not None) : 
-            tsaxtx2.set_text(fig_lab_d['Dataset 2'])
 
-        tsaxtx3 = ax[4].text(0.99,0.975,'Dat2-Dat1', ha = 'right', va = 'top', transform=ax[4].transAxes, color = 'g', fontsize = 12,bbox=dict(facecolor='white', alpha=0.75, pad=1, edgecolor='none'))
-    '''
-    
     tsaxtx_lst = []
     tsaxtxd_lst = []
 
@@ -1419,7 +716,7 @@ def create_config_fnames_dict(configd,Dataset_lst):
 
     elif nDataset ==2:
         tsaxtx_lst.append(ax[4].text(0.01,0.01,fig_lab_d['Dataset 1'], ha = 'left', va = 'bottom', transform=ax[4].transAxes, color = 'r', fontsize = 12,bbox=dict(facecolor='white', alpha=0.75, pad=1, edgecolor='none')))
-        tsaxtx_lst.append(ax[4].text(0.99,0.01,fig_lab_d['Dataset 2'], ha = 'left', va = 'bottom', transform=ax[4].transAxes, color = 'b', fontsize = 12,bbox=dict(facecolor='white', alpha=0.75, pad=1, edgecolor='none')))
+        tsaxtx_lst.append(ax[4].text(0.99,0.01,fig_lab_d['Dataset 2'], ha = 'right', va = 'bottom', transform=ax[4].transAxes, color = 'b', fontsize = 12,bbox=dict(facecolor='white', alpha=0.75, pad=1, edgecolor='none')))
 
         tsaxtxd_lst.append(ax[4].text(0.99,0.975,'Dat2-Dat1', ha = 'right', va = 'top', transform=ax[4].transAxes, color = 'g', fontsize = 12,bbox=dict(facecolor='white', alpha=0.75, pad=1, edgecolor='none')))
     
@@ -2657,45 +1954,7 @@ ax,
                     #for tsaxtx in tsaxtx_lst:tsaxtx.set_visible(False)
                     for tsaxtxd in tsaxtxd_lst:tsaxtxd.set_visible(True)
 
-                '''
-                if secdataset_proc == 'Dat1-Dat2':
-                    tsaxtx3.set_text('Dat1-Dat2')
-                    tsaxtx3.set_color('tab:brown')
-                elif secdataset_proc == 'Dat2-Dat1':
-                    tsaxtx3.set_text('Dat2-Dat1')
-                    tsaxtx3.set_color('g')
-                else:
-                    tsaxtx3.set_text(' ')
-                    tsaxtx3.set_color('w')
-                '''
-                '''
-                if secdataset_proc == 'Dat1-Dat2':
-                    tsaxtxd_lst[0].set_text('Dat1-Dat2')
-                    tsaxtxd_lst[0].set_color('tab:brown')
-                elif secdataset_proc == 'Dat2-Dat1':
-                    tsaxtxd_lst[0].set_text('Dat2-Dat1')
-                    tsaxtxd_lst[0].set_color('g')
-                else:
-                    tsaxtxd_lst[0].set_text(' ')
-                    tsaxtxd_lst[0].set_color('w')
-                '''
-                
-                '''
-                if secdataset_proc in Dataset_lst:
-                    tsaxtxd_lst[0].set_text(' ')
-                    tsaxtxd_lst[0].set_color('w')
-                else:
-                    tsaxtxd_lst[0].set_text(secdataset_proc)
-                    tsaxtxd_lst[0].set_color('tab:brown')
-                    
-                    #if secdataset_proc == 'Dat1-Dat2':
-                    #    tsaxtxd_lst[0].set_text('Dat1-Dat2')
-                    #    tsaxtxd_lst[0].set_color('tab:brown')
-                    #elif secdataset_proc == 'Dat2-Dat1':
-                    #    tsaxtxd_lst[0].set_text('Dat2-Dat1')
-                    #    tsaxtxd_lst[0].set_color('g')
-
-                '''
+               
             ###################################################################################################
             ### add contours
             ###################################################################################################
@@ -3835,6 +3094,7 @@ def main():
         parser.add_argument('--hov_time', type=str, required=False)
         parser.add_argument('--do_cont', type=str, required=False)
         parser.add_argument('--do_grad', type=int, required=False)
+        parser.add_argument('--trim_extra_files', type=int, required=False)
 
         parser.add_argument('--clim_sym', type=str, required=False)
         parser.add_argument('--clim_pair', type=str, required=False)
@@ -3979,6 +3239,21 @@ def main():
             else:                
                 print(args.do_cont)
                 pdb.set_trace()
+
+
+
+        if args.trim_extra_files is None:
+            trim_extra_files=True
+        elif args.trim_extra_files is not None:
+            if args.trim_extra_files.upper() in ['TRUE','T']:
+                trim_extra_files = bool(True)
+            elif args.trim_extra_files.upper() in ['FALSE','F']:
+                trim_extra_files = bool(False)
+            else:                
+                print(args.trim_extra_files)
+                pdb.set_trace()
+ 
+
 
         '''
 
@@ -4244,7 +3519,7 @@ def main():
             fig_lab_d = fig_lab_d,configd = configd,thd = thd,fname_dict = fname_dict,load_second_files = load_second_files,
             clim_sym = clim_sym_in, clim = args.clim, clim_pair = clim_pair_in,hov_time = hov_time_in,
             allow_diff_time = allow_diff_time_in,preload_data = preload_data_in,
-            do_grad = do_grad_in,do_cont = do_cont_in,
+            do_grad = do_grad_in,do_cont = do_cont_in,trim_extra_files = trim_extra_files,
             use_cmocean = use_cmocean_in, date_fmt = args.date_fmt,
             justplot = justplot_in,justplot_date_ind = args.justplot_date_ind,
             justplot_secdataset_proc = args.justplot_secdataset_proc,
@@ -4260,37 +3535,6 @@ def main():
 
 
 
-
-
-
-        '''
-        nemo_slice_zlev(fname_lst,zlim_max = args.zlim_max,
-            config = args.config, config_2nd = args.config_2nd,
-            U_fname_lst = U_fname_lst, V_fname_lst = V_fname_lst,
-            fname_lst_2nd = fname_lst_2nd,
-            U_fname_lst_2nd = U_fname_lst_2nd, V_fname_lst_2nd = V_fname_lst_2nd,
-            fig_fname_lab = args.fig_fname_lab, fig_fname_lab_2nd = args.fig_fname_lab_2nd, 
-            thin = args.thin, thin_2nd = args.thin_2nd,
-            thin_files = args.thin_files, thin_files_0 = args.thin_files_0, thin_files_1 = args.thin_files_1, 
-            thin_x0 = args.thin_x0, thin_x1 = args.thin_x1, thin_y0 = args.thin_y0, thin_y1 = args.thin_y1, 
-
-            clim_sym = clim_sym_in, clim = args.clim, clim_pair = clim_pair_in,hov_time = hov_time_in,
-            allow_diff_time = allow_diff_time_in,preload_data = preload_data_in,
-            do_grad = do_grad_in,do_cont = do_cont_in,
-            use_cmocean = use_cmocean_in, date_fmt = args.date_fmt,
-            justplot = justplot_in,justplot_date_ind = args.justplot_date_ind,
-            justplot_secdataset_proc = args.justplot_secdataset_proc,
-            justplot_z_meth_zz = args.justplot_z_meth_zz,
-            ii = args.ii, jj = args.jj, ti = args.ti, zz = args.zz, 
-            lon_in = args.lon, lat_in = args.lat, date_in_ind = args.date_ind,
-            var = args.var, z_meth = args.z_meth,
-            xlim = args.xlim,ylim = args.ylim,
-            secdataset_proc = args.secdataset_proc,
-            ld_lst = args.ld_lst, ld_lab_lst = args.ld_lab_lst, ld_nctvar= args.ld_nctvar,
-            fig_dir = args.fig_dir, fig_lab = args.fig_lab,fig_cutout = fig_cutout_in,
-            verbose_debugging = verbose_debugging_in)
-
-        '''
         exit()
 
 
