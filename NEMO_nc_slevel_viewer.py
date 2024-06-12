@@ -23,8 +23,8 @@ from NEMO_nc_slevel_viewer_lib import vector_div, vector_curl,sw_dens,reload_dat
 
 from NEMO_nc_slevel_viewer_lib import reload_map_data_comb_zmeth_zindex,reload_map_data_comb_zmeth_ss_3d,reload_map_data_comb_zmeth_nb_df_zm_3d
 from NEMO_nc_slevel_viewer_lib import reload_map_data_comb_zmeth_zslice,reload_map_data_comb_2d,reload_map_data_comb,reload_ew_data_comb,reload_ns_data_comb
-from NEMO_nc_slevel_viewer_lib import reload_hov_data_comb,reload_ts_data_comb
-from NEMO_nc_slevel_viewer_lib import regrid_2nd,grad_horiz_ns_data,grad_horiz_ew_data,grad_vert_ns_data,grad_vert_ew_data,grad_vert_hov_data
+from NEMO_nc_slevel_viewer_lib import reload_hov_data_comb,reload_ts_data_comb,reload_pf_data_comb
+from NEMO_nc_slevel_viewer_lib import regrid_2nd,grad_horiz_ns_data,grad_horiz_ew_data,grad_vert_ns_data,grad_vert_ew_data,grad_vert_hov_prof_data
 #from NEMO_nc_slevel_viewer_lib import indices_from_ginput_ax
 from NEMO_nc_slevel_viewer_lib import extract_time_from_xarr,load_nc_var_name_list_WW3
 
@@ -673,6 +673,7 @@ def nemo_slice_zlev(config = 'amm7',
 
     nvarbutcol = 16 # 18
     nvarbutcol = 22 # 18
+    nvarbutcol = 25 # 18
 
     fig = plt.figure()
     fig.suptitle(fig_tit_str_int + '\n' + fig_tit_str_lab, fontsize=14)
@@ -695,11 +696,40 @@ def nemo_slice_zlev(config = 'amm7',
         axwid = 0.35
         leftgap = 0.15
 
-    ax.append(fig.add_axes([leftgap,                                  0.10, axwid - cbwid - cbgap,  0.80]))
-    ax.append(fig.add_axes([leftgap + (axwid - cbwid - cbgap) + wgap, 0.73, axwid - cbwid - cbgap,  0.17]))
-    ax.append(fig.add_axes([leftgap + (axwid - cbwid - cbgap) + wgap, 0.52, axwid - cbwid - cbgap,  0.17]))
-    ax.append(fig.add_axes([leftgap + (axwid - cbwid - cbgap) + wgap, 0.31, axwid - cbwid - cbgap,  0.17]))
-    ax.append(fig.add_axes([leftgap + (axwid - cbwid - cbgap) + wgap, 0.10, axwid - cbwid - cbgap,  0.17]))
+    profwid = 0.1
+    profgap = 0.04
+    profvis = True
+    ax_position_dims = []
+    ax_position_dims.append([leftgap,                                  0.10, axwid - cbwid - cbgap,  0.80])
+    ax_position_dims.append([leftgap + (axwid - cbwid - cbgap) + wgap, 0.73, axwid - cbwid - cbgap,  0.17])
+    ax_position_dims.append([leftgap + (axwid - cbwid - cbgap) + wgap, 0.52, axwid - cbwid - cbgap,  0.17])
+    ax_position_dims.append([leftgap + (axwid - cbwid - cbgap) + wgap, 0.31, axwid - cbwid - cbgap,  0.17])
+    ax_position_dims.append([leftgap + (axwid - cbwid - cbgap) + wgap, 0.10, axwid - cbwid - cbgap,  0.17])
+    #
+    ax_position_dims.append([0,0,0,0])
+    #
+    
+    ax_position_dims_prof = []
+    ax_position_dims_prof.append([leftgap,                                             0.10, axwid - cbwid - cbgap,  0.80])
+    ax_position_dims_prof.append([leftgap + (axwid - cbwid - cbgap) + wgap+ profwid + profgap, 0.73, axwid - cbwid - cbgap - profwid - profgap,  0.17])
+    ax_position_dims_prof.append([leftgap + (axwid - cbwid - cbgap) + wgap+ profwid + profgap, 0.52, axwid - cbwid - cbgap - profwid - profgap,  0.17])
+    ax_position_dims_prof.append([leftgap + (axwid - cbwid - cbgap) + wgap,            0.31, axwid - cbwid - cbgap,  0.17])
+    ax_position_dims_prof.append([leftgap + (axwid - cbwid - cbgap) + wgap,            0.10, axwid - cbwid - cbgap,  0.17])
+    #
+    ax_position_dims_prof.append([leftgap + (axwid - cbwid - cbgap) + wgap, 0.52, profwid,  0.73 + 0.17 - 0.52])
+    
+
+    if profvis:
+        for tmpax_position_dims in ax_position_dims_prof:  ax.append(fig.add_axes(tmpax_position_dims))
+    else:
+        for tmpax_position_dims in ax_position_dims:  ax.append(fig.add_axes(tmpax_position_dims))
+    ax[-1].set_visible(profvis)
+
+    #ax.append(fig.add_axes([leftgap,                                  0.10, axwid - cbwid - cbgap,  0.80]))
+    #ax.append(fig.add_axes([leftgap + (axwid - cbwid - cbgap) + wgap, 0.73, axwid - cbwid - cbgap,  0.17]))
+    #ax.append(fig.add_axes([leftgap + (axwid - cbwid - cbgap) + wgap, 0.52, axwid - cbwid - cbgap,  0.17]))
+    #ax.append(fig.add_axes([leftgap + (axwid - cbwid - cbgap) + wgap, 0.31, axwid - cbwid - cbgap,  0.17]))
+    #ax.append(fig.add_axes([leftgap + (axwid - cbwid - cbgap) + wgap, 0.10, axwid - cbwid - cbgap,  0.17]))
 
 
 
@@ -771,6 +801,7 @@ def nemo_slice_zlev(config = 'amm7',
     func_but_dx1 = func_but_x1 -func_but_x0 
     but_dy = 0.04
     but_dy = 0.03
+    but_dy = 0.025
     but_ysp = 0.01 
     but_ysp = 0.01 
     
@@ -806,7 +837,7 @@ def nemo_slice_zlev(config = 'amm7',
 
     mode_name_lst = ['Click','Loop']
 
-    func_names_lst = ['Hov/Time','ColScl','Reset zoom', 'Zoom', 'Axis','Clim: Reset','Clim: Zoom','Clim: Expand','Clim: pair','Clim: sym','Surface', 'Near-Bed', 'Surface-Bed','Depth-Mean','Depth level','Contours','Grad','T Diff','TS Diag','LD time','Fcst Diag','Save Figure','Quit']
+    func_names_lst = ['Hov/Time','Show Prof','ColScl','Reset zoom', 'Zoom', 'Axis','Clim: Reset','Clim: Zoom','Clim: Expand','Clim: pair','Clim: sym','Surface', 'Near-Bed', 'Surface-Bed','Depth-Mean','Depth level','Contours','Grad','T Diff','TS Diag','LD time','Fcst Diag','Save Figure','Quit']
     
 
     if add_TSProf:
@@ -901,6 +932,11 @@ def nemo_slice_zlev(config = 'amm7',
         func_but_text_han['Hov/Time'].set_color('darkgreen')
     else:
         func_but_text_han['Hov/Time'].set_color('0.5')
+    if profvis:
+        func_but_text_han['Show Prof'].set_color('darkgreen')
+    else:
+        func_but_text_han['Show Prof'].set_color('0.5')
+
 
 
     if do_cont:
@@ -1031,6 +1067,21 @@ ax,
                     else:
                         print('config not supported:', configd[1])
                         pdb.set_trace()
+
+                    if (sel_ii<0)|(sel_jj<0):
+                        pdb.set_trace()
+
+                    if (sel_ii>=lon_d[1].shape[1]):
+                        #print('ii too big')
+                        #pdb.set_trace()
+                        sel_ii=lon_d[1].shape[1]-1
+                    if (sel_jj>=lon_d[1].shape[0]):
+                        #print('jj too big')
+                        #pdb.set_trace()
+                        sel_jj=lon_d[1].shape[0]-1
+                    if (sel_jj<0):sel_jj=0
+                    if (sel_ii<0):sel_ii=0
+                    if (sel_jj<0):sel_jj=0
                     # and reload slices, and hovmuller/time series
 
                 elif ai in [1]: 
@@ -1078,6 +1129,8 @@ ax,
                     # if in hov/time series, change map, and slices
                     sel_ti = np.abs(xlocval - time_datetime_since_1970).argmin()
                     
+                elif ai in [5]:
+                    print('No action for Profiles axes')
                 else:
                     print('clicked in another axes??')
                     return
@@ -1099,13 +1152,39 @@ ax,
         secdataset_proc_figname = ''
         if secdataset_proc == 'Dataset 1':secdataset_proc_figname = '_Datset_1'
         if secdataset_proc == 'Dataset 2':secdataset_proc_figname = '_Datset_2'
+        if secdataset_proc == 'Dataset 3':secdataset_proc_figname = '_Datset_3'
         if secdataset_proc == 'Dat1-Dat2':secdataset_proc_figname = '_Diff_1-2'
         if secdataset_proc == 'Dat2-Dat1':secdataset_proc_figname = '_Diff_2-1'
         fig_out_name = '%s/output_%s_%s_th%02i_fth%02i_%04i_%04i_%03i_%03i_%s%s'%(fig_dir,fig_lab,var,thd[1]['dx'],thd[1]['df'],ii,jj,ti,zz,z_meth,secdataset_proc_figname)
+        
+        
+
+        '''
         if fig_lab_d['Dataset 1'] is not None: fig_out_name = fig_out_name + '_d1_%s'%fig_lab_d['Dataset 1']
         if fig_lab_d['Dataset 2'] is not None: fig_out_name = fig_out_name + '_d2_%s'%fig_lab_d['Dataset 2']
+        '''
+        
+        for tmp_datstr in Dataset_lst:
+            #if fig_lab_d[tmp_datstr] is not None: 
+            fig_out_name = fig_out_name + '_d%s_%s'%(tmp_datstr[-1],fig_lab_d[tmp_datstr])
+        
         fig_out_name = fig_out_name
 
+
+
+        fig_tit_str_lab = ''
+        if load_second_files == False:
+            fig_tit_str_lab = fig_lab_d['Dataset 1']
+        else:
+            if secdataset_proc in Dataset_lst:
+                fig_tit_str_lab = '%s'%fig_lab_d[secdataset_proc]
+            else:
+                tmpdataset_1 = 'Dataset ' + secdataset_proc[3]
+                tmpdataset_2 = 'Dataset ' + secdataset_proc[8]
+                tmpdataset_oper = secdataset_proc[4]
+                if tmpdataset_oper == '-':
+                    fig_tit_str_lab = '%s minus %s'%(fig_lab_d[tmpdataset_1],fig_lab_d[tmpdataset_2])
+        '''
 
         fig_tit_str_lab = ''
         if load_second_files == False:
@@ -1119,6 +1198,7 @@ ax,
                 fig_tit_str_lab = '%s minus %s'%(fig_lab_d['Dataset 2'],fig_lab_d['Dataset 1'])
 
 
+        '''
 
         fig.suptitle( fig_tit_str_lab, fontsize=14)
 
@@ -1517,7 +1597,12 @@ ax,
 
             if verbose_debugging: print('Reloaded  ns data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now(),'; dt = %s'%(datetime.now()-prevtime))
             prevtime = datetime.now()
-            
+
+            if profvis:
+                pf_dat_dict = reload_pf_data_comb(var,var_dim,var_d[1]['mat'],var_grid['Dataset 1'],var_d['d'],ldi,thd, time_datetime, ii,jj,ti,iijj_ind,nz,ntime, grid_dict,xarr_dict,load_second_files,Dataset_lst,configd)
+
+                if do_grad == 2:
+                    pf_dat_dict = grad_vert_hov_prof_data(pf_dat_dict)
             if reload_hov:
                 if hov_time:
                     if var_dim[var] == 4:
@@ -1525,8 +1610,8 @@ ax,
                         hov_dat_dict = reload_hov_data_comb(var,var_d[1]['mat'],var_grid['Dataset 1'],var_d['d'],ldi,thd, time_datetime, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict,load_second_files,Dataset_lst,configd)
 
                         if do_grad == 2:
-                            #hov_dat_dict['Dataset 1'],hov_dat_dict['Dataset 2'] = grad_vert_hov_data(hov_dat_dict['Dataset 1'],hov_dat_dict['Dataset 2'],hov_dat_dict['y'])
-                            hov_dat_dict = grad_vert_hov_data(hov_dat_dict)
+                            #hov_dat_dict['Dataset 1'],hov_dat_dict['Dataset 2'] = grad_vert_hov_prof_data(hov_dat_dict['Dataset 1'],hov_dat_dict['Dataset 2'],hov_dat_dict['y'])
+                            hov_dat_dict = grad_vert_hov_prof_data(hov_dat_dict)
                     else:
                         hov_dat_dict = {}
                         hov_dat_dict['x'] = time_datetime
@@ -1637,7 +1722,7 @@ ax,
                 pax.append(ax[3].pcolormesh(hov_dat_dict['x'],hov_dat_dict['y'],hov_dat,cmap = curr_cmap,norm = climnorm))
 
             tsax_lst = []
-            Dataset_col = ['r','b','darkgreen','gold']
+            #Dataset_col = ['r','b','darkgreen','gold']
             # if Dataset X, plot all data sets
             if secdataset_proc in Dataset_lst:
                 
@@ -1677,6 +1762,55 @@ ax,
                 else:
                     pdb.set_trace()
 
+
+
+
+            pfax_lst = []
+            if profvis:
+                pf_yvals = []
+                #Dataset_col = ['r','b','darkgreen','gold']
+                # if Dataset X, plot all data sets
+                if secdataset_proc in Dataset_lst:
+                    
+                    for dsi,tmp_datstr in enumerate(Dataset_lst):
+                        tmplw = 0.5
+                        if secdataset_proc == tmp_datstr:tmplw = 1
+                        pf_yvals.append(pf_dat_dict[tmp_datstr])
+                        pfax_lst.append(ax[5].plot(pf_dat_dict[tmp_datstr],pf_dat_dict['y'],Dataset_col[dsi], lw = tmplw))
+                        
+                else:
+                    # only plot the current dataset difference
+                    tmpdataset_1 = 'Dataset ' + secdataset_proc[3]
+                    tmpdataset_2 = 'Dataset ' + secdataset_proc[8]
+                    tmpdataset_oper = secdataset_proc[4]
+                    if tmpdataset_oper == '-': 
+                        
+                        pf_yvals.append(pf_dat_dict[tmpdataset_1] - pf_dat_dict[tmpdataset_2])
+                        pfax_lst.append(ax[5].plot(pf_dat_dict[tmpdataset_1] - pf_dat_dict[tmpdataset_2],pf_dat_dict['y'],Dataset_col_diff_dict[secdataset_proc]))
+                        pfax_lst.append(ax[5].plot(pf_dat_dict['Dataset 1']*0,pf_dat_dict['y'], color = '0.5', ls = '--'))
+
+
+
+                        for tmp_datstr1 in Dataset_lst:
+                            th_d_ind1 = int(tmp_datstr1[-1])
+                            for tmp_datstr2 in Dataset_lst:
+                                th_d_ind2 = int(tmp_datstr2[-1])
+                                if tmp_datstr1!=tmp_datstr2:
+                                    tmp_diff_str_name = 'Dat%i-Dat%i'%(th_d_ind1,th_d_ind2)                               
+                                    tmplw = 0.5
+                                    if secdataset_proc == tmp_diff_str_name:tmplw = 1
+
+                                    pf_yvals.append(pf_dat_dict[tmp_datstr1] - pf_dat_dict[tmp_datstr2])
+                                    pfax_lst.append(ax[5].plot(pf_dat_dict[tmp_datstr1] - pf_dat_dict[tmp_datstr2],pf_dat_dict['y'],Dataset_col_diff_dict[tmp_diff_str_name], lw = tmplw))
+
+                            pfax_lst.append(ax[5].plot(pf_dat_dict['Dataset 1']*0,pf_dat_dict['y'], color = '0.5', ls = '--'))
+
+
+
+                    else:
+                        pdb.set_trace()
+                pf_xlim = np.ma.array([np.ma.array(pf_yvals).ravel().min(), np.ma.array(pf_yvals).ravel().max()])
+                if pf_xlim.mask.any():pf_xlim = np.ma.array([0,1])
 
 
 
@@ -1799,10 +1933,19 @@ ax,
                 ax[1].set_ylim(tmp_ew_ylim)
                 ax[2].set_ylim(tmp_ns_ylim)
                 ax[3].set_ylim(tmp_hov_ylim)
+
+                if profvis:
+                    tmp_py_ylim = [pf_dat_dict['y'].max(),zlim_min]
+                    ax[5].set_ylim(tmp_py_ylim)
+                    ax[5].set_xlim(pf_xlim)
+                    
             else:
                 ax[1].set_ylim([zlim_max,zlim_min])
                 ax[2].set_ylim([zlim_max,zlim_min])
                 ax[3].set_ylim([np.minimum(zlim_max,hov_dat_dict['y'].max()),zlim_min])
+                if profvis:
+                    ax[5].set_ylim([np.minimum(zlim_max,pf_dat_dict['y'].max()),zlim_min])
+                    ax[5].set_xlim(pf_xlim)
                 #pdb.set_trace()
 
         
@@ -2126,8 +2269,10 @@ ax,
             is_in_axes = False
             
             # convert the mouse click into data indices, and report which axes was clicked
-            sel_ax,sel_ii,sel_jj,sel_ti,sel_zz = indices_from_ginput_ax(ax,clii,cljj, thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
-
+            try:
+                sel_ax,sel_ii,sel_jj,sel_ti,sel_zz = indices_from_ginput_ax(ax,clii,cljj, thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
+            except:
+                pdb.set_trace()
                 
                 
             if verbose_debugging: print("selected sel_ax = %s,sel_ii = %s,sel_jj = %s,sel_ti = %s,sel_zz = %s"%(sel_ax,sel_ii,sel_jj,sel_ti,sel_zz))
@@ -2573,6 +2718,20 @@ ax,
                             reload_hov = True
                             reload_ts = True
 
+                    elif but_name == 'Show Prof':
+                        if profvis:
+                            func_but_text_han['Show Prof'].set_color('0.5')
+                            profvis = False
+                            for tmpax, tmppos in zip(ax,ax_position_dims): tmpax.set_position(tmppos)
+                            ax[-1].set_visible(profvis)
+
+                        else:
+                            func_but_text_han['Show Prof'].set_color('darkgreen')
+                            profvis = True
+                            for tmpax, tmppos in zip(ax,ax_position_dims_prof): tmpax.set_position(tmppos)
+                            ax[-1].set_visible(profvis)
+
+
                     elif but_name == 'regrid_meth':
                         if regrid_meth == 1:
                             func_but_text_han['regrid_meth'].set_text('Regrid: Bilin')
@@ -2750,6 +2909,13 @@ ax,
             for tsax in tsax_lst:
                 rem_loc = tsax.pop(0)
                 rem_loc.remove()
+
+            for pfax in pfax_lst:
+                rem_loc = pfax.pop(0)
+                rem_loc.remove()
+
+
+                
             '''
             for tsax in tsaxtx_lst:
                 rem_loc = tsax.pop(0)

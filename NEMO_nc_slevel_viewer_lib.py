@@ -1535,9 +1535,13 @@ def pycnocline_params(rho_4d,gdept_3d,e3t_3d):
     '''
     N2,Pync_Z,Pync_Th,N2_max = pycnocline_params(data_inst[tmp_datstr][np.newaxis],grid_dict[tmp_datstr]['gdept'],grid_dict[tmp_datstr]['e3t'])
 
+    should density be in 25kg/m3 or 1025kg/m3... should z be positive, N2 be negative?
+
     '''
     #pdb.set_trace()
     # vertical density gradient
+    #drhodz = np.gradient(rho_4d, axis = 1)/e3t_3d
+
     drho =  rho_4d[:,2:,:,:] -  rho_4d[:,:-2,:,:]
     dz = gdept_3d[2:,:,:] - gdept_3d[:-2,:,:]
 
@@ -1916,7 +1920,6 @@ def reload_map_data_comb_zmeth_zindex(data_inst,zi,regrid_params,regrid_meth,thd
 
 
 
-
 def reload_ew_data_comb(ii,jj, data_inst, nav_lon, nav_lat, grid_dict,regrid_meth, iijj_ind,Dataset_lst,configd):
     #Dataset_lst = [ss for ss in data_inst.keys()]
     Dataset_lst_secondary = Dataset_lst.copy()
@@ -2009,6 +2012,82 @@ def reload_ns_data_comb(ii,jj, data_inst, nav_lon, nav_lat, grid_dict, regrid_me
     return ns_slice_dict
 
 
+
+def reload_pf_data_comb(var,var_dim,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,ti,iijj_ind,nz,ntime,grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd):       
+    #Dataset_lst = [ss for ss in xarr_dict.keys()]      
+    Dataset_lst_secondary = Dataset_lst.copy()
+    if 'Dataset 1' in Dataset_lst_secondary: Dataset_lst_secondary.remove('Dataset 1')    
+            
+    '''
+    reload the data for the Hovmuller plot
+    '''
+
+    pf_dat = {}
+
+    #pf_dat['x'] = time_datetime
+    pf_dat['y'] = grid_dict['Dataset 1']['gdept'][:,jj,ii]
+
+
+
+    #pf_x = time_datetime
+    #pf_y =  grid_dict['Dataset 1']['gdept'][:,jj,ii]
+
+    pf_start = datetime.now()
+
+
+    if var_dim[var] == 4:
+        if var in deriv_var:
+            #pdb.set_trace()
+            if var == 'baroc_mag':
+
+                tmp_var_U, tmp_var_V = 'vozocrtx','vomecrty'
+
+                pf_dat_U_dict = reload_pf_data_comb(tmp_var_U,var_dim,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,ti,iijj_ind,nz,ntime,grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd)
+                pf_dat_V_dict = reload_pf_data_comb(tmp_var_V,var_dim,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,ti,iijj_ind,nz,ntime,grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd)
+
+                for tmp_datstr in Dataset_lst:
+                    pf_dat[tmp_datstr]  = np.sqrt(pf_dat_U_dict[tmp_datstr]**2 + pf_dat_V_dict[tmp_datstr]**2)
+
+        
+            elif var == 'rho':
+                pf_dat_T_dict = reload_pf_data_comb('votemper',var_dim,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,ti,iijj_ind,nz,ntime,grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd)
+                pf_dat_S_dict = reload_pf_data_comb('vosaline',var_dim,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,ti,iijj_ind,nz,ntime,grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd)
+
+                
+                for tmp_datstr in Dataset_lst:
+                    pf_dat[tmp_datstr]  = sw_dens(pf_dat_T_dict[tmp_datstr], pf_dat_S_dict[tmp_datstr])
+
+            else:
+                for tmp_datstr in Dataset_lst:
+                    pf_dat[tmp_datstr] = np.ma.zeros((nz))*np.ma.masked
+
+        elif var in var_mat:
+
+
+            pf_dat['Dataset 1'] = np.ma.masked_invalid(xarr_dict['Dataset 1'][var_grid[var]][ldi].variables[var][ti,:,thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']][:,jj,ii].load()).T
+            
+            for tmp_datstr in Dataset_lst_secondary:
+                th_d_ind = int(tmp_datstr[-1])
+                
+                if configd[th_d_ind] == configd[1]: #if configd[th_d_ind] is None:
+                    pf_dat[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables[var][ti,:,thd[2]['y0']:thd[2]['y1']:thd[2]['dy'],thd[2]['x0']:thd[2]['x1']:thd[2]['dx']][:,jj,ii].load()).T
+                else:
+                    ii_2nd_ind,jj_2nd_ind = iijj_ind[tmp_datstr]['ii'],iijj_ind[tmp_datstr]['jj']
+
+                    pf_dat[tmp_datstr] = np.ma.zeros(xarr_dict['Dataset 1'][var_grid[var]][ldi].variables[var][ti,:,thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']].shape[1::-1])*np.ma.masked
+                    tmpdat_pf = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables[var][ti,:,thd[2]['y0']:thd[2]['y1']:thd[2]['dy'],thd[2]['x0']:thd[2]['x1']:thd[2]['dx']][:,:,jj_2nd_ind,ii_2nd_ind].load())
+                    tmpdat_pf_gdept =  grid_dict[tmp_datstr]['gdept'][:,jj_2nd_ind,ii_2nd_ind]               
+                    pf_dat[tmp_datstr] = np.ma.masked_invalid(np.interp(pf_dat['y'], tmpdat_pf_gdept, tmpdat_pf))
+
+        else:
+            for tmp_datstr in Dataset_lst: pf_dat[tmp_datstr] = np.ma.zeros((nz))*np.ma.masked
+            
+        pf_stop = datetime.now()
+    else:
+        for tmp_datstr in Dataset_lst: pf_dat[tmp_datstr] = np.ma.zeros((nz))*np.ma.masked
+    return pf_dat
+
+   
 
             
 
@@ -2542,25 +2621,30 @@ def grad_vert_ew_data(ew_slice_dict):
 
 
 
-#def grad_vert_hov_data(hov_dat_1,hov_dat_2,hov_y):
-def grad_vert_hov_data(hov_dat_dict):
+#def grad_vert_hov_prof_data(hov_dat_1,hov_dat_2,hov_y):
+def grad_vert_hov_prof_data(hov_dat_dict):
 
-    #hov_dat_dict['Dataset 1'],hov_dat_dict['Dataset 2'] = grad_vert_hov_data(hov_dat_dict['Dataset 1'],hov_dat_dict['Dataset 2'],hov_dat_dict['y'])
+    #hov_dat_dict['Dataset 1'],hov_dat_dict['Dataset 2'] = grad_vert_hov_prof_data(hov_dat_dict['Dataset 1'],hov_dat_dict['Dataset 2'],hov_dat_dict['y'])
 
     Dataset_lst = [ss for ss in hov_dat_dict.keys()]   
-    Dataset_lst.remove('x')       
-    Dataset_lst.remove('y')    
+    if 'x' in Dataset_lst: Dataset_lst.remove('x')       
+    if 'y' in Dataset_lst: Dataset_lst.remove('y')    
 
 
     hov_y = hov_dat_dict['y']
     dhov_z = hov_y[2:] - hov_y[:-2]
     
     for tmp_datstr in Dataset_lst:
-
+        '''
         dhov_1 = hov_dat_dict[tmp_datstr][2:,:] - hov_dat_dict[tmp_datstr][:-2,:]
         hov_dat_dict[tmp_datstr][1:-1,:] = (dhov_1.T/dhov_z).T
         hov_dat_dict[tmp_datstr][ 0,:] = np.ma.masked
         hov_dat_dict[tmp_datstr][-1,:] = np.ma.masked
+        '''
+        dhov_1 = hov_dat_dict[tmp_datstr][2:] - hov_dat_dict[tmp_datstr][:-2]
+        hov_dat_dict[tmp_datstr][1:-1] = (dhov_1.T/dhov_z).T
+        hov_dat_dict[tmp_datstr][ 0] = np.ma.masked
+        hov_dat_dict[tmp_datstr][-1] = np.ma.masked
 
 
     return hov_dat_dict
