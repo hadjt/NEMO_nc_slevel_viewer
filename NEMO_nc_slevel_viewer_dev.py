@@ -1599,7 +1599,8 @@ ax,
             prevtime = datetime.now()
 
             if profvis:
-                pf_dat_dict = reload_pf_data_comb(var,var_dim,var_d[1]['mat'],var_grid['Dataset 1'],var_d['d'],ldi,thd, time_datetime, ii,jj,ti,iijj_ind,nz,ntime, grid_dict,xarr_dict,load_second_files,Dataset_lst,configd)
+                #pf_dat_dict = reload_pf_data_comb(var,var_dim,var_d[1]['mat'],var_grid['Dataset 1'],var_d['d'],ldi,thd, time_datetime, ii,jj,ti,iijj_ind,nz,ntime, grid_dict,xarr_dict,load_second_files,Dataset_lst,configd)
+                pf_dat_dict = reload_pf_data_comb(data_inst,var,var_dim,ii,jj,nz,grid_dict,Dataset_lst)
 
                 if do_grad == 2:
                     pf_dat_dict = grad_vert_hov_prof_data(pf_dat_dict)
@@ -2480,7 +2481,7 @@ ax,
                             tmp_gdept = {}
                             tmp_mld1 = {}
                             tmp_mld2 = {}
-                            tmp_rho_data = {}
+                            tmp_sigma_density_data = {}
 
                             for tmp_datstr in Dataset_lst:
                                 th_d_ind = int(tmp_datstr[-1])
@@ -2503,7 +2504,7 @@ ax,
                                     tmp_gdept_2 =  grid_dict[tmp_datstr]['gdept'][:,iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']]               
 
                                 
-                                tmp_rho_data[tmp_datstr] = sw_dens(tmp_T_data[tmp_datstr],tmp_S_data[tmp_datstr])
+                                tmp_sigma_density_data[tmp_datstr] = sw_dens(tmp_T_data[tmp_datstr],tmp_S_data[tmp_datstr])-1000.
                           
                             figts = plt.figure()
                             figts.set_figheight(8*1.2)
@@ -2531,7 +2532,7 @@ ax,
                             axtp.spines['bottom'].set_visible(False)
                             axtp.xaxis.label.set_color('r')
                             axrp = axsp.twiny()
-                            for dsi,tmp_datstr in enumerate(Dataset_lst):axrp.plot(tmp_rho_data[tmp_datstr],tmp_gdept[tmp_datstr],color = 'b', lw = 0.5, linestyle = linestyle_str[dsi])
+                            for dsi,tmp_datstr in enumerate(Dataset_lst):axrp.plot(tmp_sigma_density_data[tmp_datstr],tmp_gdept[tmp_datstr],color = 'b', lw = 0.5, linestyle = linestyle_str[dsi])
                             axrp.set_xlabel('Density')
                             axrp.spines['top'].set_color('b')
                             axrp.tick_params(axis = 'x',colors = 'b')

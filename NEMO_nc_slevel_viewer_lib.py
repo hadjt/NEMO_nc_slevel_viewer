@@ -1022,6 +1022,8 @@ def mask_stats(data,mask,sparse=False):
 
 
 def sw_dens(tdata,sdata):
+
+    #outputs rho density, not sigma (density - 1000)
     #function sw_dens,tdata,sdata,unesco=unesco
     #; Consistent with the ukmo routine calc_dens
     #; tdata = potential temperature i.e. stash 101
@@ -1068,7 +1070,7 @@ def sw_dens(tdata,sdata):
     #
     part2 = ( C[1] + (C[4] + C[8]*SQ)*SQ)*SQ
     #if is_cube :
-    dens_out =  (part1  +  part2)   * 1000. + SIGO
+    sigma_dens_out =  (part1  +  part2)   * 1000. + SIGO
     #dens_out =  ( C[0] + (C[3] + C[6]*SQ.data)*SQ.data+(C[2] + C[7]*SQ.data + C[5]*TQ.data )*TQ.data ) * TQ.data+( C[1] + (C[4] + C[8]*SQ.data)*SQ.data ) * SQ.data * 1000. + SIGO
     #if is_cube :
     #dens_out.units='kg/m^3'
@@ -1091,7 +1093,7 @@ def sw_dens(tdata,sdata):
     #      pm0
     #    endif
 
-    return dens_out
+    return sigma_dens_out + 1000
 
 
 
@@ -1474,7 +1476,7 @@ def vector_curl(tmpU, tmpV, tmpdx, tmpdy):
 
 
 
-
+"""
 def pycnocline_params_time(rho_4d,gdept_4d,e3t_4d):
 
     '''
@@ -1523,7 +1525,7 @@ def pycnocline_params_time(rho_4d,gdept_4d,e3t_4d):
                       
 
 
-
+"""
 
 
 
@@ -1532,16 +1534,30 @@ def pycnocline_params_time(rho_4d,gdept_4d,e3t_4d):
 
 def pycnocline_params(rho_4d,gdept_3d,e3t_3d):
 
+
+
+
     '''
     N2,Pync_Z,Pync_Th,N2_max = pycnocline_params(data_inst[tmp_datstr][np.newaxis],grid_dict[tmp_datstr]['gdept'],grid_dict[tmp_datstr]['e3t'])
 
     should density be in 25kg/m3 or 1025kg/m3... should z be positive, N2 be negative?
 
+    
+
+    gdept_mat_ts = np.tile(gdept_mat[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_ts)).T
+    dz_mat_ts = np.tile(dz_mat[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_ts)).T
+
+
+
+
     '''
+
+    minus_z_3d = gdept_3d
     #pdb.set_trace()
     # vertical density gradient
-    #drhodz = np.gradient(rho_4d, axis = 1)/e3t_3d
-
+    drhodz = np.gradient(rho_4d, axis = 1)/(-e3t_3d)
+    N2 = drhodz*(-9.81/rho_4d[:,:,:,:])
+    '''
     drho =  rho_4d[:,2:,:,:] -  rho_4d[:,:-2,:,:]
     dz = gdept_3d[2:,:,:] - gdept_3d[:-2,:,:]
 
@@ -1552,17 +1568,24 @@ def pycnocline_params(rho_4d,gdept_3d,e3t_3d):
     N2 = rho_4d.copy()*0*np.ma.masked
     N2[:,1:-1,:,:]  = drho_dz*(-9.81/rho_4d[:,1:-1,:,:])
     N2[:,0,:,:]= N2[:,1,:,:]
+    '''
 
     # https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2018JC014307
     # Equation 14
 
     
     # Pycnocline Depth:
-    Pync_Z = ((N2*gdept_3d)*e3t_3d).sum(axis = 1)/(N2*e3t_3d).sum(axis = 1)
+    #Pync_Z = ((N2*gdept_3d)*e3t_3d).sum(axis = 1)/(N2*e3t_3d).sum(axis = 1)
+    Pync_Z = -((N2*(-minus_z_3d))*e3t_3d).sum(axis = 1)/(N2*e3t_3d).sum(axis = 1)
                     
     # Pycnocline thickness:
-    Pync_Th  = np.sqrt(((N2*(gdept_3d-Pync_Z)**2)*e3t_3d).sum(axis = 1)/(N2*e3t_3d).sum(axis = 1))
-
+    #Pync_Th  = np.sqrt(((N2*(gdept_3d-Pync_Z)**2)*e3t_3d).sum(axis = 1)/(N2*e3t_3d).sum(axis = 1))
+    
+    
+    #Pync_Th  = np.sqrt(((N2*((-minus_z_3d)-Pync_Z)**2)*e3t_3d).sum(axis = 1)/(N2*e3t_3d).sum(axis = 1))
+    Pync_Th  = np.sqrt(((N2*((-minus_z_3d.T)-Pync_Z.T).T**2)*e3t_3d).sum(axis = 1)/(N2*e3t_3d).sum(axis = 1))
+    
+    
 
     # Depth of max Nz
     # find array size
@@ -1571,12 +1594,16 @@ def pycnocline_params(rho_4d,gdept_3d,e3t_3d):
     # Make dummy index array
     n_i_mat, n_j_mat = np.meshgrid(range(n_i), range(n_j))
 
+
     # find index of maximum N2 depth
     N2_max_arg = N2.argmax(axis = 1)
     N2_max = N2.max(axis = 1)
 
     # use gdept to calcuate these as a depth
-    N2_maxZ = gdept_3d[N2_max_arg,np.tile(n_j_mat,(n_t,1,1)),np.tile(n_i_mat,(n_t,1,1))]
+    if n_t <= 1:
+        N2_maxZ = gdept_3d[N2_max_arg,np.tile(n_j_mat,(n_t,1,1)),np.tile(n_i_mat,(n_t,1,1))]
+    else:
+        N2_maxZ = gdept_3d[0,N2_max_arg,np.tile(n_j_mat,(n_t,1,1)),np.tile(n_i_mat,(n_t,1,1))]
 
     return N2,Pync_Z,Pync_Th,N2_max,N2_maxZ
           
@@ -1738,7 +1765,7 @@ def reload_data_instances(var,thd,ldi,ti,var_d,var_grid, xarr_dict, grid_dict,va
             
 
             if var.upper() =='RHO'.upper():
-                data_inst[tmp_datstr]=tmp_rho
+                data_inst[tmp_datstr]=tmp_rho# - 1000.
 
             elif var.upper() in ['N2'.upper(),'Pync_Z'.upper(),'Pync_Th'.upper(),'N2max'.upper()]:
                 
@@ -2013,7 +2040,30 @@ def reload_ns_data_comb(ii,jj, data_inst, nav_lon, nav_lat, grid_dict, regrid_me
 
 
 
+def reload_pf_data_comb(data_inst,var,var_dim,ii,jj,nz,grid_dict,Dataset_lst):       
+    
+            
+    '''
+    reload the data for the data_inst
+    '''
+
+    pf_dat = {}
+
+    pf_dat['y'] = grid_dict['Dataset 1']['gdept'][:,jj,ii]
+
+
+    for tmp_datstr in Dataset_lst:
+        if var_dim[var] == 4:
+                pf_dat[tmp_datstr]  = np.ma.masked_invalid(data_inst['Dataset 1'][:,jj,ii])
+        else:
+            for tmp_datstr in Dataset_lst: pf_dat[tmp_datstr] = np.ma.zeros((nz))*np.ma.masked
+
+    return pf_dat
+
+"""
 def reload_pf_data_comb(var,var_dim,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,ti,iijj_ind,nz,ntime,grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd):       
+    
+    
     #Dataset_lst = [ss for ss in xarr_dict.keys()]      
     Dataset_lst_secondary = Dataset_lst.copy()
     if 'Dataset 1' in Dataset_lst_secondary: Dataset_lst_secondary.remove('Dataset 1')    
@@ -2055,7 +2105,7 @@ def reload_pf_data_comb(var,var_dim,var_mat,var_grid,deriv_var,ldi,thd,time_date
 
                 
                 for tmp_datstr in Dataset_lst:
-                    pf_dat[tmp_datstr]  = sw_dens(pf_dat_T_dict[tmp_datstr], pf_dat_S_dict[tmp_datstr])
+                    pf_dat[tmp_datstr]  = sw_dens(pf_dat_T_dict[tmp_datstr], pf_dat_S_dict[tmp_datstr])#-1000.
 
             else:
                 for tmp_datstr in Dataset_lst:
@@ -2088,7 +2138,7 @@ def reload_pf_data_comb(var,var_dim,var_mat,var_grid,deriv_var,ldi,thd,time_date
     return pf_dat
 
    
-
+"""
             
 
 def reload_hov_data_comb(var,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd):       
@@ -2132,7 +2182,45 @@ def reload_hov_data_comb(var,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii
 
             
             for tmp_datstr in Dataset_lst:
-                hov_dat[tmp_datstr]  = sw_dens(hov_dat_T_dict[tmp_datstr], hov_dat_S_dict[tmp_datstr])
+                hov_dat[tmp_datstr]  = sw_dens(hov_dat_T_dict[tmp_datstr], hov_dat_S_dict[tmp_datstr])# - 1000
+
+        elif var == 'N2':
+            try:
+                hov_dat_T_dict = reload_hov_data_comb('votemper',var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd)
+                hov_dat_S_dict = reload_hov_data_comb('vosaline',var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd)
+
+                for tmp_datstr in Dataset_lst: # _secondary:
+
+                    tmp_jj,tmp_ii = jj,ii
+
+                    if tmp_datstr in Dataset_lst_secondary:
+                        th_d_ind = int(tmp_datstr[-1])
+                        if configd[th_d_ind] != configd[1]: 
+                            tmp_jj,tmp_ii = iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']
+
+
+                    gdept_mat = grid_dict[tmp_datstr]['gdept'][:,tmp_jj,tmp_ii]
+                    dz_mat = grid_dict[tmp_datstr]['e3t'][:,tmp_jj,tmp_ii]
+                    nt_ts = hov_dat_T_dict[tmp_datstr].T.shape[0]
+
+                    gdept_mat_ts = np.tile(gdept_mat[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_ts)).T
+                    dz_mat_ts = np.tile(dz_mat[np.newaxis,:,np.newaxis,np.newaxis].T,(1,1,1,nt_ts)).T
+
+                
+            
+                    tmp_rho  = sw_dens(hov_dat_T_dict[tmp_datstr], hov_dat_S_dict[tmp_datstr])
+                    tmp_rho_ts = tmp_rho.T[:,:,np.newaxis,np.newaxis]
+
+                    #pdb.set_trace()
+                    #tmpN2,tmpPync_Z,tmpPync_Th,tmpN2_max,tmpN2_maxz = pycnocline_params_time(tmp_rho_ts,gdept_mat_ts,dz_mat_ts )
+                    tmpN2,tmpPync_Z,tmpPync_Th,tmpN2_max,tmpN2_maxz = pycnocline_params(tmp_rho_ts,gdept_mat_ts,dz_mat_ts )
+                    #pdb.set_trace()
+                    if var.upper() =='N2'.upper():hov_dat[tmp_datstr]=tmpN2[:,:,0,0].T
+
+            except:
+                pdb.set_trace()
+
+
 
         else:
             for tmp_datstr in Dataset_lst:
@@ -2251,8 +2339,9 @@ def reload_ts_data_comb(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,tim
                             tmp_rho  = sw_dens(hov_dat_T_dict[tmp_datstr], hov_dat_S_dict[tmp_datstr])
                             tmp_rho_ts = tmp_rho.T[:,:,np.newaxis,np.newaxis]
 
-
-                            tmpN2,tmpPync_Z,tmpPync_Th,tmpN2_max,tmpN2_maxz = pycnocline_params_time(tmp_rho_ts,gdept_mat_ts,dz_mat_ts )
+                            #pdb.set_trace()
+                            #tmpN2,tmpPync_Z,tmpPync_Th,tmpN2_max,tmpN2_maxz = pycnocline_params_time(tmp_rho_ts,gdept_mat_ts,dz_mat_ts )
+                            tmpN2,tmpPync_Z,tmpPync_Th,tmpN2_max,tmpN2_maxz = pycnocline_params(tmp_rho_ts,gdept_mat_ts,dz_mat_ts )
                         
                             if var.upper() =='N2'.upper():ts_dat_dict[tmp_datstr]=tmpN2[:,0,0] 
                             elif var.upper() =='Pync_Z'.upper():ts_dat_dict[tmp_datstr]=tmpPync_Z[:,0,0] 
