@@ -2054,7 +2054,7 @@ def reload_pf_data_comb(data_inst,var,var_dim,ii,jj,nz,grid_dict,Dataset_lst):
 
     for tmp_datstr in Dataset_lst:
         if var_dim[var] == 4:
-                pf_dat[tmp_datstr]  = np.ma.masked_invalid(data_inst['Dataset 1'][:,jj,ii])
+                pf_dat[tmp_datstr]  = np.ma.masked_invalid(data_inst[tmp_datstr][:,jj,ii])
         else:
             for tmp_datstr in Dataset_lst: pf_dat[tmp_datstr] = np.ma.zeros((nz))*np.ma.masked
 

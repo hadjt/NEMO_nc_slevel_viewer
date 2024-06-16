@@ -60,7 +60,7 @@ def nemo_slice_zlev(config = 'amm7',
     zlim_max = None,var = None,
     fig_lab_d = None,configd = None,thd = None,fname_dict = None,load_second_files = False,
     xlim = None, ylim = None, tlim = None, clim = None,
-    ii = None, jj = None, ti = None, zz = None, 
+    ii = None, jj = None, ti = None, zz = None, zi = None, 
     lon_in = None, lat_in = None, date_in_ind = None, date_fmt = '%Y%m%d',
     z_meth = None,
     secdataset_proc = 'Dataset 1',
@@ -151,8 +151,10 @@ def nemo_slice_zlev(config = 'amm7',
     #pdb.set_trace()
 
     if clim_sym is None: clim_sym = False
-    
-    clim_sym_but = 0
+    if clim_sym == False:
+        clim_sym_but = 0
+    else:
+        clim_sym_but = 1
     #clim_sym_but_norm_val = clim_sym
 
     # default initial indices
@@ -477,13 +479,13 @@ def nemo_slice_zlev(config = 'amm7',
         
         just_plt_cnt = 0
 
-        if justplot_date_ind is None:
+        if (justplot_date_ind is None)|(justplot_date_ind == 'None'):
              justplot_date_ind = time_datetime[ti].strftime(date_fmt)
 
-        if justplot_z_meth_zz is None:
+        if (justplot_z_meth_zz is None)|(justplot_z_meth_zz == 'None'):
              justplot_z_meth_zz = 'ss:0,nb:0,df:0'
 
-        if justplot_secdataset_proc is None:
+        if (justplot_secdataset_proc is None)|(justplot_secdataset_proc == 'None'):
              justplot_secdataset_proc = 'Dataset_1,Dataset_2,Dat2-Dat1'
 
         justplot_secdataset_proc = justplot_secdataset_proc.replace('_',' ')
@@ -497,6 +499,7 @@ def nemo_slice_zlev(config = 'amm7',
         just_plt_vals = []
         for justplot_date_ind_str in justplot_date_ind_lst:
             for zmi, justplot_z_meth_zz in enumerate(justplot_z_meth_zz_lst):
+                #pdb.set_trace()
                 justplot_z_meth,justplot_zz_str = justplot_z_meth_zz.split(':')
                 justplot_zz = int(justplot_zz_str)
                 for spi, secdataset_proc in enumerate(justplot_secdataset_proc_lst):
@@ -589,7 +592,7 @@ def nemo_slice_zlev(config = 'amm7',
     if ('votemper' in var_d[1]['mat']) & ('vosaline' in var_d[1]['mat']):
         add_TSProf = True
 
-
+    #pdb.set_trace()
 
     ldi = 0 
 
@@ -1231,6 +1234,9 @@ ax,
 
             arg_output_text = 'flist1=$(echo "/dir1/file0[4-7]??_*.nc")\n'
             arg_output_text = arg_output_text + 'flist2=$(echo "/dir2/file0[4-7]??_*.nc")\n'
+            arg_output_text = arg_output_text + '\n'
+            arg_output_text = arg_output_text + "justplot_date_ind='%s'\n"%time_datetime[ti].strftime(date_fmt)
+            
             arg_output_text = arg_output_text + '\n\n\n'
 
             arg_output_text = arg_output_text + 'python NEMO_nc_slevel_viewer.py %s'%configd[1]
@@ -1246,6 +1252,7 @@ ax,
             arg_output_text = arg_output_text + ' --var %s'%var
             arg_output_text = arg_output_text + ' --z_meth %s'%z_meth
             arg_output_text = arg_output_text + ' --zz %s'%zz
+            arg_output_text = arg_output_text + ' --clim_sym %s'%clim_sym
             if xlim is not None:arg_output_text = arg_output_text + ' --xlim %f %f'%tuple(xlim)
             if ylim is not None:arg_output_text = arg_output_text + ' --ylim %f %f'%tuple(ylim)
             if load_second_files:
@@ -1257,7 +1264,8 @@ ax,
                 arg_output_text = arg_output_text + ' --fname_lst_2nd  "$flist2"'
                 arg_output_text = arg_output_text + ' --clim_pair %s'%clim_pair
 
-            arg_output_text = arg_output_text + " --justplot_date_ind '%s'"%time_datetime[ti].strftime(date_fmt)
+            arg_output_text = arg_output_text + " --justplot_date_ind '$justplot_date_ind'"
+            #arg_output_text = arg_output_text + " --justplot_date_ind '%s'"%time_datetime[ti].strftime(date_fmt)
             arg_output_text = arg_output_text + " --justplot_secdataset_proc '%s'"%justplot_secdataset_proc
             arg_output_text = arg_output_text + " --justplot_z_meth_zz '%s'"%justplot_z_meth_zz
             arg_output_text = arg_output_text + ' --justplot True'       
@@ -2081,7 +2089,11 @@ ax,
             cs_line.append(ax[1].axhline(zz,color = '0.5', alpha = 0.5))
             cs_line.append(ax[2].axhline(zz,color = '0.5', alpha = 0.5))
             cs_line.append(ax[3].axhline(zz,color = '0.5', alpha = 0.5))
-
+            if profvis:
+                cs_line.append(ax[5].axhline(zz,color = '0.5', alpha = 0.5))
+                if np.prod(ax[5].get_xlim())<0:
+                    cs_line.append(ax[5].axvline(0,color = '0.5', alpha = 0.5))
+                    
 
             
             ###################################################################################################
