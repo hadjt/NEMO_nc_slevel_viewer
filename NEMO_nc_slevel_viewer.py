@@ -497,18 +497,23 @@ def nemo_slice_zlev(config = 'amm7',
                 
         
         just_plt_vals = []
-        for justplot_date_ind_str in justplot_date_ind_lst:
-            for zmi, justplot_z_meth_zz in enumerate(justplot_z_meth_zz_lst):
+        # cycle though dates. Change ti, so data_inst reloaded automatically.
+        #     location unchanged, so hov doen't need reloading, but everything else does
+        for jpdti,justplot_date_ind_str in enumerate(justplot_date_ind_lst):
+            # cycle through depths. Map, and ts need changing, but profile hov and cross sectons, don't
+            for jpzmi, justplot_z_meth_zz in enumerate(justplot_z_meth_zz_lst): 
                 #pdb.set_trace()
                 justplot_z_meth,justplot_zz_str = justplot_z_meth_zz.split(':')
                 justplot_zz = int(justplot_zz_str)
-                for spi, secdataset_proc in enumerate(justplot_secdataset_proc_lst):
-                    if (spi == 0):
+                #  cycle through datasets, nothing needs reloading. 
+                for jpspi, secdataset_proc in enumerate(justplot_secdataset_proc_lst): 
+                    just_plt_vals.append((secdataset_proc,justplot_date_ind_str, justplot_z_meth,justplot_zz, True, True, True, False, True))
+                    '''
+                    if (jpspi == 0):#                                                                     reload_map,reload_ew,reload_ns,reload_hov,reload_ts,                        
                         just_plt_vals.append((secdataset_proc,justplot_date_ind_str, justplot_z_meth,justplot_zz, True, True, True, False, False))
                     else:
                         just_plt_vals.append((secdataset_proc,justplot_date_ind_str, justplot_z_meth,justplot_zz, False, False, False, False, False))
-                      
-
+                    '''  
     init_timer.append((datetime.now(),'justplot prepared'))
     # repeat if comparing two time series. 
     if load_second_files:
@@ -1219,9 +1224,9 @@ ax,
         else:
             fig.savefig(fig_out_name+ '.png', dpi = figdpi)
 
-        print('')
-        print(fig_out_name + '.png')
-        print('')
+        #print('')
+        #print(fig_out_name + '.png')
+        #print('')
 
 
 
@@ -1247,6 +1252,8 @@ ax,
             arg_output_text = arg_output_text + ' --fig_fname_lab %s'%fig_lab_d['Dataset 1']
             arg_output_text = arg_output_text + ' --lon %f'%lon_d[1][jj,ii]
             arg_output_text = arg_output_text + ' --lat %f'%lat_d[1][jj,ii]
+            arg_output_text = arg_output_text + ' --xlim %f %f'%(xlim[0],xlim[1])
+            arg_output_text = arg_output_text + ' --ylim %f %f'%(ylim[0],ylim[1])
             arg_output_text = arg_output_text + ' --date_ind %s'%time_datetime[ti].strftime(date_fmt)
             arg_output_text = arg_output_text + ' --date_fmt %s'%date_fmt
             arg_output_text = arg_output_text + ' --var %s'%var
@@ -1274,8 +1281,10 @@ ax,
             fid.write(arg_output_text)
             fid.close()
             
+            print(' ')
             print(fig_out_name + '.png')
             print(fig_out_name + '.txt')
+            print(' ')
 
         except:
             pdb.set_trace()
@@ -1300,7 +1309,7 @@ ax,
 
     if justplot: 
         secdataset_proc = just_plt_vals[just_plt_cnt][0]
-        tmp_date_in_ind = just_plt_vals[just_plt_cnt][1]
+        #tmp_date_in_ind = just_plt_vals[just_plt_cnt][1]
         z_meth = just_plt_vals[just_plt_cnt][2]
         zz = just_plt_vals[just_plt_cnt][3]
 
@@ -2089,9 +2098,12 @@ ax,
             cs_line.append(ax[1].axhline(zz,color = '0.5', alpha = 0.5))
             cs_line.append(ax[2].axhline(zz,color = '0.5', alpha = 0.5))
             cs_line.append(ax[3].axhline(zz,color = '0.5', alpha = 0.5))
+            if np.prod(ax[4].get_ylim())<0: # if xlim straddles zero
+                cs_line.append(ax[4].axhline(0,color = '0.5', alpha = 0.5))
+                
             if profvis:
                 cs_line.append(ax[5].axhline(zz,color = '0.5', alpha = 0.5))
-                if np.prod(ax[5].get_xlim())<0:
+                if np.prod(ax[5].get_xlim())<0: # if ylim straddles zero
                     cs_line.append(ax[5].axvline(0,color = '0.5', alpha = 0.5))
                     
 
@@ -2242,12 +2254,18 @@ ax,
                 reload_ew = just_plt_vals[just_plt_cnt][5]
                 reload_ns = just_plt_vals[just_plt_cnt][6]
                 reload_hov = just_plt_vals[just_plt_cnt][7]
-                reload_TS = just_plt_vals[just_plt_cnt][8]
+                reload_ts = just_plt_vals[just_plt_cnt][8]
+                try:
+                    tmp_date_in_ind_ind = int(tmp_date_in_ind)
+                except:
+                    pdb.set_trace()
 
-
-                jp_date_in_ind_datetime = datetime.strptime(tmp_date_in_ind,date_fmt)
-                jp_date_in_ind_datetime_timedelta = np.array([(ss - jp_date_in_ind_datetime).total_seconds() for ss in time_datetime])
-                ti = np.abs(jp_date_in_ind_datetime_timedelta).argmin()
+                if tmp_date_in_ind_ind > 10000:
+                    jp_date_in_ind_datetime = datetime.strptime(tmp_date_in_ind,date_fmt)
+                    jp_date_in_ind_datetime_timedelta = np.array([(ss - jp_date_in_ind_datetime).total_seconds() for ss in time_datetime])
+                    ti = np.abs(jp_date_in_ind_datetime_timedelta).argmin()
+                else:
+                    ti = int(tmp_date_in_ind)
                 if verbose_debugging: print('Setting justplot secdataset_proc: %s'%(secdataset_proc), datetime.now())
                 if verbose_debugging: print('Setting justplot ti from date_in_ind (%s): ti = %i (%s). '%(date_in_ind,ti, time_datetime[ti]), datetime.now())
                 if verbose_debugging: print('Setting just_plt_vals: ',just_plt_vals[just_plt_cnt], datetime.now())
