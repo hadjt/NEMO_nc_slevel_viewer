@@ -270,6 +270,7 @@ def testing_rot_pole(nav_lon, nav_lat):
         
 
 def scale_color_map(base_cmap):
+    # scales the colourmap with a 4th order polynomial folling ncview, for high, low and linear scales
 
     defcolmap_lst = [] 
     for i_i in range(256):defcolmap_lst.append(base_cmap(i_i))
@@ -2740,7 +2741,10 @@ def grad_vert_hov_prof_data(hov_dat_dict):
 
 
 def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_mat, ld_lab_mat,ld_nctvar):
+    # connect to files with xarray, and create dictionaries with vars, dims, grids, time etc. 
 
+    # NB xarr_dict is not passed back.
+    
     import xarray
 
     var_d = {}
@@ -2931,6 +2935,7 @@ def trim_file_dict(fname_dict,thd):
 
 
 def create_col_lst():
+    #create a set of lists of standard colours, colours for differences, and linestyles.
 
     Dataset_col = ['r','b','g','c','m','y']
     Dataset_col_diff = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan']
@@ -2939,7 +2944,7 @@ def create_col_lst():
     return Dataset_col,Dataset_col_diff,linestyle_str
 
 def create_xarr_dict(fname_dict):
-
+    #create an empty dictionary with correct datasets and grids
 
    
     xarr_dict = {}
@@ -2991,6 +2996,7 @@ def load_grid_dict(Dataset_lst,rootgrp_gdept_dict, thd, nce1t,nce2t,nce3t,config
 
 def create_config_fnames_dict(configd,Dataset_lst,script_dir):
     
+    # create a dictionary with all the config info in it
 
     config_fnames_dict = {}
     #config_fnames_dict[configd[1]] = {}
@@ -3008,6 +3014,7 @@ def create_config_fnames_dict(configd,Dataset_lst,script_dir):
     return config_fnames_dict
 
 def create_rootgrp_gdept_dict(config_fnames_dict,Dataset_lst,configd):
+    # create dictionary with mesh files handles
 
     #rootgrp_gdept = None
     rootgrp_gdept_dict = {}
@@ -3032,6 +3039,7 @@ def create_rootgrp_gdept_dict(config_fnames_dict,Dataset_lst,configd):
 
 
 def create_gdept_ncvarnames(config_fnames_dict,configd):
+    #set ncvariable names for mesh files from info in config file, via config_fnames_dict
     ncgdept = 'gdept_0'
     nce1t = 'e1t'
     nce2t = 'e2t'
@@ -3244,7 +3252,15 @@ def create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncg
 
 
 
+def resample_xarray(xarr_dict,resample_freq):
+    #xarr_dict['Dataset 1']['T'][0] = xarr_dict['Dataset 1']['T'][0].resample(time_counter = '1m').mean()
 
+    for tmp_datstr in xarr_dict.keys():
+        for tmpgrid in xarr_dict[tmp_datstr].keys():
+            for xarlii in range(len(xarr_dict[tmp_datstr][tmpgrid])):
+                xarr_dict[tmp_datstr][tmpgrid][xarlii] = xarr_dict[tmp_datstr][tmpgrid][xarlii].resample(time_counter = resample_freq).mean()
+
+    return xarr_dict
 
 
 
@@ -3258,6 +3274,7 @@ def extract_time_from_xarr(xarr_dict_in,ex_fname_in,time_varname,t_dim,date_in_i
     #pdb.set_trace()
     
     print ('xarray start reading nctime',datetime.now())
+
     nctime = xarr_dict_in[0].variables[time_varname]
 
     try:

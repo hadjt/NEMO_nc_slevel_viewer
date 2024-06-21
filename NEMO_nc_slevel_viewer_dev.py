@@ -26,7 +26,7 @@ from NEMO_nc_slevel_viewer_lib import reload_map_data_comb_zmeth_zslice,reload_m
 from NEMO_nc_slevel_viewer_lib import reload_hov_data_comb,reload_ts_data_comb,reload_pf_data_comb
 from NEMO_nc_slevel_viewer_lib import regrid_2nd,grad_horiz_ns_data,grad_horiz_ew_data,grad_vert_ns_data,grad_vert_ew_data,grad_vert_hov_prof_data
 #from NEMO_nc_slevel_viewer_lib import indices_from_ginput_ax
-from NEMO_nc_slevel_viewer_lib import extract_time_from_xarr,load_nc_var_name_list_WW3
+from NEMO_nc_slevel_viewer_lib import extract_time_from_xarr,load_nc_var_name_list_WW3,resample_xarray
 
 from NEMO_nc_slevel_viewer_lib import trim_file_dict,remove_extra_end_file_dict,create_col_lst,create_Dataset_lst,create_xarr_dict,connect_to_files_with_xarray,load_grid_dict
 from NEMO_nc_slevel_viewer_lib import create_config_fnames_dict,create_rootgrp_gdept_dict,create_gdept_ncvarnames,create_lon_lat_dict,create_ncvar_lon_lat_time,add_derived_vars
@@ -54,8 +54,10 @@ import matplotlib
 matplotlib.rcParams['font.family'] = 'serif'
 
 #matplotlib.use('Qt5Agg')
+#def mon_mean(x):
+#    return x.groupby('time.month').mean('time')
 
-#def nemo_slice_zlev(fname_lst, config = 'amm7',  
+
 def nemo_slice_zlev(config = 'amm7',  
     zlim_max = None,var = None,
     fig_lab_d = None,configd = None,thd = None,fname_dict = None,load_second_files = False,
@@ -73,6 +75,7 @@ def nemo_slice_zlev(config = 'amm7',
     justplot = False, justplot_date_ind = None,justplot_z_meth_zz = None,justplot_secdataset_proc = None,
     fig_fname_lab = None, fig_fname_lab_2nd = None,
     trim_extra_files = True,
+    resample_freq = None,
     verbose_debugging = False):
 
     print('Initialise at ',datetime.now())
@@ -105,6 +108,7 @@ def nemo_slice_zlev(config = 'amm7',
 
     # create colours and line styles for plots
     Dataset_col,Dataset_col_diff,linestyle_str = create_col_lst()
+
 
     for tmp_datstr in Dataset_lst:
         if fig_lab_d[tmp_datstr] is None: fig_lab_d[tmp_datstr] = tmp_datstr
@@ -146,6 +150,7 @@ def nemo_slice_zlev(config = 'amm7',
 
     col_scl = 0
     curr_cmap = base_cmap
+    #ncview style 4th order polynomial scaling. 
     base_cmap_low,base_cmap_high = scale_color_map(curr_cmap)
 
     #pdb.set_trace()
@@ -256,15 +261,13 @@ def nemo_slice_zlev(config = 'amm7',
         z_meth = z_meth_default
 
 
-    #global rootgrp_gdept_2nd, nav_lon_2nd, nav_lat_2nd
-
-
-
+    #default regirdding settings
     regrid_meth = 1
     regrid_params = None
     regrid_params = {}  
 
 
+    # regridding indices.
     for tmp_datstr in Dataset_lst[1:]:
         th_d_ind = int(tmp_datstr[-1])
         #rootgrp_gdept_dict[tmp_datstr] = rootgrp_gdept_dict['Dataset 1']
@@ -336,23 +339,40 @@ def nemo_slice_zlev(config = 'amm7',
     # connect to files with xarray, and create dictionaries with vars, dims, grids, time etc. S
     var_d,var_dim,var_grid,ncvar_d,ncdim_d,time_d  = connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_mat, ld_lab_mat,ld_nctvar)
    
+    #pdb.set_trace()
+    
+    # tmp = xarr_dict['Dataset 1']['T'][0].groupby('time_counter.year').groupby('time_counter.month').mean('time_counter') 
+    
+    #nctime = xarr_dict['Dataset 1']['T'][0].variables['time_counter']
+    #xarr_dict['Dataset 1']['T'][0] = xarr_dict['Dataset 1']['T'][0].groupby('time_counter.month').mean('time_counter') 
+    
+    # resample to give monthly means etc. 
 
-            
-   
     init_timer.append((datetime.now(),'xarray open_mfdataset T connected'))
+
+    if resample_freq is not None:
+        print('xarray open_mfdataset: Start resample with %s'%(resample_freq), datetime.now())
+        xarr_dict = resample_xarray(xarr_dict,resample_freq)
+        print('xarray open_mfdataset: Finish resample with %s'%(resample_freq), datetime.now())
+        init_timer.append((datetime.now(),'xarray resampled'))
+
+    #xarr_dict['Dataset 1']['T'][0] = xarr_dict['Dataset 1']['T'][0].resample(time_counter = '1m').mean()
+
+    #tmp = xarr_dict['Dataset 1']['T'][0].groupby('time_counter.year').groupby('time_counter.month').mean('time_counter') 
+    #pdb.set_trace()
+   
 
 
     # get lon, lat and time names from files
     nav_lon_varname,nav_lat_varname,time_varname,nav_lon_var_mat,nav_lat_var_mat,time_varname_mat = create_ncvar_lon_lat_time(ncvar_d)
     
     print ('xarray open_mfdataset, Finish',datetime.now())
-    init_timer.append((datetime.now(),'xarray open_mfdataset UV connected'))
 
 
     # Create lon and lat dictionaries
     lon_d,lat_d = create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncglamt,ncgphit,nav_lon_varname,nav_lat_varname,ncdim_d)
   
-    # if use key words to set intial lon/lat, convert to jj/ii
+    # if use key words to set intial lon/lat,nvarbutcol convert to jj/ii
     if (lon_in is not None) & (lat_in is not None):
 
         lonlatin_dist_mat = np.sqrt((lon_d[1] - lon_in)**2 + (lat_d[1] - lat_in)**2)
@@ -682,6 +702,11 @@ def nemo_slice_zlev(config = 'amm7',
     nvarbutcol = 16 # 18
     nvarbutcol = 22 # 18
     nvarbutcol = 25 # 18
+
+
+    if justplot:
+        nvarbutcol = 1000
+
 
     fig = plt.figure()
     fig.suptitle(fig_tit_str_int + '\n' + fig_tit_str_lab, fontsize=14)
@@ -1153,18 +1178,35 @@ ax,
     def save_figure_funct():
 
 
+
+
         figdpi = 90
         if not os.path.exists(fig_dir):
-            os.makedirs(directory)
+            os.makedirs(fig_dir)
 
         secdataset_proc_figname = ''
+        '''
         if secdataset_proc == 'Dataset 1':secdataset_proc_figname = '_Datset_1'
         if secdataset_proc == 'Dataset 2':secdataset_proc_figname = '_Datset_2'
         if secdataset_proc == 'Dataset 3':secdataset_proc_figname = '_Datset_3'
         if secdataset_proc == 'Dat1-Dat2':secdataset_proc_figname = '_Diff_1-2'
         if secdataset_proc == 'Dat2-Dat1':secdataset_proc_figname = '_Diff_2-1'
-        fig_out_name = '%s/output_%s_%s_th%02i_fth%02i_%04i_%04i_%03i_%03i_%s%s'%(fig_dir,fig_lab,var,thd[1]['dx'],thd[1]['df'],ii,jj,ti,zz,z_meth,secdataset_proc_figname)
+        '''
+        if secdataset_proc in Dataset_lst:
+            secdataset_proc_figname = '_%s'%(secdataset_proc.replace('Dataset ','Datset_'))
+        else:
+            tmpdatasetnum_1 = secdataset_proc[3]
+            tmpdatasetnum_2 = secdataset_proc[8]
+            tmpdataset_oper = secdataset_proc[4]
+            if tmpdataset_oper == '-':
+                secdataset_proc_figname = '_Diff_%s-%s'%(tmpdatasetnum_1,tmpdatasetnum_2)
         
+
+
+        if resample_freq is None:
+            fig_out_name = '%s/output_%s_%s_th%02i_fth%02i_%04i_%04i_%03i_%03i_%s%s'%(fig_dir,fig_lab,var,thd[1]['dx'],thd[1]['df'],ii,jj,ti,zz,z_meth,secdataset_proc_figname)
+        else:
+            fig_out_name = '%s/output_%s_%s_th%02i_fth%02i_%04i_%04i_%03i_%03i_%s_resample_%s%s'%(fig_dir,fig_lab,var,thd[1]['dx'],thd[1]['df'],ii,jj,ti,zz,z_meth,resample_freq,secdataset_proc_figname)
         
 
         '''
@@ -1192,6 +1234,9 @@ ax,
                 tmpdataset_oper = secdataset_proc[4]
                 if tmpdataset_oper == '-':
                     fig_tit_str_lab = '%s minus %s'%(fig_lab_d[tmpdataset_1],fig_lab_d[tmpdataset_2])
+        
+        
+        
         '''
 
         fig_tit_str_lab = ''
@@ -1215,8 +1260,9 @@ ax,
 
 
             bbox_cutout_pos = [[(but_x1+0.01), (0.066)],[(func_but_x0-0.01),0.965]]
-            bbox_cutout_pos_inches = [[fig.get_figwidth()*(but_x1+0.01), fig.get_figheight()*(0.066)],[fig.get_figwidth()*(func_but_x0-0.01),fig.get_figheight()*(0.965)]]
-            bbox_cutout_pos_inches = [[fig.get_figwidth()*(but_x1+0.01), fig.get_figheight()*(0.066)],[fig.get_figwidth()*(func_but_x0-0.01),fig.get_figheight()]]
+            #bbox_cutout_pos_inches = [[fig.get_figwidth()*(but_x1+0.01), fig.get_figheight()*(0.066)],[fig.get_figwidth()*(func_but_x0-0.01),fig.get_figheight()*(0.965)]]
+            #bbox_cutout_pos_inches = [[fig.get_figwidth()*(but_x1+0.01), fig.get_figheight()*(0.066)],[fig.get_figwidth()*(func_but_x0-0.01),fig.get_figheight()]]
+            bbox_cutout_pos_inches = [[fig.get_figwidth()*(but_x1+0.01), fig.get_figheight()*(0.066)],[fig.get_figwidth()*(func_but_x0),fig.get_figheight()]]
             bbox_inches =  matplotlib.transforms.Bbox(bbox_cutout_pos_inches)
             
             if verbose_debugging: print('Save Figure: bbox_cutout_pos',bbox_cutout_pos, datetime.now())
@@ -1903,11 +1949,13 @@ ax,
             if load_second_files == False:
                 ax[4].set_ylim(ts_dat.min(),ts_dat.max())
             elif load_second_files:
+
+                '''
                 if secdataset_proc == 'Dat1-Dat2':
                     ax[4].set_ylim((ts_dat_dict['Dataset 1'] - ts_dat_dict['Dataset 2']).min(),(ts_dat_dict['Dataset 1'] - ts_dat_dict['Dataset 2']).max())
                 elif secdataset_proc == 'Dat2-Dat1':
                     ax[4].set_ylim((ts_dat_dict['Dataset 2'] - ts_dat_dict['Dataset 1']).min(),(ts_dat_dict['Dataset 2'] - ts_dat_dict['Dataset 1']).max())
-
+                '''
 
                 if secdataset_proc in Dataset_lst:
                     tmpts_minmax_lst = []
@@ -2240,6 +2288,13 @@ ax,
             ###################################################################################################
 
             if justplot:
+                
+                clickax.set_axis_off()
+                clickax.remove()
+                clickax = fig.add_axes([0,0,0.001,0.001], frameon=False)
+                clickax.axis('off')
+   
+
                 save_figure_funct()
 
                 if just_plt_cnt == len(just_plt_vals): return 
