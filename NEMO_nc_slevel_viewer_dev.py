@@ -64,6 +64,7 @@ def nemo_slice_zlev(config = 'amm7',
     xlim = None, ylim = None, tlim = None, clim = None,
     ii = None, jj = None, ti = None, zz = None, zi = None, 
     lon_in = None, lat_in = None, date_in_ind = None, date_fmt = '%Y%m%d',
+    cutxind = None, cutyind=None,
     z_meth = None,
     secdataset_proc = 'Dataset 1',
     hov_time = False, do_cont = False, do_grad = 0,
@@ -82,6 +83,15 @@ def nemo_slice_zlev(config = 'amm7',
     init_timer = []
     init_timer.append((datetime.now(),'Starting Program'))
 
+    cutout_data = False
+    if cutxind is None:
+        cutxind = [0,None]
+    else:
+        cutout_data = True
+    if cutyind is None:
+        cutyind = [0,None]
+    else:
+        cutout_data = True
 
     '''
 
@@ -370,8 +380,8 @@ def nemo_slice_zlev(config = 'amm7',
 
 
     # Create lon and lat dictionaries
-    lon_d,lat_d = create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncglamt,ncgphit,nav_lon_varname,nav_lat_varname,ncdim_d)
-  
+    lon_d,lat_d = create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncglamt,ncgphit,nav_lon_varname,nav_lat_varname,ncdim_d,cutxind,cutyind)
+    #pdb.set_trace()
     # if use key words to set intial lon/lat,nvarbutcol convert to jj/ii
     if (lon_in is not None) & (lat_in is not None):
 
@@ -382,8 +392,8 @@ def nemo_slice_zlev(config = 'amm7',
     init_timer.append((datetime.now(),'Lon/Lats loaded'))
 
     #create depth (gdept) dictionary
-    grid_dict,nz = load_grid_dict(Dataset_lst,rootgrp_gdept_dict, thd, nce1t,nce2t,nce3t,configd, config_fnames_dict)
-
+    grid_dict,nz = load_grid_dict(Dataset_lst,rootgrp_gdept_dict, thd, nce1t,nce2t,nce3t,configd, config_fnames_dict,cutxind,cutyind)
+    #pdb.set_trace()
     # if using WW3 grid, load regridding interpolation weights
     if 'WW3' in ncdim_d['Dataset 1']:
          
@@ -498,6 +508,7 @@ def nemo_slice_zlev(config = 'amm7',
         print('Just plotting, and exiting, not interactive.')
         
         just_plt_cnt = 0
+        njust_plt_cnt = 0
 
         if (justplot_date_ind is None)|(justplot_date_ind == 'None'):
              justplot_date_ind = time_datetime[ti].strftime(date_fmt)
@@ -528,6 +539,7 @@ def nemo_slice_zlev(config = 'amm7',
                 #  cycle through datasets, nothing needs reloading. 
                 for jpspi, secdataset_proc in enumerate(justplot_secdataset_proc_lst): 
                     just_plt_vals.append((secdataset_proc,justplot_date_ind_str, justplot_z_meth,justplot_zz, True, True, True, False, True))
+                    njust_plt_cnt+=1
                     '''
                     if (jpspi == 0):#                                                                     reload_map,reload_ew,reload_ns,reload_hov,reload_ts,                        
                         just_plt_vals.append((secdataset_proc,justplot_date_ind_str, justplot_z_meth,justplot_zz, True, True, True, False, False))
@@ -1781,6 +1793,7 @@ ax,
             if verbose_debugging: print("Do pcolormesh for ii = %i,jj = %i,ti = %i,zz = %i, var = '%s'"%(ii,jj, ti, zz,var), datetime.now())
             pax.append(ax[0].pcolormesh(map_dat_dict['x'],map_dat_dict['y'],map_dat,cmap = curr_cmap,norm = climnorm))
             if var_dim[var] == 4:
+                #pdb.set_trace()
                 pax.append(ax[1].pcolormesh(ew_slice_dict['x'],ew_slice_dict['y'],ew_slice_dat,cmap = curr_cmap,norm = climnorm))
                 pax.append(ax[2].pcolormesh(ns_slice_dict['x'],ns_slice_dict['y'],ns_slice_dat,cmap = curr_cmap,norm = climnorm))
                 pax.append(ax[3].pcolormesh(hov_dat_dict['x'],hov_dat_dict['y'],hov_dat,cmap = curr_cmap,norm = climnorm))
@@ -2324,6 +2337,9 @@ ax,
                 if verbose_debugging: print('Setting justplot secdataset_proc: %s'%(secdataset_proc), datetime.now())
                 if verbose_debugging: print('Setting justplot ti from date_in_ind (%s): ti = %i (%s). '%(date_in_ind,ti, time_datetime[ti]), datetime.now())
                 if verbose_debugging: print('Setting just_plt_vals: ',just_plt_vals[just_plt_cnt], datetime.now())
+                
+                print('\n\njust_plt_cnt,njust_plt_cnt:\n\n',just_plt_cnt,njust_plt_cnt)
+                
                 just_plt_cnt += 1
 
 
