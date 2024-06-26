@@ -2,15 +2,69 @@ import matplotlib.pyplot as plt
 
 from datetime import datetime,timedelta
 import numpy as np
-from netCDF4 import Dataset,date2num,num2date
+from netCDF4 import Dataset #,date2num,num2date
 import pdb,os,sys
 import os.path
 import xarray
 import glob
-import cftime
+#import cftime
 import matplotlib
-import csv
+#import csv
 
+import time
+import argparse
+import textwrap
+
+'''
+#redundant. 
+from NEMO_nc_slevel_viewer_lib import set_perc_clim_pcolor,interp1dmat_wgt, interp_UV_vel_to_Tgrid,rotated_grid_to_amm15
+from NEMO_nc_slevel_viewer_lib import nearbed_int_index_val
+from NEMO_nc_slevel_viewer_lib import pea_TS
+from NEMO_nc_slevel_viewer_lib import load_nc_dims,load_nc_var_name_list,weighted_depth_mean_masked_var
+
+from NEMO_nc_slevel_viewer_lib import reload_map_data_comb_zmeth_zindex,reload_map_data_comb_zmeth_ss_3d,reload_map_data_comb_zmeth_nb_df_zm_3d
+from NEMO_nc_slevel_viewer_lib import reload_map_data_comb_zmeth_zslice,reload_map_data_comb_2d,regrid_2nd,load_nc_var_name_list_WW3
+######
+'''
+
+
+### set-up modules
+from NEMO_nc_slevel_viewer_lib import create_config_fnames_dict,create_rootgrp_gdept_dict,create_gdept_ncvarnames
+from NEMO_nc_slevel_viewer_lib import create_col_lst,create_Dataset_lst,create_xarr_dict
+from NEMO_nc_slevel_viewer_lib import create_lon_lat_dict,create_ncvar_lon_lat_time
+
+from NEMO_nc_slevel_viewer_lib import trim_file_dict,remove_extra_end_file_dict,add_derived_vars
+from NEMO_nc_slevel_viewer_lib import connect_to_files_with_xarray,load_grid_dict
+
+from NEMO_nc_slevel_viewer_lib import extract_time_from_xarr,resample_xarray
+
+# Data loading modules
+from NEMO_nc_slevel_viewer_lib import reload_data_instances
+from NEMO_nc_slevel_viewer_lib import reload_map_data_comb,reload_ew_data_comb,reload_ns_data_comb
+from NEMO_nc_slevel_viewer_lib import reload_hov_data_comb,reload_ts_data_comb,reload_pf_data_comb
+
+
+# Data processing modules
+from NEMO_nc_slevel_viewer_lib import grad_horiz_ns_data,grad_horiz_ew_data
+from NEMO_nc_slevel_viewer_lib import grad_vert_ns_data,grad_vert_ew_data,grad_vert_hov_prof_data
+
+from NEMO_nc_slevel_viewer_lib import field_gradient_2d, vector_div, vector_curl,sw_dens
+
+# Data manipulation modules
+from NEMO_nc_slevel_viewer_lib import rotated_grid_from_amm15, reduce_rotamm15_grid,regrid_2nd_thin_params,regrid_iijj_ew_ns
+from NEMO_nc_slevel_viewer_lib import interp1dmat_create_weight
+
+# Plotting modules
+from NEMO_nc_slevel_viewer_lib import get_clim_pcolor, set_clim_pcolor,set_perc_clim_pcolor_in_region,get_colorbar_values
+from NEMO_nc_slevel_viewer_lib import scale_color_map,lon_lat_to_str
+
+
+
+
+
+
+'''
+### unsorted. Delete
 from NEMO_nc_slevel_viewer_lib import set_perc_clim_pcolor, get_clim_pcolor, set_clim_pcolor,set_perc_clim_pcolor_in_region,get_colorbar_values,scale_color_map,lon_lat_to_str
 from NEMO_nc_slevel_viewer_lib import interp1dmat_wgt, interp1dmat_create_weight, interp_UV_vel_to_Tgrid
 from NEMO_nc_slevel_viewer_lib import rotated_grid_from_amm15,rotated_grid_to_amm15, reduce_rotamm15_grid,regrid_2nd_thin_params,regrid_iijj_ew_ns
@@ -25,18 +79,20 @@ from NEMO_nc_slevel_viewer_lib import reload_map_data_comb_zmeth_zindex,reload_m
 from NEMO_nc_slevel_viewer_lib import reload_map_data_comb_zmeth_zslice,reload_map_data_comb_2d,reload_map_data_comb,reload_ew_data_comb,reload_ns_data_comb
 from NEMO_nc_slevel_viewer_lib import reload_hov_data_comb,reload_ts_data_comb,reload_pf_data_comb
 from NEMO_nc_slevel_viewer_lib import regrid_2nd,grad_horiz_ns_data,grad_horiz_ew_data,grad_vert_ns_data,grad_vert_ew_data,grad_vert_hov_prof_data
-#from NEMO_nc_slevel_viewer_lib import indices_from_ginput_ax
 from NEMO_nc_slevel_viewer_lib import extract_time_from_xarr,load_nc_var_name_list_WW3,resample_xarray
 
 from NEMO_nc_slevel_viewer_lib import trim_file_dict,remove_extra_end_file_dict,create_col_lst,create_Dataset_lst,create_xarr_dict,connect_to_files_with_xarray,load_grid_dict
 from NEMO_nc_slevel_viewer_lib import create_config_fnames_dict,create_rootgrp_gdept_dict,create_gdept_ncvarnames,create_lon_lat_dict,create_ncvar_lon_lat_time,add_derived_vars
 
+'''
+
+
+
+
+
+
 
 letter_mat = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
-
-import time
-import argparse
-import textwrap
 
 import socket
 computername = socket.gethostname()
@@ -50,7 +106,7 @@ script_dir=os.path.dirname(os.path.realpath(__file__)) + '/'
 
 global fname_lst, fname_lst_2nd,var
 
-import matplotlib
+#import matplotlib
 matplotlib.rcParams['font.family'] = 'serif'
 
 #matplotlib.use('Qt5Agg')
@@ -154,9 +210,11 @@ def nemo_slice_zlev(config = 'amm7',
         # default color map to use
         base_cmap = cmocean.cm.thermal
         scnd_cmap = cmocean.cm.balance
+        cylc_cmap = cmocean.cm.phase
     else:
         base_cmap = matplotlib.cm.viridis
         scnd_cmap = matplotlib.cm.coolwarm
+        cylc_cmap = matplotlib.cm.hsv
 
     col_scl = 0
     curr_cmap = base_cmap
@@ -361,6 +419,7 @@ def nemo_slice_zlev(config = 'amm7',
     init_timer.append((datetime.now(),'xarray open_mfdataset T connected'))
 
     if resample_freq is not None:
+        #pdb.set_trace()
         print('xarray open_mfdataset: Start resample with %s'%(resample_freq), datetime.now())
         xarr_dict = resample_xarray(xarr_dict,resample_freq)
         print('xarray open_mfdataset: Finish resample with %s'%(resample_freq), datetime.now())
@@ -428,6 +487,8 @@ def nemo_slice_zlev(config = 'amm7',
 
     nice_varname_dict['baroc_mag'] = 'Baroclinic current magnitude'
     nice_varname_dict['barot_mag'] = 'Barotropic current magnitude'
+    nice_varname_dict['baroc_phi'] = 'Baroclinic current phase (degrees)'
+    nice_varname_dict['barot_phi'] = 'Barotropic current phase (degrees)'
 
     nice_varname_dict['baroc_curl'] = 'Baroclinic current curl'
     nice_varname_dict['barot_curl'] = 'Barotropic current curl'
@@ -1197,28 +1258,22 @@ ax,
             os.makedirs(fig_dir)
 
         secdataset_proc_figname = ''
-        '''
-        if secdataset_proc == 'Dataset 1':secdataset_proc_figname = '_Datset_1'
-        if secdataset_proc == 'Dataset 2':secdataset_proc_figname = '_Datset_2'
-        if secdataset_proc == 'Dataset 3':secdataset_proc_figname = '_Datset_3'
-        if secdataset_proc == 'Dat1-Dat2':secdataset_proc_figname = '_Diff_1-2'
-        if secdataset_proc == 'Dat2-Dat1':secdataset_proc_figname = '_Diff_2-1'
-        '''
+
         if secdataset_proc in Dataset_lst:
-            secdataset_proc_figname = '_%s'%(secdataset_proc.replace('Dataset ','Datset_'))
+            secdataset_proc_figname = '%s'%(secdataset_proc.replace('Dataset ','Datset_'))
         else:
             tmpdatasetnum_1 = secdataset_proc[3]
             tmpdatasetnum_2 = secdataset_proc[8]
             tmpdataset_oper = secdataset_proc[4]
             if tmpdataset_oper == '-':
-                secdataset_proc_figname = '_Diff_%s-%s'%(tmpdatasetnum_1,tmpdatasetnum_2)
+                secdataset_proc_figname = 'Diff_%s-%s'%(tmpdatasetnum_1,tmpdatasetnum_2)
         
 
 
         if resample_freq is None:
-            fig_out_name = '%s/output_%s_%s_th%02i_fth%02i_%04i_%04i_%03i_%03i_%s%s'%(fig_dir,fig_lab,var,thd[1]['dx'],thd[1]['df'],ii,jj,ti,zz,z_meth,secdataset_proc_figname)
+            fig_out_name = '%s/output_%s_%s_th%02i_fth%02i_i%04i_j%04i_t%03i_z%03i%s_g%1i_%s'%(      fig_dir,fig_lab,var,thd[1]['dx'],thd[1]['df'],ii,jj,ti,zz,z_meth,do_grad,secdataset_proc_figname)
         else:
-            fig_out_name = '%s/output_%s_%s_th%02i_fth%02i_%04i_%04i_%03i_%03i_%s_resample_%s%s'%(fig_dir,fig_lab,var,thd[1]['dx'],thd[1]['df'],ii,jj,ti,zz,z_meth,resample_freq,secdataset_proc_figname)
+            fig_out_name = '%s/output_%s_%s_th%02i_fth%02i_i%04i_j%04i_t%03i_z%03i%s_g%1i_res%s_%s'%(fig_dir,fig_lab,var,thd[1]['dx'],thd[1]['df'],ii,jj,ti,zz,z_meth,do_grad,resample_freq,secdataset_proc_figname)
         
 
         '''
@@ -1249,21 +1304,6 @@ ax,
         
         
         
-        '''
-
-        fig_tit_str_lab = ''
-        if load_second_files == False:
-            fig_tit_str_lab = fig_lab_d['Dataset 1']
-        else:
-            if secdataset_proc == 'Dataset 1':fig_tit_str_lab = '%s'%fig_lab_d['Dataset 1']
-            elif secdataset_proc == 'Dataset 2':fig_tit_str_lab = '%s'%fig_lab_d['Dataset 2']
-            elif secdataset_proc =='Dat1-Dat2':                
-                fig_tit_str_lab = '%s minus %s'%(fig_lab_d['Dataset 1'],fig_lab_d['Dataset 2'])
-            elif secdataset_proc =='Dat2-Dat1':                
-                fig_tit_str_lab = '%s minus %s'%(fig_lab_d['Dataset 2'],fig_lab_d['Dataset 1'])
-
-
-        '''
 
         fig.suptitle( fig_tit_str_lab, fontsize=14)
 
@@ -1310,16 +1350,17 @@ ax,
             arg_output_text = arg_output_text + ' --fig_fname_lab %s'%fig_lab_d['Dataset 1']
             arg_output_text = arg_output_text + ' --lon %f'%lon_d[1][jj,ii]
             arg_output_text = arg_output_text + ' --lat %f'%lat_d[1][jj,ii]
-            arg_output_text = arg_output_text + ' --xlim %f %f'%(xlim[0],xlim[1])
-            arg_output_text = arg_output_text + ' --ylim %f %f'%(ylim[0],ylim[1])
+            if xlim is not None: arg_output_text = arg_output_text + ' --xlim %f %f'%(xlim[0],xlim[1])
+            if ylim is not None: arg_output_text = arg_output_text + ' --ylim %f %f'%(ylim[0],ylim[1])
             arg_output_text = arg_output_text + ' --date_ind %s'%time_datetime[ti].strftime(date_fmt)
             arg_output_text = arg_output_text + ' --date_fmt %s'%date_fmt
             arg_output_text = arg_output_text + ' --var %s'%var
             arg_output_text = arg_output_text + ' --z_meth %s'%z_meth
             arg_output_text = arg_output_text + ' --zz %s'%zz
+            arg_output_text = arg_output_text + ' --do_grad %1i'%do_grad
             arg_output_text = arg_output_text + ' --clim_sym %s'%clim_sym
-            if xlim is not None:arg_output_text = arg_output_text + ' --xlim %f %f'%tuple(xlim)
-            if ylim is not None:arg_output_text = arg_output_text + ' --ylim %f %f'%tuple(ylim)
+            #if xlim is not None:arg_output_text = arg_output_text + ' --xlim %f %f'%tuple(xlim)
+            #if ylim is not None:arg_output_text = arg_output_text + ' --ylim %f %f'%tuple(ylim)
             if load_second_files:
                 #if configd[2] is not None: 
                 arg_output_text = arg_output_text + ' --config_2nd %s'%configd[2]
@@ -1674,8 +1715,7 @@ ax,
             prevtime = datetime.now()
 
             if profvis:
-                #pf_dat_dict = reload_pf_data_comb(var,var_dim,var_d[1]['mat'],var_grid['Dataset 1'],var_d['d'],ldi,thd, time_datetime, ii,jj,ti,iijj_ind,nz,ntime, grid_dict,xarr_dict,load_second_files,Dataset_lst,configd)
-                pf_dat_dict = reload_pf_data_comb(data_inst,var,var_dim,ii,jj,nz,grid_dict,Dataset_lst)
+                pf_dat_dict = reload_pf_data_comb(data_inst,var,var_dim,ii,jj,nz,grid_dict,Dataset_lst,configd,iijj_ind)
 
                 if do_grad == 2:
                     pf_dat_dict = grad_vert_hov_prof_data(pf_dat_dict)
@@ -1735,18 +1775,21 @@ ax,
 
             # Choose the colormap depending on which dataset being shown
 
-
-            if (secdataset_proc in Dataset_lst) & (clim_sym_but != 1):
-                if col_scl == 0:
-                    curr_cmap = base_cmap
-                elif col_scl == 1:
-                    curr_cmap = base_cmap_high
-                elif col_scl == 2:
-                    curr_cmap = base_cmap_low
-                clim_sym = False
-            else:
-                curr_cmap = scnd_cmap
+            if var in ['baroc_phi','barot_phi','VolTran_e3_phi','VolTran_phi']:
+                curr_cmap = cylc_cmap
                 clim_sym = True
+            else:
+                if (secdataset_proc in Dataset_lst) & (clim_sym_but != 1):
+                    if col_scl == 0:
+                        curr_cmap = base_cmap
+                    elif col_scl == 1:
+                        curr_cmap = base_cmap_high
+                    elif col_scl == 2:
+                        curr_cmap = base_cmap_low
+                    clim_sym = False
+                else:
+                    curr_cmap = scnd_cmap
+                    clim_sym = True
             #else:
             #    print(secdataset_proc)
             #    pdb.set_trace()
@@ -2198,11 +2241,9 @@ ax,
                 
                 conax.append(ax[0].contour(map_dat_dict['x'],map_dat_dict['y'],map_dat,cont_val_lst[0], colors = contcols, linewidths = contlws, alphas = contalphas))
                 if var_dim[var] == 4: 
-                    #nz = ns_slice_dict['y'].shape[0]
                     conax.append(ax[1].contour(np.tile(ew_slice_dict['x'],(nz,1)),ew_slice_dict['y'],ew_slice_dat,cont_val_lst[1], colors = contcols, linewidths = contlws, alphas = contalphas))
                     conax.append(ax[2].contour(np.tile(ns_slice_dict['x'],(nz,1)),ns_slice_dict['y'],ns_slice_dat,cont_val_lst[2], colors = contcols, linewidths = contlws, alphas = contalphas))
                     if hov_time & ntime>1:
-                        
                         conax.append(ax[3].contour(hov_dat_dict['x'],hov_dat_dict['y'],hov_dat,cont_val_lst[3], colors = contcols, linewidths = contlws, alphas = contalphas))
 
 
@@ -2585,6 +2626,15 @@ ax,
                             tmp_sigma_density_data = {}
 
                             for tmp_datstr in Dataset_lst:
+
+                                tmp_T_data[tmp_datstr] = np.ma.zeros((nz))*np.ma.masked
+                                tmp_S_data[tmp_datstr] = np.ma.zeros((nz))*np.ma.masked
+                                tmp_gdept[tmp_datstr] = np.ma.zeros((nz))*np.ma.masked
+                                tmp_mld1[tmp_datstr] = np.ma.zeros((nz))*np.ma.masked
+                                tmp_mld2[tmp_datstr] = np.ma.zeros((nz))*np.ma.masked
+                                tmp_sigma_density_data[tmp_datstr] = np.ma.zeros((nz))*np.ma.masked
+
+
                                 th_d_ind = int(tmp_datstr[-1])
 
                                 
@@ -2600,9 +2650,9 @@ ax,
                                 else:
                                     if 'votemper' in var_d[th_d_ind]['mat']:tmp_T_data[tmp_datstr]  = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][ldi].variables['votemper'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']].load())
                                     if 'vosaline' in var_d[th_d_ind]['mat']:tmp_S_data[tmp_datstr]  = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][ldi].variables['vosaline'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']].load())
-                                    if 'mld25h_1' in var_d[th_d_ind]['mat']:tmp_mld1_dat[tmp_datstr]  = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][ldi].variables['mld25h_1'][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']].load())
-                                    if 'mld25h_2' in var_d[th_d_ind]['mat']:tmp_mld2_data[tmp_datstr]  = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][ldi].variables['mld25h_2'][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']].load())
-                                    tmp_gdept_2 =  grid_dict[tmp_datstr]['gdept'][:,iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']]               
+                                    if 'mld25h_1' in var_d[th_d_ind]['mat']:tmp_mld1[tmp_datstr]  = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][ldi].variables['mld25h_1'][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']].load())
+                                    if 'mld25h_2' in var_d[th_d_ind]['mat']:tmp_mld2[tmp_datstr]  = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][ldi].variables['mld25h_2'][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']].load())
+                                    tmp_gdept[tmp_datstr] =  grid_dict[tmp_datstr]['gdept'][:,iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']]               
 
                                 
                                 tmp_sigma_density_data[tmp_datstr] = sw_dens(tmp_T_data[tmp_datstr],tmp_S_data[tmp_datstr])-1000.
