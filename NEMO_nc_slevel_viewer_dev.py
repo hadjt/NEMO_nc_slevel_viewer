@@ -1268,12 +1268,14 @@ ax,
             if tmpdataset_oper == '-':
                 secdataset_proc_figname = 'Diff_%s-%s'%(tmpdatasetnum_1,tmpdatasetnum_2)
         
-
-
+        #print(do_grad)
+        #pdb.set_trace()
         if resample_freq is None:
-            fig_out_name = '%s/output_%s_%s_th%02i_fth%02i_i%04i_j%04i_t%03i_z%03i%s_g%1i_%s'%(      fig_dir,fig_lab,var,thd[1]['dx'],thd[1]['df'],ii,jj,ti,zz,z_meth,do_grad,secdataset_proc_figname)
+        #    fig_out_name = '%s/output_%s_%s_th%02i_fth%02i_i%04i_j%04i_t%03i_z%03i%s_g%1i_%s'%(      fig_dir,fig_lab,var,thd[1]['dx'],thd[1]['df'],ii,jj,ti,zz,z_meth,do_grad,secdataset_proc_figname)
+            fig_out_name = '%s/output_%s_%s_th%02ifth%02ii%04ij%04it%03iz%03i%sg%1i_%s'%(      fig_dir,fig_lab,var,thd[1]['dx'],thd[1]['df'],ii,jj,ti,zz,z_meth,do_grad,secdataset_proc_figname)
         else:
-            fig_out_name = '%s/output_%s_%s_th%02i_fth%02i_i%04i_j%04i_t%03i_z%03i%s_g%1i_res%s_%s'%(fig_dir,fig_lab,var,thd[1]['dx'],thd[1]['df'],ii,jj,ti,zz,z_meth,do_grad,resample_freq,secdataset_proc_figname)
+        #    fig_out_name = '%s/output_%s_%s_th%02i_fth%02i_i%04i_j%04i_t%03i_z%03i%s_g%1i_res%s_%s'%(fig_dir,fig_lab,var,thd[1]['dx'],thd[1]['df'],ii,jj,ti,zz,z_meth,do_grad,resample_freq,secdataset_proc_figname)
+            fig_out_name = '%s/output_%s_%s_th%02ifth%02ii%04ij%04it%03iz%03i%sg%1ir%s_%s'%(fig_dir,fig_lab,var,thd[1]['dx'],thd[1]['df'],ii,jj,ti,zz,z_meth,do_grad,resample_freq,secdataset_proc_figname)
         
 
         '''
