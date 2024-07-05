@@ -1053,6 +1053,7 @@ def nemo_slice_zlev(config = 'amm7',
         func_but_text_han['Grad'].set_text('Grad')
 
 
+    reload_UV_map = False
     if vis_curr == 0:
         func_but_text_han['Vis curr'].set_color('k')
         reload_UV_map = False
@@ -2336,9 +2337,14 @@ ax,
                     '''
                     if vis_ev <1: pdb.set_trace()
 
+                    vis_offset = 0.#np.sqrt((vis_x[1:,1:]-vis_x[:-1,:-1])**2 + (vis_y[1:,1:]-vis_y[:-1,:-1])**2 ).mean()/50
+
                     visax.append(current_barb(vis_x, vis_y,vis_U,vis_V,                                               
-                                                color = 'k', ax = ax[0], linewidth = 0.2,
+                                                color = 'k', ax = ax[0], linewidth = 0.4,
                                                 fixed_len = vis_fixed_len,scf = vis_scf))
+                    visax.append(current_barb(vis_x+vis_offset, vis_y+vis_offset,vis_U,vis_V,                                               
+                                                color = 'w', ax = ax[0], linewidth = 0.4,
+                                                fixed_len = vis_fixed_len,scf = vis_scf, linestyle = 'dotted'))
 
             ###################################################################################################
             ### Redraw canvas
