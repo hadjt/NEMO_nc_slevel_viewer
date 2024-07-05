@@ -703,18 +703,16 @@ def ismask(tmpvar):
     return ismask_out
 
 
-def nearbed_int_use_index_val(tmp3dmasknbivar,nbzindint,nbiindint,nbijndint,tmask):
-    
-    tmp_nb_mat = np.ma.masked_invalid(tmp3dmasknbivar[nbzindint,nbiindint,nbijndint])
-    
-    return tmp_nb_mat
-
-
-
 def nearbed_int_index_val(tmp3dmasknbivar):
     nbzindint,nbiindint,nbijndint,tmask = nearbed_int_index_func(tmp3dmasknbivar)
 
     tmp_nb_mat = nearbed_int_use_index_val(tmp3dmasknbivar,nbzindint,nbiindint,nbijndint,tmask)
+    
+    return tmp_nb_mat
+
+def nearbed_int_use_index_val(tmp3dmasknbivar,nbzindint,nbiindint,nbijndint,tmask):
+    
+    tmp_nb_mat = np.ma.masked_invalid(tmp3dmasknbivar[nbzindint,nbiindint,nbijndint])
     
     return tmp_nb_mat
 
@@ -773,7 +771,7 @@ def nearbed_index_func(tmp_var):
 
     return nbind,tmask
 
-
+'''
 def nearbed_index(filename, variable_4d,nemo_nb_i_filename = 'nemo_nb_i.nc'):
 
 
@@ -832,8 +830,8 @@ def nearbed_index(filename, variable_4d,nemo_nb_i_filename = 'nemo_nb_i.nc'):
     tmask = (rootgrp_in.variables['t_mask'][:,:,:] == 1)
 
     return nbind,tmask
-
-
+'''
+'''
 def load_nearbed_index(nemo_nb_i_filename):
 
 
@@ -843,7 +841,7 @@ def load_nearbed_index(nemo_nb_i_filename):
     rootgrp_in.close()
 
     return nbind,tmask
-
+    
 def extract_nb(var_in,nbind):
 
 
@@ -859,14 +857,12 @@ def extract_nb(var_in,nbind):
     return nbvar
 
 
-
 def extract_ss(var_in,nbind):
 
     tmpvar = var_in.copy()
     ssvar = tmpvar[0,:,:]
 
     return ssvar
-
 
 def extract_ss_nb_df(var_in,nbind,mask_in):
 
@@ -883,7 +879,7 @@ def extract_ss_nb_df(var_in,nbind,mask_in):
     ssvar = extract_ss(var_mask_in,nbind)
     dfvar = ssvar - nbvar
     return ssvar,nbvar,dfvar
-
+'''
 def weighted_depth_mean_masked_var(tmpvar_in, e3_in,output_weighting = False):
     # tmpvar_in and e3_in must be 3d (nz, ny, nx)
     
@@ -2906,19 +2902,26 @@ def create_Dataset_lst(fname_dict):
 
 
 
-def load_grid_dict(Dataset_lst,rootgrp_gdept_dict, thd, nce1t,nce2t,nce3t,configd, config_fnames_dict,cutxind,cutyind):
+def load_grid_dict(Dataset_lst,rootgrp_gdept_dict, thd, nce1t,nce2t,nce3t,configd, config_fnames_dict,cutxind,cutyind,cutout_data):
     grid_dict = {}
     for tmp_datstr in Dataset_lst:
         th_d_ind = int(tmp_datstr[-1])
 
         grid_dict[tmp_datstr] = {}
-        grid_dict[tmp_datstr]['e1t'] = rootgrp_gdept_dict[tmp_datstr].variables[nce1t][0,cutyind[0]:cutyind[1],cutxind[0]:cutxind[1]][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
-        grid_dict[tmp_datstr]['e2t'] = rootgrp_gdept_dict[tmp_datstr].variables[nce2t][0,cutyind[0]:cutyind[1],cutxind[0]:cutxind[1]][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
-        grid_dict[tmp_datstr]['e3t'] = rootgrp_gdept_dict[tmp_datstr].variables[nce3t][0,:,cutyind[0]:cutyind[1],cutxind[0]:cutxind[1]][:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
-        tmp_configd = configd[th_d_ind]
-        if tmp_configd is None:tmp_configd = configd[1]
-        grid_dict[tmp_datstr]['gdept'] = rootgrp_gdept_dict[tmp_datstr].variables[config_fnames_dict[tmp_configd]['ncgdept']][0,:,cutyind[0]:cutyind[1],cutxind[0]:cutxind[1]][:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
-
+        if cutout_data:
+            grid_dict[tmp_datstr]['e1t'] = rootgrp_gdept_dict[tmp_datstr].variables[nce1t][0,cutyind[0]:cutyind[1],cutxind[0]:cutxind[1]][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
+            grid_dict[tmp_datstr]['e2t'] = rootgrp_gdept_dict[tmp_datstr].variables[nce2t][0,cutyind[0]:cutyind[1],cutxind[0]:cutxind[1]][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
+            grid_dict[tmp_datstr]['e3t'] = rootgrp_gdept_dict[tmp_datstr].variables[nce3t][0,:,cutyind[0]:cutyind[1],cutxind[0]:cutxind[1]][:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
+            tmp_configd = configd[th_d_ind]
+            if tmp_configd is None:tmp_configd = configd[1]
+            grid_dict[tmp_datstr]['gdept'] = rootgrp_gdept_dict[tmp_datstr].variables[config_fnames_dict[tmp_configd]['ncgdept']][0,:,cutyind[0]:cutyind[1],cutxind[0]:cutxind[1]][:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
+        else:
+            grid_dict[tmp_datstr]['e1t'] = rootgrp_gdept_dict[tmp_datstr].variables[nce1t][0,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
+            grid_dict[tmp_datstr]['e2t'] = rootgrp_gdept_dict[tmp_datstr].variables[nce2t][0,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
+            grid_dict[tmp_datstr]['e3t'] = rootgrp_gdept_dict[tmp_datstr].variables[nce3t][0,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
+            tmp_configd = configd[th_d_ind]
+            if tmp_configd is None:tmp_configd = configd[1]
+            grid_dict[tmp_datstr]['gdept'] = rootgrp_gdept_dict[tmp_datstr].variables[config_fnames_dict[tmp_configd]['ncgdept']][0,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
         
     nz = grid_dict[Dataset_lst[0]]['gdept'].shape[0]
 
@@ -3017,7 +3020,7 @@ def create_ncvar_lon_lat_time(ncvar_d):
 
 
 
-def create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncglamt,ncgphit,nav_lon_varname,nav_lat_varname,ncdim_d,cutxind,cutyind):
+def create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncglamt,ncgphit,nav_lon_varname,nav_lat_varname,ncdim_d,cutxind,cutyind,cutout_data):
 
     lon_d,lat_d = {},{}
 

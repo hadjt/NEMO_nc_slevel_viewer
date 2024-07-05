@@ -439,7 +439,7 @@ def nemo_slice_zlev(config = 'amm7',
 
 
     # Create lon and lat dictionaries
-    lon_d,lat_d = create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncglamt,ncgphit,nav_lon_varname,nav_lat_varname,ncdim_d,cutxind,cutyind)
+    lon_d,lat_d = create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncglamt,ncgphit,nav_lon_varname,nav_lat_varname,ncdim_d,cutxind,cutyind,cutout_data)
     #pdb.set_trace()
     # if use key words to set intial lon/lat,nvarbutcol convert to jj/ii
     if (lon_in is not None) & (lat_in is not None):
@@ -451,7 +451,7 @@ def nemo_slice_zlev(config = 'amm7',
     init_timer.append((datetime.now(),'Lon/Lats loaded'))
 
     #create depth (gdept) dictionary
-    grid_dict,nz = load_grid_dict(Dataset_lst,rootgrp_gdept_dict, thd, nce1t,nce2t,nce3t,configd, config_fnames_dict,cutxind,cutyind)
+    grid_dict,nz = load_grid_dict(Dataset_lst,rootgrp_gdept_dict, thd, nce1t,nce2t,nce3t,configd, config_fnames_dict,cutxind,cutyind,cutout_data)
     #pdb.set_trace()
     # if using WW3 grid, load regridding interpolation weights
     if 'WW3' in ncdim_d['Dataset 1']:
@@ -3547,7 +3547,10 @@ def main():
                 print(args.verbose_debugging)
                 pdb.set_trace()
  
-        if args.do_grad is None:do_grad_in=0
+        if args.do_grad is None:
+            do_grad_in=0
+        else:
+            do_grad_in=args.do_grad
 
         if args.do_cont is None:
             do_cont_in=False
