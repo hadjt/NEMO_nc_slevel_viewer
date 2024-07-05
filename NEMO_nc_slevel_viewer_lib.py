@@ -929,6 +929,232 @@ def interp_UV_vel_to_Tgrid(tmp_DMU_in,tmp_DMV_in):
 
 
 
+def current_barb(x1,y1,u_in,v_in,evx = 2,evy = 2,x0 = 0,y0 = 2,arrow_style = 'barb',fixed_len = 0.05,scf = 4,cutoff_perc = [10., 20., 30., 40., 50., 60., 70., 80., 90.], cutoff = None, no_zero_vel = True,ax = None,**kwargs):
+
+    '''
+    evx = 2
+    evy = 2
+    x0 = 0
+    y0 = 2
+    arrow_style = 'barb'
+    fixed_len = 0.05
+    scf = 4
+    cutoff_perc = [10., 20., 30., 40., 50., 60., 70., 80., 90.]
+    cutoff = None
+    no_zero_vel = True
+    ax = None
+    '''
+
+    if ax is not None: plt.sca(ax)
+
+
+    u = np.ma.array(u_in.copy())
+    v = np.ma.array(v_in.copy())
+
+    if (x1.shape == y1.shape == u.shape == v.shape) == False:
+        print('not all inputs the same shape')
+        return None
+    #x1,y1,u,v = nav_lon,nav_lat, nt_dmu_djf,nt_dmv_djf
+
+    if no_zero_vel:
+        ma = (np.ma.masked_equal(u,0.)*np.ma.masked_equal(v,0.)).mask
+    else:
+        ma = (u*v).mask
+
+    u.mask = ma
+    v.mask = ma
+    u.data[u.mask] =0.
+    v.data[v.mask] =0.
+
+    uv = np.sqrt(u**2 + v**2)
+
+    if fixed_len is None:
+        uvlen = uv.copy()
+    else:
+        uvlen = uv.copy()*0. + fixed_len
+
+
+    if uv.mask.all():
+        print('UV fully masked')
+        return None
+
+    ang = np.arctan2(v,u)
+    ang2 = ang + np.pi/2.
+
+    dx = uvlen * np.cos(ang)*scf
+    dy = uvlen * np.sin(ang)*scf
+    dx2 = uvlen * np.cos(ang2)*scf
+    dy2 = uvlen * np.sin(ang2)*scf
+    x2 = x1+dx
+    y2 = y1+dy
+
+    '''
+    uvlenr = (uvlen)[::evy,::evx].ravel().reshape(1,-1)
+    uvr = (uv)[::evy,::evx].ravel().reshape(1,-1)
+    x1r = (x1)[::evy,::evx].ravel().reshape(1,-1)
+    x2r = (x2)[::evy,::evx].ravel().reshape(1,-1)
+    dxr = (dx)[::evy,::evx].ravel().reshape(1,-1)
+    dx2r = (dx2)[::evy,::evx].ravel().reshape(1,-1)
+    y1r = (y1)[::evy,::evx].ravel().reshape(1,-1)
+    y2r = (y2)[::evy,::evx].ravel().reshape(1,-1)
+    dyr = (dy)[::evy,::evx].ravel().reshape(1,-1)
+    dy2r = (dy2)[::evy,::evx].ravel().reshape(1,-1)
+    '''
+
+    uvlenr = (uvlen)[y0::evy,x0::evx].ravel().reshape(1,-1)
+    uvr = (uv)[y0::evy,x0::evx].ravel().reshape(1,-1)
+    x1r = (x1)[y0::evy,x0::evx].ravel().reshape(1,-1)
+    x2r = (x2)[y0::evy,x0::evx].ravel().reshape(1,-1)
+    dxr = (dx)[y0::evy,x0::evx].ravel().reshape(1,-1)
+    dx2r = (dx2)[y0::evy,x0::evx].ravel().reshape(1,-1)
+    y1r = (y1)[y0::evy,x0::evx].ravel().reshape(1,-1)
+    y2r = (y2)[y0::evy,x0::evx].ravel().reshape(1,-1)
+    dyr = (dy)[y0::evy,x0::evx].ravel().reshape(1,-1)
+    dy2r = (dy2)[y0::evy,x0::evx].ravel().reshape(1,-1)
+
+
+    hw = 0.15
+    hl = 0.25
+    hl1 = 1.-hl
+    bsp = 0.15
+
+
+    #lines
+    if arrow_style.lower() == 'lines':
+        x12 = np.concatenate( (  x1r*np.nan,x1r,(x1r+dxr)    ),axis =0).T.ravel()
+        y12 = np.concatenate( (  y1r*np.nan,y1r,(y1r+dyr)    ),axis =0).T.ravel()
+
+    if arrow_style.lower() == 'flick':
+        x12 = np.concatenate( (  x1r*np.nan,x1r,(x1r+dxr),(x1r+dxr*hl1+hw*dx2r)    ),axis =0).T.ravel()
+        y12 = np.concatenate( (  y1r*np.nan,y1r,(y1r+dyr),(y1r+dyr*hl1+hw*dy2r)    ),axis =0).T.ravel()
+
+    #triangles
+    if arrow_style.lower() == 'triangles':
+        x12 = np.concatenate( (  x1r*np.nan,x1r,(x1r+dxr*hl1),(x1r+dxr*hl1+hw*dx2r),(x1r+dxr),(x1r+dxr*hl1-hw*dx2r),( x1r+dxr*hl1)    ),axis =0).T.ravel()
+        y12 = np.concatenate( (  y1r*np.nan,y1r,(y1r+dyr*hl1),(y1r+dyr*hl1+hw*dy2r),(y1r+dyr),(y1r+dyr*hl1-hw*dy2r),( y1r+dyr*hl1)    ),axis =0).T.ravel()
+    #hollow triangles
+    elif arrow_style.lower() == 'hollowtriangles':
+        x12 = np.concatenate( (  x1r*np.nan,x1r,(x1r+dxr),(x1r+dxr*hl1+hw*dx2r),(x1r+dxr*hl1-hw*dx2r),(x1r+dxr)   ),axis =0).T.ravel()
+        y12 = np.concatenate( (  y1r*np.nan,y1r,(y1r+dyr),(y1r+dyr*hl1+hw*dy2r),(y1r+dyr*hl1-hw*dy2r),(y1r+dyr)   ),axis =0).T.ravel()
+    #arrows
+    elif arrow_style.lower() == 'arrows':
+        x12 = np.concatenate( (  x1r*np.nan,x1r,(x1r+dxr),(x1r+dxr*hl1+hw*dx2r),(x1r+dxr),(x1r+dxr*hl1-hw*dx2r),    ),axis =0).T.ravel()
+        y12 = np.concatenate( (  y1r*np.nan,y1r,(y1r+dyr),(y1r+dyr*hl1+hw*dy2r),(y1r+dyr),(y1r+dyr*hl1-hw*dy2r),    ),axis =0).T.ravel()
+
+    elif arrow_style.lower() == 'barb':
+        # barbs
+        x12_barb_00 = np.concatenate( (  x1r*np.nan,x1r,(x1r+dxr)   ),axis =0).T
+        y12_barb_00 = np.concatenate( (  y1r*np.nan,y1r,(y1r+dyr)   ),axis =0).T
+        x12_barb_10 = np.concatenate( (  x1r*np.nan,x1r,(x1r+dxr),(x1r+dxr*hl1+hw*dx2r), (x1r+dxr)   ),axis =0).T
+        y12_barb_10 = np.concatenate( (  y1r*np.nan,y1r,(y1r+dyr),(y1r+dyr*hl1+hw*dy2r), (y1r+dyr)   ),axis =0).T
+        x12_barb_20 = np.concatenate( (  x1r*np.nan,x1r,(x1r+dxr),(x1r+dxr*hl1+hw*dx2r), (x1r+dxr), (x1r+(1-bsp)*dxr),(x1r+(dxr*(hl1-bsp))+hw*dx2r), (x1r+(1-bsp)*dxr)   ),axis =0).T
+        y12_barb_20 = np.concatenate( (  y1r*np.nan,y1r,(y1r+dyr),(y1r+dyr*hl1+hw*dy2r), (y1r+dyr), (y1r+(1-bsp)*dyr),(y1r+(dyr*(hl1-bsp))+hw*dy2r), (y1r+(1-bsp)*dyr)   ),axis =0).T
+        x12_barb_30 = np.concatenate( (  x1r*np.nan,x1r,(x1r+dxr),(x1r+dxr*hl1+hw*dx2r), (x1r+dxr), (x1r+(1-bsp)*dxr),(x1r+(dxr*(hl1-bsp))+hw*dx2r), (x1r+(1-bsp)*dxr), (x1r+((1-2*bsp)*dxr)),(x1r+(dxr*(hl1-2*bsp))+hw*dx2r), (x1r+((1-2*bsp)*dxr))   ),axis =0).T
+        y12_barb_30 = np.concatenate( (  y1r*np.nan,y1r,(y1r+dyr),(y1r+dyr*hl1+hw*dy2r), (y1r+dyr), (y1r+(1-bsp)*dyr),(y1r+(dyr*(hl1-bsp))+hw*dy2r), (y1r+(1-bsp)*dyr), (y1r+((1-2*bsp)*dyr)),(y1r+(dyr*(hl1-2*bsp))+hw*dy2r), (y1r+((1-2*bsp)*dyr))   ),axis =0).T
+        x12_barb_40 = np.concatenate( (  x1r*np.nan,x1r,(x1r+dxr),(x1r+dxr*hl1+hw*dx2r), (x1r+dxr), (x1r+(1-bsp)*dxr),(x1r+(dxr*(hl1-bsp))+hw*dx2r), (x1r+(1-bsp)*dxr), (x1r+((1-2*bsp)*dxr)),(x1r+(dxr*(hl1-2*bsp))+hw*dx2r), (x1r+((1-2*bsp)*dxr)), (x1r+((1-3*bsp)*dxr)),(x1r+(dxr*(hl1-3*bsp))+hw*dx2r), (x1r+((1-3*bsp)*dxr))   ),axis =0).T
+        y12_barb_40 = np.concatenate( (  y1r*np.nan,y1r,(y1r+dyr),(y1r+dyr*hl1+hw*dy2r), (y1r+dyr), (y1r+(1-bsp)*dyr),(y1r+(dyr*(hl1-bsp))+hw*dy2r), (y1r+(1-bsp)*dyr), (y1r+((1-2*bsp)*dyr)),(y1r+(dyr*(hl1-2*bsp))+hw*dy2r), (y1r+((1-2*bsp)*dyr)), (y1r+((1-3*bsp)*dyr)),(y1r+(dyr*(hl1-3*bsp))+hw*dy2r), (y1r+((1-3*bsp)*dyr))   ),axis =0).T
+
+        x12_barb_05 = np.concatenate( (  x1r*np.nan,x1r,(x1r+dxr),(x1r+dxr*(1. - hl/2)+hw*dx2r/2), (x1r+dxr)   ),axis =0).T
+        y12_barb_05 = np.concatenate( (  y1r*np.nan,y1r,(y1r+dyr),(y1r+dyr*(1. - hl/2)+hw*dy2r/2), (y1r+dyr)   ),axis =0).T
+        x12_barb_15 = np.concatenate( (  x1r*np.nan,x1r,(x1r+dxr),(x1r+dxr*(1. - hl)+hw*dx2r), (x1r+dxr), (x1r+(1-bsp)*dxr),(x1r+(dxr*((1. - hl/2)-bsp))+hw*dx2r/2), (x1r+(1-bsp)*dxr)   ),axis =0).T
+        y12_barb_15 = np.concatenate( (  y1r*np.nan,y1r,(y1r+dyr),(y1r+dyr*(1. - hl)+hw*dy2r), (y1r+dyr), (y1r+(1-bsp)*dyr),(y1r+(dyr*((1. - hl/2)-bsp))+hw*dy2r/2), (y1r+(1-bsp)*dyr)   ),axis =0).T
+        x12_barb_25 = np.concatenate( (  x1r*np.nan,x1r,(x1r+dxr),(x1r+dxr*(1. - hl)+hw*dx2r), (x1r+dxr), (x1r+(1-bsp)*dxr),(x1r+(dxr*((1. - hl)-bsp))+hw*dx2r), (x1r+(1-bsp)*dxr), (x1r+((1-2*bsp)*dxr)),(x1r+(dxr*((1. - hl/2)-2*bsp))+hw*dx2r/2), (x1r+((1-2*bsp)*dxr))   ),axis =0).T
+        y12_barb_25 = np.concatenate( (  y1r*np.nan,y1r,(y1r+dyr),(y1r+dyr*(1. - hl)+hw*dy2r), (y1r+dyr), (y1r+(1-bsp)*dyr),(y1r+(dyr*((1. - hl)-bsp))+hw*dy2r), (y1r+(1-bsp)*dyr), (y1r+((1-2*bsp)*dyr)),(y1r+(dyr*((1. - hl/2)-2*bsp))+hw*dy2r/2), (y1r+((1-2*bsp)*dyr))   ),axis =0).T
+        x12_barb_35 = np.concatenate( (  x1r*np.nan,x1r,(x1r+dxr),(x1r+dxr*(1. - hl)+hw*dx2r), (x1r+dxr), (x1r+(1-bsp)*dxr),(x1r+(dxr*((1. - hl)-bsp))+hw*dx2r), (x1r+(1-bsp)*dxr), (x1r+((1-2*bsp)*dxr)),(x1r+(dxr*((1. - hl)-2*bsp))+hw*dx2r), (x1r+((1-2*bsp)*dxr)), (x1r+((1-3*bsp)*dxr)),(x1r+(dxr*((1. - hl/2)-3*bsp))+hw*dx2r/2), (x1r+((1-3*bsp)*dxr))   ),axis =0).T
+        y12_barb_35 = np.concatenate( (  y1r*np.nan,y1r,(y1r+dyr),(y1r+dyr*(1. - hl)+hw*dy2r), (y1r+dyr), (y1r+(1-bsp)*dyr),(y1r+(dyr*((1. - hl)-bsp))+hw*dy2r), (y1r+(1-bsp)*dyr), (y1r+((1-2*bsp)*dyr)),(y1r+(dyr*((1. - hl)-2*bsp))+hw*dy2r), (y1r+((1-2*bsp)*dyr)), (y1r+((1-3*bsp)*dyr)),(y1r+(dyr*((1. - hl/2)-3*bsp))+hw*dy2r/2), (y1r+((1-3*bsp)*dyr))   ),axis =0).T
+
+        x12_barb_45 = np.concatenate( (  x1r*np.nan,x1r,(x1r+dxr),(x1r+dxr*(1. - hl)+hw*dx2r), (x1r+dxr), (x1r+(1-bsp)*dxr),(x1r+(dxr*((1. - hl)-bsp))+hw*dx2r), (x1r+(1-bsp)*dxr), (x1r+((1-2*bsp)*dxr)),(x1r+(dxr*((1. - hl)-2*bsp))+hw*dx2r), (x1r+((1-2*bsp)*dxr)), (x1r+((1-3*bsp)*dxr)),(x1r+(dxr*((1. - hl)-3*bsp))+hw*dx2r), (x1r+((1-3*bsp)*dxr)), (x1r+((1-4*bsp)*dxr)),(x1r+(dxr*((1. - hl/2)-4*bsp))+hw*dx2r/2), (x1r+((1-4*bsp)*dxr))   ),axis =0).T
+        y12_barb_45 = np.concatenate( (  y1r*np.nan,y1r,(y1r+dyr),(y1r+dyr*(1. - hl)+hw*dy2r), (y1r+dyr), (y1r+(1-bsp)*dyr),(y1r+(dyr*((1. - hl)-bsp))+hw*dy2r), (y1r+(1-bsp)*dyr), (y1r+((1-2*bsp)*dyr)),(y1r+(dyr*((1. - hl)-2*bsp))+hw*dy2r), (y1r+((1-2*bsp)*dyr)), (y1r+((1-3*bsp)*dyr)),(y1r+(dyr*((1. - hl)-3*bsp))+hw*dy2r), (y1r+((1-3*bsp)*dyr)), (y1r+((1-4*bsp)*dyr)),(y1r+(dyr*((1. - hl/2)-4*bsp))+hw*dy2r/2), (y1r+((1-4*bsp)*dyr))   ),axis =0).T
+
+        ''''
+        # manual cut off
+        cutoff=np.percentile(uvr[uvr.mask==False],(25,50,75))
+        cutoff_perc = 100.*np.arange(1.,8.)/8.
+        cutoff=np.percentile(uvr[uvr.mask==False], cutoff_perc)
+        ind_0 = (uvr< cutoff[1])
+        ind_1 = (uvr >= cutoff[0]) & (uvr< cutoff[1])
+        ind_2 = (uvr >= cutoff[1]) & (uvr< cutoff[2])
+        ind_3 = (uvr >= cutoff[2]) & (uvr< cutoff[3])
+        ind_4 = (uvr >= cutoff[3]) & (uvr< cutoff[4])
+        ind_5 = (uvr >= cutoff[4]) & (uvr< cutoff[5])
+        ind_6 = (uvr >= cutoff[5]) & (uvr< cutoff[6])
+        ind_7 = (uvr >= cutoff[6])
+
+
+        x12 = np.concatenate((x12_barb_00[ind_0.ravel(),:].ravel(),x12_barb_05[ind_1.ravel(),:].ravel(),x12_barb_10[ind_2.ravel(),:].ravel()))
+        y12 = np.concatenate((y12_barb_10[ind_1.ravel(),:].ravel(),y12_barb_20[ind_2.ravel(),:].ravel(),y12_barb_30[ind_3.ravel(),:].ravel()))
+
+        '''
+
+        #cutoff_perc = 100.*np.arange(1.,10.)/10.
+
+        if cutoff is None:
+            cutoff=np.percentile(uvr[uvr.mask==False], cutoff_perc)
+
+        ind_lst = []
+        ind_lst.append(uvr< cutoff[1])
+        for ii in range(0,cutoff.size-1): ind_lst.append((uvr >= cutoff[ii]) & (uvr< cutoff[ii+1]))
+        ind_lst.append((uvr >= cutoff[-1]))
+
+
+        x12_lst = []
+        y12_lst = []
+        for tmpind,xbarb in zip(ind_lst,[x12_barb_00,x12_barb_05,x12_barb_10,x12_barb_15,x12_barb_20,x12_barb_25,x12_barb_30,x12_barb_35,x12_barb_40,x12_barb_45]):x12_lst.append(xbarb[tmpind.ravel(),:].ravel())
+        for tmpind,ybarb in zip(ind_lst,[y12_barb_00,y12_barb_05,y12_barb_10,y12_barb_15,y12_barb_20,y12_barb_25,y12_barb_30,y12_barb_35,y12_barb_40,y12_barb_45]):y12_lst.append(ybarb[tmpind.ravel(),:].ravel())
+        x12,y12 = [jj for ii in x12_lst for jj in ii ],[jj for ii in y12_lst for jj in ii ]
+
+
+
+
+
+    '''
+
+
+
+        x12 = np.append(x1[::ev].ravel().reshape(1,-1),x2[::ev].ravel().reshape(1,-1),axis =0)
+        y12 = np.append(y1[::ev].ravel().reshape(1,-1),y2[::ev].ravel().reshape(1,-1),axis =0)
+
+
+        x12 = np.append(x1[::ev].ravel().reshape(1,-1),(x1[::ev] + dx[::ev]).ravel().reshape(1,-1),axis =0)
+        y12 = np.append(y1[::ev].ravel().reshape(1,-1),(y1[::ev] + dx[::ev]).ravel().reshape(1,-1),axis =0)
+
+        x12 = np.append(x1[::ev].ravel().reshape(1,-1),(x1[::ev] + dx[::ev]).ravel().reshape(1,-1),(x1[::ev] + 0.75*dx[::ev] + 0.25*dx2[::ev]).ravel().reshape(1,-1),axis =0)
+        y12 = np.append(y1[::ev].ravel().reshape(1,-1),(y1[::ev] + dx[::ev]).ravel().reshape(1,-1),(y1[::ev] + 0.75*dy[::ev] + 0.25*dy2[::ev]).ravel().reshape(1,-1),axis =0)
+
+
+        x12 = np.concatenate( (  x1[::ev].ravel().reshape(1,-1)*np.nan,  x1[::ev].ravel().reshape(1,-1), (x1[::ev] + dx[::ev]).ravel().reshape(1,-1),(x1[::ev] + 0.75*dx[::ev] + 0.15*dx2[::ev]).ravel().reshape(1,-1) ,(x1[::ev] + 0.75*dx[::ev] - 0.15*dx2[::ev]).ravel().reshape(1,-1), (x1[::ev] + dx[::ev]).ravel().reshape(1,-1)  ),axis =0).T.ravel()
+        y12 = np.concatenate( (  y1[::ev].ravel().reshape(1,-1)*np.nan,  y1[::ev].ravel().reshape(1,-1), (y1[::ev] + dx[::ev]).ravel().reshape(1,-1),(y1[::ev] + 0.75*dy[::ev] + 0.15*dy2[::ev]).ravel().reshape(1,-1),(y1[::ev] + 0.75*dy[::ev] - 0.15*dy2[::ev]).ravel().reshape(1,-1)  ,(y1[::ev] + dx[::ev]).ravel().reshape(1,-1)  ),axis =0).T.ravel()
+
+
+        x12 = np.concatenate( (  x1[::ev].ravel().reshape(1,-1)*np.nan,  x1[::ev].ravel().reshape(1,-1), (x2[::ev]).ravel().reshape(1,-1),(x1[::ev] + 0.75*dx[::ev] + 0.15*dx2[::ev]).ravel().reshape(1,-1) ,(x1[::ev] + 0.75*dx[::ev] - 0.15*dx2[::ev]).ravel().reshape(1,-1), (x2[::ev]).ravel().reshape(1,-1)  ),axis =0).T.ravel()
+        y12 = np.concatenate( (  y1[::ev].ravel().reshape(1,-1)*np.nan,  y1[::ev].ravel().reshape(1,-1), (y2[::ev]).ravel().reshape(1,-1),(y1[::ev] + 0.75*dy[::ev] + 0.15*dy2[::ev]).ravel().reshape(1,-1),(y1[::ev] + 0.75*dy[::ev] - 0.15*dy2[::ev]).ravel().reshape(1,-1)  ,(y2[::ev]).ravel().reshape(1,-1)  ),axis =0).T.ravel()
+
+
+
+        #x12 = np.concatenate( (  x1[::ev].ravel().reshape(1,-1)*np.nan,  x1[::ev].ravel().reshape(1,-1), (x1[::ev] + dx[::ev]).ravel().reshape(1,-1),(x1[::ev]).ravel().reshape(1,-1),(x1[::ev] + dx2[::ev] ).ravel().reshape(1,-1) ),axis =0).T.ravel()
+        #y12 = np.concatenate( (  y1[::ev].ravel().reshape(1,-1)*np.nan,  y1[::ev].ravel().reshape(1,-1), (y1[::ev] + dx[::ev]).ravel().reshape(1,-1),(y1[::ev]).ravel().reshape(1,-1),(y1[::ev] + dy2[::ev] ).ravel().reshape(1,-1)    ),axis =0).T.ravel()
+        #lined arrows
+        x12 = np.concatenate( (  x1[::evy,::evx].ravel().reshape(1,-1)*np.nan,  x1[::evy,::evx].ravel().reshape(1,-1), (x2[::evy,::evx]).ravel().reshape(1,-1),(x1[::evy,::evx] + 0.75*dx[::evy,::evx] + 0.15*dx2[::evy,::evx]).ravel().reshape(1,-1) ,(x1[::evy,::evx] + 0.75*dx[::evy,::evx] - 0.15*dx2[::evy,::evx]).ravel().reshape(1,-1), (x2[::evy,::evx]).ravel().reshape(1,-1)  ),axis =0).T.ravel()
+        y12 = np.concatenate( (  y1[::evy,::evx].ravel().reshape(1,-1)*np.nan,  y1[::evy,::evx].ravel().reshape(1,-1), (y2[::evy,::evx]).ravel().reshape(1,-1),(y1[::evy,::evx] + 0.75*dy[::evy,::evx] + 0.15*dy2[::evy,::evx]).ravel().reshape(1,-1),(y1[::evy,::evx] + 0.75*dy[::evy,::evx] - 0.15*dy2[::evy,::evx]).ravel().reshape(1,-1)  ,(y2[::evy,::evx]).ravel().reshape(1,-1)  ),axis =0).T.ravel()
+
+        x12 = np.concatenate( (  x1[::evy,::evx].ravel().reshape(1,-1)*np.nan,  x1[::evy,::evx].ravel().reshape(1,-1), (x1[::evy,::evx]).ravel().reshape(1,-1),(x1[::evy,::evx] + 0.75*dx[::evy,::evx] + 0.15*dx2[::evy,::evx]).ravel().reshape(1,-1) ,(x1[::evy,::evx] + 0.75*dx[::evy,::evx] - 0.15*dx2[::evy,::evx]).ravel().reshape(1,-1), (x2[::evy,::evx]).ravel().reshape(1,-1)  ),axis =0).T.ravel()
+        y12 = np.concatenate( (  y1[::evy,::evx].ravel().reshape(1,-1)*np.nan,  y1[::evy,::evx].ravel().reshape(1,-1), (y1[::evy,::evx]).ravel().reshape(1,-1),(y1[::evy,::evx] + 0.75*dy[::evy,::evx] + 0.15*dy2[::evy,::evx]).ravel().reshape(1,-1),(y1[::evy,::evx] + 0.75*dy[::evy,::evx] - 0.15*dy2[::evy,::evx]).ravel().reshape(1,-1)  ,(y2[::evy,::evx]).ravel().reshape(1,-1)  ),axis =0).T.ravel()
+
+
+
+    '''
+
+    #plt.plot(np.ma.array(x1, mask = ma)[::evy,::evx].ravel(),y1[::evy,::evx].ravel(),'ko',ms = 2.5)
+    handle = plt.plot(x12,y12,**kwargs)
+    #plt.axis('square')
+    return handle
+
+
+
+
+
+
+
 def mask_stats(data,mask,sparse=False):
     # MLD in mixed areas are masked out, so doesn't include them in the stats. Therefore MLD the stats are only for stratified regions.
     #  not the case with PEA as unstratified areas have a PEA of 0 J/m3  e.g. # sttmpdata.mask = (sttmpdata.data < 10) | sttmpdata.mask

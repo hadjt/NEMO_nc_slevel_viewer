@@ -15,18 +15,6 @@ import time
 import argparse
 import textwrap
 
-'''
-#redundant. 
-from NEMO_nc_slevel_viewer_lib import set_perc_clim_pcolor,interp1dmat_wgt, interp_UV_vel_to_Tgrid,rotated_grid_to_amm15
-from NEMO_nc_slevel_viewer_lib import nearbed_int_index_val
-from NEMO_nc_slevel_viewer_lib import pea_TS
-from NEMO_nc_slevel_viewer_lib import load_nc_dims,load_nc_var_name_list,weighted_depth_mean_masked_var
-
-from NEMO_nc_slevel_viewer_lib import reload_map_data_comb_zmeth_zindex,reload_map_data_comb_zmeth_ss_3d,reload_map_data_comb_zmeth_nb_df_zm_3d
-from NEMO_nc_slevel_viewer_lib import reload_map_data_comb_zmeth_zslice,reload_map_data_comb_2d,regrid_2nd,load_nc_var_name_list_WW3
-######
-'''
-
 
 ### set-up modules
 from NEMO_nc_slevel_viewer_lib import create_config_fnames_dict,create_rootgrp_gdept_dict,create_gdept_ncvarnames
@@ -56,7 +44,7 @@ from NEMO_nc_slevel_viewer_lib import interp1dmat_create_weight
 
 # Plotting modules
 from NEMO_nc_slevel_viewer_lib import get_clim_pcolor, set_clim_pcolor,set_perc_clim_pcolor_in_region,get_colorbar_values
-from NEMO_nc_slevel_viewer_lib import scale_color_map,lon_lat_to_str
+from NEMO_nc_slevel_viewer_lib import scale_color_map,lon_lat_to_str,current_barb
 
 
 
@@ -132,6 +120,7 @@ def nemo_slice_zlev(config = 'amm7',
     justplot = False, justplot_date_ind = None,justplot_z_meth_zz = None,justplot_secdataset_proc = None,
     fig_fname_lab = None, fig_fname_lab_2nd = None,
     trim_extra_files = True,
+    vis_curr = -1, vis_curr_meth = 'barb',
     resample_freq = None,
     verbose_debugging = False):
 
@@ -690,6 +679,11 @@ def nemo_slice_zlev(config = 'amm7',
     if ('votemper' in var_d[1]['mat']) & ('vosaline' in var_d[1]['mat']):
         add_TSProf = True
 
+    if (tmp_var_U in var_d[1]['mat']) & (tmp_var_V in var_d[1]['mat']):
+        if vis_curr == -1:
+            vis_curr = 0
+
+
     #pdb.set_trace()
 
     ldi = 0 
@@ -943,7 +937,7 @@ def nemo_slice_zlev(config = 'amm7',
 
     mode_name_lst = ['Click','Loop']
 
-    func_names_lst = ['Hov/Time','Show Prof','ColScl','Reset zoom', 'Zoom', 'Axis','Clim: Reset','Clim: Zoom','Clim: Expand','Clim: pair','Clim: sym','Surface', 'Near-Bed', 'Surface-Bed','Depth-Mean','Depth level','Contours','Grad','T Diff','TS Diag','LD time','Fcst Diag','Save Figure','Quit']
+    func_names_lst = ['Hov/Time','Show Prof','ColScl','Reset zoom', 'Zoom', 'Axis','Clim: Reset','Clim: Zoom','Clim: Expand','Clim: pair','Clim: sym','Surface', 'Near-Bed', 'Surface-Bed','Depth-Mean','Depth level','Contours','Grad','T Diff','TS Diag','LD time','Fcst Diag','Vis curr','Save Figure','Quit']
     
 
     if add_TSProf:
@@ -959,6 +953,8 @@ def nemo_slice_zlev(config = 'amm7',
     else:
         ldi=0
 
+    if vis_curr == -1:
+        func_names_lst.remove('Vis curr')
 
     # For T Diff
     if ntime < 2: # no point being able to change lead time database if only one 
@@ -1057,6 +1053,12 @@ def nemo_slice_zlev(config = 'amm7',
         func_but_text_han['Grad'].set_text('Grad')
 
 
+    if vis_curr == 0:
+        func_but_text_han['Vis curr'].set_color('k')
+        reload_UV_map = False
+    elif vis_curr > 0:
+        reload_UV_map = True
+        func_but_text_han['Vis curr'].set_color('darkgreen')
 
     func_but_text_han['ColScl'].set_text('Col: Linear')
 
@@ -1593,6 +1595,11 @@ ax,
                         preload_data_ti_Tm1,preload_data_var_Tm1,preload_data_ldi_Tm1 = 0.5,'None',0.5
                         Time_Diff_cnt = 0
 
+                if vis_curr > 0:
+                    data_inst_U,preload_data_ti_U,preload_data_var_U,preload_data_ldi_U = reload_data_instances(tmp_var_U,thd,ldi,ti,var_d,var_grid['Dataset 1'], xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
+                    data_inst_V,preload_data_ti_V,preload_data_var_V,preload_data_ldi_V = reload_data_instances(tmp_var_V,thd,ldi,ti,var_d,var_grid['Dataset 1'], xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
+
+
 
 
             ###################################################################################################
@@ -1664,6 +1671,9 @@ ax,
                 map_dat_dict = reload_map_data_comb(var,z_meth,zz,zi, data_inst,var_dim, interp1d_ZwgtT,grid_dict,lon_d[1],lat_d[1],regrid_params,regrid_meth,thd,configd,Dataset_lst)
                 reload_map = False
 
+                if vis_curr > 0:
+                    reload_UV_map = True
+
                 if do_grad == 1:
                     #pdb.set_trace()
                     
@@ -1672,9 +1682,22 @@ ax,
                         map_dat_dict[tmp_datstr] = field_gradient_2d(map_dat_dict[tmp_datstr], thd[1]['dx']*grid_dict['Dataset 1']['e1t'],thd[1]['dx']*grid_dict['Dataset 1']['e2t']) # scale up widths between grid boxes
                     #map_dat_dict['Dataset 1'] = field_gradient_2d(map_dat_dict['Dataset 1'], thd[1]['dx']*grid_dict['Dataset 1']['e1t'],thd[1]['dx']*grid_dict['Dataset 1']['e2t']) # scale up widths between grid boxes
                     #map_dat_dict['Dataset 2'] = field_gradient_2d(map_dat_dict['Dataset 2'], thd[1]['dx']*grid_dict['Dataset 1']['e1t'],thd[1]['dx']*grid_dict['Dataset 1']['e2t']) # map 2 aleady on map1 grid, so use grid_dict['Dataset 1']['e1t'] not grid_dict['Dataset 2']['e1t']
-            #pdb.set_trace()
+                #pdb.set_trace()
 
             if verbose_debugging: print('Reloaded map data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now(),'; dt = %s'%(datetime.now()-prevtime))
+            prevtime = datetime.now()
+
+
+
+            if reload_UV_map:
+                reload_UV_map = False
+                if vis_curr > 0:
+                    map_dat_dict_U = reload_map_data_comb(tmp_var_U,z_meth,zz,zi, data_inst_U,var_dim, interp1d_ZwgtT,grid_dict,lon_d[1],lat_d[1],regrid_params,regrid_meth,thd,configd,Dataset_lst)
+                    map_dat_dict_V = reload_map_data_comb(tmp_var_V,z_meth,zz,zi, data_inst_V,var_dim, interp1d_ZwgtT,grid_dict,lon_d[1],lat_d[1],regrid_params,regrid_meth,thd,configd,Dataset_lst)
+              
+
+
+            if verbose_debugging: print('Reloaded vis current map data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now(),'; dt = %s'%(datetime.now()-prevtime))
             prevtime = datetime.now()
 
             if reload_ew:
@@ -1809,6 +1832,9 @@ ax,
                     ew_slice_dat = ew_slice_dict[secdataset_proc]
                     hov_dat = hov_dat_dict[secdataset_proc]
                 ts_dat = ts_dat_dict[secdataset_proc]
+                if vis_curr > 0:
+                    map_dat_U = map_dat_dict_U[secdataset_proc]
+                    map_dat_V = map_dat_dict_V[secdataset_proc]
             else:
                 tmpdataset_1 = 'Dataset ' + secdataset_proc[3]
                 tmpdataset_2 = 'Dataset ' + secdataset_proc[8]
@@ -1821,6 +1847,9 @@ ax,
                         #pdb.set_trace()
                         hov_dat = hov_dat_dict[tmpdataset_1] - hov_dat_dict[tmpdataset_2]
                     ts_dat = ts_dat_dict[tmpdataset_1] - ts_dat_dict[tmpdataset_2]
+                    if vis_curr > 0:
+                        map_dat_U = map_dat_dict_U[tmpdataset_1] - map_dat_dict_U[tmpdataset_2]
+                        map_dat_V = map_dat_dict_V[tmpdataset_1] - map_dat_dict_V[tmpdataset_2]
                 else:
                     pdb.set_trace()
                     
@@ -2081,16 +2110,24 @@ ax,
             stage_timer[9] = datetime.now() #  starting clims
             stage_timer_name[9] = 'Starting clim'
 
+
+            tmpxlim = cur_xlim
+            tmpylim = cur_ylim
+            if cur_xlim is None: tmpxlim = ax[0].get_xlim()#np.array([lon_d[1].min(), lon_d[1].max()])    
+            if cur_ylim is None: tmpylim = ax[0].get_ylim()#np.array([lat_d[1].min(), lat_d[1].max()])  
+
             if verbose_debugging: print('Reset colour limits', datetime.now())
             try:
 
                 if load_second_files & (clim_pair == True)&(secdataset_proc  in Dataset_lst) :
 
+                    '''
                     # if no xlim present using those from the map.
                     tmpxlim = cur_xlim
                     tmpylim = cur_ylim
                     if cur_xlim is None: tmpxlim = ax[0].get_xlim()#np.array([lon_d[1].min(), lon_d[1].max()])    
                     if cur_ylim is None: tmpylim = ax[0].get_ylim()#np.array([lat_d[1].min(), lat_d[1].max()])    
+                    '''
 
                     map_dat_reg_mask_1 = (lon_d[1]>tmpxlim[0]) & (lon_d[1]<tmpxlim[1]) & (lat_d[1]>tmpylim[0]) & (lat_d[1]<tmpylim[1])
 
@@ -2248,6 +2285,60 @@ ax,
                     if hov_time & ntime>1:
                         conax.append(ax[3].contour(hov_dat_dict['x'],hov_dat_dict['y'],hov_dat,cont_val_lst[3], colors = contcols, linewidths = contlws, alphas = contalphas))
 
+               
+            ###################################################################################################
+            ### add vectors
+            ###################################################################################################
+            visax = []
+            if vis_curr > 0:  
+                if vis_curr_meth == 'barb':
+                    vis_ev = 1
+                    # find a mask of points currently displayed.
+                    map_dat_reg_mask_UV = (lon_d[1]>tmpxlim[0]) & (lon_d[1]<tmpxlim[1]) & (lat_d[1]>tmpylim[0]) & (lat_d[1]<tmpylim[1])
+
+                    # count the points, and square root them (to give an idea of number of points along each side),
+                    # and divide by 100, so give ~100 vectors along each side... then make sure greater than 1, and an integer
+                    
+                    # Root of how many points are visible in the current map - an idea of the points along each side
+                    vis_pnts_vis=np.sqrt(map_dat_reg_mask_UV.sum())
+
+                    # Root of the product of the xlim and ylim of the current map - an idea of the degrees along each side
+                    vis_xylim_vis=np.sqrt(tmpxlim.ptp()*tmpylim.ptp())
+
+                    # how many U and V points skipped.
+                    vis_ev = int(   np.maximum(   vis_pnts_vis//100,   1)   )
+                    
+                    # reduce input x, y, U and V.
+                    vis_x = map_dat_dict['x'][::vis_ev,::vis_ev]
+                    vis_y = map_dat_dict['y'][::vis_ev,::vis_ev]
+                    vis_U = map_dat_U[::vis_ev,::vis_ev]
+                    vis_V = map_dat_V[::vis_ev,::vis_ev]
+
+                    # Root of how many U and V points in cuurent map
+                    vis_UV_pnts_vis = np.sqrt(map_dat_reg_mask_UV[::vis_ev,::vis_ev].sum())
+
+                    # product of scale factor and fixed lenght = degree each side/UV points on each side * 1.25
+                    vis_fix_scf = 1.25*vis_xylim_vis/vis_UV_pnts_vis
+
+                    #vis_fix_scf = vis_xylim_vis/vis_ev/0.8/5
+
+                    vis_fixed_len = 0.05
+                    vis_scf = 4
+
+                    vis_fixed_len = vis_fix_scf/vis_scf
+                    '''
+                    print('vis_curr vis_ev = ',vis_ev)
+                    print('vis_curr vis_fixed_len = ',vis_fixed_len)
+                    print('vis_curr vis_pnts_vis = ',vis_pnts_vis)
+                    print('vis_curr vis_xylim_vis = ',vis_xylim_vis)
+                    print('vis_curr vis_UV_pnts_vis = ',vis_UV_pnts_vis)
+                    print('vis_curr vis_fix_scf = ',vis_fix_scf)
+                    '''
+                    if vis_ev <1: pdb.set_trace()
+
+                    visax.append(current_barb(vis_x, vis_y,vis_U,vis_V,                                               
+                                                color = 'k', ax = ax[0], linewidth = 0.2,
+                                                fixed_len = vis_fixed_len,scf = vis_scf))
 
             ###################################################################################################
             ### Redraw canvas
@@ -2941,6 +3032,19 @@ ax,
                             reload_ts = True
  
 
+                    elif but_name == 'Vis curr':
+
+                    
+                        if vis_curr == 1:
+                            vis_curr = 0
+                            reload_UV_map = False
+                            func_but_text_han['Vis curr'].set_color('k')
+                        else:
+                            vis_curr = 1
+                            reload_UV_map = True
+                            func_but_text_han['Vis curr'].set_color('darkgreen')
+
+
                     elif but_name == 'T Diff':
 
                         if ti == 0:
@@ -3070,6 +3174,11 @@ ax,
 
 
                 
+            # remove contour before next iteration
+            for tmpvisax in visax:
+                rem_loc = tmpvisax.pop(0)
+                rem_loc.remove()
+                
             '''
             for tsax in tsaxtx_lst:
                 rem_loc = tsax.pop(0)
@@ -3090,10 +3199,6 @@ ax,
             cs_plot_2_pop.remove()
 
             
-            # remove contour before next iteration
-            for tmpconax in conax:
-                for c in tmpconax.collections: 
-                    c.remove()
 
             
             # sometime when it crashes, it adds additional colorbars. WE can catch this be removing any colorbars from the figure... 
