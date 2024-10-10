@@ -3243,10 +3243,15 @@ ax,
 
 
                 
-            # remove contour before next iteration
+            # remove vectors before next iteration
             for tmpvisax in visax:
                 rem_loc = tmpvisax.pop(0)
                 rem_loc.remove()
+                
+            # remove contour before next iteration
+            for tmpconax in conax:
+                for tmpconaxcoll in tmpconax.collections:  tmpconaxcoll.remove()
+                
                 
             '''
             for tsax in tsaxtx_lst:
