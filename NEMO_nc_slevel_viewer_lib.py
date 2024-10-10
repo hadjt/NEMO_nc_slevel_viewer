@@ -522,6 +522,74 @@ def get_colorbar_values(cb, verbose = False):
 
 
 
+
+
+def get_pnts_pcolor_in_region(illtype = 'pcolor', ax = None):
+
+    if ax is None:
+        ax = plt.gca()
+        plt.sca(ax)
+    else:
+        plt.sca(ax)
+
+    '''
+    if a pcolor/pcolormesh, use
+        illtype = pcolor/pcolor mesh (default)
+    if scatter, use
+        illtype = scatter
+    if what to specify absolute values, use perc = False
+    if what to get clims, rather than set them, set_not_get = True.
+    '''
+
+    # find the 'PolyCollection' associated with the the current ax (i.e. pcolor - assume only has one). find the data assoicated with it. Find the percentile values associated with it. Set the colour clims to these values
+    xlim = np.array(plt.gca().get_xlim()).copy()
+    ylim = np.array(plt.gca().get_ylim()).copy()
+    # incase e.g. ax.invert_yaxis()
+    xlim.sort()
+    ylim.sort()
+    npnts = np.nan
+    #pdb.set_trace()
+    if illtype.lower() in ['pcolor','pcolormesh']:
+
+        for child in plt.gca().get_children():
+            #if child.__class__.__name__ == 'PolyCollection':
+            if child.__class__.__name__ in ['PolyCollection','QuadMesh']: # for pcolor and pcolormesh
+
+                    tmp_data_mat = child.get_array()
+
+                    #xylocs = plt.gca().get_children()[0]._coordinates
+
+                    xylocs = child._coordinates
+                    xs = xylocs[:-1,:-1,0].ravel()
+                    ys = xylocs[:-1,:-1,1].ravel()
+
+                    tmpdata_in_screen_ind = (xs>xlim[0]) &  (xs<xlim[1]) & (ys>ylim[0]) &  (ys<ylim[1])
+                    tmpdata_in_screen = tmp_data_mat.ravel()[tmpdata_in_screen_ind]
+                    npnts = tmpdata_in_screen.size
+
+    elif (illtype.lower() == 'scatter'):
+        for child in plt.gca().get_children():
+            if child.__class__.__name__ == 'PathCollection':
+
+                    tmp_data_mat = child.get_array()
+
+                    xs = child.get_offsets()[:,0]
+                    ys = child.get_offsets()[:,1]
+
+                    tmpdata_in_screen_ind = (xs>xlim[0]) &  (xs<xlim[1]) & (ys>ylim[0]) &  (ys<ylim[1])
+                    tmpdata_in_screen = tmp_data_mat[tmpdata_in_screen_ind]
+                    npnts = tmpdata_in_screen.size
+
+    #pdb.set_trace()
+    return npnts
+
+
+
+
+
+
+
+
 def field_gradient_2d(tmpdat,e1t,e2t,dir_grad = False):
 
 
@@ -2008,6 +2076,7 @@ def reload_data_instances(var,thd,ldi,ti,var_d,var_grid, xarr_dict, grid_dict,va
                 data_inst[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables[var][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
                 
             if var_dim[var] == 4:
+                #pdb.set_trace()
                 data_inst[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables[var][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
                
     print('======================================')
@@ -2991,13 +3060,15 @@ def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_m
 
 
                     '''
-                    for li,(ldi,ldilab) in enumerate(zip(ldi_ind_mat, ld_lab_mat)): xarr_dict[tmp_datstr][tmpgrid].append(
+                    for li,(ldi,ldilab) in enumerate(zip(ldi_ind_mat, ld_lab_mat)): 
+                        #print(li,(ldi,ldilab))
+                        xarr_dict[tmp_datstr][tmpgrid].append(
                             xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], 
                             combine='by_coords',parallel = True, preprocess=lambda ds: ds[{ld_nctvar:slice(ldi,ldi+1)}]))   
             elif tmpgrid == 'I':
                 #pdb.set_trace()
                     
-                tmp_T_time_datetime,tmp_T_time_datetime_since_1970,ntime,ti = extract_time_from_xarr(xarr_dict['Dataset 1']['T'],fname_dict['Dataset 1']['T'][0],'time_counter','time_counter',None,'%Y%m%d',1,False)
+                tmp_T_time_datetime,tmp_T_time_datetime_since_1970,ntime,ti, nctime_calendar_type = extract_time_from_xarr(xarr_dict['Dataset 1']['T'],fname_dict['Dataset 1']['T'][0],'time_counter','time_counter',None,'%Y%m%d',1,False)
                 if tmp_T_time_datetime.size == len(fname_dict[tmp_datstr][tmpgrid]):
                     inc_T_time_datetime = tmp_T_time_datetime
                     inc_T_time_datetime_since_1970 = tmp_T_time_datetime_since_1970
@@ -3293,7 +3364,10 @@ def create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncg
             #pdb.set_trace()
         else:
             #pdb.set_trace()
+            # find the dimension of the latitude variable.
             nav_lat_dims = list(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname].dims)
+
+            # if the latitude variable has a time dimension, remove it
             nav_lat_dims_no_time = nav_lat_dims.copy()
             inc_time = False
             if ncdim_d[tmp_datstr]['T']['t'] in nav_lat_dims_no_time:
@@ -3302,8 +3376,20 @@ def create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncg
 
             #if len(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname].shape) == 2:
 
+            #pdb.set_trace()
+                
+            # if lat/lon only have 1 dimension (e.g. NWSPPE), use meshgrid to turn them into matrices.
+            if len(nav_lat_dims_no_time) == 1:
+                #pdb.set_trace()
+                #lon_d[th_d_ind] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lon_varname].load())
+                #lat_d[th_d_ind] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname].load())
+                tmp1dlon = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lon_varname].load())
+                tmp1dlat = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname].load())
+                lon_d[th_d_ind],lat_d[th_d_ind] = np.meshgrid(tmp1dlon,tmp1dlat)
+                
+                  
 
-            if len(nav_lat_dims_no_time) == 2:
+            elif len(nav_lat_dims_no_time) == 2:
                 if inc_time:
                     lon_d[th_d_ind] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lon_varname][0,:,:].load())
                     lat_d[th_d_ind] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname][0,:,:].load())
@@ -3482,14 +3568,22 @@ def extract_time_from_xarr(xarr_dict_in,ex_fname_in,time_varname,t_dim,date_in_i
 
     #different treatment for 360 days and gregorian calendars... needs time_datetime for plotting, and time_datetime_since_1970 for index selection
     nctime_calendar_type = None
+
     try:
-        if 'calendar' in nctime.attrs.keys():
-            nctime_calendar_type = nc_time_var.calendar
-        else: 
-            print('calendar not in time info')
+        #https://github.com/pydata/xarray/issues/5155
+        # Perhaps the best way to access calendar
+        nctime_calendar_type = nctime.to_index().calendar
     except:
-        nctime_calendar_type = None
-    
+
+        try:
+            if 'calendar' in nctime.attrs.keys():
+                nctime_calendar_type = nc_time_var.calendar
+            else: 
+                print('calendar not in time info')
+                #pdb.set_trace()
+        except:
+            nctime_calendar_type = None
+        
 
     try:
         #if nctime.shape is not ():
@@ -3549,7 +3643,7 @@ def extract_time_from_xarr(xarr_dict_in,ex_fname_in,time_varname,t_dim,date_in_i
         if date_in_ind is not None: ti = 0
     ntime = time_datetime.size
 
-    return time_datetime,time_datetime_since_1970,ntime,ti
+    return time_datetime,time_datetime_since_1970,ntime,ti, nctime_calendar_type
 
 
 

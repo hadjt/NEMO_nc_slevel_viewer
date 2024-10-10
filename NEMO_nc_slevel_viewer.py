@@ -44,7 +44,7 @@ from NEMO_nc_slevel_viewer_lib import interp1dmat_create_weight
 
 # Plotting modules
 from NEMO_nc_slevel_viewer_lib import get_clim_pcolor, set_clim_pcolor,set_perc_clim_pcolor_in_region,get_colorbar_values
-from NEMO_nc_slevel_viewer_lib import scale_color_map,lon_lat_to_str,current_barb
+from NEMO_nc_slevel_viewer_lib import scale_color_map,lon_lat_to_str,current_barb,get_pnts_pcolor_in_region
 
 
 
@@ -97,6 +97,7 @@ global fname_lst, fname_lst_2nd,var
 #import matplotlib
 matplotlib.rcParams['font.family'] = 'serif'
 
+import matplotlib.patheffects as pe
 #matplotlib.use('Qt5Agg')
 #def mon_mean(x):
 #    return x.groupby('time.month').mean('time')
@@ -548,7 +549,7 @@ def nemo_slice_zlev(config = 'amm7',
     init_timer.append((datetime.now(),'nc time started'))
 
     #pdb.set_trace()
-    time_datetime,time_datetime_since_1970,ntime,ti = extract_time_from_xarr(xarr_dict['Dataset 1']['T'],fname_dict['Dataset 1']['T'][0],time_varname,ncdim_d['Dataset 1']['T']['t'],date_in_ind,date_fmt,ti,verbose_debugging)
+    time_datetime,time_datetime_since_1970,ntime,ti, nctime_calendar_type = extract_time_from_xarr(xarr_dict['Dataset 1']['T'],fname_dict['Dataset 1']['T'][0],time_varname,ncdim_d['Dataset 1']['T']['t'],date_in_ind,date_fmt,ti,verbose_debugging)
 
     init_timer.append((datetime.now(),'nc time completed'))
 
@@ -609,7 +610,7 @@ def nemo_slice_zlev(config = 'amm7',
 
         # load time from second data set to check if matches with first dataset.         
 
-        time_datetime_2nd,time_datetime_since_1970_2nd,ntime_2nd,ti = extract_time_from_xarr(xarr_dict['Dataset 2']['T'],fname_dict['Dataset 2']['T'][0],
+        time_datetime_2nd,time_datetime_since_1970_2nd,ntime_2nd,ti, nctime_calendar_type = extract_time_from_xarr(xarr_dict['Dataset 2']['T'],fname_dict['Dataset 2']['T'][0],
             time_varname,ncdim_d['Dataset 2']['T']['t'],date_in_ind,date_fmt,ti,verbose_debugging)
 
 
@@ -663,7 +664,7 @@ def nemo_slice_zlev(config = 'amm7',
 
             #pdb.set_trace()    
             if tmpgrid == 'I': continue
-            time_d[tmp_datstr][tmpgrid]['datetime'],time_d[tmp_datstr][tmpgrid]['datetime_since_1970'],tmp_ntime,tmp_ti = extract_time_from_xarr(xarr_dict[tmp_datstr][tmpgrid],fname_dict[tmp_datstr][tmpgrid][0], tmp_time_varname,ncdim_d[tmp_datstr][tmpgrid]['t'],date_in_ind,date_fmt,ti,verbose_debugging)
+            time_d[tmp_datstr][tmpgrid]['datetime'],time_d[tmp_datstr][tmpgrid]['datetime_since_1970'],tmp_ntime,tmp_ti, nctime_calendar_type = extract_time_from_xarr(xarr_dict[tmp_datstr][tmpgrid],fname_dict[tmp_datstr][tmpgrid][0], tmp_time_varname,ncdim_d[tmp_datstr][tmpgrid]['t'],date_in_ind,date_fmt,ti,verbose_debugging)
 
     # add derived variables
     var_d,var_dim, var_grid = add_derived_vars(var_d,var_dim, var_grid,load_second_files)
@@ -1562,8 +1563,13 @@ ax,
             tmp_current_time = time_datetime[ti]
             time_datetime = time_d['Dataset 1'][var_grid['Dataset 1'][var]]['datetime']
             time_datetime_since_1970 = time_d['Dataset 1'][var_grid['Dataset 1'][var]]['datetime_since_1970']
+            if nctime_calendar_type == '360_day':
+                #pdb.set_trace()
+                ti = np.array([np.abs(ss *360*86400) for ss in (time_datetime - tmp_current_time)]).argmin()
+            else:
+                ti = np.array([np.abs(ss.total_seconds()) for ss in (time_datetime - tmp_current_time)]).argmin()
             #try:
-            ti = np.array([np.abs(ss.total_seconds()) for ss in (time_datetime - tmp_current_time)]).argmin()
+            #    ti = np.array([np.abs(ss.total_seconds()) for ss in (time_datetime - tmp_current_time)]).argmin()
             #except:
             #    pdb.set_trace()
             ntime = len(time_datetime)
@@ -2293,7 +2299,63 @@ ax,
             visax = []
             if vis_curr > 0:  
                 if vis_curr_meth == 'barb':
+
+                    vis_barb_per_side = 35# 25,50
+
+                    # Sqrt of how many data points in the current map axis
+                    vis_pnts_vis = np.sqrt(get_pnts_pcolor_in_region(ax = ax[0]))
+
+                    # Sqrt of product of axes range (degrees lon * degrees lat) in the current map axis
+                    vis_xylim_vis=np.sqrt(tmpxlim.ptp()*tmpylim.ptp())
+
+                    # how many U/V points to skip to give ~vis_barb_per_side (50) current barbs per side.
+                    vis_ev = int(   np.maximum(   vis_pnts_vis//vis_barb_per_side,   1)   )
+
+                    #legnth of current barbs (product of fixed lenght and scale factor.)
+                    vis_fix_scf = 0.8*vis_xylim_vis/(vis_pnts_vis/(vis_ev))
+
+                    # given a scale factor of 4, what is the fixed length.
+                    #vis_fixed_len = 0.05
+                    vis_scf = 4
+                    vis_fixed_len = vis_fix_scf/vis_scf
+
+                    # To make current barbs clear on dark and light background, either:
+                    #       add a dotted white barb over a black one or 
+                    #visax.append(current_barb(map_dat_dict['x'],map_dat_dict['y'],map_dat_U,map_dat_V,fixed_len = vis_fixed_len,scf = vis_scf,evx = vis_ev,evy = vis_ev, color = 'k', ax = ax[0], linewidth = 0.4))
+                    #visax.append(current_barb(map_dat_dict['x'],map_dat_dict['y'],map_dat_U,map_dat_V,fixed_len = vis_fixed_len,scf = vis_scf,evx = vis_ev,evy = vis_ev, color = 'w', ax = ax[0], linewidth = 0.4, linestyle = 'dotted'))
+                    #       give a black outline to a white barb,
+                    #visax.append(current_barb(map_dat_dict['x'],map_dat_dict['y'],map_dat_U,map_dat_V,fixed_len = vis_fixed_len,scf = vis_scf,evx = vis_ev,evy = vis_ev, color = 'k', ax = ax[0], linewidth = 2,))
+                    #visax.append(current_barb(map_dat_dict['x'],map_dat_dict['y'],map_dat_U,map_dat_V,fixed_len = vis_fixed_len,scf = vis_scf,evx = vis_ev,evy = vis_ev, color = 'w', ax = ax[0], linewidth = 0.5))
+                    #       or use path effects
+
+                    vis_pe = [pe.Stroke(linewidth=3, foreground='k'), pe.Normal()]
+
+                    visax.append(current_barb(map_dat_dict['x'],map_dat_dict['y'],map_dat_U,map_dat_V,
+                                              fixed_len = vis_fixed_len,scf = vis_scf,evx = vis_ev,evy = vis_ev,ax = ax[0], 
+                                              color = 'w',linewidth=0.75, path_effects=vis_pe))
+                    
+                    ''' 
+                    
+                                        
+                    fig2 = plt.figure()
+                    tmpax2 = plt.subplot(111)
+                    plt.pcolormesh(map_dat_dict['x'],map_dat_dict['y'],np.sqrt(map_dat_U**2 + map_dat_V**2))
+                    plt.xlim(tmpxlim)
+                    plt.ylim(tmpylim)
+                    vis_pe = [pe.Stroke(linewidth=3, foreground='k'), pe.Normal()]
+                    current_barb(map_dat_dict['x'],map_dat_dict['y'],map_dat_U,map_dat_V, color = 'w',linewidth=0.75, path_effects=vis_pe,fixed_len = vis_fixed_len,scf = vis_scf,evx = vis_ev,evy = vis_ev,ax = tmpax2)
+                    fig2.show()
+                    fig2.close()
+
+                    '''
+                    
+                    #pdb.set_trace()
+
+                    """
                     vis_ev = 1
+
+
+
                     # find a mask of points currently displayed.
                     map_dat_reg_mask_UV = (lon_d[1]>tmpxlim[0]) & (lon_d[1]<tmpxlim[1]) & (lat_d[1]>tmpylim[0]) & (lat_d[1]<tmpylim[1])
 
@@ -2345,6 +2407,7 @@ ax,
                     visax.append(current_barb(vis_x+vis_offset, vis_y+vis_offset,vis_U,vis_V,                                               
                                                 color = 'w', ax = ax[0], linewidth = 0.4,
                                                 fixed_len = vis_fixed_len,scf = vis_scf, linestyle = 'dotted'))
+                    """
 
             ###################################################################################################
             ### Redraw canvas
