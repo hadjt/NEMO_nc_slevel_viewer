@@ -2129,7 +2129,7 @@ def reload_map_data_comb_2d(data_inst,regrid_params,regrid_meth,thd,configd,Data
 
 
 
-def  reload_map_data_comb_zmeth_ss_3d(data_inst,regrid_params,regrid_meth,thd,configd,Dataset_lst):
+def reload_map_data_comb_zmeth_ss_3d(data_inst,regrid_params,regrid_meth,thd,configd,Dataset_lst):
     #Dataset_lst = [ss for ss in data_inst.keys()]
     Dataset_lst_secondary = Dataset_lst.copy()
     if 'Dataset 1' in Dataset_lst_secondary: Dataset_lst_secondary.remove('Dataset 1')  
@@ -3006,8 +3006,11 @@ def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_m
                         xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], 
                         combine='by_coords',parallel = True))  
                     '''
+                    '''
+                    ###WW3 time ncvar name
                     # may be required if a problem with WW3 having 25 instantaneous hours every 25 hours.
-                    if grid in 'WW3':
+                    # if loading in many daily files, there will be repeated hours, so, only load the last 24 hours of the files. 
+                    if tmpgrid in 'WW3':
                         xarr_dict[tmp_datstr][tmpgrid].append(
                             xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], 
                             combine='by_coords',parallel = True, preprocess=lambda ds: ds[{WW3_ld_nctvar:slice(1,24+1)}]))    
@@ -3015,7 +3018,6 @@ def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_m
                         xarr_dict[tmp_datstr][tmpgrid].append(
                             xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], 
                             combine='by_coords',parallel = True))  
-                    '''
                 else:
                     #pdb.set_trace()
                     '''
@@ -3059,12 +3061,91 @@ def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_m
                     tmp_xarr_data.votemper[tmpgpby_bull.groups[np.datetime64('2024-05-11T12:00:00.000000000')],:,:,:]
 
 
+                    
+
+
+
+
+    rootgrp_hpc_time = Dataset('/scratch/frwave/wave_rolling_archive/amm15/amm15_2024101200.nc', 'r', format='NETCDF4')
+    fcper = rootgrp_hpc_time.variables['forecast_period'][:]
+    rootgrp_hpc_time.close()
+
+    pdb.set_trace()
+    
+  
+
+
+
+    -12,  fcper[:24]/86400
+    12, fcper[25:25+24]/86400
+    36, fcper[25+24:25+24+24]/86400
+    60, fcper[25+24+24:25+24+24+24]/86400
+    84, fcper[25+72+1:25+72+1+24]/86400
+    108, fcper[25+72+1+24:25+72+1+24+24]/86400
+    132, fcper[25+72+1+24+24:25+72+1+24+24+24]/86400
+    156, fcper[25+72+1+24+24+24:25+72+1+24+24+24+24]/86400
+
+
+     -12,  fcper[1:24+1]/86400
+    12, fcper[25+1:25+24+1]/86400
+    36, fcper[25+1+24:25+24+24+1]/86400
+    60, fcper[25+1+24+24:25+24+24+24+1]/86400
+    84, fcper[25+1+72+1:25+72+1+24+1]/86400
+    108, fcper[25+1+72+1+24:25+72+1+24+24+1]/86400
+    132, fcper[25+1+72+1+24+24:25+72+1+24+24+24+1]/86400
+
+    -12,1,24+1
+   12,25+1,25+24+1
+ 36,25+1+24,25+24+24+1
+60, 25+1+24+24,25+24+24+24+1
+ 84, 25+1+72+1,25+72+1+24+1
+  108,   25+1+72+1+24,25+72+1+24+24+1
+  132,   25+1+72+1+24+24,25+72+1+24+24+24+1
+
+
+
+
+                    '''
+                    ###WW3 time ncvar name
+                    for li,(ldi,ldilab) in enumerate(zip(ldi_ind_mat, ld_lab_mat)): 
+                        if tmpgrid in 'WW3':
+                            #xarr_dict[tmp_datstr][tmpgrid].append(
+                            #xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], 
+                            #combine='by_coords',parallel = True, preprocess=lambda ds: ds[{WW3_ld_nctvar:slice(1,24+1)}]))    
+                            if ldilab in ['-12','-36']:
+                                WW3_ldi0, WW3_ldi1 = 1,25
+                            elif ldilab  == '012':
+                                WW3_ldi0, WW3_ldi1 = 26,50
+                            elif ldilab  == '036':
+                                WW3_ldi0, WW3_ldi1 = 50,74
+                            elif ldilab  == '060':
+                                WW3_ldi0, WW3_ldi1 = 74,98
+                            elif ldilab  == '084':
+                                WW3_ldi0, WW3_ldi1 = 99,123
+                            elif ldilab  == '108':
+                                WW3_ldi0, WW3_ldi1 = 123,147
+                            elif ldilab  == '132':
+                                WW3_ldi0, WW3_ldi1 = 147,171
+                            else:
+                                pdb.set_trace()
+                                WW3_ldi0, WW3_ldi1 = 1,25
+
+                            xarr_dict[tmp_datstr][tmpgrid].append(
+                            xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], 
+                            combine='by_coords',parallel = True, preprocess=lambda ds: ds[{WW3_ld_nctvar:slice(WW3_ldi0, WW3_ldi1)}]))    
+                        else:
+                            #print(li,(ldi,ldilab))
+                            xarr_dict[tmp_datstr][tmpgrid].append(
+                                xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], 
+                                combine='by_coords',parallel = True, preprocess=lambda ds: ds[{ld_nctvar:slice(ldi,ldi+1)}]))   
+
                     '''
                     for li,(ldi,ldilab) in enumerate(zip(ldi_ind_mat, ld_lab_mat)): 
                         #print(li,(ldi,ldilab))
                         xarr_dict[tmp_datstr][tmpgrid].append(
                             xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], 
                             combine='by_coords',parallel = True, preprocess=lambda ds: ds[{ld_nctvar:slice(ldi,ldi+1)}]))   
+                    '''
             elif tmpgrid == 'I':
                 #pdb.set_trace()
                     
