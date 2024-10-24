@@ -2511,14 +2511,17 @@ def reload_ts_data_comb(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,tim
         else:
             for tmp_datstr in Dataset_lst: # _secondary:
                 tmp_jj,tmp_ii = jj,ii
+                th_d_ind = int(tmp_datstr[-1])
 
                 if tmp_datstr in Dataset_lst_secondary:
-                    th_d_ind = int(tmp_datstr[-1])
+                    #th_d_ind = int(tmp_datstr[-1])
                     #pdb.set_trace()
                     if configd[th_d_ind] != configd[1]: #if configd[th_d_ind] is not None:
                         tmp_jj,tmp_ii = iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']
                 
-                tmpind = grid_dict['WW3']['NWS_WW3_nn_ind'][tmp_jj,tmp_ii]
+                tmpind = grid_dict['WW3']['NWS_WW3_nn_ind'][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][tmp_jj,tmp_ii]
+
+                #print('WW3 ind:',tmp_jj,tmp_ii,tmpind)
                 if grid_dict['WW3']['AMM15_mask'][tmp_jj,tmp_ii]:
                     ts_dat_dict[tmp_datstr] = np.ma.zeros((xarr_dict[tmp_datstr]['WW3'][ldi].variables[var].shape[0]))*np.ma.masked
                 else:
@@ -3609,9 +3612,8 @@ def resample_xarray(xarr_dict,resample_freq):
     return xarr_dict
 
 
-
-
-def extract_time_from_xarr(xarr_dict_in,ex_fname_in,time_varname,t_dim,date_in_ind,date_fmt,ti,verbose_debugging):
+"""
+def safe_extract_time_from_xarr(xarr_dict_in,ex_fname_in,time_varname_in,t_dim,date_in_ind,date_fmt,ti,verbose_debugging):
 
     '''
     
@@ -3621,17 +3623,56 @@ def extract_time_from_xarr(xarr_dict_in,ex_fname_in,time_varname,t_dim,date_in_i
     
     print ('xarray start reading nctime',datetime.now())
 
+
+    
+    #if both time and time_counter used, (as in increments), use time_counter
+    if ('time' in xarr_dict_in[0].variables.keys()) & ('time_counter' in xarr_dict_in[0].variables.keys()):
+        time_varname = 'time_counter'
+    else:
+        time_varname = time_varname_in
+
+
+
     nctime = xarr_dict_in[0].variables[time_varname]
+
+    # if all time is 0, and no time_origin
+    #if ((nctime.load()[:] == 0).all()) & ('time_origin' not in nctime.attrs.keys()):
+    if ('time_origin' not in nctime.attrs.keys()):
+        #pdb.set_trace()
+        #if ((nctime.load()[:] == 0).all()):
+        try:
+            all_time_0 = (nctime.load()[:] == 0).all()
+        except:
+            pdb.set_trace()
+        if all_time_0:
+
+            time_datetime = np.array([datetime(datetime.now().year, datetime.now().month, datetime.now().day) + timedelta(days = i_i) for i_i in range( xarr_dict_in[0].dims[t_dim])])
+            print("xarr_dict_in[0].dims[t_dim]")
+            #except:
+            #    time_datetime = np.array([datetime(datetime.now().year, datetime.now().month, datetime.now().day) + timedelta(days = i_i) for i_i in range( xarr_dict_in[0][0].dims[t_dim])])
+            #    print("xarr_dict_in[0][0].dims[t_dim]")
+            time_datetime_since_1970 = np.array([(ss - datetime(1970,1,1,0,0)).total_seconds()/86400 for ss in time_datetime])
+
+            if date_in_ind is not None: ti = 0
+            ntime = time_datetime.size
+            nctime_calendar_type = 'greg'
+
+            print('No time origin and all time values == 0')
+
+            return time_datetime,time_datetime_since_1970,ntime,ti, nctime_calendar_type
+
+
 
     try:
         
         if 'time_origin' in nctime.attrs.keys():
-            nc_time_origin = nc_time_var.time_origin
+            nc_time_origin = nctime.attrs['time_origin']
         else:
             nc_time_origin = '1980-01-01 00:00:00'
             print('No time origin set - set to 1/1/1980. Other Time parameters likely to be missing')
     except:
         print('Except: extract_time_from_xarr, couldn''t to read time_origin from xarray, using netCDF4')
+        pdb.set_trace()
         rootgrp_hpc_time = Dataset(ex_fname_in, 'r', format='NETCDF4')
         
         nc_time_var = rootgrp_hpc_time.variables[time_varname]
@@ -3649,20 +3690,38 @@ def extract_time_from_xarr(xarr_dict_in,ex_fname_in,time_varname,t_dim,date_in_i
 
     #different treatment for 360 days and gregorian calendars... needs time_datetime for plotting, and time_datetime_since_1970 for index selection
     nctime_calendar_type = None
+    #pdb.set_trace()
 
+    if str(type(nctime.load().data[0])).find('Datetime360Day')>0:
+        nctime_calendar_type = '360_day'
+    else:
+        nctime_calendar_type = 'greg'
+
+    
+
+    '''
     try:
         #https://github.com/pydata/xarray/issues/5155
         # Perhaps the best way to access calendar
-        nctime_calendar_type = nctime.to_index().calendar
-    except:
+        if 'calendar' in nctime.to_index()._attributes:
+            nctime_calendar_type = nctime.to_index().calendar
+        else:
+            nctime_calendar_type = None
 
+
+    except:
+        print('Except: extract_time_from_xarr, couldn''t to read calendar from xarray, using netCDF4')
+        pdb.set_trace()
         try:
             if 'calendar' in nctime.attrs.keys():
                 nctime_calendar_type = nc_time_var.calendar
             else: 
                 print('calendar not in time info')
+                nctime_calendar_type = None
                 #pdb.set_trace()
         except:
+            print('Except: extract_time_from_xarr, couldn''t to access nctime attr, using nctime_calendar_type = None')
+            pdb.set_trace()
             nctime_calendar_type = None
         
 
@@ -3677,9 +3736,10 @@ def extract_time_from_xarr(xarr_dict_in,ex_fname_in,time_varname,t_dim,date_in_i
         else:
             nctime_calendar_type = 'greg'
     except:
-        print
+        print('Except: extract_time_from_xarr, couldn''t to guess calendar from xarray, using netCDF4')
+        pdb.set_trace()
         nctime_calendar_type = 'greg'
-
+    '''
     try:
 
 
@@ -3708,11 +3768,11 @@ def extract_time_from_xarr(xarr_dict_in,ex_fname_in,time_varname,t_dim,date_in_i
         print()
         print()
         print()
-        print(' Not able to read time in second data set, using dummy time')
+        print(' Except: Not able to read time in second data set, using dummy time')
         print()
         print()
         print()
-        #pdb.set_trace()
+        pdb.set_trace()
         #try:
         time_datetime = np.array([datetime(datetime.now().year, datetime.now().month, datetime.now().day) + timedelta(days = i_i) for i_i in range( xarr_dict_in[0].dims[t_dim])])
         print("xarr_dict_in[0].dims[t_dim]")
@@ -3723,6 +3783,120 @@ def extract_time_from_xarr(xarr_dict_in,ex_fname_in,time_varname,t_dim,date_in_i
 
         if date_in_ind is not None: ti = 0
     ntime = time_datetime.size
+    print(nctime_calendar_type,nc_time_origin)
+
+    #pdb.set_trace()
+    return time_datetime,time_datetime_since_1970,ntime,ti, nctime_calendar_type
+
+"""
+
+
+def extract_time_from_xarr(xarr_dict_in,ex_fname_in,time_varname_in,t_dim,date_in_ind,date_fmt,ti,verbose_debugging):
+
+    '''
+    
+    time_datetime,time_datetime_since_1970,ntime = extract_time_from_xarr(xarr_dict['Dataset 1']['T'],fname_dict['Dataset 1']['T'][0],date_in_ind,date_fmt,verbose_debugging)
+    '''
+    #pdb.set_trace()
+    
+    print ('xarray start reading nctime',datetime.now())
+
+
+
+    #if both time and time_counter used, (as in increments), use time_counter
+    if ('time' in xarr_dict_in[0].variables.keys()) & ('time_counter' in xarr_dict_in[0].variables.keys()):
+        time_varname = 'time_counter'
+    else:
+        time_varname = time_varname_in
+
+    # Extract time variable (with attributes) from xarray
+    nctime = xarr_dict_in[0].variables[time_varname]
+
+
+
+    # if all times are 0, and no time_origin, suggests time is not set for these input files, so make dummy time data
+
+    # if ((nctime.load()[:] == 0).all()) & ('time_origin' not in nctime.attrs.keys()):
+
+    #if time_origin not in time attributes
+    if ('time_origin' not in nctime.attrs.keys()):
+        #if all time values are 0.
+
+        if ((nctime.load()[:] == 0).all()):
+
+        #try:
+        #    all_time_0 = (nctime.load()[:] == 0).all()
+        #except:
+        #    pdb.set_trace()
+        #if all_time_0:
+
+            # add time data as daily from the current day.
+            time_datetime = np.array([datetime(datetime.now().year, datetime.now().month, datetime.now().day) + timedelta(days = i_i) for i_i in range( xarr_dict_in[0].dims[t_dim])])
+            print("xarr_dict_in[0].dims[t_dim]")
+            #except:
+            #    time_datetime = np.array([datetime(datetime.now().year, datetime.now().month, datetime.now().day) + timedelta(days = i_i) for i_i in range( xarr_dict_in[0][0].dims[t_dim])])
+            #    print("xarr_dict_in[0][0].dims[t_dim]")
+            time_datetime_since_1970 = np.array([(ss - datetime(1970,1,1,0,0)).total_seconds()/86400 for ss in time_datetime])
+
+            if date_in_ind is not None: ti = 0
+            ntime = time_datetime.size
+            nctime_calendar_type = 'greg'
+
+            print('No time origin and all time values == 0')
+
+            return time_datetime,time_datetime_since_1970,ntime,ti, nctime_calendar_type
+
+
+
+    #different treatment for 360 days and gregorian calendars... needs time_datetime for plotting, and time_datetime_since_1970 for index selection
+        
+    # xarray appears to be inconsistent in how you access calendars, so rather risking crashing with some files,
+    #   or using a try with 'calendar' in nctime.to_index()._attributes and nctime_calendar_type = nctime.to_index().calendar
+    #   we simply check the type of the xarray datetime array
+        
+    nctime_calendar_type = None
+    
+    if str(type(nctime.load().data[0])).find('Datetime360Day')>0:
+        nctime_calendar_type = '360_day'
+    else:
+        nctime_calendar_type = 'greg'
+
+    
+
+    # If there is a time_origin use it, otherwise make a dummy time_origin
+    if 'time_origin' in nctime.attrs.keys():
+        nc_time_origin = nctime.attrs['time_origin']
+    else:
+        nc_time_origin = '1980-01-01 00:00:00'
+        print('No time origin set - set to 1/1/1980. Other Time parameters likely to be missing')
+   
+
+
+    #calculate time_datetime_since_1970 differently for 360/360_day and greg
+    if  nctime_calendar_type in ['360','360_day']:
+        # if 360 days
+
+        time_datetime_since_1970 = np.array([ss.year + (ss.month-1)/12 + (ss.day-1)/360 for ss in np.array(nctime)])
+        time_datetime = time_datetime_since_1970
+    else:
+        # if gregorian        
+        sec_since_origin = [float(ii.data - np.datetime64(nc_time_origin))/1e9 for ii in nctime]
+        time_datetime_cft = num2date(sec_since_origin,units = 'seconds since ' + nc_time_origin,calendar = 'gregorian') #nctime.calendar)
+
+        time_datetime = np.array([datetime(ss.year, ss.month,ss.day,ss.hour,ss.minute) for ss in time_datetime_cft])
+        time_datetime_since_1970 = np.array([(ss - datetime(1970,1,1,0,0)).total_seconds()/86400 for ss in time_datetime])
+
+
+    # if the input time index is given as a date, convert it to the time index. 
+    if date_in_ind is not None:
+        date_in_ind_datetime = datetime.strptime(date_in_ind,date_fmt)
+        date_in_ind_datetime_timedelta = np.array([(ss - date_in_ind_datetime).total_seconds() for ss in time_datetime])
+        ti = np.abs(date_in_ind_datetime_timedelta).argmin()
+        if verbose_debugging: print('Setting ti from date_in_ind (%s): ti = %i (%s). '%(date_in_ind,ti, time_datetime[ti]), datetime.now())
+
+
+    ntime = time_datetime.size
+    #print(nctime_calendar_type,nc_time_origin)
 
     return time_datetime,time_datetime_since_1970,ntime,ti, nctime_calendar_type
 

@@ -1560,10 +1560,11 @@ ax,
             
 
             #to allow the time conversion between file sets with different times
+            #if var == 'hs': pdb.set_trace()
             tmp_current_time = time_datetime[ti]
             time_datetime = time_d['Dataset 1'][var_grid['Dataset 1'][var]]['datetime']
             time_datetime_since_1970 = time_d['Dataset 1'][var_grid['Dataset 1'][var]]['datetime_since_1970']
-            if nctime_calendar_type == '360_day':
+            if nctime_calendar_type in ['360_day','360']:
                 #pdb.set_trace()
                 ti = np.array([np.abs(ss *360*86400) for ss in (time_datetime - tmp_current_time)]).argmin()
             else:
@@ -2032,8 +2033,15 @@ ax,
             if cur_ylim is not None:ax[0].set_ylim(cur_ylim)
             if cur_xlim is not None:ax[1].set_xlim(cur_xlim)
             if cur_ylim is not None:ax[2].set_xlim(cur_ylim)
-            if tlim is not None:ax[3].set_xlim(tlim)
-            if tlim is not None:ax[4].set_xlim(tlim)
+            if tlim is not None:
+                ax[3].set_xlim(tlim)
+            else:
+                ax[3].set_xlim(ts_dat_dict['x'][[0,-1]])
+            if tlim is not None:
+                ax[4].set_xlim(tlim)
+            else:
+                ax[4].set_xlim(ts_dat_dict['x'][[0,-1]])
+
             #pdb.set_trace()
             #reset ylim to time series to data min max, as long as hovtime as been set once
             #if ax[3].get_xlim() != (0,1.0):
