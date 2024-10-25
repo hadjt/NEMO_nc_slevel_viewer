@@ -538,6 +538,67 @@ def nemo_slice_zlev(config = 'amm7',
     nice_varname_dict['StreamFunction'] = 'StreamFunct'
     nice_varname_dict['StreamFunction_e3'] = 'StreamFunct_e3'
     '''
+
+    #WW3 var names:
+    #nice_varname_dict['cx'] = 'longitude cell size factor'
+    #nice_varname_dict['cy'] = 'latitude cell size factor'
+    #nice_varname_dict['standard_longitude'] = 'longitude'
+    #nice_varname_dict['standard_latitude'] = 'latitude'
+    #nice_varname_dict['time'] = 'time'
+    #nice_varname_dict['forecast_period'] = 'forecast period'
+    #nice_varname_dict['forecast_reference_time'] = 'forecast reference time'
+    nice_varname_dict['dpt'] = 'depth'
+    nice_varname_dict['ucur'] = 'eastward current'
+    nice_varname_dict['vcur'] = 'northward current'
+    nice_varname_dict['uwnd'] = 'eastward_wind'
+    nice_varname_dict['vwnd'] = 'northward_wind'
+    nice_varname_dict['hs'] = 'significant height of wind and swell waves'
+    nice_varname_dict['t02'] = 'mean period T02'
+    nice_varname_dict['t0m1'] = 'mean period T0m1'
+    nice_varname_dict['t01'] = 'mean period T01'
+    nice_varname_dict['dir'] = 'wave mean direction'
+    nice_varname_dict['spr'] = 'directional spread'
+    nice_varname_dict['dp'] = 'peak direction'
+    nice_varname_dict['tp'] = 'wave peak period'
+    nice_varname_dict['phs0'] = 'wave significant height partition 0'
+    nice_varname_dict['phs1'] = 'wave significant height partition 1'
+    nice_varname_dict['phs2'] = 'wave significant height partition 2'
+    nice_varname_dict['phs3'] = 'wave significant height partition 3'
+    nice_varname_dict['ptp0'] = 'peak period partition 0'
+    nice_varname_dict['ptp1'] = 'peak period partition 1'
+    nice_varname_dict['ptp2'] = 'peak period partition 2'
+    nice_varname_dict['ptp3'] = 'peak period partition 3'
+    nice_varname_dict['pdir0'] = 'wave mean direction partition 0'
+    nice_varname_dict['pdir1'] = 'wave mean direction partition 1'
+    nice_varname_dict['pdir2'] = 'wave mean direction partition 2'
+    nice_varname_dict['pdir3'] = 'wave mean direction partition 3'
+    nice_varname_dict['pspr0'] = 'directional spread partition 0'
+    nice_varname_dict['pspr1'] = 'directional spread partition 1'
+    nice_varname_dict['pspr2'] = 'directional spread partition 2'
+    nice_varname_dict['pspr3'] = 'directional spread partition 3'
+    nice_varname_dict['pt01c0'] = 'mean period T01 partition 0'
+    nice_varname_dict['pt01c1'] = 'mean period T01 partition 1'
+    nice_varname_dict['pt01c2'] = 'mean period T01 partition 2'
+    nice_varname_dict['pt01c3'] = 'mean period T01 partition 3'
+    nice_varname_dict['pt02c0'] = 'mean period T02 partition 0'
+    nice_varname_dict['pt02c1'] = 'mean period T02 partition 1'
+    nice_varname_dict['pt02c2'] = 'mean period T02 partition 2'
+    nice_varname_dict['pt02c3'] = 'mean period T02 partition 3'
+    nice_varname_dict['pep0'] = 'energy at peak frequency partition 0'
+    nice_varname_dict['pep1'] = 'energy at peak frequency partition 1'
+    nice_varname_dict['pep2'] = 'energy at peak frequency partition 2'
+    nice_varname_dict['pep3'] = 'energy at peak frequency partition 3'
+    nice_varname_dict['uust'] = 'eastward friction velocity'
+    nice_varname_dict['vust'] = 'northward friction velocity'
+    nice_varname_dict['cha'] = 'charnock coefficient for surface roughness length for momentum in air'
+    nice_varname_dict['utaw'] = 'eastward wave supported wind stress'
+    nice_varname_dict['vtaw'] = 'northward wave supported wind stress'
+    nice_varname_dict['utwo'] = 'eastward wave to ocean stress'
+    nice_varname_dict['vtwo'] = 'northward wave to ocean stress'
+    nice_varname_dict['uuss'] = 'eastward surface stokes drift'
+    nice_varname_dict['vuss'] = 'northward surface stokes drift'
+
+
     
     init_timer.append((datetime.now(),'Nice names loaded'))
 
@@ -913,8 +974,18 @@ def nemo_slice_zlev(config = 'amm7',
     but_line_han,but_text_han = {},{}
     for vi,var_dat in enumerate(var_but_mat): 
         tmpcol = 'k'
-        if var_dim[var_dat] == 3: tmpcol = 'darkgreen'
-        if var_grid['Dataset 1'][var_dat] != 'T': tmpcol = 'gold'
+        if var_dim[var_dat] == 3: #  2D (+time) vars 
+            if var_grid['Dataset 1'][var_dat] == 'T': tmpcol = 'deepskyblue'
+            if var_grid['Dataset 1'][var_dat] == 'U': tmpcol = 'yellow'
+            if var_grid['Dataset 1'][var_dat] == 'V': tmpcol = 'yellow'
+            if var_grid['Dataset 1'][var_dat] == 'WW3': tmpcol = 'lightsteelblue'
+            if var_grid['Dataset 1'][var_dat] == 'I': tmpcol = 'lightgreen'
+        if var_dim[var_dat] == 4: #  3D (+time) vars 
+            if var_grid['Dataset 1'][var_dat] == 'T': tmpcol = 'b'
+            if var_grid['Dataset 1'][var_dat] == 'U': tmpcol = 'gold'
+            if var_grid['Dataset 1'][var_dat] == 'V': tmpcol = 'gold'
+            if var_grid['Dataset 1'][var_dat] == 'WW3': tmpcol = 'navy'
+            if var_grid['Dataset 1'][var_dat] == 'I': tmpcol = 'darkgreen'
         if var_dat in var_d['d']: tmpcol = '0.5'
         vi_num = vi
         if vi>=nvarbutcol:
@@ -3554,7 +3625,9 @@ def main():
         parser.add_argument('--U_fname_lst_2nd', type=str, required=False, help='Input U file list for current magnitude. Assumes file contains vozocrtx, enclose in "" more than simple wild card')
         parser.add_argument('--V_fname_lst_2nd', type=str, required=False, help='Input U file list for current magnitude. Assumes file contains vomecrty, enclose in "" more than simple wild card')
 
-
+        parser.add_argument('--WW3_fname_lst', type=str, required=False, help='Input WW3 file list for current magnitude. Assumes file contains vozocrtx, enclose in "" more than simple wild card')
+        parser.add_argument('--WW3_fname_lst_2nd', type=str, required=False, help='Input WW3 file list for current magnitude. Assumes file contains vozocrtx, enclose in "" more than simple wild card')
+        
         parser.add_argument('--preload_data', type=str, required=False)
         parser.add_argument('--allow_diff_time', type=str, required=False)
 
@@ -3841,6 +3914,8 @@ def main():
         V_fname_lst = None
         U_fname_lst_2nd = None
         V_fname_lst_2nd = None
+        WW3_fname_lst = None
+        WW3_fname_lst_2nd = None
 
         load_second_files = False
         
@@ -3855,12 +3930,21 @@ def main():
         if (args.V_fname_lst_2nd) is not None:
             V_fname_lst_2nd = glob.glob(args.V_fname_lst_2nd)
             load_second_files = True
+        if (args.WW3_fname_lst) is not None:WW3_fname_lst = glob.glob(args.WW3_fname_lst)
+        if (args.WW3_fname_lst_2nd) is not None:
+            WW3_fname_lst_2nd = glob.glob(args.WW3_fname_lst_2nd)
+            load_second_files = True
 
         if (fname_lst_2nd) is not None:fname_lst_2nd.sort()
         if (U_fname_lst) is not None:U_fname_lst.sort()
         if (V_fname_lst) is not None:V_fname_lst.sort()
         if (U_fname_lst_2nd) is not None:U_fname_lst_2nd.sort()
         if (V_fname_lst_2nd) is not None:V_fname_lst_2nd.sort()
+
+        if (WW3_fname_lst) is not None:WW3_fname_lst.sort()
+        if (WW3_fname_lst_2nd) is not None:WW3_fname_lst_2nd.sort()
+
+
         if len(fname_lst) == 0: 
             print('')
             print('no files passed')
@@ -3905,6 +3989,7 @@ def main():
         fname_dict['Dataset 1']['T'] = fname_lst
         if U_fname_lst is not None: fname_dict['Dataset 1']['U'] = U_fname_lst
         if V_fname_lst is not None: fname_dict['Dataset 1']['V'] = V_fname_lst
+        if WW3_fname_lst is not None: fname_dict['Dataset 1']['WW3'] = WW3_fname_lst
 
         #pdb.set_trace()
         if load_second_files: 
@@ -3912,6 +3997,7 @@ def main():
             fname_dict['Dataset 2']['T'] = fname_lst_2nd
             if U_fname_lst is not None: fname_dict['Dataset 2']['U'] = U_fname_lst_2nd
             if V_fname_lst is not None: fname_dict['Dataset 2']['V'] = V_fname_lst_2nd
+            if WW3_fname_lst is not None: fname_dict['Dataset 2']['WW3'] = WW3_fname_lst_2nd
 
         dataset_lst = [ ss for ss in fname_dict.keys() ] 
 

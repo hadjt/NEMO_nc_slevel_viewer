@@ -1922,8 +1922,8 @@ def reload_data_instances(var,thd,ldi,ti,var_d,var_grid, xarr_dict, grid_dict,va
         if  var in ['wnd_mag']: # ,'barot_div','barot_curl']:
             tmp_var_Ubar = 'uwnd'
             tmp_var_Vbar = 'vwnd'
-            map_dat_2d_U_1 = reload_data_instances('uwnd',thd,ldi,ti,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files)[0]
-            map_dat_2d_V_1 = reload_data_instances('vwnd',thd,ldi,ti,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files)[0]
+            map_dat_2d_U_1 = reload_data_instances('uwnd',thd,ldi,ti,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files)[0]
+            map_dat_2d_V_1 = reload_data_instances('vwnd',thd,ldi,ti,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files)[0]
 
             
             #map_dat_2d_U_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr]['U'][ldi].variables[tmp_var_Ubar][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
@@ -2971,6 +2971,8 @@ def grad_vert_hov_prof_data(hov_dat_dict):
 def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_mat, ld_lab_mat,ld_nctvar):
     # connect to files with xarray, and create dictionaries with vars, dims, grids, time etc. 
 
+
+    WW3_var_lst = ['hs','tp','t0m1','dp','spr','uwnd','vwnd']
     # NB xarr_dict is not passed back.
     
     import xarray
@@ -3192,10 +3194,9 @@ def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_m
             tmp_var_dim = tmp_var_names[6]
             var_d[th_d_ind][tmpgrid] = tmp_var_names[2]
 
-
             if tmpgrid == 'WW3':
                 tmp_WW3_var_mat,  WW3_nvar, tmp_var_dim = load_nc_var_name_list_WW3(xarr_dict[tmp_datstr][tmpgrid][0],'seapoint',tmp_t_dim)
-                WW3_var_mat = [ss for ss in tmp_WW3_var_mat if ss in ['hs','uwnd','vwnd']]
+                WW3_var_mat = [ss for ss in tmp_WW3_var_mat if ss in WW3_var_lst]
                 var_d[th_d_ind][tmpgrid] = WW3_var_mat
                 #pdb.set_trace()
 
