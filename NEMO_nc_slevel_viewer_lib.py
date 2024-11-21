@@ -3380,8 +3380,8 @@ def create_gdept_ncvarnames(config_fnames_dict,configd):
 
 def create_ncvar_lon_lat_time(ncvar_d):
 
-    nav_lon_var_mat = ['nav_lon'.upper(),'lon'.upper(),'longitude'.upper()]
-    nav_lat_var_mat = ['nav_lat'.upper(),'lat'.upper(),'latitude'.upper()]
+    nav_lon_var_mat = ['nav_lon'.upper(),'lon'.upper(),'longitude'.upper(),'TLON'.upper()]
+    nav_lat_var_mat = ['nav_lat'.upper(),'lat'.upper(),'latitude'.upper(),'TLAT'.upper()]
     time_varname_mat = ['time_counter'.upper(),'time'.upper()]
 
     # check name of lon and lat ncvar in data.
@@ -3412,7 +3412,7 @@ def create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncg
         tmp_configd = configd[th_d_ind]
         if tmp_configd is None: tmp_configd = configd[1]
         # load nav_lat and nav_lon
-        if tmp_configd.upper() in ['ORCA025','ORCA025EXT','ORCA12']: 
+        if tmp_configd.upper() in ['ORCA025','ORCA025EXT','ORCA12','ORCA025ICE','ORCA12ICE']: 
 
             #lon_d[th_d_ind] = np.ma.masked_invalid(rootgrp_gdept_dict[tmp_datstr].variables[ncglamt][0])
             #lat_d[th_d_ind] = np.ma.masked_invalid(rootgrp_gdept_dict[tmp_datstr].variables[ncgphit][0])

@@ -1223,7 +1223,7 @@ ax,
                 ylocval = normyloc*clylim.ptp() + clylim.min()
 
                 if (thd[1]['dx'] != 1):
-                    if configd[1].upper() not in ['AMM7','AMM15', 'CO9P2', 'ORCA025','ORCA025EXT','GULF18','ORCA12']:
+                    if configd[1].upper() not in ['AMM7','AMM15', 'CO9P2', 'ORCA025','ORCA025EXT','GULF18','ORCA12','ORCA025ICE','ORCA12ICE']:
                         print('Thinning lon lat selection not programmed for ', configd[1].upper())
                         pdb.set_trace()
 
@@ -1241,7 +1241,7 @@ ax,
                         lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(loni,latj)
                         sel_ii = np.minimum(np.maximum( np.round((lon_mat_rot - lon_rotamm15[thd[1]['x0']:thd[1]['x1']:thd[1]['dx']].min())/(dlon_rotamm15*thd[1]['dx'])).astype('int') ,0),nlon_rotamm15//thd[1]['dx']-1)
                         sel_jj = np.minimum(np.maximum( np.round((lat_mat_rot - lat_rotamm15[thd[1]['y0']:thd[1]['y1']:thd[1]['dy']].min())/(dlat_rotamm15*thd[1]['dx'])).astype('int') ,0),nlat_rotamm15//thd[1]['dx']-1)
-                    elif configd[1].upper() in ['ORCA025','ORCA025EXT','ORCA12']:
+                    elif configd[1].upper() in ['ORCA025','ORCA025EXT','ORCA12','ORCA025ICE','ORCA12ICE']:
                         sel_dist_mat = np.sqrt((lon_d[1][:,:] - loni)**2 + (lat_d[1][:,:] - latj)**2 )
                         sel_jj,sel_ii = sel_dist_mat.argmin()//sel_dist_mat.shape[1], sel_dist_mat.argmin()%sel_dist_mat.shape[1]
 
@@ -1274,7 +1274,7 @@ ax,
                         latj =  ew_line_y[(np.abs(ew_line_x - loni)).argmin()] 
                         lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(loni,latj)
                         sel_ii = np.minimum(np.maximum(np.round((lon_mat_rot - lon_rotamm15[thd[1]['x0']:thd[1]['x1']:thd[1]['dx']].min())/(dlon_rotamm15*thd[1]['dx'])).astype('int'),0),nlon_rotamm15//thd[1]['dx']-1)
-                    elif configd[1].upper() in ['ORCA025','ORCA025EXT','ORCA12']:
+                    elif configd[1].upper() in ['ORCA025','ORCA025EXT','ORCA12','ORCA025ICE','ORCA12ICE']:
                         sel_ii = (np.abs(ew_line_x - loni)).argmin()
                     else:
                         print('config not supported:', configd[1])
@@ -1291,7 +1291,7 @@ ax,
                         loni =  ns_line_x[(np.abs(ns_line_y - latj)).argmin()]
                         lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(loni,latj)
                         sel_jj = np.minimum(np.maximum(np.round((lat_mat_rot - lat_rotamm15[thd[1]['y0']:thd[1]['y1']:thd[1]['dy']].min())/(dlat_rotamm15*thd[1]['dx'])).astype('int'),0),nlat_rotamm15//thd[1]['dx']-1)
-                    elif configd[1].upper() in ['ORCA025','ORCA025EXT','ORCA12']:
+                    elif configd[1].upper() in ['ORCA025','ORCA025EXT','ORCA12','ORCA025ICE','ORCA12ICE']:
                         sel_jj = (np.abs(ns_line_y - latj)).argmin()
                     else:
                         print('config not supported:', configd[1])
@@ -4101,9 +4101,9 @@ def main():
     
         for cfi in configd.keys():
             if configd[cfi] is None: continue
-            if configd[cfi].upper() in ['ORCA025','ORCA025EXT']: 
+            if configd[cfi].upper() in ['ORCA025','ORCA025EXT','ORCA025ICE']: 
                 if thd[cfi]['y1'] is None: thd[cfi]['y1'] = -2
-            if configd[cfi].upper() in ['ORCA12']: 
+            if configd[cfi].upper() in ['ORCA12','ORCA12ICE']: 
                 if thd[cfi]['y1'] is None: thd[cfi]['y1'] = -200
                 #if thin_y1 is None: thin_y1 = -200
                 #if thin_y0 is None: thin_y1 = 1000
