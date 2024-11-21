@@ -3822,14 +3822,16 @@ def extract_time_from_xarr(xarr_dict_in,ex_fname_in,time_varname_in,t_dim,date_i
     #if time_origin not in time attributes
     if ('time_origin' not in nctime.attrs.keys()):
         #if all time values are 0.
+        all_time_0 = (nctime.load()[:] == 0).all()
 
-        if ((nctime.load()[:] == 0).all()):
+        if all_time_0:
+            print('No time origin and all time values == 0')
+        else:
+            print('No time origin but some time values != 0')
+            print('Setting all_time_0 = True')
+            all_time_0 = True
 
-        #try:
-        #    all_time_0 = (nctime.load()[:] == 0).all()
-        #except:
-        #    pdb.set_trace()
-        #if all_time_0:
+        if all_time_0:
 
             # add time data as daily from the current day.
             time_datetime = np.array([datetime(datetime.now().year, datetime.now().month, datetime.now().day) + timedelta(days = i_i) for i_i in range( xarr_dict_in[0].dims[t_dim])])
@@ -3843,7 +3845,6 @@ def extract_time_from_xarr(xarr_dict_in,ex_fname_in,time_varname_in,t_dim,date_i
             ntime = time_datetime.size
             nctime_calendar_type = 'greg'
 
-            print('No time origin and all time values == 0')
 
             return time_datetime,time_datetime_since_1970,ntime,ti, nctime_calendar_type
 
