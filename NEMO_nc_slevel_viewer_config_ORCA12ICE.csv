@@ -1,0 +1,9 @@
+mesh_file,/data/cr1/hadjt/data/reffiles/ORCA/ICE/mesh_mask_GO6_ORCA12_compressed_nc_5.nc 
+ncgdept,gdept_0
+nce1t,e1t
+nce2t,e2t
+nce3t,e3t_0
+z_meth_default,z_index
+ncglamt,glamt
+ncgphit,gphit
+#ncks -h -d x,2,4321 -d y,2,3605 -d nav_lev,1,5 /data/cr1/hadjt/data/reffiles/ORCA/ORCA12/mesh_mask_GO6_ORCA12_compressed.nc /data/cr1/hadjt/data/reffiles/ORCA/ICE/mesh_mask_GO6_ORCA12_compressed_nc_5.nc 
