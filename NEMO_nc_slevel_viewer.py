@@ -1066,7 +1066,11 @@ def nemo_slice_zlev(config = 'amm7',
 
     mode_name_lst = ['Click','Loop']
 
-    func_names_lst = ['Hov/Time','Show Prof','ColScl','Reset zoom', 'Zoom', 'Axis','Clim: Reset','Clim: Zoom','Clim: Expand','Clim: pair','Clim: sym','Surface', 'Near-Bed', 'Surface-Bed','Depth-Mean','Depth level','Contours','Grad','T Diff','TS Diag','LD time','Fcst Diag','Vis curr','Save Figure','Quit']
+    func_names_lst = ['Hov/Time','Show Prof',
+                      'Zoom','Reset zoom',
+                      'ColScl','Axis', 'Clim: Reset','Clim: Zoom','Clim: Expand','Clim: pair','Clim: sym',
+                      'Surface', 'Near-Bed', 'Surface-Bed','Depth-Mean','Depth level',
+                      'Contours','Grad','T Diff','TS Diag','LD time','Fcst Diag','Vis curr','Save Figure','Quit']
     
 
     if add_TSProf:
@@ -1138,7 +1142,8 @@ def nemo_slice_zlev(config = 'amm7',
     # if a secondary data set, det default behaviour. 
     if load_second_files: func_but_text_han[secdataset_proc].set_color('darkgreen')
 
-
+    func_but_text_han['waiting'] = clickax.text(0.01,0.975,'Working', color = 'r') # clwaithandles
+    
     # Set intial mode to be Click
     func_but_text_han['Click'].set_color('gold')
 
@@ -1152,6 +1157,8 @@ def nemo_slice_zlev(config = 'amm7',
     if z_meth == 'nb':func_but_text_han['Near-Bed'].set_color('r')
     if z_meth == 'df':func_but_text_han['Surface-Bed'].set_color('r')
     if z_meth == 'zm':func_but_text_han['Depth-Mean'].set_color('r')
+
+    func_but_text_han['waiting'].set_color('w')
 
 
     
@@ -2548,6 +2555,7 @@ ax,
             ###################################################################################################
             ### Redraw canvas
             ###################################################################################################
+            func_but_text_han['waiting'].set_color('w')
             if verbose_debugging: print('Canvas draw', datetime.now())
 
             stage_timer[11] = datetime.now() #  redraw
@@ -2618,12 +2626,19 @@ ax,
                 press_ginput = tmp_press
                 button_press = True
 
+            
 
             print('button_press',button_press)
             if verbose_debugging: print('')
             if verbose_debugging: print('')
             if verbose_debugging: print('')
             if verbose_debugging: print('Button pressed!', datetime.now())
+            
+            func_but_text_han['waiting'].set_color('r')
+            fig.canvas.draw()
+            if verbose_debugging: print('Canvas flush wait label', datetime.now())
+            fig.canvas.flush_events()
+            if verbose_debugging: print('Canvas drawn and flushed wait label', datetime.now())
 
             stage_timer[1] = datetime.now() # after button pressed
             stage_timer_name[1] = 'Button Pressed'
@@ -2854,6 +2869,8 @@ ax,
                         
                         plt.sca(clickax)
                         tmpzoom0 = plt.ginput(1)
+                        func_but_text_han['Zoom'].set_color('r')
+                        fig.canvas.draw()
                         zoom0_ax,zoom0_ii,zoom0_jj,zoom0_ti,zoom0_zz = indices_from_ginput_ax(ax,tmpzoom0[0][0],tmpzoom0[0][1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
                         if zoom0_ax in [1,2,3]:
                             zlim_max = zoom0_zz
@@ -2873,6 +2890,10 @@ ax,
                                         cur_ylim = np.array([lat_d[1][zoom0_jj,zoom0_ii],lat_d[1][zoom1_jj,zoom1_ii]])
                                         cur_xlim.sort()
                                         cur_ylim.sort()
+
+
+                        func_but_text_han['Zoom'].set_color('k')
+                        fig.canvas.draw()
                                         
                                             
                     elif but_name == 'Axis':
@@ -3018,9 +3039,14 @@ ax,
 
                         plt.sca(clickax)
             
+                        func_but_text_han['Clim: Zoom'].set_color('r')
+                        fig.canvas.draw()
                         tmpczoom = plt.ginput(2)
                         clim = np.array([tmpczoom[0][1],tmpczoom[1][1]])
                         clim.sort()
+
+                        func_but_text_han['Clim: Zoom'].set_color('k')
+                        fig.canvas.draw()
 
 
                     elif but_name == 'Clim: Expand': 
