@@ -408,10 +408,15 @@ def nemo_slice_zlev(config = 'amm7',
 
     init_timer.append((datetime.now(),'xarray open_mfdataset T connected'))
 
+
+    # get lon, lat and time names from files
+    nav_lon_varname,nav_lat_varname,time_varname,nav_lon_var_mat,nav_lat_var_mat,time_varname_mat = create_ncvar_lon_lat_time(ncvar_d)
+    
+
     if resample_freq is not None:
         #pdb.set_trace()
         print('xarray open_mfdataset: Start resample with %s'%(resample_freq), datetime.now())
-        xarr_dict = resample_xarray(xarr_dict,resample_freq)
+        xarr_dict = resample_xarray(xarr_dict,resample_freq,time_varname)
         print('xarray open_mfdataset: Finish resample with %s'%(resample_freq), datetime.now())
         init_timer.append((datetime.now(),'xarray resampled'))
 
@@ -422,9 +427,6 @@ def nemo_slice_zlev(config = 'amm7',
    
 
 
-    # get lon, lat and time names from files
-    nav_lon_varname,nav_lat_varname,time_varname,nav_lon_var_mat,nav_lat_var_mat,time_varname_mat = create_ncvar_lon_lat_time(ncvar_d)
-    
     print ('xarray open_mfdataset, Finish',datetime.now())
 
 
@@ -779,7 +781,7 @@ def nemo_slice_zlev(config = 'amm7',
             #time_d[tmp_datstr][tmpgrid] = {}
 
             #pdb.set_trace()    
-            if tmpgrid == 'I': continue
+            #if tmpgrid == 'I': continue #  no longer need to skip for Increments, as extract_time_from_xarr handles it
             time_d[tmp_datstr][tmpgrid]['datetime'],time_d[tmp_datstr][tmpgrid]['datetime_since_1970'],tmp_ntime,tmp_ti, nctime_calendar_type = extract_time_from_xarr(xarr_dict[tmp_datstr][tmpgrid],fname_dict[tmp_datstr][tmpgrid][0], tmp_time_varname,ncdim_d[tmp_datstr][tmpgrid]['t'],date_in_ind,date_fmt,ti,verbose_debugging)
 
     # add derived variables
@@ -3735,6 +3737,8 @@ def main():
         parser.add_argument('--clim_pair', type=str, required=False)
         parser.add_argument('--use_cmocean', type=str, required=False)
 
+        parser.add_argument('--resample_freq', type=str, required=False)
+
         parser.add_argument('--ld_lst', type=str, required=False)
         parser.add_argument('--ld_lab_lst', type=str, required=False)
         parser.add_argument('--ld_nctvar', type=str, required=False)
@@ -4180,7 +4184,8 @@ def main():
             var = args.var, z_meth = args.z_meth,
             xlim = args.xlim,ylim = args.ylim,
             secdataset_proc = args.secdataset_proc,
-            ld_lst = args.ld_lst, ld_lab_lst = args.ld_lab_lst, ld_nctvar= args.ld_nctvar,
+            ld_lst = args.ld_lst, ld_lab_lst = args.ld_lab_lst, ld_nctvar = args.ld_nctvar,
+            resample_freq = args.resample_freq,
             fig_dir = args.fig_dir, fig_lab = args.fig_lab,fig_cutout = fig_cutout_in,
             verbose_debugging = verbose_debugging_in)
 

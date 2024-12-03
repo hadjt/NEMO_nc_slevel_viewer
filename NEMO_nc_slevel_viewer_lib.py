@@ -1504,6 +1504,15 @@ def pea_TS(T_in,S_in,gdept,e3t_in,tmask = None,calc_TS_comp = False, zcutoff = 4
         pea_T  =         9.81*(drho_zcut_T*curr_gdept*e3t*weight_mat).sum(axis = 1)/(e3t*weight_mat).sum(axis = 1)
         pea_S = pea*(1-pea_T/pea)
 
+        # if PEA == 0, PEA_S becomes masked.
+        # catch this, rather than calculate peas from scratch (which is slow)
+        pea_S[pea==0] = -pea_T[pea==0]
+
+        # Check that we have not missed any changes in mask size
+        if pea.mask.sum()!=pea_S.mask.sum():
+            print('peas different size')
+            pdb.set_trace()
+        
     if calc_TS_comp:
         return pea,pea_T,pea_S
     else:
@@ -3005,7 +3014,9 @@ def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_m
         for tmpgrid in xarr_dict[tmp_datstr].keys():
             time_d[tmp_datstr][tmpgrid] = {}
             #pdb.set_trace()
-            if tmpgrid != 'I':
+            # Increments don't have muliple lead times like other grids.
+            #if tmpgrid != 'I':
+            if tmpgrid not in  ['I','In','Ic']:
                 if (nldi == 0) :   
                     xarr_dict[tmp_datstr][tmpgrid].append(
                         xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], 
@@ -3151,7 +3162,8 @@ def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_m
                             xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], 
                             combine='by_coords',parallel = True, preprocess=lambda ds: ds[{ld_nctvar:slice(ldi,ldi+1)}]))   
                     '''
-            elif tmpgrid == 'I':
+            #elif tmpgrid == 'I':
+            else:
                 #pdb.set_trace()
                     
                 tmp_T_time_datetime,tmp_T_time_datetime_since_1970,ntime,ti, nctime_calendar_type = extract_time_from_xarr(xarr_dict['Dataset 1']['T'],fname_dict['Dataset 1']['T'][0],'time_counter','time_counter',None,'%Y%m%d',1,False)
@@ -3383,6 +3395,7 @@ def create_ncvar_lon_lat_time(ncvar_d):
     nav_lon_var_mat = ['nav_lon'.upper(),'lon'.upper(),'longitude'.upper(),'TLON'.upper()]
     nav_lat_var_mat = ['nav_lat'.upper(),'lat'.upper(),'latitude'.upper(),'TLAT'.upper()]
     time_varname_mat = ['time_counter'.upper(),'time'.upper()]
+        # match def resample_xarray() to time_varname_mat, until generalised. 
 
     # check name of lon and lat ncvar in data.
     # cycle through variables and if it is a possibnle varibable name, use it
@@ -3602,13 +3615,22 @@ def create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncg
 
 
 
-def resample_xarray(xarr_dict,resample_freq):
+def resample_xarray(xarr_dict,resample_freq,time_varname):
+    #e.g. resample_freq = '1m', '5d', requires "DatetimeIndex, TimedeltaIndex or PeriodIndex," , doesn't work with dummy dates (i.e. increments)
     #xarr_dict['Dataset 1']['T'][0] = xarr_dict['Dataset 1']['T'][0].resample(time_counter = '1m').mean()
 
     for tmp_datstr in xarr_dict.keys():
         for tmpgrid in xarr_dict[tmp_datstr].keys():
             for xarlii in range(len(xarr_dict[tmp_datstr][tmpgrid])):
-                xarr_dict[tmp_datstr][tmpgrid][xarlii] = xarr_dict[tmp_datstr][tmpgrid][xarlii].resample(time_counter = resample_freq).mean()
+                pdb.set_trace()
+                if time_varname == 'time_counter':
+                    xarr_dict[tmp_datstr][tmpgrid][xarlii] = xarr_dict[tmp_datstr][tmpgrid][xarlii].resample(time_counter = resample_freq).mean()
+                elif time_varname == 'time':
+                    xarr_dict[tmp_datstr][tmpgrid][xarlii] = xarr_dict[tmp_datstr][tmpgrid][xarlii].resample(time = resample_freq).mean()
+                else:
+                    print('Resample only coded for time_counter and time, needs to be generalised. ')
+                    pdb.set_trace()
+
 
     return xarr_dict
 
