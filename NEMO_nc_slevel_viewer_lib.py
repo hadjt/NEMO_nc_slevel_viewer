@@ -3622,7 +3622,6 @@ def resample_xarray(xarr_dict,resample_freq,time_varname):
     for tmp_datstr in xarr_dict.keys():
         for tmpgrid in xarr_dict[tmp_datstr].keys():
             for xarlii in range(len(xarr_dict[tmp_datstr][tmpgrid])):
-                pdb.set_trace()
                 if time_varname == 'time_counter':
                     xarr_dict[tmp_datstr][tmpgrid][xarlii] = xarr_dict[tmp_datstr][tmpgrid][xarlii].resample(time_counter = resample_freq).mean()
                 elif time_varname == 'time':
