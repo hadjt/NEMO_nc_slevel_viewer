@@ -3,11 +3,11 @@ import pdb,sys,os,cftime,socket
 
 from datetime import datetime, timedelta
 
-from netCDF4 import Dataset,num2date
+from netCDF4 import Dataset,num2date,stringtochar, chartostring
 
 import numpy as np
 
-
+import xarray
 import csv
 
 import matplotlib.pyplot as plt
@@ -3017,6 +3017,7 @@ def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_m
             # Increments don't have muliple lead times like other grids.
             #if tmpgrid != 'I':
             if tmpgrid not in  ['I','In','Ic']:
+                #pdb.set_trace()
                 if (nldi == 0) :   
                     xarr_dict[tmp_datstr][tmpgrid].append(
                         xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], 
@@ -3922,6 +3923,465 @@ def extract_time_from_xarr(xarr_dict_in,ex_fname_in,time_varname_in,t_dim,date_i
     #print(nctime_calendar_type,nc_time_origin)
 
     return time_datetime,time_datetime_since_1970,ntime,ti, nctime_calendar_type
+
+
+
+
+
+def load_ops_2D_xarray(OPSfname,vartype, nlon = 1458, nlat = 1345,  excl_qc = False, timing_in = 1):
+
+
+    timing = False
+    timing_details = False
+
+    if timing_in >0:
+        timing = True
+    if timing_in>1:
+        timing_details =True
+    tstart = datetime.now()
+
+    if timing: 
+        tim_lst = []
+
+    if vartype == 'ChlA':
+        stat_type_lst = [389]
+        ops_qc_var_good_1_lst = ['OBSERVATION_QC','SLCHLTOT_QC']#,'SLA_LEVEL_QC']
+        iobsi = 'SLCHLTOT_IOBSI'
+        iobsj = 'SLCHLTOT_IOBSJ'
+        ops_output_var_mat = ['LONGITUDE', 'LATITUDE', 'DEPTH', 'JULD', 'SLCHLTOT_OBS', 'SLCHLTOT_Hx', 'SLCHLTOT_STD']#,'SLCHLTOT_GRID','MDT']
+        ops_output_ind_mat = ['SLCHLTOT_IOBSI', 'SLCHLTOT_IOBSJ', 'SLCHLTOT_IOBSK']
+    elif vartype == 'SST_ins':
+        stat_type_lst = [50,53,55]
+        ops_qc_var_good_1_lst = ['OBSERVATION_QC','SST_QC']#,'SST_LEVEL_QC']
+        iobsi = 'SST_IOBSI'
+        iobsj = 'SST_IOBSJ'
+        ops_output_var_mat = ['LONGITUDE', 'LATITUDE', 'DEPTH', 'JULD', 'SST_OBS', 'SST_Hx', 'SST_STD']
+        ops_output_ind_mat = ['SST_IOBSI', 'SST_IOBSJ', 'SST_IOBSK']
+    elif vartype == 'SST_sat':
+        stat_type_lst = np.arange(50)
+        ops_qc_var_good_1_lst = ['OBSERVATION_QC','SST_QC']#,'SST_LEVEL_QC']
+        iobsi = 'SST_IOBSI'
+        iobsj = 'SST_IOBSJ'
+        ops_output_var_mat = ['LONGITUDE', 'LATITUDE', 'DEPTH', 'JULD', 'SST_OBS', 'SST_Hx', 'SST_STD']
+        ops_output_ind_mat = ['SST_IOBSI', 'SST_IOBSJ', 'SST_IOBSK']
+
+    elif vartype == 'SLA':
+        stat_type_lst = [  61,   65,  262,  441, 1005]
+        ops_qc_var_good_1_lst = ['OBSERVATION_QC','SLA_QC']#,'SLA_LEVEL_QC']
+        iobsi = 'SLA_IOBSI'
+        iobsj = 'SLA_IOBSJ'
+        ops_output_var_mat = ['LONGITUDE', 'LATITUDE', 'DEPTH', 'JULD', 'SLA_OBS', 'SLA_Hx', 'SLA_SSH','MDT']#,'SLA_GRID','MDT']
+        ops_output_ind_mat = ['SLA_IOBSI', 'SLA_IOBSJ', 'SLA_IOBSK']
+
+    if timing: tim_lst.append(('Selected options',datetime.now()))
+
+    #https://code.metoffice.gov.uk/trac/ops/browser/main/trunk/src/code/OpsMod_SatSST/Ops_SSTFeedbackWriteNetCDF.inc#L204
+
+
+    #50 = ship, 53 = drifting buoy, 55 = moored buoy.
+
+    # OPSfname = '/scratch/hadjt/SSF/flx/fdbk.obsop.daym2/mi-bb024_amm15finalps45trial4_ctrl/20210408_sst_UnBiasCorrfb_01.nc'
+ 
+
+    root_x = xarray.open_dataset(OPSfname, engine="netcdf4", decode_cf= False)
+
+
+    if timing: tim_lst.append(('Opened file with xarray',datetime.now()))
+    ops_var_mat =[ss for ss in root_x.variables.keys() ]
+    if timing: tim_lst.append(('Read Var names',datetime.now()))
+    ops_dim_mat = [ss for ss in root_x.dims.keys() ]
+    if timing: tim_lst.append(('Read Dim names',datetime.now()))
+
+
+
+    ops_dim_dict = {}
+    for ss in ops_dim_mat: ops_dim_dict[ss] = root_x.dims[ss]
+
+    if timing: tim_lst.append(('Read Dim sizes',datetime.now()))
+
+
+
+
+    # find obs where all qc flags are zero.
+
+    #QC flags, where 0 indicates good data
+    ops_qc_var_good_0_lst = ['DEPTH_QC','POSITION_QC','JULD_QC']
+
+    #QC flags, where 1 indicates good data
+
+    #ops_qc_var_good_1_lst = ['OBSERVATION_QC','SLCHLTOT_QC']#,'SLA_LEVEL_QC']
+
+    #pdb.set_trace()
+
+    comb_qc_flag = np.zeros((ops_dim_dict['N_OBS']), dtype = 'int')
+
+    for ss in ops_qc_var_good_0_lst:  comb_qc_flag += (root_x.variables[ss].load().data[:].ravel() != 0).astype('int')
+    if timing: tim_lst.append(('Read default QC flags',datetime.now()))
+    #print(100*comb_qc_flag.mean())
+    for ss in ops_qc_var_good_1_lst:  comb_qc_flag += (root_x.variables[ss].load().data[:].ravel() != 1).astype('int')
+    if timing: tim_lst.append(('Read specific QC flags',datetime.now()))
+    #print(100*comb_qc_flag.mean())
+    #comb_qc_flag += (rootgrp.variables['OBSERVATION_QC'][:].ravel() != 1).astype('int')
+
+
+
+    #pdb.set_trace()
+    # Need to read about nemovar 'NEMOVAR flag conventions'
+    #comb_qc_flag = np.zeros((ops_dim_dict['N_OBS']), dtype = 'int')
+    
+    
+    #pdb.set_trace()
+    # find obs with correct station types.
+    # obs  station types.
+    #stat_type = np.array(chartostring(rootgrp.variables['STATION_TYPE'][:])).astype('float')
+    stat_type = np.array(chartostring(root_x.variables['STATION_TYPE'].load().data[:])).astype('float')
+    if timing: tim_lst.append(('Read Station types',datetime.now()))
+
+    #pdb.set_trace()
+    stat_type_ind = np.isin(stat_type,stat_type_lst)
+    if timing: tim_lst.append(('Selected Station types',datetime.now()))
+
+    #pdb.set_trace()
+
+    # find obs within domain
+
+    #loc_ind = (root_x.variables['SLCHLTOT_IOBSI'].load().data[:]>=0) & (root_x.variables['SLCHLTOT_IOBSI'].load().data[:]<nlon) & (root_x.variables['SLCHLTOT_IOBSJ'].load().data[:]>=0) & (root_x.variables['SLCHLTOT_IOBSJ'].load().data[:]<nlat)
+    loc_ind = (root_x.variables[iobsi].load().data[:]>=0) & (root_x.variables[iobsi].load().data[:]<nlon) & (root_x.variables[iobsj].load().data[:]>=0) & (root_x.variables[iobsj].load().data[:]<nlat)
+
+    if timing: tim_lst.append(('Selected location indices types',datetime.now()))
+    
+    # combine all indices
+
+    if excl_qc:
+        comb_ind =  stat_type_ind & loc_ind
+    else:
+        comb_ind = (comb_qc_flag==0) & stat_type_ind & loc_ind
+
+        
+
+    if timing: tim_lst.append(('Combined QC flags',datetime.now()))
+
+    ops_output_dict = {}
+    for ss in ops_output_var_mat: 
+        ops_output_dict[ss] = np.ma.masked_equal(root_x.variables[ss][comb_ind].load().data[:],root_x.variables[ss].attrs['_Fillvalue'])
+        if timing: tim_lst.append(('Read var:'+ss,datetime.now()))
+    for ss in ops_output_ind_mat:
+        ops_output_dict[ss] = root_x.variables[ss][comb_ind].load().data[:]
+        if timing: tim_lst.append(('Read ind:'+ss,datetime.now()))
+  
+    if timing: tim_lst.append(('Read in Ind and vars',datetime.now()))
+
+
+    JULD_REFERENCE = datetime.strptime(str(chartostring(root_x.variables['JULD_REFERENCE'].load().data[:])),'%Y%m%d%H%M%S')
+
+
+    if timing: tim_lst.append(('Converted Juld Ref to date time',datetime.now()))
+
+
+
+    ops_output_dict['JULD_datetime'] = np.array([JULD_REFERENCE + timedelta(ss) for ss in root_x.variables['JULD'][comb_ind].load().data[:]])
+
+
+    if timing: tim_lst.append(('JULD_datetime',datetime.now()))
+
+    ops_output_dict['STATION_IDENTIFIER'] = np.array([str(ss) for ss in chartostring(root_x.variables['STATION_IDENTIFIER'][comb_ind,:].load().data[:])])
+
+    if timing: tim_lst.append(('STATION_IDENTIFIER',datetime.now()))
+    ops_output_dict['STATION_TYPE'] = stat_type[comb_ind]
+    if timing: tim_lst.append(('STATION_TYPE',datetime.now()))
+
+
+    root_x.close()
+
+    if timing: tim_lst.append(('Finished',datetime.now()))
+
+    if timing:
+        if timing_details:
+            tprev = tstart
+            for (tmplab,tmptime) in tim_lst: 
+                print('    %35s'%tmplab, tmptime, tmptime - tstart, tmptime-tprev)
+                tprev = tmptime
+
+            print()
+        print('    Total time:',tim_lst[-1][1]-tstart)
+    return ops_output_dict
+
+
+
+def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,nlon = 1458, nlat = 1345, excl_qc = False):
+    '''
+    stat_type_lst = [50,53,55]
+    nlon = 1458
+    nlat = 1345
+    excl_qc = True    
+    '''
+
+    if TS_str_in.upper() in ['T','POTM','VOTEMPER','TEMPERATURE']:
+        TnotS = True
+    elif TS_str_in.upper() in ['S','PSAL','VOSALINE','SALINITY']:
+        TnotS = False
+    else:
+        print('TS_str_in must be T or S, not ',TS_str_in)
+        pdb.set_trace()
+
+
+    #https://code.metoffice.gov.uk/trac/ops/browser/main/trunk/src/code/OpsMod_SatSST/Ops_SSTFeedbackWriteNetCDF.inc#L204
+
+
+    #50 = ship, 53 = drifting buoy, 55 = moored buoy.
+
+    # OPSfname = '/scratch/hadjt/SSF/flx/fdbk.obsop.daym2/mi-bb024_amm15finalps45trial4_ctrl/20210408_sst_UnBiasCorrfb_01.nc'
+ 
+
+    
+    rootgrp = Dataset(OPSfname, 'r', format='NETCDF4')
+    ops_var_mat = [ ss for ss in rootgrp.variables.keys() ]
+    ops_dim_mat = [ ss for ss in rootgrp.dimensions.keys() ]
+
+
+    #ops_var_dict = {}
+    #for ss in ops_var_mat: ops_var_dict[ss] = rootgrp.variables[ss][:]
+    ops_dim_dict = {}
+    for ss in ops_dim_mat: ops_dim_dict[ss] = rootgrp.dimensions[ss].size
+
+
+    '''
+    'VARIABLES'
+    'ENTRIES'
+    'EXTRA'
+    'STATION_IDENTIFIER'
+    'STATION_TYPE'
+    'LONGITUDE'
+    'LATITUDE'
+    'DEPTH'
+    'DEPTH_QC'
+    'DEPTH_QC_FLAGS'
+    'JULD'
+    'JULD_REFERENCE'
+    'OBSERVATION_QC'
+    'OBSERVATION_QC_FLAGS'
+    'POSITION_QC'
+    'POSITION_QC_FLAGS'
+    'JULD_QC'
+    'JULD_QC_FLAGS'
+    'ORIGINAL_FILE_INDEX'
+    'POTM_OBS'
+    'POTM_Hx'
+    'POTM_QC'
+    'POTM_QC_FLAGS'
+    'POTM_LEVEL_QC'
+    'POTM_LEVEL_QC_FLAGS'
+    'POTM_IOBSI'
+    'POTM_IOBSJ'
+    'POTM_IOBSK'
+    'POTM_GRID'
+    'PSAL_OBS'
+    'PSAL_Hx'
+    'PSAL_QC'
+    'PSAL_QC_FLAGS'
+    'PSAL_LEVEL_QC'
+    'PSAL_LEVEL_QC_FLAGS'
+    'PSAL_IOBSI'
+    'PSAL_IOBSJ'
+    'PSAL_IOBSK'
+    'PSAL_GRID'
+    'TEMP'
+    '''
+    '''
+    # find obs where all qc flags are zero.
+
+    #QC flags, where 0 indicates good data
+    ops_qc_var_good_0_lst = ['DEPTH_QC','POSITION_QC','JULD_QC']
+
+    #QC flags, where 1 indicates good data
+    #ops_qc_var_good_1_lst = ['OBSERVATION_QC','SST_QC']#,'SST_LEVEL_QC']
+    #ops_qc_var_good_1_lst = ['OBSERVATION_QC','POTM_QC','PSAL_QC']#,'SST_LEVEL_QC']
+
+
+    ops_qc_var_good_POTM_lst = ['OBSERVATION_QC','POTM_QC']#,'SST_LEVEL_QC']
+    ops_qc_var_good_PSAL_lst = ['OBSERVATION_QC','PSAL_QC']#,'SST_LEVEL_QC']
+
+
+    #pdb.set_trace()
+    comb_qc_flag = np.zeros((ops_dim_dict['N_OBS']), dtype = 'int')
+    for ss in ops_qc_var_good_0_lst:  comb_qc_flag =  comb_qc_flag + (rootgrp.variables[ss][:] != 0).astype('int').T
+    #for ss in ops_qc_var_good_1_lst:  comb_qc_flag = comb_qc_flag +  (rootgrp.variables[ss][:] != 1).astype('int').T
+
+
+    comb_qc_flag_POTM = np.zeros((ops_dim_dict['N_OBS']), dtype = 'int')
+    comb_qc_flag_PSAL = np.zeros((ops_dim_dict['N_OBS']), dtype = 'int')
+
+    for ss in ops_qc_var_good_0_lst:  comb_qc_flag_POTM =  comb_qc_flag_POTM + (rootgrp.variables[ss][:] != 0).astype('int').T
+    for ss in ops_qc_var_good_POTM_lst:  comb_qc_flag_POTM = comb_qc_flag_POTM +  (rootgrp.variables[ss][:] != 1).astype('int').T
+    for ss in ops_qc_var_good_0_lst:  comb_qc_flag_PSAL =  comb_qc_flag_PSAL + (rootgrp.variables[ss][:] != 0).astype('int').T
+    for ss in ops_qc_var_good_PSAL_lst:  comb_qc_flag_PSAL = comb_qc_flag_PSAL +  (rootgrp.variables[ss][:] != 1).astype('int').T
+
+    '''
+
+
+    comb_qc_flag = np.zeros((ops_dim_dict['N_OBS'],ops_dim_dict['N_LEVELS']), dtype = 'int')
+    comb_qc_flag =  comb_qc_flag + (rootgrp.variables['DEPTH_QC'][:] != 1).astype('int')  # good data (1) added as a zero
+    comb_qc_flag =  comb_qc_flag + np.tile((rootgrp.variables['POSITION_QC'][:] != 1).astype('int'),(ops_dim_dict['N_LEVELS'],1)).T # good data (1) added as a zero
+    comb_qc_flag =  comb_qc_flag + np.tile((rootgrp.variables['OBSERVATION_QC'][:] != 0).astype('int'),(ops_dim_dict['N_LEVELS'],1)).T # good data (0) added as a zero
+
+
+    #comb_qc_flag_POTM = comb_qc_flag.copy()
+    #comb_qc_flag_PSAL = comb_qc_flag.copy()
+
+    comb_qc_flag_POTM = comb_qc_flag.copy() + (rootgrp.variables['POTM_LEVEL_QC'][:] != 1).astype('int') # good data (1) added as a zero
+    comb_qc_flag_PSAL = comb_qc_flag.copy() + (rootgrp.variables['PSAL_LEVEL_QC'][:] != 1).astype('int') # good data (1) added as a zero
+    comb_qc_flag_POTM =  comb_qc_flag_POTM.copy() + np.tile((rootgrp.variables['POTM_QC'][:] != 1).astype('int'),(ops_dim_dict['N_LEVELS'],1)).T  # good data (1) added as a zero
+    comb_qc_flag_PSAL =  comb_qc_flag_PSAL.copy() + np.tile((rootgrp.variables['PSAL_QC'][:] != 1).astype('int'),(ops_dim_dict['N_LEVELS'],1)).T  # good data (1) added as a zero
+
+
+    #comb_qc_flag_POTM_2d = (comb_qc_flag_POTM==0).any(axis = 1)
+    #comb_qc_flag_PSAL_2d = (comb_qc_flag_PSAL==0).any(axis = 1)
+
+    #pdb.set_trace()
+    # Need to read about nemovar 'NEMOVAR flag conventions'
+    #comb_qc_flag = np.zeros((ops_dim_dict['N_OBS']), dtype = 'int')
+    
+    
+    #pdb.set_trace()
+    # find obs with correct station types.
+    # obs  station types.
+    stat_type = np.array(chartostring(rootgrp.variables['STATION_TYPE'][:])).astype('float')
+    #stat_type_ind = np.isin(stat_type,stat_type_lst)
+
+    #pdb.set_trace()
+
+    # find obs within domain
+
+    if TnotS:
+        loc_ind = (rootgrp.variables['POTM_IOBSI'][:]>=0) & (rootgrp.variables['POTM_IOBSI'][:]<nlon) & (rootgrp.variables['POTM_IOBSJ'][:]>=0) & (rootgrp.variables['POTM_IOBSJ'][:]<nlat)
+    else:
+        loc_ind = (rootgrp.variables['PSAL_IOBSI'][:]>=0) & (rootgrp.variables['PSAL_IOBSI'][:]<nlon) & (rootgrp.variables['PSAL_IOBSJ'][:]>=0) & (rootgrp.variables['PSAL_IOBSJ'][:]<nlat)
+    
+  
+    
+    if excl_qc:
+        comb_ind = loc_ind
+        comb_ind_T = loc_ind
+        comb_ind_S = loc_ind
+    else:
+        comb_ind = loc_ind
+        comb_ind_T = (comb_qc_flag_POTM==0)  & loc_ind
+        comb_ind_S = (comb_qc_flag_PSAL==0)  & loc_ind
+
+        
+    if TnotS:
+        comb_ind = comb_ind_T
+    else:
+        comb_ind = comb_ind_S
+
+
+    #ops_output_var_3d_mat = ['DEPTH', 'OBSERVATION_QC','POTM_QC','PSAL_QC','POTM_OBS', 'POTM_Hx', 'PSAL_OBS', 'PSAL_Hx',]
+    ops_output_var_3d_mat = ['DEPTH', 'OBSERVATION_QC']
+    ops_output_var_3d_T_mat =['POTM_QC','POTM_OBS', 'POTM_Hx']
+    ops_output_var_3d_S_mat =['PSAL_QC','PSAL_OBS', 'PSAL_Hx',]
+    #ops_output_ind_3d_mat = ['POTM_IOBSK','PSAL_IOBSK']
+    ops_output_ind_3d_T_mat = ['POTM_IOBSK']
+    ops_output_ind_3d_S_mat = ['PSAL_IOBSK']
+    ops_output_var_2d_mat = ['LONGITUDE', 'LATITUDE',  'JULD','POSITION_QC','JULD_QC']
+    #ops_output_ind_2d_mat = ['POTM_IOBSI', 'POTM_IOBSJ','PSAL_IOBSI', 'PSAL_IOBSJ']
+    ops_output_ind_2d_mat = ['DEPTH_QC']
+    ops_output_ind_2d_T_mat = ['POTM_IOBSI', 'POTM_IOBSJ']
+    ops_output_ind_2d_S_mat = ['PSAL_IOBSI', 'PSAL_IOBSJ']
+    ops_output_dict = {}
+   # for ss in ops_output_var_mat: ss, rootgrp.variables[ss][comb_ind].shape
+    
+    #pdb.set_trace()
+    '''
+    
+    ('DEPTH', (8, 556))
+('OBSERVATION_QC', (8,))
+('LONGITUDE', (9,))
+('LATITUDE', (9,))
+('JULD', (9,))
+('POSITION_QC', (9,))
+('JULD_QC', (9,))
+('DEPTH_QC', (9, 556))
+('POTM_QC', (8,))
+('POTM_OBS', (8, 556))
+('POTM_Hx', (8, 556))
+('POTM_IOBSK', (8, 556))
+('POTM_IOBSI', (9,))
+('POTM_IOBSJ', (9,))
+('JULD_datetime', (8,))
+('STATION_TYPE', (9,))
+('STATION_IDENTIFIER', (8,))
+
+    
+    '''
+
+
+
+
+    #pdb.set_trace()
+    for ss in ops_output_var_3d_mat:   ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],rootgrp.variables[ss]._Fillvalue )[comb_ind.T]
+    for ss in ops_output_var_2d_mat:   ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],rootgrp.variables[ss]._Fillvalue )[comb_ind.T]
+    for ss in ops_output_ind_2d_mat:   ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],-99999 )[comb_ind.T]
+
+    if TnotS:
+        for ss in ops_output_var_3d_T_mat:   ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],rootgrp.variables[ss]._Fillvalue )[comb_ind_T.T]
+        for ss in ops_output_ind_3d_T_mat: ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],-99999,)[comb_ind_T.T]
+        for ss in ops_output_ind_2d_T_mat: ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],-99999,)[comb_ind_T.T]
+    else:
+        for ss in ops_output_var_3d_S_mat:   ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],rootgrp.variables[ss]._Fillvalue )[comb_ind_S.T]
+        for ss in ops_output_ind_3d_S_mat: ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],-99999,)[comb_ind_S.T]
+        for ss in ops_output_ind_2d_S_mat: ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],-99999,)[comb_ind_S.T]
+
+    #'pdb.set_trace()
+    # need to mask['POTM_IOBSI', 'POTM_IOBSJ','PSAL_IOBSI', 'PSAL_IOBSJ']
+
+    JULD_REFERENCE = datetime.strptime(str(chartostring(rootgrp.variables['JULD_REFERENCE'][:])),'%Y%m%d%H%M%S')
+    #pdb.set_trace()
+
+    ops_output_dict['JULD_datetime'] = np.array([JULD_REFERENCE + timedelta(ss) for ss in rootgrp.variables['JULD'][:][comb_ind].ravel()])
+
+    #ops_output_dict['STATION_TYPE'] = stat_type[comb_ind.any(axis = 0)]
+    ops_output_dict['STATION_TYPE'] = stat_type[comb_ind]
+    '''
+    #old slower method
+    STATION_IDENTIFIER = []
+    for ss, tmperr in zip(rootgrp.variables['STATION_IDENTIFIER'],comb_ind):
+        if tmperr:STATION_IDENTIFIER.append(str(chartostring(ss)))
+    ops_output_dict['STATION_IDENTIFIER'] = np.array(STATION_IDENTIFIER)
+    '''
+    ops_output_dict['STATION_IDENTIFIER'] = np.array([str(ss) for ss in chartostring(rootgrp.variables['STATION_IDENTIFIER'][comb_ind,:])])
+
+
+    #for ss in ops_output_dict.keys(): ss, ops_output_dict[ss].shape
+
+    #for ss in ops_output_dict.keys(): ops_output_dict[ss] = ops_output_dict[ss].ravel()
+    #pdb.set_trace()
+
+
+    rootgrp.close()
+
+    #pdb.set_trace()
+    #  for ss in ops_output_dict.keys(): ss, ops_output_dict[ss].shape
+
+    '''
+    outputvar_ravel = ['LONGITUDE','LATITUDE','JULD','POSITION_QC','JULD_QC','POTM_IOBSI','POTM_IOBSJ','PSAL_IOBSI','PSAL_IOBSJ','STATION_TYPE']
+    outputvar_ravel_T = ['LONGITUDE','LATITUDE','JULD','POSITION_QC','JULD_QC','POTM_IOBSI','POTM_IOBSJ','STATION_TYPE']
+    outputvar_ravel_S = ['LONGITUDE','LATITUDE','JULD','POSITION_QC','JULD_QC','PSAL_IOBSI','PSAL_IOBSJ','STATION_TYPE']
+
+    if TnotS:
+        outputvar_ravel = outputvar_ravel_T
+    else:
+        outputvar_ravel = outputvar_ravel_S
+
+    for ss in outputvar_ravel: ops_output_dict[ss] = ops_output_dict[ss].ravel()
+    ops_output_dict['DEPTH_QC'] = ops_output_dict['DEPTH_QC'][0,:,:]
+
+    '''
+    return ops_output_dict
+
+
+
+
+
 
 
 

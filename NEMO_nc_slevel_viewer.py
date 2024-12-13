@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 
 from datetime import datetime,timedelta
 import numpy as np
-from netCDF4 import Dataset #,date2num,num2date
+from netCDF4 import Dataset,stringtochar, chartostring #,date2num,num2date
 import pdb,os,sys
 import os.path
 import xarray
@@ -46,8 +46,7 @@ from NEMO_nc_slevel_viewer_lib import interp1dmat_create_weight
 from NEMO_nc_slevel_viewer_lib import get_clim_pcolor, set_clim_pcolor,set_perc_clim_pcolor_in_region,get_colorbar_values
 from NEMO_nc_slevel_viewer_lib import scale_color_map,lon_lat_to_str,current_barb,get_pnts_pcolor_in_region
 
-
-
+from NEMO_nc_slevel_viewer_lib import load_ops_prof_TS, load_ops_2D_xarray 
 
 
 
@@ -123,7 +122,8 @@ def nemo_slice_zlev(config = 'amm7',
     trim_extra_files = True,
     vis_curr = -1, vis_curr_meth = 'barb',
     resample_freq = None,
-    verbose_debugging = False):
+    verbose_debugging = False,
+    Obs_dict = None, Obs_reloadmeth = 2):
 
     print('Initialise at ',datetime.now())
     init_timer = []
@@ -138,6 +138,142 @@ def nemo_slice_zlev(config = 'amm7',
         cutyind = [0,None]
     else:
         cutout_data = True
+
+    # if arguement Obs_dict is not None, set do_Obs to true
+    #Obs_dict = Obs_fname
+    if Obs_dict is None:
+        do_Obs = False
+    else:
+        do_Obs = True
+        #pdb.set_trace()
+        
+        for tmp_datstr in Obs_dict.keys():
+            for ob_var in Obs_dict[tmp_datstr].keys():
+                Obs_dict_is_str = isinstance(Obs_dict[tmp_datstr][ob_var] , str)
+
+        if Obs_dict_is_str== False:
+            Obs_reloadmeth = -1
+        elif Obs_dict_is_str:
+            Obs_fname = Obs_dict
+
+            
+
+            Obs_dict = {}
+
+
+            for tmp_datstr in Obs_fname.keys():
+                for ob_var in Obs_fname[tmp_datstr].keys():
+                    Obs_fname[tmp_datstr][ob_var] = np.sort(glob.glob(Obs_fname[tmp_datstr][ob_var]))
+
+
+
+            
+            if Obs_reloadmeth == 0:
+
+                        
+                for tmp_datstr in Obs_fname.keys():
+                    Obs_dict[tmp_datstr] = {}
+                    for ob_var in Obs_fname[tmp_datstr].keys():
+                        print(datetime.now(),tmp_datstr,ob_var)
+                        Obs_dict[tmp_datstr][ob_var] = {}
+                        Obs_dict[tmp_datstr][ob_var]['Obs'] = []
+                        Obs_dict[tmp_datstr][ob_var]['JULD'] = []
+
+                        #for tmpObsfname in np.sort(glob.glob(Obs_fname[tmp_datstr][ob_var])):
+                        for tmpObsfname in Obs_fname[tmp_datstr][ob_var]:
+                            
+                            if  ob_var == 'ChlA':
+                                print(datetime.now(),tmpObsfname)
+                                tmp_Obs = load_ops_2D_xarray(tmpObsfname,'ChlA',excl_qc = False)
+                                tmp_Obs['OBS'] = 10**tmp_Obs['SLCHLTOT_OBS']
+                                tmp_Obs['MOD_HX'] = 10**tmp_Obs['SLCHLTOT_Hx'] 
+                                Obs_dict[tmp_datstr]['ChlA']['Obs'].append(tmp_Obs)  
+                                if len(tmp_Obs['JULD_datetime'])>0:
+                                    Obs_dict[tmp_datstr]['ChlA']['JULD'].append(datetime(tmp_Obs['JULD_datetime'][0].year,tmp_Obs['JULD_datetime'][0].month,tmp_Obs['JULD_datetime'][0].day)) 
+                                else:
+                                    Obs_dict[tmp_datstr]['ChlA']['JULD'].append(Obs_dict[tmp_datstr]['ChlA']['JULD'][-1] + timedelta(1)) 
+                                del(tmp_Obs)
+                            elif  ob_var == 'ProfT' :
+                                
+                                print(datetime.now(),tmpObsfname)
+                                tmp_Obs = load_ops_prof_TS(tmpObsfname,'T',excl_qc = True)
+                                tmp_Obs['OBS'] = tmp_Obs['POTM_OBS'] 
+                                tmp_Obs['MOD_HX'] = tmp_Obs['POTM_Hx'] 
+                                Obs_dict[tmp_datstr]['ProfT']['Obs'].append(tmp_Obs)  
+                                Obs_dict[tmp_datstr]['ProfT']['JULD'].append(datetime(tmp_Obs['JULD_datetime'][0].year,tmp_Obs['JULD_datetime'][0].month,tmp_Obs['JULD_datetime'][0].day)) 
+                                
+
+                            elif  ob_var =='ProfS' :
+                                    
+                                print(datetime.now(),tmpObsfname)
+                                tmp_Obs = load_ops_prof_TS(tmpObsfname,'S',excl_qc = True)
+                                tmp_Obs['OBS'] = tmp_Obs['PSAL_OBS'] 
+                                tmp_Obs['MOD_HX'] = tmp_Obs['PSAL_Hx'] 
+                                Obs_dict[tmp_datstr]['ProfS']['Obs'].append(tmp_Obs)  
+                                Obs_dict[tmp_datstr]['ProfS']['JULD'].append(datetime(tmp_Obs['JULD_datetime'][0].year,tmp_Obs['JULD_datetime'][0].month,tmp_Obs['JULD_datetime'][0].day))
+                                del(tmp_Obs)
+                                
+                            elif  ob_var =='SST_ins' :
+                                print(datetime.now(),tmpObsfname)
+                                tmp_Obs = load_ops_2D_xarray(tmpObsfname,'SST_ins',excl_qc = False)
+                                #pdb.set_trace()
+                                tmp_Obs['OBS'] = tmp_Obs['SST_OBS'] 
+                                tmp_Obs['MOD_HX'] = tmp_Obs['SST_Hx'] 
+                                Obs_dict[tmp_datstr]['SST_ins']['Obs'].append(tmp_Obs)  
+                                Obs_dict[tmp_datstr]['SST_ins']['JULD'].append(datetime(tmp_Obs['JULD_datetime'][0].year,tmp_Obs['JULD_datetime'][0].month,tmp_Obs['JULD_datetime'][0].day))
+                                del(tmp_Obs)
+                            elif  ob_var =='SST_sat' :
+                                print(datetime.now(),tmpObsfname)
+                                #tmp_Obs = load_ops_SST(tmpObsfname,excl_qc = False,stat_type_lst = np.arange(50))
+                                tmp_Obs = load_ops_2D_xarray(tmpObsfname,'SST_sat',excl_qc = False)
+                                tmp_Obs['OBS'] = tmp_Obs['SST_OBS'] 
+                                tmp_Obs['MOD_HX'] = tmp_Obs['SST_Hx'] 
+                                Obs_dict[tmp_datstr]['SST_sat']['Obs'].append(tmp_Obs)  
+                                Obs_dict[tmp_datstr]['SST_sat']['JULD'].append(datetime(tmp_Obs['JULD_datetime'][0].year,tmp_Obs['JULD_datetime'][0].month,tmp_Obs['JULD_datetime'][0].day))
+                                del(tmp_Obs)
+                            elif  ob_var =='SLA' :
+                                print(datetime.now(),tmpObsfname)
+                                tmp_Obs = load_ops_2D_xarray(tmpObsfname,'SLA',excl_qc = False)
+                                #pdb.set_trace()
+                                tmp_Obs['OBS'] = tmp_Obs['SLA_OBS']  + tmp_Obs['MDT']
+                                tmp_Obs['MOD_HX'] = tmp_Obs['SLA_SSH'] 
+                                Obs_dict[tmp_datstr]['SLA']['Obs'].append(tmp_Obs)  
+                                Obs_dict[tmp_datstr]['SLA']['JULD'].append(datetime(tmp_Obs['JULD_datetime'][0].year,tmp_Obs['JULD_datetime'][0].month,tmp_Obs['JULD_datetime'][0].day))
+                                del(tmp_Obs)
+
+                        Obs_dict[tmp_datstr][ob_var]['JULD'] = np.array(Obs_dict[tmp_datstr][ob_var]['JULD'])
+            
+                
+            elif Obs_reloadmeth > 0:
+                for tmp_datstr in Obs_fname.keys():
+                    Obs_dict[tmp_datstr] = {}
+                    for ob_var in Obs_fname[tmp_datstr].keys():
+                        print(datetime.now(),tmp_datstr,ob_var)
+                        Obs_dict[tmp_datstr][ob_var] = {}
+                        Obs_dict[tmp_datstr][ob_var]['Obs'] = []
+                        Obs_dict[tmp_datstr][ob_var]['JULD'] = []
+
+                        #for tmpObsfname in np.sort(glob.glob(Obs_fname[tmp_datstr][ob_var])):
+                        for tmpObsfname in Obs_fname[tmp_datstr][ob_var]:
+                            Obs_dict[tmp_datstr][ob_var]['Obs'].append({})  
+
+
+                            rootgrp_obs = Dataset(tmpObsfname, 'r')
+                            tmpObs_JULD =  rootgrp_obs.variables['JULD'][0:1].data[0]
+                            tmpObs_JULD_REFERENCE = datetime.strptime(str(chartostring(rootgrp_obs.variables['JULD_REFERENCE'][:])),'%Y%m%d%H%M%S')
+                            #pdb.set_trace()
+                            tmpObs_JULD_datetime = tmpObs_JULD_REFERENCE + timedelta(tmpObs_JULD)
+
+
+                            Obs_dict[tmp_datstr][ob_var]['JULD'].append(datetime(tmpObs_JULD_datetime.year, tmpObs_JULD_datetime.month, tmpObs_JULD_datetime.day))   
+                            rootgrp_obs.close()
+
+                        Obs_dict[tmp_datstr][ob_var]['JULD'] = np.array(Obs_dict[tmp_datstr][ob_var]['JULD'])
+        
+                #pdb.set_trace()
+
+            #pdb.set_trace()
+
 
     '''
 
@@ -395,6 +531,7 @@ def nemo_slice_zlev(config = 'amm7',
             ld_lab_mat = np.array(ld_lab_lst.split(','))
 
     # connect to files with xarray, and create dictionaries with vars, dims, grids, time etc. S
+    #pdb.set_trace()
     var_d,var_dim,var_grid,ncvar_d,ncdim_d,time_d  = connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_mat, ld_lab_mat,ld_nctvar)
    
     #pdb.set_trace()
@@ -865,7 +1002,86 @@ def nemo_slice_zlev(config = 'amm7',
 
     ax = []
     pax = []
+    #Set up Obs if in use
+    if do_Obs:
+        ob_ti = ti
 
+        Obs_hide = False
+        Obs_hide_edges = False
+        Obs_pair_loc = True
+        
+
+        #Available Obs data types
+        Obs_varlst = Obs_dict['Dataset 1'].keys()
+
+        # Obs data types to hide
+        Obs_obstype_hide = ['ProfT','ProfS','SST_ins','SST_sat','SLA', 'ChlA']
+        Obs_obstype_hide = ['SST_sat']
+
+        # a dictionary of Obs datetimes, assuming midday of each day. 
+        Obs_JULD_datetime_dict = {}
+        for tmp_datstr in Dataset_lst:
+            Obs_JULD_datetime_dict[tmp_datstr] = {} #{'ProfT':Obs_dict[tmp_datstr]['ProfT']['JULD']}
+            for ob_var in Obs_varlst:
+                Obs_JULD_datetime_dict[tmp_datstr][ob_var] = Obs_dict[tmp_datstr][ob_var]['JULD']
+
+
+        # Obs plotting options 
+        Obs_scatEC = None
+        # size of markers
+        Obs_scatSS = matplotlib.rcParams['lines.markersize'] ** 2
+        Obs_scatSS = 100 # matplotlib.rcParams['lines.markersize'] ** 2
+        Obs_scatSS = 250 # matplotlib.rcParams['lines.markersize'] ** 2
+
+        Obs_vis_d = {}
+        Obs_vis_d['Scat_symsize'] ={}
+        Obs_vis_d['Scat_edgecol'] = {}
+        for ob_var in Obs_varlst:   
+            Obs_vis_d['Scat_symsize'][ob_var] = 250
+            Obs_vis_d['Scat_edgecol'][ob_var] = 'k'
+            if ob_var in ['SLA', 'ChlA', 'SST_sat']:
+                Obs_vis_d['Scat_symsize'][ob_var] = 100
+                Obs_vis_d['Scat_edgecol'][ob_var] = None
+
+
+        Obs_vis_d['Prof_obs_col'] = 'k'
+        Obs_vis_d['Prof_obs_ms'] = '.'
+        Obs_vis_d['Prof_obs_ls'] = '-'
+        Obs_vis_d['Prof_obs_lw'] = 2
+        Obs_vis_d['Prof_obs_lw_2d'] = 1
+        Obs_vis_d['Prof_obs_ls_2d'] = '--'
+
+        Obs_vis_d['Prof_mod_col'] = 'm'
+        Obs_vis_d['Prof_mod_ms'] = '.'
+        Obs_vis_d['Prof_mod_ls'] = '-'
+        Obs_vis_d['Prof_mod_lw'] = 2
+        Obs_vis_d['Prof_mod_lw_2d'] = 1
+        Obs_vis_d['Prof_mod_ls_2d'] = '--'
+
+        # set up empty profile dictionaries for plotting
+        obs_z_sel = {}
+        obs_obs_sel = {}
+        obs_mod_sel = {}
+        obs_lon_sel = {}
+        obs_lat_sel = {}
+
+        obs_stat_id_sel = {}
+        obs_stat_type_sel = {}
+        obs_stat_time_sel = {}
+                    
+
+        for tmp_datstr in Dataset_lst:
+            obs_z_sel[tmp_datstr] = np.ma.zeros((1))*np.ma.masked
+            obs_obs_sel[tmp_datstr] = np.ma.zeros((1))*np.ma.masked
+            obs_mod_sel[tmp_datstr] = np.ma.zeros((1))*np.ma.masked
+            obs_lon_sel[tmp_datstr] = np.ma.zeros((1))*np.ma.masked
+            obs_lat_sel[tmp_datstr] = np.ma.zeros((1))*np.ma.masked
+            obs_stat_id_sel[tmp_datstr] = ''
+            obs_stat_time_sel[tmp_datstr] = ''
+            obs_stat_type_sel[tmp_datstr] = None
+
+        # set reload Obs to true
+        reload_Obs = True
 
     fig_tit_str = 'Interactive figure, Select lat/lon in a); lon in b); lat  in c); depth in d) and time in e).\n'
     #if fig_lab_d['Dataset 1'] is not None: fig_tit_str = fig_tit_str + ' Dataset 1 = %s;'%fig_lab_d['Dataset 1']
@@ -1070,8 +1286,15 @@ def nemo_slice_zlev(config = 'amm7',
                       'Zoom','Reset zoom',
                       'ColScl','Axis', 'Clim: Reset','Clim: Zoom','Clim: Expand','Clim: pair','Clim: sym',
                       'Surface', 'Near-Bed', 'Surface-Bed','Depth-Mean','Depth level',
-                      'Contours','Grad','T Diff','TS Diag','LD time','Fcst Diag','Vis curr','Save Figure','Quit']
+                      'Contours','Grad','T Diff','TS Diag','LD time','Fcst Diag','Vis curr','Obs: sel','Obs: opt','Save Figure','Quit']
     
+    # if Obs, create empty option fiugre handle, otherwise remove button names
+    if not do_Obs:
+        func_names_lst.remove('Obs: sel')
+        func_names_lst.remove('Obs: opt')
+    else:
+        figobsopt = None
+        
 
     if add_TSProf:
         #ts_diag_coord = np.ma.ones(3)*np.ma.masked
@@ -1265,13 +1488,11 @@ def nemo_slice_zlev(config = 'amm7',
         
         we therefore trick ginput to give use figure coordinate (with a dummy, invisible full figure size subplot
         in front of everything, and then use this function to turn those coordinates into the coordinates within the 
-        the subplot, and the which axis/subplot it is
-
-ax,
+        the subplot, and the which axis/subplot it is ax,
         '''
         sel_ii,sel_jj,sel_ti ,sel_zz = None,None,None,None
         sel_ax = None
-    
+        xlocval, ylocval  = None, None
         for ai,tmpax in enumerate(ax): 
             tmppos =  tmpax.get_position()
             # was click within extent
@@ -1383,7 +1604,8 @@ ax,
 
 
         
-        return sel_ax,sel_ii,sel_jj,sel_ti,sel_zz
+        #return sel_ax,sel_ii,sel_jj,sel_ti,sel_zz
+        return sel_ax,sel_ii,sel_jj,sel_ti,sel_zz,xlocval,ylocval
 
 
 
@@ -1921,8 +2143,115 @@ ax,
                     #ts_dat_dict['Dataset 2'] = np.ma.ones(ntime)*np.ma.masked
                     for tmp_datstr in Dataset_lst:ts_dat_dict[tmp_datstr] = np.ma.ones(ntime)*np.ma.masked
                 reload_ts = False
-                
+            #if Obs and reloading,  
+            if do_Obs:
+                if reload_Obs:
 
+
+
+                    #for a given variable, what obs types to use
+                    if var.lower() in ['votemper','votempis','votemper_bot','votempis_bot']:
+                        #Obs_var_lst_sub	 = ['ProfT']#,'SST_ins']#,'SST_sat']
+                        Obs_var_lst_sub = [ss for ss in Obs_varlst if ss in ['ProfT','SST_ins','SST_sat']]
+                    elif var.lower() in ['vosaline']:
+                        Obs_var_lst_sub = [ss for ss in Obs_varlst if ss in ['ProfS']]
+                    elif var.lower() in ['sossheig']:
+                        Obs_var_lst_sub = [ss for ss in Obs_varlst if ss in ['SLA']]
+                    elif var.lower() in ['chl']:
+                        Obs_var_lst_sub = [ss for ss in Obs_varlst if ss in ['ChlA']]
+                    else:
+                        Obs_var_lst_sub	 = []
+                    
+                    # exclude obs types that have been excluded
+                    Obs_var_lst_sub = [ss for ss in Obs_var_lst_sub if ss not in Obs_obstype_hide]
+
+
+
+
+
+
+
+                    #extract relevant day of obs, for each data type, and selected Obs types
+                    Obs_dat_dict = {} 
+                    for tmp_datstr in Dataset_lst:
+                        Obs_dat_dict[tmp_datstr] = {}
+                        for ob_var in Obs_var_lst_sub:
+
+                            # If Obs Method is to replace, set the old OPS to zero. 
+                            if Obs_reloadmeth ==2:
+                                Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = {}
+
+                            # for a give model data time (ti) find nearest Obs data time (ob_ti)
+                            Obs_noon_time_minus_current_time =  [(tmpObsdatetime - tmp_current_time).total_seconds() +86400/2 for tmpObsdatetime in  Obs_JULD_datetime_dict[tmp_datstr][ob_var]]
+                            ob_ti = np.abs(Obs_noon_time_minus_current_time).argmin()
+
+
+
+
+
+                            # If Obs Method is to fill or replace, load the current OPS data now.  
+                            if (Obs_reloadmeth > 0):
+
+                                #tmpObsfname = np.sort(glob.glob(Obs_fname[tmp_datstr][ob_var]))[ob_ti]
+                                tmpObsfname = Obs_fname[tmp_datstr][ob_var][ob_ti]
+                                #pdb.set_trace()
+
+                                if  ob_var == 'ProfT':
+                            
+                                    print(datetime.now(),tmpObsfname)
+                                    tmp_Obs = load_ops_prof_TS(tmpObsfname,'T',excl_qc = True)
+                                    tmp_Obs['OBS'] = tmp_Obs['POTM_OBS'] 
+                                    tmp_Obs['MOD_HX'] = tmp_Obs['POTM_Hx'] 
+                                    Obs_dict[tmp_datstr]['ProfT']['Obs'][ob_ti] = tmp_Obs
+                                    del(tmp_Obs)
+
+                                elif  ob_var =='ProfS' :
+                                        
+                                    print(datetime.now(),tmpObsfname)
+                                    tmp_Obs = load_ops_prof_TS(tmpObsfname,'S',excl_qc = True)
+                                    tmp_Obs['OBS'] = tmp_Obs['PSAL_OBS'] 
+                                    tmp_Obs['MOD_HX'] = tmp_Obs['PSAL_Hx']
+                                    Obs_dict[tmp_datstr]['ProfS']['Obs'][ob_ti] = tmp_Obs
+                                    del(tmp_Obs)
+
+                                    
+                                elif  ob_var =='SST_ins' :
+                                    print(datetime.now(),tmpObsfname)
+                                    tmp_Obs = load_ops_2D_xarray(tmpObsfname,'SST_ins',excl_qc = False)
+                                    tmp_Obs['OBS'] = tmp_Obs['SST_OBS'] 
+                                    tmp_Obs['MOD_HX'] = tmp_Obs['SST_Hx'] 
+                                    Obs_dict[tmp_datstr]['SST_ins']['Obs'][ob_ti] = tmp_Obs                                    
+                                    del(tmp_Obs)
+
+                                elif  ob_var =='SST_sat' :
+                                    print(datetime.now(),tmpObsfname)
+                                    tmp_Obs = load_ops_2D_xarray(tmpObsfname,'SST_sat',excl_qc = False)
+                                    tmp_Obs['OBS'] = tmp_Obs['SST_OBS'] 
+                                    tmp_Obs['MOD_HX'] = tmp_Obs['SST_Hx'] 
+                                    Obs_dict[tmp_datstr]['SST_sat']['Obs'][ob_ti] = tmp_Obs
+                                    del(tmp_Obs)
+                                elif  ob_var =='SLA' :
+                                    print(datetime.now(),tmpObsfname)
+                                    tmp_Obs = load_ops_2D_xarray(tmpObsfname,'SLA',excl_qc = False)
+                                    tmp_Obs['OBS'] = tmp_Obs['SLA_OBS']  + tmp_Obs['MDT']
+                                    tmp_Obs['MOD_HX'] = tmp_Obs['SLA_SSH']  
+                                    Obs_dict[tmp_datstr]['SLA']['Obs'][ob_ti] = tmp_Obs
+                                    del(tmp_Obs)
+
+
+                                elif  ob_var == 'ChlA':
+                                    print(datetime.now(),tmpObsfname)
+                                    tmp_Obs = load_ops_2D_xarray(tmpObsfname,'ChlA',excl_qc = False)
+                                    tmp_Obs['OBS'] = 10**tmp_Obs['SLCHLTOT_OBS']
+                                    tmp_Obs['MOD_HX'] = 10**tmp_Obs['SLCHLTOT_Hx'] 
+                                    Obs_dict[tmp_datstr]['ChlA']['Obs'][ob_ti] = tmp_Obs
+                                    del(tmp_Obs)
+
+                            
+                            Obs_dat_dict[tmp_datstr][ob_var] = Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti]
+                    #once reloaded, set to False
+                    reload_Obs = False
+            
             if verbose_debugging: print('Reloaded  ts data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now(),'; dt = %s'%(datetime.now()-prevtime))
             prevtime = datetime.now()
 
@@ -2057,11 +2386,17 @@ ax,
                     pdb.set_trace()
 
 
+            # if Obs, define some plotting handles
+            if do_Obs:
+                opax_lst = []
+                oxax_lst = []
+                opaxtx_lst = []
+                #opaxtx = plt.text(None, None, '')
 
-
+            # Plotting Depth Profiles
             pfax_lst = []
             if profvis:
-                pf_yvals = []
+                pf_xvals = []
                 #Dataset_col = ['r','b','darkgreen','gold']
                 # if Dataset X, plot all data sets
                 if secdataset_proc in Dataset_lst:
@@ -2069,8 +2404,35 @@ ax,
                     for dsi,tmp_datstr in enumerate(Dataset_lst):
                         tmplw = 0.5
                         if secdataset_proc == tmp_datstr:tmplw = 1
-                        pf_yvals.append(pf_dat_dict[tmp_datstr])
+                        for pfi in pf_dat_dict[tmp_datstr]:pf_xvals.append(pfi)
                         pfax_lst.append(ax[5].plot(pf_dat_dict[tmp_datstr],pf_dat_dict['y'],Dataset_col[dsi], lw = tmplw))
+
+                        # if Obs, plotted the observed data
+                        if do_Obs:
+                            if Obs_hide == False:
+                            
+                                # add obs data to pf_xvals to help choose y lims
+                                for tmp_datstr in Dataset_lst:
+                                    for pfi in obs_obs_sel[tmp_datstr]:pf_xvals.append(pfi)
+                                    for pfi in obs_mod_sel[tmp_datstr]:pf_xvals.append(pfi)
+
+                                #plot Obs profile
+                                if len(obs_obs_sel[secdataset_proc])==1:
+                                    #opax_lst.append([ax[5].axvline(obs_obs_sel[secdataset_proc],color = 'k', ls = '--', lw = 1)])
+                                    #opax_lst.append([ax[5].axvline(obs_mod_sel[secdataset_proc],color = 'm', ls = '--', lw = 1)])
+                                    opax_lst.append([ax[5].axvline(obs_obs_sel[secdataset_proc],color = Obs_vis_d['Prof_obs_col'], ls = Obs_vis_d['Prof_obs_ls_2d'], lw = Obs_vis_d['Prof_obs_lw_2d'])])
+                                    opax_lst.append([ax[5].axvline(obs_mod_sel[secdataset_proc],color = Obs_vis_d['Prof_mod_col'], ls = Obs_vis_d['Prof_mod_ls_2d'], lw = Obs_vis_d['Prof_mod_lw_2d'])])
+                                    
+                                else:
+                                    
+                                    opax_lst.append(ax[5].plot(obs_obs_sel[secdataset_proc], obs_z_sel[secdataset_proc], color=Obs_vis_d['Prof_obs_col'], marker=Obs_vis_d['Prof_obs_ms'], linestyle=Obs_vis_d['Prof_obs_ls'], lw = Obs_vis_d['Prof_obs_lw']))
+                                    opax_lst.append(ax[5].plot(obs_mod_sel[secdataset_proc], obs_z_sel[secdataset_proc], color=Obs_vis_d['Prof_mod_col'], marker=Obs_vis_d['Prof_mod_ms'], linestyle=Obs_vis_d['Prof_mod_ls'], lw = Obs_vis_d['Prof_mod_lw']))
+                                    #pdb.set_trace()
+                                # give id info for Obs
+                                if obs_stat_type_sel[tmp_datstr] is not None:
+                                    opaxtx_lst.append(ax[5].text(0.02,0.01,'ID = %s\nType: %i\n%s\n%s'%(obs_stat_id_sel[tmp_datstr] ,obs_stat_type_sel[tmp_datstr],obs_stat_time_sel[tmp_datstr].strftime('%Y/%m/%d %H:%M'), lon_lat_to_str(obs_lon_sel[tmp_datstr], obs_lat_sel[tmp_datstr])[0] ), ha = 'left', va = 'bottom', transform=ax[5].transAxes, color = 'k', fontsize = 10,bbox=dict(facecolor='white', alpha=0.5, pad=1, edgecolor='none')))
+                                    #opaxtx = ax[5].text(0.02,0.01,'ID = %s\nType: %i'%(obs_stat_id_sel[tmp_datstr] ,obs_stat_type_sel[tmp_datstr] ), ha = 'left', va = 'bottom', transform=ax[5].transAxes, color = 'k', fontsize = 10,bbox=dict(facecolor='white', alpha=0.75, pad=1, edgecolor='none'))
+
                         
                 else:
                     # only plot the current dataset difference
@@ -2079,7 +2441,8 @@ ax,
                     tmpdataset_oper = secdataset_proc[4]
                     if tmpdataset_oper == '-': 
                         
-                        pf_yvals.append(pf_dat_dict[tmpdataset_1] - pf_dat_dict[tmpdataset_2])
+                        #pf_xvals.append(pf_dat_dict[tmpdataset_1] - pf_dat_dict[tmpdataset_2])
+                        for pfi in pf_dat_dict[tmpdataset_1] - pf_dat_dict[tmpdataset_2]:pf_xvals.append(pfi)
                         pfax_lst.append(ax[5].plot(pf_dat_dict[tmpdataset_1] - pf_dat_dict[tmpdataset_2],pf_dat_dict['y'],Dataset_col_diff_dict[secdataset_proc]))
                         pfax_lst.append(ax[5].plot(pf_dat_dict['Dataset 1']*0,pf_dat_dict['y'], color = '0.5', ls = '--'))
 
@@ -2094,7 +2457,8 @@ ax,
                                     tmplw = 0.5
                                     if secdataset_proc == tmp_diff_str_name:tmplw = 1
 
-                                    pf_yvals.append(pf_dat_dict[tmp_datstr1] - pf_dat_dict[tmp_datstr2])
+                                    #pf_xvals.append(pf_dat_dict[tmp_datstr1] - pf_dat_dict[tmp_datstr2])
+                                    for pfi in pf_dat_dict[tmp_datstr1] - pf_dat_dict[tmp_datstr2]:pf_xvals.append(pfi)
                                     pfax_lst.append(ax[5].plot(pf_dat_dict[tmp_datstr1] - pf_dat_dict[tmp_datstr2],pf_dat_dict['y'],Dataset_col_diff_dict[tmp_diff_str_name], lw = tmplw))
 
                             pfax_lst.append(ax[5].plot(pf_dat_dict['Dataset 1']*0,pf_dat_dict['y'], color = '0.5', ls = '--'))
@@ -2103,9 +2467,19 @@ ax,
 
                     else:
                         pdb.set_trace()
-                pf_xlim = np.ma.array([np.ma.array(pf_yvals).ravel().min(), np.ma.array(pf_yvals).ravel().max()])
+                #pdb.set_trace()
+                pf_xvals_min = np.ma.array(pf_xvals).ravel().min()
+                pf_xvals_max = np.ma.array(pf_xvals).ravel().max()
+                pf_xvals_ptp = np.ma.array(pf_xvals).ravel().ptp()
+                #pf_xlim = np.ma.array([np.ma.array(pf_xvals).ravel().min(), np.ma.array(pf_xvals).ravel().max()])
+                pf_xlim = np.ma.array([pf_xvals_min-(0.05*pf_xvals_ptp),pf_xvals_max+(0.05*pf_xvals_ptp)])
+                #try:
+                #    pf_xlim = np.ma.array([np.ma.arra(pf_xvals).ravel().min(), np.ma.concatenate(pf_xvals).ravel().max()])
+                #except:
+                #    pdb.set_trace()
                 if pf_xlim.mask.any():pf_xlim = np.ma.array([0,1])
 
+                #print('pf_xvals limits:',pf_xvals_min,pf_xvals_ptp,pf_xvals_max,pf_xlim)
 
 
 
@@ -2222,6 +2596,7 @@ ax,
 
             # set minimum depth if keyword set
             zlim_min = 1
+            zlim_min = -0.5
             if zlim_max == None:
                 tmpew_xlim = ax[1].get_xlim()
                 tmpns_xlim = ax[2].get_xlim()
@@ -2241,13 +2616,14 @@ ax,
                     tmp_py_ylim = [pf_dat_dict['y'].max(),zlim_min]
                     ax[5].set_ylim(tmp_py_ylim)
                     ax[5].set_xlim(pf_xlim)
-                    
+                    #
             else:
                 ax[1].set_ylim([zlim_max,zlim_min])
                 ax[2].set_ylim([zlim_max,zlim_min])
                 ax[3].set_ylim([np.minimum(zlim_max,hov_dat_dict['y'].max()),zlim_min])
                 if profvis:
-                    ax[5].set_ylim([np.minimum(zlim_max,pf_dat_dict['y'].max()),zlim_min])
+                    tmp_py_ylim = [np.minimum(zlim_max,pf_dat_dict['y'].max()),zlim_min]
+                    ax[5].set_ylim(tmp_py_ylim)
                     ax[5].set_xlim(pf_xlim)
                 #pdb.set_trace()
 
@@ -2435,7 +2811,80 @@ ax,
                     if hov_time & ntime>1:
                         conax.append(ax[3].contour(hov_dat_dict['x'],hov_dat_dict['y'],hov_dat,cont_val_lst[3], colors = contcols, linewidths = contlws, alphas = contalphas))
 
-               
+            
+            
+            ###################################################################################################
+            ### add Observations to map as scatter plot to 
+            ###################################################################################################
+            
+            if do_Obs:
+
+                oax_lst = []
+                # if selected a dataset, rather than the difference between datasets
+                if secdataset_proc in Dataset_lst:
+                    # get current colorlimits
+                    obs_clim = get_clim_pcolor(ax = ax[0])
+
+                    
+                    # for each Obs obs type, 
+                    for ob_var in Obs_var_lst_sub:
+                        #extract the lon, lat, z and OBS
+                        tmpobsx = Obs_dat_dict[secdataset_proc][ob_var]['LONGITUDE']
+                        tmpobsy = Obs_dat_dict[secdataset_proc][ob_var]['LATITUDE']
+                        tmpobsz = Obs_dat_dict[secdataset_proc][ob_var]['DEPTH']
+                        tmpobsdat_mat = Obs_dat_dict[secdataset_proc][ob_var]['OBS']
+
+                        Obs_scatSS = Obs_vis_d['Scat_symsize'][ob_var] 
+                        if Obs_hide_edges:
+                            Obs_scatEC = None
+                        else:
+                            Obs_scatEC = Obs_vis_d['Scat_edgecol'][ob_var] 
+
+
+                        # if Obs variable is a 2d var
+                        if len(tmpobsdat_mat.shape) == 1:
+
+                            tmpobsz = tmpobsz.reshape(-1,1)
+                            tmpobsdat_mat = tmpobsdat_mat.reshape(-1,1)
+
+                        # choose the obs to plot, depending on the current depth (surface, zslice etc.)
+                        if z_meth in ['z_slice','ss']:
+                            if z_meth == 'z_slice':  obs_tmp_zz = zz
+                            # find the obs nearst to depth zi, or surface
+                            obs_obs_zi_lst = np.ma.abs(tmpobsz - zz).argmin(axis = 1)
+                            tmpobsdat = np.ma.array([tmpobsdat_mat[tmpzi,tmpzz] for tmpzi, tmpzz in enumerate(obs_obs_zi_lst)])
+                        elif z_meth == 'nb':
+                            # find deepest obs
+                            obs_obs_zi_lst = tmpobsz.argmax(axis = 1)
+                            tmpobsdat = np.ma.array([tmpobsdat_mat[tmpzi,tmpzz] for tmpzi, tmpzz in enumerate(obs_obs_zi_lst)])
+                        elif z_meth == 'df':
+                            # find deepest and shallowst obs for df
+                            obs_obs_zi_lst = np.ma.abs(tmpobsz - 0).argmin(axis = 1)
+                            tmpobsdat_ss = np.ma.array([tmpobsdat_mat[tmpzi,tmpzz] for tmpzi, tmpzz in enumerate(obs_obs_zi_lst)])
+                            obs_obs_zi_lst = tmpobsz.argmax(axis = 1)
+                            tmpobsdat_nb = np.ma.array([tmpobsdat_mat[tmpzi,tmpzz] for tmpzi, tmpzz in enumerate(obs_obs_zi_lst)])
+                            tmpobsdat = tmpobsdat_ss - tmpobsdat_nb
+                        elif z_meth == 'zm':
+                            #depth mean obs if zm.
+                            tmpobsdat = tmpobsdat_mat.mean(axis = 1)
+                        else:
+
+                            pdb.set_trace()
+
+                        #scatter plot them
+                        if Obs_hide == False:
+                            oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS, edgecolors = Obs_scatEC ))
+
+                    
+                    # plt selected obs marker
+                            
+                    if Obs_hide == False:
+                        oxax_lst.append(ax[0].plot(obs_lon_sel[secdataset_proc],obs_lat_sel[secdataset_proc], 'kx', ms = 12))
+                    
+                    #re apply xlim and ylim to cut out scatter outside domain. 
+                    ax[0].set_xlim(tmpxlim)
+                    ax[0].set_ylim(tmpylim)
+
             ###################################################################################################
             ### add vectors
             ###################################################################################################
@@ -2556,6 +3005,7 @@ ax,
             ### Redraw canvas
             ###################################################################################################
             func_but_text_han['waiting'].set_color('w')
+            func_but_text_han['waiting'].set_text('Waiting')
             if verbose_debugging: print('Canvas draw', datetime.now())
 
             stage_timer[11] = datetime.now() #  redraw
@@ -2628,7 +3078,7 @@ ax,
 
             
 
-            print('button_press',button_press)
+            if verbose_debugging: print('button_press',button_press)
             if verbose_debugging: print('')
             if verbose_debugging: print('')
             if verbose_debugging: print('')
@@ -2726,7 +3176,7 @@ ax,
             
             # convert the mouse click into data indices, and report which axes was clicked
             try:
-                sel_ax,sel_ii,sel_jj,sel_ti,sel_zz = indices_from_ginput_ax(ax,clii,cljj, thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
+                sel_ax,sel_ii,sel_jj,sel_ti,sel_zz, sel_xlocval,sel_ylocval = indices_from_ginput_ax(ax,clii,cljj, thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
             except:
                 pdb.set_trace()
                 
@@ -2790,6 +3240,9 @@ ax,
                 reload_map = True
                 reload_ew = True
                 reload_ns = True
+
+                if do_Obs:
+                    reload_Obs = True
    
             
             if mode == 'Loop':
@@ -2825,6 +3278,13 @@ ax,
                     if but_name in var_but_mat:
                         var = but_name
 
+                        func_but_text_han['waiting'].set_text('Waiting: ' + but_name)
+
+                        # redraw canvas
+                        fig.canvas.draw()
+                        
+                        #flush canvas
+                        fig.canvas.flush_events()
 
                         if var_dim[var] == 3:
                             z_meth = z_meth_default
@@ -2846,6 +3306,8 @@ ax,
                         reload_ns = True
                         reload_hov = True
                         reload_ts = True
+                        if do_Obs:
+                            reload_Obs = True
 
             ###################################################################################################
             ### If function clicked, call function
@@ -2857,7 +3319,17 @@ ax,
                 but_pos_x0,but_pos_x1,but_pos_y0,but_pos_y1 = func_but_extent[but_name]
                 if (clii >= but_pos_x0) & (clii <= but_pos_x1) & (cljj >= but_pos_y0) & (cljj <= but_pos_y1):
                     is_in_axes = True
-                    print(but_name)
+                    print('but_name:',but_name)
+
+                    func_but_text_han['waiting'].set_text('Waiting: ' + but_name)
+
+                    # redraw canvas
+                    fig.canvas.draw()
+                    
+                    #flush canvas
+                    fig.canvas.flush_events()
+
+
                     if but_name in 'Reset zoom':
                         # set xlim and ylim to max size possible from lat_d[1] and nav_lon
                         cur_xlim = np.array([lon_d[1].min(),lon_d[1].max()])
@@ -2871,12 +3343,12 @@ ax,
                         tmpzoom0 = plt.ginput(1)
                         func_but_text_han['Zoom'].set_color('r')
                         fig.canvas.draw()
-                        zoom0_ax,zoom0_ii,zoom0_jj,zoom0_ti,zoom0_zz = indices_from_ginput_ax(ax,tmpzoom0[0][0],tmpzoom0[0][1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
+                        zoom0_ax,zoom0_ii,zoom0_jj,zoom0_ti,zoom0_zz,sel_xlocval,sel_ylocval = indices_from_ginput_ax(ax,tmpzoom0[0][0],tmpzoom0[0][1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
                         if zoom0_ax in [1,2,3]:
                             zlim_max = zoom0_zz
                         elif zoom0_ax in [0]:
                             tmpzoom1 = plt.ginput(1)
-                            zoom1_ax,zoom1_ii,zoom1_jj,zoom1_ti,zoom1_zz = indices_from_ginput_ax(ax,tmpzoom1[0][0],tmpzoom1[0][1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
+                            zoom1_ax,zoom1_ii,zoom1_jj,zoom1_ti,zoom1_zz, sel_xlocval,sel_ylocval = indices_from_ginput_ax(ax,tmpzoom1[0][0],tmpzoom1[0][1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
                                 
                             if verbose_debugging: print(zoom0_ax,zoom0_ii,zoom0_jj,zoom0_ti,zoom0_zz)
                             if verbose_debugging: print(zoom1_ax,zoom1_ii,zoom1_jj,zoom1_ti,zoom1_zz)
@@ -2913,8 +3385,381 @@ ax,
 
                     elif but_name == 'Clim: Reset':
                         clim = None
+                    elif but_name == 'Obs: opt':#
+                        # Bring up a options window for Obs
+                        
+                        #print('Obs_obstype_hide before:',Obs_obstype_hide)
+
+                        # if the Obs options figure is open, close it
+                        if figobsopt is not None:
+                            if plt.fignum_exists(figobsopt.number):
+                                plt.close(figobsopt)
+                            
+
+                        # Only proceed if the button has been pressed, not just the mouse pointing to the box,
+                        # 
+                        if button_press:
+                            # to keep alive for 5 seconds
+                            #secondary_fig = True
+
+                            # create Obs options figure
+                            figobsopt = plt.figure()
+                            figobsopt.set_figheight(2.5)
+                            figobsopt.set_figwidth(6)
+                            
+                            #add full screen axes
+                            obcax = figobsopt.add_axes([0,0,1,1], frameon=False)
+                            
+                            # Add buttons
+
+                            # button names                            
+                            obs_but_names = ['ProfT','SST_ins','SST_sat','ProfS','SLA','ChlA','Hide_Obs','Edges','Loc','Close']
+
+                            #Create list of dictionaries with the name, and x and y ranges
+                            obsobbox_l = []
+                            for obs_i,obs_ss in enumerate(obs_but_names):
+                                #tmp_obsx0 = (( obs_i*0.2 + 0.1 )//0.8)*0.45 + 0.05
+                                #tmp_obsdx = 0.4
+                                tmp_obsx0 = (( obs_i*0.2 + 0.1 )//0.8)*(0.3 + 0.025) + 0.025
+                                tmp_obsdx = 0.3
+                                #tmp_obsy0 = (( obs_i*0.2 + 0.1 )%0.8)
+                                #tmp_obsdy = 0.15
+                                #tmp_obsy0 = 1-(( obs_i*0.2 + 0.1 )%0.8)
+                                #tmp_obsdy = -0.15
+                                #tmp_obsy0 = 1-(( obs_i*0.16 + 0.04 )%0.8)
+                                tmp_obsdy = -0.2
+                                tmp_obsy0 = 1-(( obs_i*0.24 + 0.04 )%(1-0.04))
+
+                                obsobbox_l.append({'x':np.array([tmp_obsx0,tmp_obsx0+tmp_obsdx]),'y':np.array([tmp_obsy0,tmp_obsy0+tmp_obsdy]),'name':obs_ss})
 
 
+                            # draw buttons
+                            for tmpoob in obsobbox_l: obcax.plot(tmpoob['x'][[0,1,1,0,0]],tmpoob['y'][[0,0,1,1,0]],'k')
+
+                            obcax_tx_hd = {}
+                            # write button names - if already selected append with hidden
+                            for tmpoob in obsobbox_l: 
+                                obcax_tx_hd[tmpoob['name']] = obcax.text(tmpoob['x'].mean(),tmpoob['y'].mean(),tmpoob['name'],ha = 'center', va = 'center')
+                            
+                            for tmpoob in obsobbox_l: 
+                                if tmpoob['name'] in Obs_obstype_hide:
+                                    obcax_tx_hd[tmpoob['name']].set_text(tmpoob['name'] + ' hidden')
+
+                            print('Obs_hide:',Obs_hide)
+                            print('Obs_hide_edges:',Obs_hide_edges)
+                                    
+                            if Obs_hide:
+                                obcax_tx_hd['Hide_Obs'].set_text('Show Obs')
+                            else:
+                                obcax_tx_hd['Hide_Obs'].set_text('Hide Obs')
+                                
+                            if Obs_hide_edges:
+                                obcax_tx_hd['Edges'].set_text('Show Edges')
+                            else:
+                                obcax_tx_hd['Edges'].set_text('Hide Edges')
+                                
+                            if Obs_pair_loc:
+                                obcax_tx_hd['Loc'].set_text('Don''t Selected point')
+                            else:
+                                obcax_tx_hd['Loc'].set_text('Move Selected point')
+                            
+                            
+                            '''
+                            for tmpoob in obsobbox_l: 
+                                if tmpoob['name'] in Obs_obstype_hide:
+                                    obcax.text(tmpoob['x'].mean(),tmpoob['y'].mean(),tmpoob['name'] + ' hidden',ha = 'center', va = 'center')
+                                else:
+                                    obcax.text(tmpoob['x'].mean(),tmpoob['y'].mean(),tmpoob['name'],ha = 'center', va = 'center')
+                            '''
+                            # Set x and y lims
+                            obcax.set_xlim(0,1)
+                            obcax.set_ylim(0,1)
+                            
+                            # redraw canvas
+                            figobsopt.canvas.draw()
+                            
+                            #flush canvas
+                            figobsopt.canvas.flush_events()
+                            
+                            # Show plot, and set it as the current figure and axis
+
+                            figobsopt.show()
+                            plt.figure(figobsopt.figure)
+                            plt.sca(obcax)
+
+
+                            # await button press...
+                            #   keep trying until close_obcax is True
+                            close_obcax = False
+                            while close_obcax == False:
+
+                                # get click location
+                                tmpobsbutloc = plt.ginput(1, timeout = 3) #[(0.3078781362007169, 0.19398809523809524)]
+
+                                if len(tmpobsbutloc)!=1:
+                                    print('tmpobsbutloc len != 1',tmpobsbutloc )
+                                    continue
+                                    pdb.set_trace()
+                                else:
+                                    if len(tmpobsbutloc[0])!=2:
+                                        print('tmpobsbutloc[0] len != 2',tmpobsbutloc )
+                                        continue
+                                        pdb.set_trace()
+                                # was a button clicked?
+                                obbut = []
+
+                                # cycle through the buttons, and ask if the click was within there x and y lims
+                                for tmpoob in obsobbox_l: 
+
+                                    # if so, record which and allow the window to close
+                                    #if (tmpobsbutloc[0][0] >= tmpoob['x'][0]) & (tmpobsbutloc[0][0] <= tmpoob['x'][1]) & (tmpobsbutloc[0][1] >= tmpoob['y'][0]) & (tmpobsbutloc[0][1] <= tmpoob['y'][1]):
+                                    if (tmpobsbutloc[0][0] >= tmpoob['x'].min()) & (tmpobsbutloc[0][0] <= tmpoob['x'].max()) & (tmpobsbutloc[0][1] >= tmpoob['y'].min()) & (tmpobsbutloc[0][1] <= tmpoob['y'].max()):
+                                        obbut.append(True)
+
+                                        close_obcax = True
+                                    else:
+                                        obbut.append(False)
+                                #pdb.set_trace()
+                                        
+                                # find which button was closed.         
+                                obbut_mat = np.array(obbut)
+                                if obbut_mat.any():
+                                    obbut_sel = obsobbox_l[np.where(obbut_mat)[0][0]]['name']
+                                    print('obbut_sel:',obbut_sel)
+                                else:
+                                    obbut_sel = ''
+                                    close_obcax = False
+                                #print('obbut_sel',obbut_sel)
+                                    
+                                # quit of option box is closed without button press.
+                                if plt.fignum_exists(figobsopt) == False:
+                                    close_obcax = True
+                                    
+                            
+                            # if the button closed was one of the Obs types, add or remove from the hide list
+                            for obs_ss in ['ProfT','SST_ins','SST_sat','ProfS','SLA','ChlA']:
+                                if obbut_sel == obs_ss:
+                                    if obs_ss in Obs_obstype_hide:
+                                        Obs_obstype_hide.remove(obs_ss)
+                                    else:
+                                        Obs_obstype_hide.append(obs_ss)
+                            
+                            # if the button closed was one of the Obs types, add or remove from the hide list
+                                        
+
+
+                            if obbut_sel == 'Hide_Obs': #,'Edges:
+                                if Obs_hide:
+                                    Obs_hide = False
+                                else:
+                                    Obs_hide = True
+                                    
+                            if obbut_sel == 'Edges': #,'Edges:
+                                if Obs_hide_edges:
+                                    Obs_hide_edges = False
+                                else:
+                                    Obs_hide_edges = True
+                                    
+                            if obbut_sel == 'Loc': #,'Edges:
+                                if Obs_pair_loc:
+                                    Obs_pair_loc = False
+                                else:
+                                    Obs_pair_loc = True
+                            
+                            # close figure
+                            if figobsopt is not None:
+                                if plt.fignum_exists(figobsopt.number):
+                                    plt.close(figobsopt)
+
+                            # Set the main figure and axis to be current
+                            plt.figure(fig.figure)
+                            plt.sca(clickax)
+
+                            #print('Obs_obstype_hide after:',Obs_obstype_hide)
+
+
+                            reload_Obs = True
+
+                    elif but_name == 'Obs: sel':
+                        # select a point on the map
+
+                        # predefine dictionaries
+
+                        obs_z_sel = {}
+                        obs_obs_sel = {}
+                        obs_mod_sel = {}
+                        obs_lon_sel = {}
+                        obs_lat_sel = {}
+                        
+                        obs_stat_id_sel = {}
+                        obs_stat_type_sel = {}
+                        obs_stat_time_sel = {}
+                    
+
+                        for tmp_datstr in Dataset_lst:
+                            obs_z_sel[tmp_datstr] = np.ma.zeros((1))*np.ma.masked
+                            obs_obs_sel[tmp_datstr] = np.ma.zeros((1))*np.ma.masked
+                            obs_mod_sel[tmp_datstr] = np.ma.zeros((1))*np.ma.masked
+                            obs_lon_sel[tmp_datstr] = np.ma.zeros((1))*np.ma.masked
+                            obs_lat_sel[tmp_datstr] = np.ma.zeros((1))*np.ma.masked
+
+                            obs_stat_id_sel[tmp_datstr] = ''
+                            obs_stat_type_sel[tmp_datstr] = None
+                            obs_stat_time_sel[tmp_datstr] = ''
+
+                        
+                        # select the observation with ginput
+                        tmpobsloc = plt.ginput(1)
+
+                        # convert to the nearest model grid box
+                        
+                        obs_ax,obs_ii,obs_jj,obs_ti,obs_zz, sel_xlocval,sel_ylocval = indices_from_ginput_ax(ax,tmpobsloc[0][0],tmpobsloc[0][1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
+                        '''
+                        try:
+                            obs_ax,obs_ii,obs_jj,obs_ti,obs_zz, sel_xlocval,sel_ylocval = indices_from_ginput_ax(ax,tmpobsloc[0][0],tmpobsloc[0][1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
+                        except:
+                            print('Can''t get obs click location')
+                            #pdb.set_trace()
+                        '''
+                        
+                        # if the main map axis is selected, continue,
+                        if obs_ax == 0:
+                            #if True:
+                            
+                            # extract lat and lon,
+
+                            obs_lon = sel_xlocval # lon_d[1][obs_jj,obs_ii]
+                            obs_lat = sel_ylocval # lat_d[1][obs_jj,obs_ii]
+
+                            if Obs_pair_loc:
+                                ii = obs_ii
+                                jj = obs_jj
+
+                                # and reload slices, and hovmuller/time series
+                                reload_ew = True
+                                reload_ns = True
+                                reload_hov = True
+                                reload_ts = True
+
+                            # set some tmp dictionaries
+                            tmpobs_z_sel = {}
+                            tmpobs_obs_sel = {}
+                            tmpobs_mod_sel = {}
+                            tmpobs_lon_sel = {}
+                            tmpobs_lat_sel = {}
+                            tmpobs_dist_sel = {}
+
+
+                            tmpobs_stat_id_sel = {}
+                            tmpobs_stat_type_sel = {}
+                            tmpobs_stat_time_sel = {}
+                            # cycle through available Obs types
+                            for ob_var in Obs_var_lst_sub:
+                                tmpobs_z_sel[ob_var] = {}
+                                tmpobs_obs_sel[ob_var] = {}
+                                tmpobs_mod_sel[ob_var] = {}
+                                tmpobs_lon_sel[ob_var] = {}
+                                tmpobs_lat_sel[ob_var] = {}
+                                tmpobs_dist_sel[ob_var] = {}
+
+                                tmpobs_stat_id_sel[ob_var] = {}
+                                tmpobs_stat_type_sel[ob_var] = {}
+                                tmpobs_stat_time_sel[ob_var] = {}
+                                # and data sets.
+                                for tmp_datstr in Dataset_lst:
+                                    # extract Obs: lon, lat, z OBS, mod,, stations info 
+                                    tmpobsx = Obs_dat_dict[tmp_datstr][ob_var]['LONGITUDE']
+                                    tmpobsy = Obs_dat_dict[tmp_datstr][ob_var]['LATITUDE']
+                                    tmpobs_obs = Obs_dat_dict[tmp_datstr][ob_var]['OBS'][:] 
+                                    tmpobs_mod = Obs_dat_dict[tmp_datstr][ob_var]['MOD_HX'][:] 
+                                    tmpobs_z = Obs_dat_dict[tmp_datstr][ob_var]['DEPTH'][:] 
+                                    tmpobs_stat_id = Obs_dat_dict[tmp_datstr][ob_var]['STATION_IDENTIFIER'][:] 
+                                    tmpobs_stat_type = Obs_dat_dict[tmp_datstr][ob_var]['STATION_TYPE'][:] 
+                                    tmpobs_stat_time = Obs_dat_dict[tmp_datstr][ob_var]['JULD_datetime'][:] 
+                                    tmpobs_z = Obs_dat_dict[tmp_datstr][ob_var]['DEPTH'][:] 
+
+                                    # if Obs data is 2d data, reshape to match 3d profile data. 
+                                    if len(tmpobs_obs.shape) == 1:
+
+                                        tmpobs_obs = tmpobs_obs.reshape(-1,1)
+                                        tmpobs_mod = tmpobs_mod.reshape(-1,1)
+                                        tmpobs_z = tmpobs_z.reshape(-1,1)
+                                    # find distance from selected point to all obs in this Obs type    
+                                    tmp_obs_dist = np.sqrt((tmpobsx - obs_lon)**2 +(tmpobsy - obs_lat)**2)
+                                
+                                    # find the minimum value and index
+                                    tmp_obs_obs_dist = tmp_obs_dist.min()
+                                    tmp_obs_obs_ind = tmp_obs_dist.argmin()
+
+                                    #record the profile and distance for that Obs
+                                    tmpobs_z_sel[ob_var][tmp_datstr] = tmpobs_z[tmp_obs_obs_ind]
+                                    tmpobs_obs_sel[ob_var][tmp_datstr] = tmpobs_obs[tmp_obs_obs_ind]
+                                    tmpobs_mod_sel[ob_var][tmp_datstr] = tmpobs_mod[tmp_obs_obs_ind]
+                                    tmpobs_lon_sel[ob_var][tmp_datstr] = tmpobsx[tmp_obs_obs_ind]
+                                    tmpobs_lat_sel[ob_var][tmp_datstr] = tmpobsy[tmp_obs_obs_ind]
+                                    #pdb.set_trace()
+                                    tmpobs_stat_id_sel[ob_var][tmp_datstr] = tmpobs_stat_id[tmp_obs_obs_ind].strip()
+                                    tmpobs_stat_type_sel[ob_var][tmp_datstr] = tmpobs_stat_type[tmp_obs_obs_ind]
+                                    tmpobs_stat_time_sel[ob_var][tmp_datstr] = tmpobs_stat_time[tmp_obs_obs_ind]
+
+                                    tmpobs_dist_sel[ob_var] = tmp_obs_obs_dist
+                            
+                            # put all distances into one array
+                            obs_dist_sel_cf_mat = np.array([tmpobs_dist_sel[ob_var] for ob_var in Obs_var_lst_sub])
+                            
+                            # select the Obs Obs type closest to the selected point
+                            sel_Obs_var = Obs_var_lst_sub[obs_dist_sel_cf_mat.argmin()]
+                            
+                            #select obs data from Obs type closest to the selected point
+                            obs_z_sel = tmpobs_z_sel[sel_Obs_var]
+                            obs_obs_sel = tmpobs_obs_sel[sel_Obs_var]
+                            obs_mod_sel = tmpobs_mod_sel[sel_Obs_var]
+                            obs_lon_sel = tmpobs_lon_sel[sel_Obs_var]
+                            obs_lat_sel = tmpobs_lat_sel[sel_Obs_var]
+
+                            obs_stat_id_sel = tmpobs_stat_id_sel[sel_Obs_var]
+                            obs_stat_type_sel = tmpobs_stat_type_sel[sel_Obs_var]
+                            obs_stat_time_sel = tmpobs_stat_time_sel[sel_Obs_var]
+
+
+                            del(tmpobs_z_sel)
+                            del(tmpobs_obs_sel)
+                            del(tmpobs_mod_sel)
+                            del(tmpobs_lon_sel)
+                            del(tmpobs_lat_sel)
+                            del(tmpobs_dist_sel)
+
+                            del(tmpobs_stat_id_sel)
+                            del(tmpobs_stat_type_sel)
+                            del(tmpobs_stat_time_sel)
+
+
+                            # append this data to an array to help select x and y lims
+                            for tmp_datstr in Dataset_lst:
+                                tmp_pf_ylim_dat = np.ma.append(np.array(tmp_py_ylim),obs_z_sel[tmp_datstr])
+                                #tmp_pf_xlim_dat = np.ma.append(np.ma.append(np.array(pf_xlim),obs_mod_sel)[tmp_datstr],obs_obs_sel)
+                                tmp_pf_xlim_dat = np.ma.append(np.ma.append(np.array(pf_xlim),obs_mod_sel[tmp_datstr]),obs_obs_sel[tmp_datstr])
+                            
+                            
+
+
+                            '''
+
+
+                            pf_xlim_obs = tmp_pf_xlim_dat.min(),tmp_pf_xlim_dat.max()
+                            pf_ylim_obs = tmp_pf_ylim_dat.max(),tmp_pf_ylim_dat.min()
+
+                            
+                            
+                            fig.canvas.draw()
+                            if verbose_debugging: print('Canvas flush', datetime.now())
+                            fig.canvas.flush_events()
+                            if verbose_debugging: print('Canvas drawn and flushed', datetime.now())
+
+                            #ax[5].set_ylim(pf_ylim_obs)
+                            #ax[5].set_xlim(pf_xlim_obs)
+
+                            '''
                     elif but_name == 'TS Diag':
                         if figts is not None:
                             if plt.fignum_exists(figts.number):
@@ -3361,6 +4206,8 @@ ax,
                         reload_ns = True
                         reload_hov = False
                         reload_ts = False
+                        if do_Obs:
+                            reload_Obs = True
                     elif but_name in 'Quit':
                         print('Closing')
                         print('')
@@ -3368,10 +4215,10 @@ ax,
                         print('')
                         return
                     else:
-                        print(but_name)
+                        print('but_name:',but_name)
                         print('No function for but_name')
                         pdb.set_trace()
-                    print(clim)
+                    if verbose_debugging: print('clim:',clim)
                         
                         
 
@@ -3403,6 +4250,23 @@ ax,
                 rem_loc = pfax.pop(0)
                 rem_loc.remove()
 
+            if do_Obs:
+                # remove profile
+                for opax in opax_lst:
+                    rem_loc = opax.pop(0)
+                    rem_loc.remove()
+
+                # remove selected observation point
+                for oxax in oxax_lst:
+                    rem_loc = oxax.pop(0)
+                    rem_loc.remove()
+
+                # remove scatter point
+                for oax in oax_lst:oax.remove()
+                #pdb.set_trace()
+                for opaxtx in opaxtx_lst:opaxtx.remove()
+                #pdb.set_trace()
+                #opaxtx.remove()
 
                 
             # remove vectors before next iteration
@@ -3783,7 +4647,7 @@ def main():
 
         parser.add_argument('--verbose_debugging', type=str, required=False)
 
-
+        parser.add_argument('--Obs_dict', action='append', nargs='+')
         args = parser.parse_args()# Print "Hello" + the user input argument
 
 
@@ -3791,7 +4655,25 @@ def main():
         # Handling of Bool variable types
         #
 
+        
+        if args.Obs_dict is None:
+            Obs_dict_in = None
+        else:
+            Obs_dict_in = {}
+            #for ss in np.unique([tmparr[0] for tmparr in args.Obs_dict])
+            # cycle through input argument list elements
+            for tmparr in args.Obs_dict:
 
+                #take the dataset name
+                tmp_datstr = 'Dataset ' + tmparr[0]
+                #Add sub dictionary if not present 
+                if tmp_datstr not in Obs_dict_in.keys():Obs_dict_in[tmp_datstr] = {}
+
+                tmp_datset = tmparr[1]
+                tmp_files = tmparr[2]
+                Obs_dict_in[tmp_datstr][tmp_datset] = tmp_files
+
+            #pdb.set_trace()
 
         if args.preload_data is None:
             preload_data_in=True
@@ -4212,6 +5094,7 @@ def main():
             secdataset_proc = args.secdataset_proc,
             ld_lst = args.ld_lst, ld_lab_lst = args.ld_lab_lst, ld_nctvar = args.ld_nctvar,
             resample_freq = args.resample_freq,
+            Obs_dict = Obs_dict_in,
             fig_dir = args.fig_dir, fig_lab = args.fig_lab,fig_cutout = fig_cutout_in,
             verbose_debugging = verbose_debugging_in)
 
@@ -4225,3 +5108,15 @@ if __name__ == "__main__":
     main()
 
 
+'''
+
+
+
+python NEMO_nc_slevel_viewer_dev_test_ops.py amm7 "/project/oceanver/monitoring/input/amm7vx_opfc/diagnostics/run_20241212/amm7vx.mersea.grid_T.nc" --U_fname_lst /project/oceanver/monitoring/input/amm7vx_opfc/diagnostics/run_20241212/amm7vx.mersea.grid_U.nc --V_fname_lst /project/oceanver/monitoring/input/amm7vx_opfc/diagnostics/run_20241212/amm7vx.mersea.grid_V.nc --thin 1 --ti 0 --fig_dir . --Obs_dict 1 ProfT '/home/h03/oceanver/cylc-run/mi-au299/share/cycle/*T0000Z/input/amm7vx_opfc/feedback/fdbk_daym2_*/profb_fdbk.nc' --Obs_dict 1 ProfS '/home/h03/oceanver/cylc-run/mi-au299/share/cycle/*T0000Z/input/amm7vx_opfc/feedback/fdbk_daym2_*/profb_fdbk.nc' --Obs_dict 1 SST_ins '/home/h03/oceanver/cylc-run/mi-au299/share/cycle/*T0000Z/input/amm7vx_opfc/feedback/fdbk_daym2_*/sstfb_fdbk.nc' --Obs_dict 1 SLA '/home/h03/oceanver/cylc-run/mi-au299/share/cycle/*T0000Z/input/amm7vx_opfc/feedback/fdbk_daym2_*/slafb_fdbk.nc' --Obs_dict 1 ChlA '/home/h03/oceanver/cylc-run/mi-au299/share/cycle/*T0000Z/input/amm7vx_opfc/feedback/fdbk_daym2_*/logchlfb_fdbk.nc'
+
+
+
+
+
+
+'''
