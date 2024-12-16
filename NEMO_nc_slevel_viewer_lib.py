@@ -1948,7 +1948,7 @@ def reload_data_instances(var,thd,ldi,ti,var_d,var_grid, xarr_dict, grid_dict,va
 
                 
             for tmp_datstr in Dataset_lst:
-                th_d_ind = int(tmp_datstr[-1])
+                th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
 
                 tmpdat_inst = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables[var][ti,:].load()) 
 
@@ -1961,7 +1961,7 @@ def reload_data_instances(var,thd,ldi,ti,var_d,var_grid, xarr_dict, grid_dict,va
     start_time_load_inst = datetime.now()
     #pdb.set_trace()
     for tmp_datstr in Dataset_lst:
-        th_d_ind = int(tmp_datstr[-1])
+        th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
         if var == 'N:P':
             
             map_dat_N_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables['N3n'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
@@ -2129,7 +2129,7 @@ def reload_map_data_comb_2d(data_inst,regrid_params,regrid_meth,thd,configd,Data
     map_dat_dict= {}
     map_dat_dict['Dataset 1'] = data_inst['Dataset 1']
     for tmp_datstr in Dataset_lst_secondary:
-        th_d_ind = int(tmp_datstr[-1])
+        th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
         map_dat_dict[tmp_datstr] = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,data_inst[tmp_datstr])
 
 
@@ -2146,7 +2146,7 @@ def reload_map_data_comb_zmeth_ss_3d(data_inst,regrid_params,regrid_meth,thd,con
     map_dat_dict= {}
     map_dat_dict['Dataset 1'] = data_inst['Dataset 1'][0]
     for tmp_datstr in Dataset_lst_secondary:
-        th_d_ind = int(tmp_datstr[-1])
+        th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
         map_dat_dict[tmp_datstr] = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,data_inst[tmp_datstr][0])
 
 
@@ -2178,7 +2178,7 @@ def reload_map_data_comb_zmeth_nb_df_zm_3d(z_meth, data_inst,grid_dict,regrid_pa
     if z_meth == 'zm': map_dat_dict['Dataset 1'] = map_dat_zm_1
 
     for tmp_datstr in Dataset_lst_secondary:
-        th_d_ind = int(tmp_datstr[-1])
+        th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
     
         map_dat_3d_2 = np.ma.masked_invalid(data_inst[tmp_datstr])
 
@@ -2221,7 +2221,7 @@ def reload_map_data_comb_zmeth_zslice(zz, data_inst,interp1d_ZwgtT,grid_dict,reg
     
     for tmp_datstr in Dataset_lst_secondary:
         map_dat_3d_2 = np.ma.masked_invalid(data_inst[tmp_datstr])
-        th_d_ind = int(tmp_datstr[-1])
+        th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
     
         if zz not in interp1d_ZwgtT[tmp_datstr].keys(): 
             interp1d_ZwgtT[tmp_datstr][zz] = interp1dmat_create_weight(grid_dict[tmp_datstr]['gdept'],zz)
@@ -2242,7 +2242,7 @@ def reload_map_data_comb_zmeth_zindex(data_inst,zi,regrid_params,regrid_meth,thd
 
     map_dat_dict['Dataset 1'] = np.ma.masked_invalid(data_inst['Dataset 1'][zi])
     for tmp_datstr in Dataset_lst_secondary:
-        th_d_ind = int(tmp_datstr[-1])
+        th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
     
         map_dat_dict[tmp_datstr]  = np.ma.masked_invalid(regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,data_inst[tmp_datstr][zi]))
 
@@ -2270,7 +2270,7 @@ def reload_ew_data_comb(ii,jj, data_inst, nav_lon, nav_lat, grid_dict,regrid_met
     ew_slice_dict['Dataset 1'] = np.ma.masked_invalid(data_inst['Dataset 1'][:,jj,:])
 
     for tmp_datstr in Dataset_lst_secondary:
-        th_d_ind = int(tmp_datstr[-1])
+        th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
 
 
 
@@ -2316,7 +2316,7 @@ def reload_ns_data_comb(ii,jj, data_inst, nav_lon, nav_lat, grid_dict, regrid_me
     ns_slice_dict['Dataset 1'] = np.ma.masked_invalid(data_inst['Dataset 1'][:,:,ii])
 
     for tmp_datstr in Dataset_lst_secondary:
-        th_d_ind = int(tmp_datstr[-1])
+        th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
 
 
 
@@ -2357,7 +2357,7 @@ def reload_pf_data_comb(data_inst,var,var_dim,ii,jj,nz,grid_dict,Dataset_lst,con
 
     #pdb.set_trace()
     for tmp_datstr in Dataset_lst:
-        th_d_ind = int(tmp_datstr[-1])
+        th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
         tmp_jj,tmp_ii = jj,ii
         if configd[th_d_ind] != configd[1]: 
             tmp_jj,tmp_ii = iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']
@@ -2434,7 +2434,7 @@ def reload_hov_data_comb(var,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii
                     tmp_jj,tmp_ii = jj,ii
 
                     if tmp_datstr in Dataset_lst_secondary:
-                        th_d_ind = int(tmp_datstr[-1])
+                        th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
                         if configd[th_d_ind] != configd[1]: 
                             tmp_jj,tmp_ii = iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']
 
@@ -2472,7 +2472,7 @@ def reload_hov_data_comb(var,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii
         hov_dat['Dataset 1'] = np.ma.masked_invalid(xarr_dict['Dataset 1'][var_grid[var]][ldi].variables[var][:,:,thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']][:,:,jj,ii].load()).T
         
         for tmp_datstr in Dataset_lst_secondary:
-            th_d_ind = int(tmp_datstr[-1])
+            th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
             
             if configd[th_d_ind] == configd[1]: #if configd[th_d_ind] is None:
                 hov_dat[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables[var][:,:,thd[2]['y0']:thd[2]['y1']:thd[2]['dy'],thd[2]['x0']:thd[2]['x1']:thd[2]['dx']][:,:,jj,ii].load()).T
@@ -2520,10 +2520,10 @@ def reload_ts_data_comb(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,tim
         else:
             for tmp_datstr in Dataset_lst: # _secondary:
                 tmp_jj,tmp_ii = jj,ii
-                th_d_ind = int(tmp_datstr[-1])
+                th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
 
                 if tmp_datstr in Dataset_lst_secondary:
-                    #th_d_ind = int(tmp_datstr[-1])
+                    #th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
                     #pdb.set_trace()
                     if configd[th_d_ind] != configd[1]: #if configd[th_d_ind] is not None:
                         tmp_jj,tmp_ii = iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']
@@ -2554,7 +2554,7 @@ def reload_ts_data_comb(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,tim
                         tmp_jj,tmp_ii = jj,ii
 
                         if tmp_datstr in Dataset_lst_secondary:
-                            th_d_ind = int(tmp_datstr[-1])
+                            th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
                             if configd[th_d_ind] != configd[1]: 
                                 tmp_jj,tmp_ii = iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']
 
@@ -2604,7 +2604,7 @@ def reload_ts_data_comb(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,tim
             ts_dat_dict['Dataset 1'] = np.ma.masked_invalid(xarr_dict['Dataset 1'][var_grid[var]][ldi].variables[var][:,thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']][:,jj,ii].load())
             
             for tmp_datstr in Dataset_lst_secondary:
-                th_d_ind = int(tmp_datstr[-1])
+                th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
                 if configd[th_d_ind] == configd[1]: #if configd[th_d_ind] is None:
                     ts_dat_dict[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables[var][:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,jj,ii].load())
                 else:
@@ -3002,7 +3002,7 @@ def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_m
     init_timer.append((datetime.now(),'xarray open_mfdataset connecting'))
     print ('xarray open_mfdataset connecting',datetime.now())
     for tmp_datstr in Dataset_lst: # xarr_dict.keys():
-        th_d_ind = int(tmp_datstr[-1])
+        th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
         
         var_d[th_d_ind] = {}
         var_d[th_d_ind]['mat'] = np.array([])
@@ -3253,19 +3253,32 @@ def trim_file_dict(fname_dict,thd):
 
     for tmp_datstr in fname_dict.keys():
         for tmpgrid in fname_dict[tmp_datstr].keys():
-            th_d_ind = int(tmp_datstr[-1])
+            th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
             #pdb.set_trace()
             fname_dict[tmp_datstr][tmpgrid] = fname_dict[tmp_datstr][tmpgrid][  thd[th_d_ind]['f0']:thd[th_d_ind]['f1']:thd[th_d_ind]['df']]
     return fname_dict
 
 
-def create_col_lst():
+def create_col_lst(nDataset):
     #create a set of lists of standard colours, colours for differences, and linestyles.
-
+    
     Dataset_col = ['r','b','g','c','m','y']
     Dataset_col_diff = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan']
     #https://matplotlib.org/3.3.3/gallery/lines_bars_and_markers/linestyles.html
     linestyle_str = [ 'solid', 'dotted','dashed','dashdot','loosely dotted',  (0, (1, 10)), (0, (5, 10)),   (0, (5, 1)), (0, (3, 10, 1, 10)) , (0, (3, 1, 1, 1)) , (0, (3, 5, 1, 5, 1, 5))  ,(0, (3, 10, 1, 10, 1, 10))  , (0, (3, 1, 1, 1, 1, 1))  ]
+    
+    # if need more 
+    if nDataset>len(Dataset_col):
+        import matplotlib.colors as mcolors
+        CSS4_COLORS = np.array([ss for ss in mcolors.CSS4_COLORS.keys()])
+        
+        for ii in range(nDataset-len(Dataset_col)):Dataset_col.append(CSS4_COLORS[ii])
+
+    if (nDataset**2)>len(Dataset_col):
+        import matplotlib.colors as mcolors
+        XKCD_COLORS = np.array([ss for ss in mcolors.XKCD_COLORS.keys()])
+        for ii in range((nDataset**2)-len(Dataset_col_diff)):Dataset_col_diff.append(XKCD_COLORS[ii])
+    print (nDataset,len(Dataset_col),len(Dataset_col_diff),len(linestyle_str))
     return Dataset_col,Dataset_col_diff,linestyle_str
 
 def create_xarr_dict(fname_dict):
@@ -3300,7 +3313,7 @@ def create_Dataset_lst(fname_dict):
 def load_grid_dict(Dataset_lst,rootgrp_gdept_dict, thd, nce1t,nce2t,nce3t,configd, config_fnames_dict,cutxind,cutyind,cutout_data):
     grid_dict = {}
     for tmp_datstr in Dataset_lst:
-        th_d_ind = int(tmp_datstr[-1])
+        th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
 
         grid_dict[tmp_datstr] = {}
         if cutout_data:
@@ -3334,7 +3347,7 @@ def create_config_fnames_dict(configd,Dataset_lst,script_dir):
     #config_fnames_dict[configd[1]] = {}
 
     for tmp_datstr in Dataset_lst:
-        th_d_ind = int(tmp_datstr[-1])
+        th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
         config_fnames_dict[configd[th_d_ind]] = {}
         config_csv_fname = script_dir + 'NEMO_nc_slevel_viewer_config_%s.csv'%configd[th_d_ind].upper()
         with open(config_csv_fname, mode='r') as infile:           
@@ -3357,7 +3370,7 @@ def create_rootgrp_gdept_dict(config_fnames_dict,Dataset_lst,configd):
 
 
     for tmp_datstr in Dataset_lst[1:]:
-        th_d_ind = int(tmp_datstr[-1])
+        th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
         rootgrp_gdept_dict[tmp_datstr] = rootgrp_gdept_dict['Dataset 1']
         
 
@@ -3421,7 +3434,7 @@ def create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncg
     lon_d,lat_d = {},{}
 
     for tmp_datstr in Dataset_lst:
-        th_d_ind = int(tmp_datstr[-1])
+        th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
 
         tmp_configd = configd[th_d_ind]
         if tmp_configd is None: tmp_configd = configd[1]

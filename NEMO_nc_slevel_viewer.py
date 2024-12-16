@@ -299,7 +299,7 @@ def nemo_slice_zlev(config = 'amm7',
 
 
     # create colours and line styles for plots
-    Dataset_col,Dataset_col_diff,linestyle_str = create_col_lst()
+    Dataset_col,Dataset_col_diff,linestyle_str = create_col_lst(nDataset)
 
 
     for tmp_datstr in Dataset_lst:
@@ -385,7 +385,7 @@ def nemo_slice_zlev(config = 'amm7',
     if nDataset > 1:
         '''
         for tmp_datstr in Dataset_lst[1:]:
-            th_d_ind = int(tmp_datstr[-1])
+            th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
             secdataset_proc_list.append('Dat%i-Dat1'%th_d_ind)
             secdataset_proc_list.append('Dat1-Dat%i'%th_d_ind)
 
@@ -393,9 +393,11 @@ def nemo_slice_zlev(config = 'amm7',
         Dataset_col_diff_dict = {}
         cnt_diff_str_name = 0
         for tmp_datstr1 in Dataset_lst:
-            th_d_ind1 = int(tmp_datstr1[-1])
+            #th_d_ind1 = int(tmp_datstr1[-1])
+            th_d_ind1 = int(tmp_datstr1[8:])
             for tmp_datstr2 in Dataset_lst:
-                th_d_ind2 = int(tmp_datstr2[-1])
+                #th_d_ind2 = int(tmp_datstr2[-1])
+                th_d_ind2 = int(tmp_datstr2[8:])
                 if tmp_datstr1!=tmp_datstr2:
                     tmp_diff_str_name = 'Dat%i-Dat%i'%(th_d_ind1,th_d_ind2)
                     secdataset_proc_list.append(tmp_diff_str_name)
@@ -463,7 +465,7 @@ def nemo_slice_zlev(config = 'amm7',
 
     # regridding indices.
     for tmp_datstr in Dataset_lst[1:]:
-        th_d_ind = int(tmp_datstr[-1])
+        th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
         #rootgrp_gdept_dict[tmp_datstr] = rootgrp_gdept_dict['Dataset 1']
         
 
@@ -1784,7 +1786,7 @@ def nemo_slice_zlev(config = 'amm7',
 
 
     for tmp_datstr in Dataset_lst[1:]:
-        th_d_ind = int(tmp_datstr[-1])
+        th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
 
         interp1d_ZwgtT[tmp_datstr] = {}
 
@@ -1857,7 +1859,7 @@ def nemo_slice_zlev(config = 'amm7',
 
             iijj_ind = {}
             for tmp_datstr in Dataset_lst:
-                th_d_ind = int(tmp_datstr[-1])
+                th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
                 #iijj_ind[tmp_datstr] = None
                 #if configd[th_d_ind] is not None:
                 if configd[th_d_ind] !=  configd[1]:
@@ -2367,9 +2369,11 @@ def nemo_slice_zlev(config = 'amm7',
 
 
                     for tmp_datstr1 in Dataset_lst:
-                        th_d_ind1 = int(tmp_datstr1[-1])
+                        #th_d_ind1 = int(tmp_datstr1[-1])
+                        th_d_ind1 = int(tmp_datstr1[8:])
                         for tmp_datstr2 in Dataset_lst:
-                            th_d_ind2 = int(tmp_datstr2[-1])
+                            #th_d_ind2 = int(tmp_datstr2[-1])
+                            th_d_ind2 = int(tmp_datstr2[8:])
                             if tmp_datstr1!=tmp_datstr2:
                                 tmp_diff_str_name = 'Dat%i-Dat%i'%(th_d_ind1,th_d_ind2)                               
                                 tmplw = 0.5
@@ -2449,9 +2453,11 @@ def nemo_slice_zlev(config = 'amm7',
 
 
                         for tmp_datstr1 in Dataset_lst:
-                            th_d_ind1 = int(tmp_datstr1[-1])
+                            #th_d_ind1 = int(tmp_datstr1[-1])
+                            th_d_ind1 = int(tmp_datstr1[8:])
                             for tmp_datstr2 in Dataset_lst:
-                                th_d_ind2 = int(tmp_datstr2[-1])
+                                #th_d_ind2 = int(tmp_datstr2[-1])
+                                th_d_ind2 = int(tmp_datstr2[8:])
                                 if tmp_datstr1!=tmp_datstr2:
                                     tmp_diff_str_name = 'Dat%i-Dat%i'%(th_d_ind1,th_d_ind2)                               
                                     tmplw = 0.5
@@ -2578,9 +2584,11 @@ def nemo_slice_zlev(config = 'amm7',
                 else:
                     tmpts_minmax_lst = []
                     for tmp_datstr1 in Dataset_lst:
-                        th_d_ind1 = int(tmp_datstr1[-1])
+                        #th_d_ind1 = int(tmp_datstr1[-1])
+                        th_d_ind1 = int(tmp_datstr1[8:])
                         for tmp_datstr2 in Dataset_lst:
-                            th_d_ind2 = int(tmp_datstr2[-1])
+                            #th_d_ind2 = int(tmp_datstr2[-1])
+                            th_d_ind2 = int(tmp_datstr2[8:])
                             if tmp_datstr1!=tmp_datstr2:
                                 tmp_diff_str_name = 'Dat%i-Dat%i'%(th_d_ind1,th_d_ind2)                               
 
@@ -3799,7 +3807,7 @@ def nemo_slice_zlev(config = 'amm7',
                                 tmp_sigma_density_data[tmp_datstr] = np.ma.zeros((nz))*np.ma.masked
 
 
-                                th_d_ind = int(tmp_datstr[-1])
+                                th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
 
                                 
                                 if (configd[th_d_ind] == configd[1])| (tmp_datstr== Dataset_lst[0]):
@@ -4315,7 +4323,7 @@ def nemo_slice_zlev(config = 'amm7',
 
 
 def main():
-    
+    legacy_mode = True
 
     nemo_slice_zlev_helptext=textwrap.dedent('''\
     Interactive NEMO ncfile viewer.
@@ -4563,37 +4571,38 @@ def main():
 
         parser.add_argument('--zlim_max', type=int, required=False)
         parser.add_argument('--var', type=str)# Parse the argument
+        if legacy_mode:
+            parser.add_argument('--fname_lst_2nd', type=str, required=False, help='Input file list, enclose in "" more than simple wild card, Check this has the same number of files as the fname_lst')
+            parser.add_argument('--config_2nd', type=str, required=False, help="Only AMM7, AMM15. No implemented CO9P2, ORCA025, ORCA025EXT or ORCA12")# Parse the argument
 
-        parser.add_argument('--fname_lst_2nd', type=str, required=False, help='Input file list, enclose in "" more than simple wild card, Check this has the same number of files as the fname_lst')
-        parser.add_argument('--config_2nd', type=str, required=False, help="Only AMM7, AMM15. No implemented CO9P2, ORCA025, ORCA025EXT or ORCA12")# Parse the argument
+            parser.add_argument('--U_fname_lst', type=str, required=False, help='Input U file list for current magnitude. Assumes file contains vozocrtx, enclose in "" more than simple wild card')
+            parser.add_argument('--V_fname_lst', type=str, required=False, help='Input U file list for current magnitude. Assumes file contains vomecrty, enclose in "" more than simple wild card')
+            parser.add_argument('--U_fname_lst_2nd', type=str, required=False, help='Input U file list for current magnitude. Assumes file contains vozocrtx, enclose in "" more than simple wild card')
+            parser.add_argument('--V_fname_lst_2nd', type=str, required=False, help='Input U file list for current magnitude. Assumes file contains vomecrty, enclose in "" more than simple wild card')
 
-        parser.add_argument('--U_fname_lst', type=str, required=False, help='Input U file list for current magnitude. Assumes file contains vozocrtx, enclose in "" more than simple wild card')
-        parser.add_argument('--V_fname_lst', type=str, required=False, help='Input U file list for current magnitude. Assumes file contains vomecrty, enclose in "" more than simple wild card')
-        parser.add_argument('--U_fname_lst_2nd', type=str, required=False, help='Input U file list for current magnitude. Assumes file contains vozocrtx, enclose in "" more than simple wild card')
-        parser.add_argument('--V_fname_lst_2nd', type=str, required=False, help='Input U file list for current magnitude. Assumes file contains vomecrty, enclose in "" more than simple wild card')
-
-        parser.add_argument('--WW3_fname_lst', type=str, required=False, help='Input WW3 file list for current magnitude. Assumes file contains vozocrtx, enclose in "" more than simple wild card')
-        parser.add_argument('--WW3_fname_lst_2nd', type=str, required=False, help='Input WW3 file list for current magnitude. Assumes file contains vozocrtx, enclose in "" more than simple wild card')
+            parser.add_argument('--WW3_fname_lst', type=str, required=False, help='Input WW3 file list for current magnitude. Assumes file contains vozocrtx, enclose in "" more than simple wild card')
+            parser.add_argument('--WW3_fname_lst_2nd', type=str, required=False, help='Input WW3 file list for current magnitude. Assumes file contains vozocrtx, enclose in "" more than simple wild card')
         
         parser.add_argument('--preload_data', type=str, required=False)
         parser.add_argument('--allow_diff_time', type=str, required=False)
 
 
-        parser.add_argument('--thin', type=int, required=False)
-        parser.add_argument('--thin_2nd', type=int, required=False)
+        if legacy_mode:
+            parser.add_argument('--thin', type=int, required=False)
+            parser.add_argument('--thin_2nd', type=int, required=False)
 
-        parser.add_argument('--thin_x0', type=int, required=False)
-        parser.add_argument('--thin_x1', type=int, required=False)
-        parser.add_argument('--thin_y0', type=int, required=False)
-        parser.add_argument('--thin_y1', type=int, required=False)
-        parser.add_argument('--thin_x0_2nd', type=int, required=False)
-        parser.add_argument('--thin_x1_2nd', type=int, required=False)
-        parser.add_argument('--thin_y0_2nd', type=int, required=False)
-        parser.add_argument('--thin_y1_2nd', type=int, required=False)
+            parser.add_argument('--thin_x0', type=int, required=False)
+            parser.add_argument('--thin_x1', type=int, required=False)
+            parser.add_argument('--thin_y0', type=int, required=False)
+            parser.add_argument('--thin_y1', type=int, required=False)
+            parser.add_argument('--thin_x0_2nd', type=int, required=False)
+            parser.add_argument('--thin_x1_2nd', type=int, required=False)
+            parser.add_argument('--thin_y0_2nd', type=int, required=False)
+            parser.add_argument('--thin_y1_2nd', type=int, required=False)
 
-        parser.add_argument('--thin_files', type=int, required=False)
-        parser.add_argument('--thin_files_0', type=int, required=False)
-        parser.add_argument('--thin_files_1', type=int, required=False)
+            parser.add_argument('--thin_files', type=int, required=False)
+            parser.add_argument('--thin_files_0', type=int, required=False)
+            parser.add_argument('--thin_files_1', type=int, required=False)
 
 
         parser.add_argument('--xlim', type=float, required=False, nargs = 2)
@@ -4612,8 +4621,9 @@ def main():
         parser.add_argument('--date_fmt', type=str, required=False)
 
 
-        parser.add_argument('--fig_fname_lab', type=str, required=False)
-        parser.add_argument('--fig_fname_lab_2nd', type=str, required=False)
+        if legacy_mode:
+            parser.add_argument('--fig_fname_lab', type=str, required=False)
+            parser.add_argument('--fig_fname_lab_2nd', type=str, required=False)
         parser.add_argument('--z_meth', type=str, help="z_slice, ss, nb, df, zm, or z_index for z level models")# Parse the argument
 
         parser.add_argument('--secdataset_proc', type=str, required=False)
@@ -4648,6 +4658,10 @@ def main():
         parser.add_argument('--verbose_debugging', type=str, required=False)
 
         parser.add_argument('--Obs_dict', action='append', nargs='+')
+        parser.add_argument('--files', action='append', nargs='+')
+        parser.add_argument('--configs', action='append', nargs='+')
+        parser.add_argument('--th', action='append', nargs='+')
+        parser.add_argument('--figlabs', action='append', nargs='+')
         args = parser.parse_args()# Print "Hello" + the user input argument
 
 
@@ -4871,201 +4885,291 @@ def main():
         #if args.thin_y1 is None: args.thin_files_1=None
 
 
-
-        #Deal with file lists
         print(args.fname_lst)
         fname_lst = glob.glob(args.fname_lst)
         fname_lst.sort()
-        fname_lst_2nd = None
-        U_fname_lst = None
-        V_fname_lst = None
-        U_fname_lst_2nd = None
-        V_fname_lst_2nd = None
-        WW3_fname_lst = None
-        WW3_fname_lst_2nd = None
+
+        if legacy_mode:
+            #Deal with file lists
+            fname_lst_2nd = None
+            U_fname_lst = None
+            V_fname_lst = None
+            U_fname_lst_2nd = None
+            V_fname_lst_2nd = None
+            WW3_fname_lst = None
+            WW3_fname_lst_2nd = None
+
+            load_second_files = False
+            
+            if (args.fname_lst_2nd) is not None:
+                fname_lst_2nd = glob.glob(args.fname_lst_2nd)
+                load_second_files = True
+            if (args.U_fname_lst) is not None:U_fname_lst = glob.glob(args.U_fname_lst)
+            if (args.V_fname_lst) is not None:V_fname_lst = glob.glob(args.V_fname_lst)
+            if (args.U_fname_lst_2nd) is not None:
+                U_fname_lst_2nd = glob.glob(args.U_fname_lst_2nd)
+                load_second_files = True
+            if (args.V_fname_lst_2nd) is not None:
+                V_fname_lst_2nd = glob.glob(args.V_fname_lst_2nd)
+                load_second_files = True
+            if (args.WW3_fname_lst) is not None:WW3_fname_lst = glob.glob(args.WW3_fname_lst)
+            if (args.WW3_fname_lst_2nd) is not None:
+                WW3_fname_lst_2nd = glob.glob(args.WW3_fname_lst_2nd)
+                load_second_files = True
+
+            if (fname_lst_2nd) is not None:fname_lst_2nd.sort()
+            if (U_fname_lst) is not None:U_fname_lst.sort()
+            if (V_fname_lst) is not None:V_fname_lst.sort()
+            if (U_fname_lst_2nd) is not None:U_fname_lst_2nd.sort()
+            if (V_fname_lst_2nd) is not None:V_fname_lst_2nd.sort()
+
+            if (WW3_fname_lst) is not None:WW3_fname_lst.sort()
+            if (WW3_fname_lst_2nd) is not None:WW3_fname_lst_2nd.sort()
+
+
+            if len(fname_lst) == 0: 
+                print('')
+                print('no files passed')
+                print('')
+                print('')
+                print('=======================================================')
+                pdb.set_trace()
+
+
+        if legacy_mode:
+            #load_second_files = False
+
+            configd = {}
+            configd[1] = args.config
+            if load_second_files:
+                if (args.config_2nd) is None: 
+                    configd[2] = configd[1]
+                else:
+                    configd[2] =args.config_2nd
+            '''
+            if args.config_2nd is not None: 
+                configd[2]
+
+            configd[2] = None
+            if 'config_2nd' in args:
+                if args.config_2nd is not None: 
+                    configd[2] = args.config_2nd
+            
+                    load_second_files = True
+            
+            
+            if 'fname_lst_2nd' in args:
+                if 'config_2nd' in args:
+                    if args.config_2nd is None: 
+                        configd[2] = None
+                
+                load_second_files = True
+            '''
+            #if 2 in configd.keys():
+        
+            fname_dict = {}
+            fname_dict['Dataset 1'] = {}
+            fname_dict['Dataset 1']['T'] = fname_lst
+            if U_fname_lst is not None: fname_dict['Dataset 1']['U'] = U_fname_lst
+            if V_fname_lst is not None: fname_dict['Dataset 1']['V'] = V_fname_lst
+            if WW3_fname_lst is not None: fname_dict['Dataset 1']['WW3'] = WW3_fname_lst
+
+            #pdb.set_trace()
+            if load_second_files: 
+                fname_dict['Dataset 2'] = {}
+                fname_dict['Dataset 2']['T'] = fname_lst_2nd
+                if U_fname_lst is not None: fname_dict['Dataset 2']['U'] = U_fname_lst_2nd
+                if V_fname_lst is not None: fname_dict['Dataset 2']['V'] = V_fname_lst_2nd
+                if WW3_fname_lst is not None: fname_dict['Dataset 2']['WW3'] = WW3_fname_lst_2nd
+
+
+
+
+
+
 
         load_second_files = False
-        
-        if (args.fname_lst_2nd) is not None:
-            fname_lst_2nd = glob.glob(args.fname_lst_2nd)
-            load_second_files = True
-        if (args.U_fname_lst) is not None:U_fname_lst = glob.glob(args.U_fname_lst)
-        if (args.V_fname_lst) is not None:V_fname_lst = glob.glob(args.V_fname_lst)
-        if (args.U_fname_lst_2nd) is not None:
-            U_fname_lst_2nd = glob.glob(args.U_fname_lst_2nd)
-            load_second_files = True
-        if (args.V_fname_lst_2nd) is not None:
-            V_fname_lst_2nd = glob.glob(args.V_fname_lst_2nd)
-            load_second_files = True
-        if (args.WW3_fname_lst) is not None:WW3_fname_lst = glob.glob(args.WW3_fname_lst)
-        if (args.WW3_fname_lst_2nd) is not None:
-            WW3_fname_lst_2nd = glob.glob(args.WW3_fname_lst_2nd)
-            load_second_files = True
-
-        if (fname_lst_2nd) is not None:fname_lst_2nd.sort()
-        if (U_fname_lst) is not None:U_fname_lst.sort()
-        if (V_fname_lst) is not None:V_fname_lst.sort()
-        if (U_fname_lst_2nd) is not None:U_fname_lst_2nd.sort()
-        if (V_fname_lst_2nd) is not None:V_fname_lst_2nd.sort()
-
-        if (WW3_fname_lst) is not None:WW3_fname_lst.sort()
-        if (WW3_fname_lst_2nd) is not None:WW3_fname_lst_2nd.sort()
-
-
-        if len(fname_lst) == 0: 
-            print('')
-            print('no files passed')
-            print('')
-            print('')
-            print('=======================================================')
-            pdb.set_trace()
-
-
-        #load_second_files = False
-
-        configd = {}
-        configd[1] = args.config
-        if load_second_files:
-            if (args.config_2nd) is None: 
-                configd[2] = configd[1]
-            else:
-                configd[2] =args.config_2nd
-        '''
-        if args.config_2nd is not None: 
-            configd[2]
-
-        configd[2] = None
-        if 'config_2nd' in args:
-            if args.config_2nd is not None: 
-                configd[2] = args.config_2nd
-        
-                load_second_files = True
-        
-        
-        if 'fname_lst_2nd' in args:
-            if 'config_2nd' in args:
-                if args.config_2nd is None: 
-                    configd[2] = None
-            
-            load_second_files = True
-        '''
-        #if 2 in configd.keys():
-        
         fname_dict = {}
         fname_dict['Dataset 1'] = {}
         fname_dict['Dataset 1']['T'] = fname_lst
-        if U_fname_lst is not None: fname_dict['Dataset 1']['U'] = U_fname_lst
-        if V_fname_lst is not None: fname_dict['Dataset 1']['V'] = V_fname_lst
-        if WW3_fname_lst is not None: fname_dict['Dataset 1']['WW3'] = WW3_fname_lst
+        
+        if args.files is not None:
+            #for ss in np.unique([tmparr[0] for tmparr in args.Obs_dict])
+            # cycle through input argument list elements
+            for tmparr in args.files:
 
-        #pdb.set_trace()
-        if load_second_files: 
-            fname_dict['Dataset 2'] = {}
-            fname_dict['Dataset 2']['T'] = fname_lst_2nd
-            if U_fname_lst is not None: fname_dict['Dataset 2']['U'] = U_fname_lst_2nd
-            if V_fname_lst is not None: fname_dict['Dataset 2']['V'] = V_fname_lst_2nd
-            if WW3_fname_lst is not None: fname_dict['Dataset 2']['WW3'] = WW3_fname_lst_2nd
+                #take the dataset name
+                tmp_datstr = 'Dataset ' + tmparr[0]
+                #Add sub dictionary if not present 
+                if tmp_datstr not in fname_dict.keys():fname_dict[tmp_datstr] = {}
+
+                tmp_datset = tmparr[1]
+                tmp_files = tmparr[2]
+                fname_dict[tmp_datstr][tmp_datset] = np.sort(glob.glob(tmp_files))
+            if len(fname_dict.keys()) > 1:load_second_files = True
+
 
         dataset_lst = [ ss for ss in fname_dict.keys() ] 
 
+        configd = {}
         fig_lab_d = {}
-        #for tmp_datstr in dataset_lst:
-        fig_lab_d['Dataset 1'] = None
-        #pdb.set_trace()
+            #for tmp_datstr in dataset_lst:
+        for ii, tmp_datstr in enumerate(dataset_lst):
+            configd[ii+1] = args.config
+            fig_lab_d['Dataset %i'%(ii+1) ] = None
 
-        if 'fig_fname_lab' in args: fig_lab_d['Dataset 1'] = args.fig_fname_lab
-        if load_second_files: 
-            if 'fig_fname_lab_2nd' in args:fig_lab_d['Dataset 2'] = args.fig_fname_lab_2nd
+        if args.configs is not None:
             
-        #if fig_fname_lab is not None: fig_lab_d['Dataset 1'] = fig_fname_lab
-        #if fig_fname_lab_2nd is not None: fig_lab_d['Dataset 2'] = fig_fname_lab_2nd
-        #del(fig_fname_lab)
-        #del(fig_fname_lab_2nd)
-
-        #pdb.set_trace()
+            for tmparr in args.configs:
+                #pdb.set_trace()
+                configd[int(tmparr[0])] = tmparr[1]
 
 
+        if legacy_mode:
+            fig_lab_d = {}
+            #for tmp_datstr in dataset_lst:
+            fig_lab_d['Dataset 1'] = None
+            #pdb.set_trace()
 
+            if 'fig_fname_lab' in args: fig_lab_d['Dataset 1'] = args.fig_fname_lab
+            if load_second_files: 
+                if 'fig_fname_lab_2nd' in args:fig_lab_d['Dataset 2'] = args.fig_fname_lab_2nd
+                
+            #if fig_fname_lab is not None: fig_lab_d['Dataset 1'] = fig_fname_lab
+            #if fig_fname_lab_2nd is not None: fig_lab_d['Dataset 2'] = fig_fname_lab_2nd
+            #del(fig_fname_lab)
+            #del(fig_fname_lab_2nd)
+
+            #pdb.set_trace()
+
+
+        if args.figlabs is not None:
+            fig_lab_d = {}
+            fig_lab_d['Dataset 1'] = None
+            for tmparr in args.figlabs:
+                tmp_datstr = 'Dataset ' + tmparr[0]
+                #pdb.set_trace()
+                fig_lab_d[tmp_datstr] = tmparr[1]
+
+
+        if legacy_mode:
+
+            thd = {}
+            thd[1] = {}
+            thd[1]['df'] = 1
+            thd[1]['f0'] = 0
+            thd[1]['f1'] = None
+            if (args.thin_files)   is not None: thd[1]['df'] = args.thin_files
+            if (args.thin_files_0) is not None: thd[1]['f0'] = args.thin_files_0
+            if (args.thin_files_1) is not None: thd[1]['f1'] = args.thin_files_1
+
+            thd[1]['dx'] = 1
+            thd[1]['dy'] = 1
+            thd[1]['x0'] = 0
+            thd[1]['x1'] = None
+            thd[1]['y0'] = 0
+            thd[1]['y1'] = None
+    
+            if (args.thin)    is not None: thd[1]['dx'] = args.thin
+            if (args.thin)    is not None: thd[1]['dy'] = args.thin
+            if (args.thin_x0) is not None: thd[1]['x0'] = args.thin_x0
+            if (args.thin_x1) is not None: thd[1]['x1'] = args.thin_x1
+            if (args.thin_y0) is not None: thd[1]['y0'] = args.thin_y0
+            if (args.thin_y1) is not None: thd[1]['y1'] = args.thin_y1
+
+            '''
+
+            if 'thin' in args: thd[1]['dx'] = args.thin
+            if 'thin' in args: thd[1]['dy'] = args.thin
+            if 'thin_x0' in args: 
+                if args.thin_x0 is not None:thd[1]['x0'] = args.thin_x0
+            if 'thin_x1' in args: thd[1]['x1'] = args.thin_x1
+            if 'thin_y0' in args:
+                if args.thin_y0 is not None:thd[1]['y0'] = args.thin_y0
+            if 'thin_y1' in args: thd[1]['y1'] = args.thin_y1
+            '''
+            if load_second_files:
+                thd[2] = {}
+                thd[2]['df'] = thd[1]['df']
+                thd[2]['f0'] = thd[1]['f0']
+                thd[2]['f1'] = thd[1]['f1']
+                thd[2]['dx'] = thd[1]['dx']
+                thd[2]['dy'] = thd[1]['dy']
+                thd[2]['x0'] = thd[1]['x0']
+                thd[2]['x1'] = thd[1]['x1']
+                thd[2]['y0'] = thd[1]['y0']
+                thd[2]['y1'] = thd[1]['y1']
+
+
+
+                if (args.thin_2nd)    is not None: thd[2]['dx'] = args.thin_2nd
+                if (args.thin_2nd)    is not None: thd[2]['dy'] = args.thin_2nd
+                if (args.thin_x0_2nd) is not None: thd[2]['x0'] = args.thin_x0_2nd
+                if (args.thin_x1_2nd) is not None: thd[2]['x1'] = args.thin_x1_2nd
+                if (args.thin_y0_2nd) is not None: thd[2]['y0'] = args.thin_y0_2nd
+                if (args.thin_y1_2nd) is not None: thd[2]['y1'] = args.thin_y1_2nd
+
+
+
+                '''    
+                if 'thin_files_2nd' in args: thd[2]['df'] = args.thin_files_2nd
+                if 'thin_files_0_2nd' in args: thd[2]['f0'] = args.thin_files_0_2nd
+                if 'thin_files_1_2nd' in args: thd[2]['f1'] = args.thin_files_1_2nd
+                if 'thin_2nd' in args: 
+                    if args.thin_2nd is not None:
+                        thd[2]['dx'] = args.thin_2nd
+                        thd[2]['dy'] = args.thin_2nd
+                if 'thin_x0_2nd' in args: thd[2]['x0'] = args.thin_x0_2nd
+                if 'thin_x1_2nd' in args: thd[2]['x1'] = args.thin_x1_2nd
+                if 'thin_y0_2nd' in args: thd[2]['y0'] = args.thin_y0_2nd
+                if 'thin_y1_2nd' in args: thd[2]['y1'] = args.thin_y1_2nd
+                '''
+            #pdb.set_trace()
+        
+
+
+
+    
         thd = {}
         thd[1] = {}
         thd[1]['df'] = 1
         thd[1]['f0'] = 0
         thd[1]['f1'] = None
-        if (args.thin_files)   is not None: thd[1]['df'] = args.thin_files
-        if (args.thin_files_0) is not None: thd[1]['f0'] = args.thin_files_0
-        if (args.thin_files_1) is not None: thd[1]['f1'] = args.thin_files_1
 
-        '''
-        if 'thin_files' in args: thd[1]['df'] = args.thin_files
-        if 'thin_files_0' in args:
-            if args.thin_files_0 is not None: thd[1]['f0'] = args.thin_files_0
-        if 'thin_files_1' in args: thd[1]['f1'] = args.thin_files_1
-        '''
-
-    
         thd[1]['dx'] = 1
         thd[1]['dy'] = 1
         thd[1]['x0'] = 0
         thd[1]['x1'] = None
         thd[1]['y0'] = 0
         thd[1]['y1'] = None
- 
-        if (args.thin)    is not None: thd[1]['dx'] = args.thin
-        if (args.thin)    is not None: thd[1]['dy'] = args.thin
-        if (args.thin_x0) is not None: thd[1]['x0'] = args.thin_x0
-        if (args.thin_x1) is not None: thd[1]['x1'] = args.thin_x1
-        if (args.thin_y0) is not None: thd[1]['y0'] = args.thin_y0
-        if (args.thin_y1) is not None: thd[1]['y1'] = args.thin_y1
 
-        '''
+        for ii in range(len(dataset_lst)-1):
+            thd[ii+2] = thd[1]
 
-        if 'thin' in args: thd[1]['dx'] = args.thin
-        if 'thin' in args: thd[1]['dy'] = args.thin
-        if 'thin_x0' in args: 
-            if args.thin_x0 is not None:thd[1]['x0'] = args.thin_x0
-        if 'thin_x1' in args: thd[1]['x1'] = args.thin_x1
-        if 'thin_y0' in args:
-            if args.thin_y0 is not None:thd[1]['y0'] = args.thin_y0
-        if 'thin_y1' in args: thd[1]['y1'] = args.thin_y1
-        '''
-        if load_second_files:
-            thd[2] = {}
-            thd[2]['df'] = thd[1]['df']
-            thd[2]['f0'] = thd[1]['f0']
-            thd[2]['f1'] = thd[1]['f1']
-            thd[2]['dx'] = thd[1]['dx']
-            thd[2]['dy'] = thd[1]['dy']
-            thd[2]['x0'] = thd[1]['x0']
-            thd[2]['x1'] = thd[1]['x1']
-            thd[2]['y0'] = thd[1]['y0']
-            thd[2]['y1'] = thd[1]['y1']
+        if args.th is not None:
+
+            for tmparr in args.th:
+
+                #take the dataset name
+                tmp_datstr = int(tmparr[0])
+                tmp_thvar = tmparr[1]
+                tmp_thval = tmparr[2]
+                if tmp_thval.lower() == 'none':
+                    tmp_thval = None
+                else:
+                    tmp_thval = int(tmp_thval)
+                #pdb.set_trace()
+                if tmp_thvar == 'dxy':
+                    thd[tmp_datstr]['dx'] = tmp_thval
+                    thd[tmp_datstr]['dy'] = tmp_thval
+                else:
+                    thd[tmp_datstr][tmp_thvar] = tmp_thval
 
 
 
-            if (args.thin_2nd)    is not None: thd[2]['dx'] = args.thin_2nd
-            if (args.thin_2nd)    is not None: thd[2]['dy'] = args.thin_2nd
-            if (args.thin_x0_2nd) is not None: thd[2]['x0'] = args.thin_x0_2nd
-            if (args.thin_x1_2nd) is not None: thd[2]['x1'] = args.thin_x1_2nd
-            if (args.thin_y0_2nd) is not None: thd[2]['y0'] = args.thin_y0_2nd
-            if (args.thin_y1_2nd) is not None: thd[2]['y1'] = args.thin_y1_2nd
 
 
 
-            '''    
-            if 'thin_files_2nd' in args: thd[2]['df'] = args.thin_files_2nd
-            if 'thin_files_0_2nd' in args: thd[2]['f0'] = args.thin_files_0_2nd
-            if 'thin_files_1_2nd' in args: thd[2]['f1'] = args.thin_files_1_2nd
-            if 'thin_2nd' in args: 
-                if args.thin_2nd is not None:
-                    thd[2]['dx'] = args.thin_2nd
-                    thd[2]['dy'] = args.thin_2nd
-            if 'thin_x0_2nd' in args: thd[2]['x0'] = args.thin_x0_2nd
-            if 'thin_x1_2nd' in args: thd[2]['x1'] = args.thin_x1_2nd
-            if 'thin_y0_2nd' in args: thd[2]['y0'] = args.thin_y0_2nd
-            if 'thin_y1_2nd' in args: thd[2]['y1'] = args.thin_y1_2nd
-            '''
-        #pdb.set_trace()
-    
         for cfi in configd.keys():
             if configd[cfi] is None: continue
             if configd[cfi].upper() in ['ORCA025','ORCA025EXT','ORCA025ICE']: 
@@ -5107,16 +5211,3 @@ def main():
 if __name__ == "__main__":
     main()
 
-
-'''
-
-
-
-python NEMO_nc_slevel_viewer_dev_test_ops.py amm7 "/project/oceanver/monitoring/input/amm7vx_opfc/diagnostics/run_20241212/amm7vx.mersea.grid_T.nc" --U_fname_lst /project/oceanver/monitoring/input/amm7vx_opfc/diagnostics/run_20241212/amm7vx.mersea.grid_U.nc --V_fname_lst /project/oceanver/monitoring/input/amm7vx_opfc/diagnostics/run_20241212/amm7vx.mersea.grid_V.nc --thin 1 --ti 0 --fig_dir . --Obs_dict 1 ProfT '/home/h03/oceanver/cylc-run/mi-au299/share/cycle/*T0000Z/input/amm7vx_opfc/feedback/fdbk_daym2_*/profb_fdbk.nc' --Obs_dict 1 ProfS '/home/h03/oceanver/cylc-run/mi-au299/share/cycle/*T0000Z/input/amm7vx_opfc/feedback/fdbk_daym2_*/profb_fdbk.nc' --Obs_dict 1 SST_ins '/home/h03/oceanver/cylc-run/mi-au299/share/cycle/*T0000Z/input/amm7vx_opfc/feedback/fdbk_daym2_*/sstfb_fdbk.nc' --Obs_dict 1 SLA '/home/h03/oceanver/cylc-run/mi-au299/share/cycle/*T0000Z/input/amm7vx_opfc/feedback/fdbk_daym2_*/slafb_fdbk.nc' --Obs_dict 1 ChlA '/home/h03/oceanver/cylc-run/mi-au299/share/cycle/*T0000Z/input/amm7vx_opfc/feedback/fdbk_daym2_*/logchlfb_fdbk.nc'
-
-
-
-
-
-
-'''
