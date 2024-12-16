@@ -46,7 +46,7 @@ from NEMO_nc_slevel_viewer_lib import interp1dmat_create_weight
 from NEMO_nc_slevel_viewer_lib import get_clim_pcolor, set_clim_pcolor,set_perc_clim_pcolor_in_region,get_colorbar_values
 from NEMO_nc_slevel_viewer_lib import scale_color_map,lon_lat_to_str,current_barb,get_pnts_pcolor_in_region
 
-from NEMO_nc_slevel_viewer_lib import load_ops_prof_TS, load_ops_2D_xarray 
+from NEMO_nc_slevel_viewer_lib import load_ops_prof_TS, load_ops_2D_xarray, pop_up_opt_window
 
 
 
@@ -1017,8 +1017,8 @@ def nemo_slice_zlev(config = 'amm7',
         Obs_varlst = Obs_dict['Dataset 1'].keys()
 
         # Obs data types to hide
-        Obs_obstype_hide = ['ProfT','ProfS','SST_ins','SST_sat','SLA', 'ChlA']
-        Obs_obstype_hide = ['SST_sat']
+        #Obs_obstype_hide = ['ProfT','ProfS','SST_ins','SST_sat','SLA', 'ChlA']
+        #Obs_obstype_hide = ['SST_sat']
 
         # a dictionary of Obs datetimes, assuming midday of each day. 
         Obs_JULD_datetime_dict = {}
@@ -1038,12 +1038,16 @@ def nemo_slice_zlev(config = 'amm7',
         Obs_vis_d = {}
         Obs_vis_d['Scat_symsize'] ={}
         Obs_vis_d['Scat_edgecol'] = {}
+        Obs_vis_d['visible'] = {}
         for ob_var in Obs_varlst:   
             Obs_vis_d['Scat_symsize'][ob_var] = 250
             Obs_vis_d['Scat_edgecol'][ob_var] = 'k'
+
+            Obs_vis_d['visible'][ob_var]= True
             if ob_var in ['SLA', 'ChlA', 'SST_sat']:
                 Obs_vis_d['Scat_symsize'][ob_var] = 100
                 Obs_vis_d['Scat_edgecol'][ob_var] = None
+                Obs_vis_d['visible'][ob_var] = False
 
 
         Obs_vis_d['Prof_obs_col'] = 'k'
@@ -2165,11 +2169,17 @@ def nemo_slice_zlev(config = 'amm7',
                         Obs_var_lst_sub	 = []
                     
                     # exclude obs types that have been excluded
-                    Obs_var_lst_sub = [ss for ss in Obs_var_lst_sub if ss not in Obs_obstype_hide]
+                    #Obs_var_lst_sub = [ss for ss in Obs_var_lst_sub if ss not in Obs_obstype_hide]
+                    #Obs_var_lst_sub = [ss for ss in Obs_var_lst_sub if ss not in Obs_obstype_hide]
+                        
+                        
+
+                    #pdb.set_trace()
+                    Obs_var_lst_sub = [ob_var for ob_var in Obs_var_lst_sub if Obs_vis_d['visible'][ob_var]]
 
 
 
-
+                    print(Obs_var_lst_sub,Obs_vis_d['visible'])
 
 
 
@@ -3398,195 +3408,42 @@ def nemo_slice_zlev(config = 'amm7',
                         
                         #print('Obs_obstype_hide before:',Obs_obstype_hide)
 
-                        # if the Obs options figure is open, close it
-                        if figobsopt is not None:
-                            if plt.fignum_exists(figobsopt.number):
-                                plt.close(figobsopt)
-                            
+                        #pdb.set_trace()
+                        #from matplotlib.backend_bases import MouseButton
+                        # button names                            
+                        obs_but_names = ['ProfT','SST_ins','SST_sat','ProfS','SLA','ChlA','Hide_Obs','Edges','Loc','Close']
+                        
+                        
+                        # button switches  
+                        obs_but_sw = {}
+                        obs_but_sw['Hide_Obs'] = {'v':Obs_hide, 'T':'Show Obs','F': 'Hide Obs'}
+                        obs_but_sw['Edges'] = {'v':Obs_hide, 'T':'Show Edges','F': 'Hide Edges'}
+                        obs_but_sw['Loc'] = {'v':Obs_hide, 'T':"Don't Selected point",'F': 'Move Selected point'}
+                        for ob_var in Obs_var_lst_sub:  obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var + ' hidden'}
+                        for ob_var in Obs_varlst:  obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var + ' hidden'}
 
-                        # Only proceed if the button has been pressed, not just the mouse pointing to the box,
-                        # 
-                        if button_press:
-                            # to keep alive for 5 seconds
-                            #secondary_fig = True
-
-                            # create Obs options figure
-                            figobsopt = plt.figure()
-                            figobsopt.set_figheight(2.5)
-                            figobsopt.set_figwidth(6)
-                            
-                            #add full screen axes
-                            obcax = figobsopt.add_axes([0,0,1,1], frameon=False)
-                            
-                            # Add buttons
-
-                            # button names                            
-                            obs_but_names = ['ProfT','SST_ins','SST_sat','ProfS','SLA','ChlA','Hide_Obs','Edges','Loc','Close']
-
-                            #Create list of dictionaries with the name, and x and y ranges
-                            obsobbox_l = []
-                            for obs_i,obs_ss in enumerate(obs_but_names):
-                                #tmp_obsx0 = (( obs_i*0.2 + 0.1 )//0.8)*0.45 + 0.05
-                                #tmp_obsdx = 0.4
-                                tmp_obsx0 = (( obs_i*0.2 + 0.1 )//0.8)*(0.3 + 0.025) + 0.025
-                                tmp_obsdx = 0.3
-                                #tmp_obsy0 = (( obs_i*0.2 + 0.1 )%0.8)
-                                #tmp_obsdy = 0.15
-                                #tmp_obsy0 = 1-(( obs_i*0.2 + 0.1 )%0.8)
-                                #tmp_obsdy = -0.15
-                                #tmp_obsy0 = 1-(( obs_i*0.16 + 0.04 )%0.8)
-                                tmp_obsdy = -0.2
-                                tmp_obsy0 = 1-(( obs_i*0.24 + 0.04 )%(1-0.04))
-
-                                obsobbox_l.append({'x':np.array([tmp_obsx0,tmp_obsx0+tmp_obsdx]),'y':np.array([tmp_obsy0,tmp_obsy0+tmp_obsdy]),'name':obs_ss})
+                        obbut_sel = pop_up_opt_window(obs_but_names, obs_but_sw = obs_but_sw)
 
 
-                            # draw buttons
-                            for tmpoob in obsobbox_l: obcax.plot(tmpoob['x'][[0,1,1,0,0]],tmpoob['y'][[0,0,1,1,0]],'k')
+                        # Set the main figure and axis to be current
+                        plt.figure(fig.figure)
+                        plt.sca(clickax)
 
-                            obcax_tx_hd = {}
-                            # write button names - if already selected append with hidden
-                            for tmpoob in obsobbox_l: 
-                                obcax_tx_hd[tmpoob['name']] = obcax.text(tmpoob['x'].mean(),tmpoob['y'].mean(),tmpoob['name'],ha = 'center', va = 'center')
-                            
-                            for tmpoob in obsobbox_l: 
-                                if tmpoob['name'] in Obs_obstype_hide:
-                                    obcax_tx_hd[tmpoob['name']].set_text(tmpoob['name'] + ' hidden')
-
-                            print('Obs_hide:',Obs_hide)
-                            print('Obs_hide_edges:',Obs_hide_edges)
-                                    
-                            if Obs_hide:
-                                obcax_tx_hd['Hide_Obs'].set_text('Show Obs')
-                            else:
-                                obcax_tx_hd['Hide_Obs'].set_text('Hide Obs')
-                                
-                            if Obs_hide_edges:
-                                obcax_tx_hd['Edges'].set_text('Show Edges')
-                            else:
-                                obcax_tx_hd['Edges'].set_text('Hide Edges')
-                                
-                            if Obs_pair_loc:
-                                obcax_tx_hd['Loc'].set_text('Don''t Selected point')
-                            else:
-                                obcax_tx_hd['Loc'].set_text('Move Selected point')
-                            
-                            
-                            '''
-                            for tmpoob in obsobbox_l: 
-                                if tmpoob['name'] in Obs_obstype_hide:
-                                    obcax.text(tmpoob['x'].mean(),tmpoob['y'].mean(),tmpoob['name'] + ' hidden',ha = 'center', va = 'center')
-                                else:
-                                    obcax.text(tmpoob['x'].mean(),tmpoob['y'].mean(),tmpoob['name'],ha = 'center', va = 'center')
-                            '''
-                            # Set x and y lims
-                            obcax.set_xlim(0,1)
-                            obcax.set_ylim(0,1)
-                            
-                            # redraw canvas
-                            figobsopt.canvas.draw()
-                            
-                            #flush canvas
-                            figobsopt.canvas.flush_events()
-                            
-                            # Show plot, and set it as the current figure and axis
-
-                            figobsopt.show()
-                            plt.figure(figobsopt.figure)
-                            plt.sca(obcax)
-
-
-                            # await button press...
-                            #   keep trying until close_obcax is True
-                            close_obcax = False
-                            while close_obcax == False:
-
-                                # get click location
-                                tmpobsbutloc = plt.ginput(1, timeout = 3) #[(0.3078781362007169, 0.19398809523809524)]
-
-                                if len(tmpobsbutloc)!=1:
-                                    print('tmpobsbutloc len != 1',tmpobsbutloc )
-                                    continue
-                                    pdb.set_trace()
-                                else:
-                                    if len(tmpobsbutloc[0])!=2:
-                                        print('tmpobsbutloc[0] len != 2',tmpobsbutloc )
-                                        continue
-                                        pdb.set_trace()
-                                # was a button clicked?
-                                obbut = []
-
-                                # cycle through the buttons, and ask if the click was within there x and y lims
-                                for tmpoob in obsobbox_l: 
-
-                                    # if so, record which and allow the window to close
-                                    #if (tmpobsbutloc[0][0] >= tmpoob['x'][0]) & (tmpobsbutloc[0][0] <= tmpoob['x'][1]) & (tmpobsbutloc[0][1] >= tmpoob['y'][0]) & (tmpobsbutloc[0][1] <= tmpoob['y'][1]):
-                                    if (tmpobsbutloc[0][0] >= tmpoob['x'].min()) & (tmpobsbutloc[0][0] <= tmpoob['x'].max()) & (tmpobsbutloc[0][1] >= tmpoob['y'].min()) & (tmpobsbutloc[0][1] <= tmpoob['y'].max()):
-                                        obbut.append(True)
-
-                                        close_obcax = True
-                                    else:
-                                        obbut.append(False)
-                                #pdb.set_trace()
-                                        
-                                # find which button was closed.         
-                                obbut_mat = np.array(obbut)
-                                if obbut_mat.any():
-                                    obbut_sel = obsobbox_l[np.where(obbut_mat)[0][0]]['name']
-                                    print('obbut_sel:',obbut_sel)
-                                else:
-                                    obbut_sel = ''
-                                    close_obcax = False
-                                #print('obbut_sel',obbut_sel)
-                                    
-                                # quit of option box is closed without button press.
-                                if plt.fignum_exists(figobsopt) == False:
-                                    close_obcax = True
-                                    
-                            
+       
                             # if the button closed was one of the Obs types, add or remove from the hide list
-                            for obs_ss in ['ProfT','SST_ins','SST_sat','ProfS','SLA','ChlA']:
-                                if obbut_sel == obs_ss:
-                                    if obs_ss in Obs_obstype_hide:
-                                        Obs_obstype_hide.remove(obs_ss)
-                                    else:
-                                        Obs_obstype_hide.append(obs_ss)
-                            
-                            # if the button closed was one of the Obs types, add or remove from the hide list
-                                        
-
-
-                            if obbut_sel == 'Hide_Obs': #,'Edges:
-                                if Obs_hide:
-                                    Obs_hide = False
-                                else:
-                                    Obs_hide = True
+                        for ob_var in ['ProfT','SST_ins','SST_sat','ProfS','SLA','ChlA']:
+                            if obbut_sel == ob_var:
+                                Obs_vis_d['visible'][ob_var] = not Obs_vis_d['visible'][ob_var] 
+                        # if the button closed was one of the Obs types, add or remove from the hide list
                                     
-                            if obbut_sel == 'Edges': #,'Edges:
-                                if Obs_hide_edges:
-                                    Obs_hide_edges = False
-                                else:
-                                    Obs_hide_edges = True
-                                    
-                            if obbut_sel == 'Loc': #,'Edges:
-                                if Obs_pair_loc:
-                                    Obs_pair_loc = False
-                                else:
-                                    Obs_pair_loc = True
+                        if obbut_sel == 'Hide_Obs': Obs_hide = not Obs_hide
+                        if obbut_sel == 'Edges':    Obs_hide_edges = not Obs_hide_edges
+                        if obbut_sel == 'Loc':      Obs_pair_loc = not Obs_pair_loc
+
+
+
+                        reload_Obs = True
                             
-                            # close figure
-                            if figobsopt is not None:
-                                if plt.fignum_exists(figobsopt.number):
-                                    plt.close(figobsopt)
-
-                            # Set the main figure and axis to be current
-                            plt.figure(fig.figure)
-                            plt.sca(clickax)
-
-                            #print('Obs_obstype_hide after:',Obs_obstype_hide)
-
-
-                            reload_Obs = True
 
                     elif but_name == 'Obs: sel':
                         # select a point on the map

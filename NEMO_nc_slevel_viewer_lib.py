@@ -4394,10 +4394,159 @@ def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,nlon = 1458, nlat 
 
 
 
+def pop_up_opt_window(obs_but_names,obs_but_sw = None):
+    '''
+    ##example inputs
+    
+
+    obs_but_names = ['ProfT','SST_ins','SST_sat','ProfS','SLA','ChlA','Hide_Obs','Edges','Loc','Close']
+                        
+                        
+    # button switches  
+    obs_but_sw = {}
+    obs_but_sw['Hide_Obs'] = {'v':Obs_hide, 'T':'Show Obs','F': 'Hide Obs'}
+    obs_but_sw['Edges'] = {'v':Obs_hide, 'T':'Show Edges','F': 'Hide Edges'}
+    obs_but_sw['Loc'] = {'v':Obs_hide, 'T':"Don't Selected point",'F': 'Move Selected point'}
+    for ob_var in Obs_var_lst_sub:  obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var + ' hidden'}
+    for ob_var in Obs_varlst:  obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var + ' hidden'}
+
+
+    example use:
+
+    obbut_sel = pop_up_opt_window(obs_but_names, obs_but_sw = obs_but_sw)
+
+
+    # Set the main figure and axis to be current
+    plt.figure(fig.figure)
+    plt.sca(clickax)
+
+
+    # if the button closed was one of the Obs types, add or remove from the hide list
+    for ob_var in ['ProfT','SST_ins','SST_sat','ProfS','SLA','ChlA']:
+        if obbut_sel == ob_var:
+            Obs_vis_d['visible'][ob_var] = not Obs_vis_d['visible'][ob_var] 
+    # if the button closed was one of the Obs types, add or remove from the hide list
+                
+    if obbut_sel == 'Hide_Obs': Obs_hide = not Obs_hide
+    if obbut_sel == 'Edges':    Obs_hide_edges = not Obs_hide_edges
+    if obbut_sel == 'Loc':      Obs_pair_loc = not Obs_pair_loc
 
 
 
+    '''   
 
+
+    # create Obs options figure
+    figobsopt = plt.figure()
+    figobsopt.set_figheight(2.5)
+    figobsopt.set_figwidth(6)
+    
+    #add full screen axes
+    obcax = figobsopt.add_axes([0,0,1,1], frameon=False)
+    
+    # Add buttons
+
+    #Create list of dictionaries with the name, and x and y ranges
+    obsobbox_l = []
+    for obs_i,obs_ss in enumerate(obs_but_names):
+        #tmp_obsx0 = (( obs_i*0.2 + 0.1 )//0.8)*0.45 + 0.05
+        #tmp_obsdx = 0.4
+        tmp_obsx0 = (( obs_i*0.2 + 0.1 )//0.8)*(0.3 + 0.025) + 0.025
+        tmp_obsdx = 0.3
+        #tmp_obsy0 = (( obs_i*0.2 + 0.1 )%0.8)
+        #tmp_obsdy = 0.15
+        #tmp_obsy0 = 1-(( obs_i*0.2 + 0.1 )%0.8)
+        #tmp_obsdy = -0.15
+        #tmp_obsy0 = 1-(( obs_i*0.16 + 0.04 )%0.8)
+        tmp_obsdy = -0.2
+        tmp_obsy0 = 1-(( obs_i*0.24 + 0.04 )%(1-0.04))
+
+        obsobbox_l.append({'x':np.array([tmp_obsx0,tmp_obsx0+tmp_obsdx]),'y':np.array([tmp_obsy0,tmp_obsy0+tmp_obsdy]),'name':obs_ss})
+
+
+    # draw buttons
+    for tmpoob in obsobbox_l: obcax.plot(tmpoob['x'][[0,1,1,0,0]],tmpoob['y'][[0,0,1,1,0]],'k')
+
+    obcax_tx_hd = {}
+    # write button names 
+    for tmpoob in obsobbox_l: 
+        obcax_tx_hd[tmpoob['name']] = obcax.text(tmpoob['x'].mean(),tmpoob['y'].mean(),tmpoob['name'],ha = 'center', va = 'center')
+   
+
+    # if a swich is provided, change button titles based on T/F in switch
+    if obs_but_sw is not None:
+        for tmpoob in obs_but_sw.keys():
+            if obs_but_sw[tmpoob]['v']:
+                obcax_tx_hd[tmpoob].set_text(obs_but_sw[tmpoob]['T'])
+            else:
+                obcax_tx_hd[tmpoob].set_text(obs_but_sw[tmpoob]['F'])
+
+    # Set x and y lims
+    obcax.set_xlim(0,1)
+    obcax.set_ylim(0,1)
+    
+    # redraw canvas
+    figobsopt.canvas.draw()
+    
+    #flush canvas
+    figobsopt.canvas.flush_events()
+    
+    # Show plot, and set it as the current figure and axis
+    figobsopt.show()
+    plt.figure(figobsopt.figure)
+    plt.sca(obcax)
+
+
+    # await button press...
+    #   keep trying until close_obcax is True
+    close_obcax = False
+    while close_obcax == False:
+
+        # get click location
+        tmpobsbutloc = plt.ginput(1, timeout = 3) #[(0.3078781362007169, 0.19398809523809524)]
+
+        if len(tmpobsbutloc)!=1:
+            print('tmpobsbutloc len != 1',tmpobsbutloc )
+            continue
+            pdb.set_trace()
+        else:
+            if len(tmpobsbutloc[0])!=2:
+                print('tmpobsbutloc[0] len != 2',tmpobsbutloc )
+                continue
+                pdb.set_trace()
+        # was a button clicked?
+        obbut = []
+
+        # cycle through the buttons, and ask if the click was within there x and y lims
+        for tmpoob in obsobbox_l: 
+
+            # if so, record which and allow the window to close
+            if (tmpobsbutloc[0][0] >= tmpoob['x'].min()) & (tmpobsbutloc[0][0] <= tmpoob['x'].max()) & (tmpobsbutloc[0][1] >= tmpoob['y'].min()) & (tmpobsbutloc[0][1] <= tmpoob['y'].max()):
+                obbut.append(True)
+
+                close_obcax = True
+            else:
+                obbut.append(False)
+                
+        # find which button was closed.         
+        obbut_mat = np.array(obbut)
+        if obbut_mat.any():
+            obbut_sel = obsobbox_l[np.where(obbut_mat)[0][0]]['name']
+            print('obbut_sel:',obbut_sel)
+        else:
+            obbut_sel = ''
+            close_obcax = False
+            
+        # quit of option box is closed without button press.
+        if plt.fignum_exists(figobsopt) == False:
+            close_obcax = True
+            
+    # close figure
+    if figobsopt is not None:
+        if plt.fignum_exists(figobsopt.number):
+            plt.close(figobsopt)
+
+    return obbut_sel
 
 if __name__ == "__main__":
     main()
