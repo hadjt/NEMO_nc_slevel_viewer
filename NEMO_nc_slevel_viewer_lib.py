@@ -4609,6 +4609,205 @@ def pop_up_opt_window(obs_but_names,obs_but_sw = None):
 
     return obbut_sel
 
+def pop_up_info_window(help_text): #obs_but_names,obs_but_sw = None
+  
+    #pdb.set_trace()
+
+    # create Obs options figure
+    fighelp = plt.figure()
+    fighelp.set_figheight(4)
+    fighelp.set_figwidth(6)
+    
+    #add full screen axes
+    #helpax = fighelp.add_axes([0.05,0.05,0.95,0.95], frameon=False)
+    helpax = fighelp.add_axes([0,0,1,1], frameon=False)
+  
+    # Set x and y lims
+    helpax.set_xlim(0,1)
+    helpax.set_ylim(0,1)
+
+    helpax.text(0.05,0.95,help_text, ha= 'left', va = 'top', wrap = True)
+    
+    # redraw canvas
+    fighelp.canvas.draw()
+    
+    #flush canvas
+    fighelp.canvas.flush_events()
+    
+    # Show plot, and set it as the current figure and axis
+    fighelp.show()
+    plt.figure(fighelp.figure)
+    plt.sca(helpax)
+
+
+    close_helpax = False
+    while close_helpax == False:
+
+        # get click location
+        tmphelpbutloc = plt.ginput(1, timeout = 3) #[(0.3078781362007169, 0.19398809523809524)]
+
+        if len(tmphelpbutloc)!=1:
+            print('tmphelpbutloc len != 1',tmphelpbutloc )
+            continue
+            pdb.set_trace()
+        else:
+            if len(tmphelpbutloc[0])!=2:
+                print('tmphelpbutloc[0] len != 2',tmphelpbutloc )
+                continue
+                pdb.set_trace()
+            # was a button clicked?
+            # if so, record which and allow the window to close
+            if (tmphelpbutloc[0][0] >= 0) & (tmphelpbutloc[0][0] <= 1) & (tmphelpbutloc[0][1] >= 0) & (tmphelpbutloc[0][1] <= 1):
+                
+                close_helpax = True
+
+        # quit of option box is closed without button press.
+        if plt.fignum_exists(fighelp) == False:
+            close_helpax = True
+            
+
+    # close figure
+    if close_helpax:
+        if fighelp is not None:
+            if plt.fignum_exists(fighelp.number):
+                plt.close(fighelp)
+
+
+
+def get_help_text(help_type,help_but):
+    help_text = 'Help: %s\n===================================\n\n'%help_but
+    help_text= help_text + 'When clicking an axes, you select a new point, depth or time, depending on the axis selected\n\n'
+    help_text= help_text + 'When a variable button is clicked (on the left hand side) you change the current varaible\n'
+    help_text= help_text + 'When a function button clicked (on the right hand side) a function is executed\n'
+        
+    help_text = help_text + '\n\n'
+
+
+    if help_type.lower() == 'axis':
+        help_text= help_text + 'Axis selected:\n\n'
+        if help_but == 'axis: a':
+            help_text= help_text + 'The main axis (a) changes the selected location (latitude and longitude)\n'
+        elif help_but == 'axis: b':
+            help_text= help_text + 'The main axis (b) changes the selected longitude\n'
+        elif help_but == 'axis: c':
+            help_text= help_text + 'The main axis (c) changes the selected latitude\n'
+        elif help_but == 'axis: d':
+            help_text= help_text + 'The main axis (d) changes the selected depth\n'
+        elif help_but == 'axis: e':
+            help_text= help_text + 'The main axis (e) changes the selected time\n'
+        elif help_but == 'axis: f':
+            help_text= help_text + 'The main axis (f) changes the selected depth\n'   
+
+
+    elif help_type.lower() == 'var':
+        help_text= help_text + 'Variable selected: %s\n\n'%help_but       
+
+
+    elif help_type.lower() == 'func':
+        help_text= help_text + 'Function selected: %s\n\n'%help_but
+        if help_but == 'Hov/Time':
+            help_text = help_text + 'Shows or hides the Hovmoller/Time axis (e) - hiding this data means the time data is '
+            help_text = help_text + 'not loaded, which is quicker.'
+        elif help_but == 'Show Prof':
+            help_text = help_text + 'Shows or hides the profile axis (f), adjusting the size of the cross-section panels.'
+        elif help_but == 'Zoom':
+            help_text = help_text + 'Click on the main axis (a) twice, to deliniate a square that will then be zoomed into\n'
+            help_text = help_text + 'or, click on the axis b or c once and the maximum depth will be set.\n'
+            help_text = help_text + 'When you click once, the zoom button will turn red, when you click twice, it will change back to black\n'
+        elif help_but == 'Reset zoom':
+            help_text = help_text + 'Reset the Zoom to default\n'
+        elif help_but == 'ColScl':
+            help_text = help_text + 'Changes the colourmap scale, from linear, to focusing on the high or lower values. '
+            help_text = help_text + 'Clicking on this cycles through these options, which is reflected in the button label '
+            help_text = help_text + '(Col: Linear Col: High, Col: Low)'
+        elif help_but == 'Axis':
+            help_text = help_text + 'Changes the x- and y-axis scaling for the map axis (a) between Axis: Auto and Axis: Equal '
+            help_text = help_text + '(with button labels updating) where Axis: Auto maximises the x and y ranges, '
+            help_text = help_text + 'which can distort the map image, and Axis: Equal where one 1 degree of latitude is '
+            help_text = help_text + 'the same size as 1 degree of longitude, which is also a distortion, but sometime less so.'
+            help_text = help_text + ''
+        elif help_but == 'Clim: Reset':
+            help_text = help_text + 'Resets the colour map limits to the default (showing the 5th and 95th percentile values of the image).'
+            help_text = help_text + ''
+            help_text = help_text + ''
+        elif help_but == 'Clim: Zoom':
+            help_text = help_text + 'Allows the user to zoom the colormap limits, with two click on the axis a colormap, '
+            help_text = help_text + 'one for the desired colourmap minima and one for the desired colourmap maxima.'
+            help_text = help_text + ''
+        elif help_but == 'Clim: Expand':
+            help_text = help_text + 'Expands the colourmap limit, increasing both the minima and maxima by 50% of the range, '
+            help_text = help_text + 'this allows the user to select the colourmap limits outside those shown.'
+            help_text = help_text + ''
+        elif help_but == 'Clim: pair':
+            help_text = help_text + 'When two different datasets are shown, their colourmap limits are optimised for the current view '
+            help_text = help_text + 'for each dataset. Clim: pair links these together, so the two dataset can be compared visually.'
+            help_text = help_text + ''
+        elif help_but == 'Clim: sym':
+            help_text = help_text + 'Makes the colourmap symetrical about zero, and uses a blue - white - red colourmap (matplotlib seismic).'
+            help_text = help_text + ''
+            help_text = help_text + ''
+        elif help_but in ['Surface','Near-Bed','Surface-Bed','Depth-Mean','Depth level']:            
+            help_text = help_text + 'Surface, Near-Bed, Surface-Bed, Depth-Mean and Depth level '
+            help_text = help_text + 'sets the depth level or processing shown in the map axis (a). The current option is colour red. ' 
+            help_text = help_text + 'Clicking on axis d changes the depth, and changes the mode to Depth Level.'
+        elif help_but == 'Contours':
+            help_text = help_text + 'Shows or hides contours based on the colourbar tick values'
+        elif help_but == 'Grad':
+            help_text = help_text + 'Cycles between off (greyed out grad), to the horizontal gradient (Grad: Horiz) and the vertical Gradient (Grad: Vert). '
+        elif help_but == 'T Diff':
+            help_text = help_text + 'Shows the difference between the current time and the previous time, '
+            help_text = help_text + 'i.e. how much it has change since the previous day etc. Greyed out if the first time of the dataset is selected.'
+            help_text = help_text + ''
+        elif help_but == 'TS Diag':
+            help_text = help_text + 'Produces a Temperature Salinity diagram for the selected point. '
+            help_text = help_text + ''
+            help_text = help_text + ''
+        elif help_but == 'LD time':
+            help_text = help_text + 'Cycles through lead times if a series of forecasts are loaded.'
+            help_text = help_text + ''
+            help_text = help_text + ''
+        elif help_but == 'Fcst Diag':
+            help_text = help_text + 'Produces a Forecast diagnostic spaghetti diagram in a separate window.'
+            help_text = help_text + ''
+            help_text = help_text + ''
+        elif help_but == 'Vis curr':
+            help_text = help_text + 'Show the current field with "current barbs", akin to windbarbs. If 3d currents are available, '
+            help_text = help_text + 'the currents are processed the same way as the field shown in the map axes (a), i.e. the surface '
+            help_text = help_text + 'currents, the depth slice, the near bottom currents etc. '
+        elif help_but == 'Obs':
+            help_text = help_text + 'Compare the model to the observations. \n'
+            help_text = help_text + '1) After clicking on the Obs button, you can click the map to select an obserations, and it will be displayed on the axes f, the profile window, or\n'
+            help_text = help_text + '2) you can right click on the Obs button, and an option window will open, where you can select which obseration type to show, '
+            help_text = help_text + 'whether you want show or hide the observations, or their edges.'
+        elif help_but == 'Save Figure':
+            help_text = help_text + 'Saves a png of the displayed view (excluding the buttons), with a text file containing the current options to allow '
+            help_text = help_text + 'the view to be recreated in a batch mode with the just plot options.'
+            help_text = help_text + ''
+        elif help_but == 'Help':
+            help_text = help_text + 'Displays help on the selected option.'
+            help_text = help_text + ''
+            help_text = help_text + ''
+        elif help_but == 'Quit':
+            help_text = help_text + 'Quits the programme.'
+            help_text = help_text + ''
+            help_text = help_text + ''
+        elif help_but in ['Click','Loop']:
+            help_text = help_text + 'Changes the mode, between Click and Loop, with the current mode highlighted in yellow. '
+            help_text = help_text + 'Click mode is the normal mode where the program is waiting for the user to click on a '
+            help_text = help_text + 'button or an axis. Loop automatically cycles through the times until Click mode is reactivated.\n\n'
+            help_text = help_text + 'To reactivated click mode, point the button in the click button and wait for the view to stop cycling '
+            help_text = help_text + 'before clicking Click. '
+        elif help_but.split(' ')[0] == 'Dataset':
+            help_text = help_text + 'Change between Datasets'
+        elif help_but.split('-')[0] == 'Dat':
+            help_text = help_text + 'The difference between Datasets'
+        elif help_but == 'regrid_meth':
+            help_text = help_text + 'Changes the regridding method when different configurations are compared. '
+            help_text = help_text + 'Cycles through Regrid: Bilin for bilinear interpolation and Regrid: NN for nearest neighbour interpolation.'
+
+    help_text = help_text + '\n\nClick on this window to close'
+
+    return help_text
 
 if __name__ == "__main__":
     main()

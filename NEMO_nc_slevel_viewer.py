@@ -47,7 +47,7 @@ from NEMO_nc_slevel_viewer_lib import get_clim_pcolor, set_clim_pcolor,set_perc_
 from NEMO_nc_slevel_viewer_lib import scale_color_map,lon_lat_to_str,current_barb,get_pnts_pcolor_in_region
 
 from NEMO_nc_slevel_viewer_lib import load_ops_prof_TS, load_ops_2D_xarray, obs_reset_sel
-from NEMO_nc_slevel_viewer_lib import pop_up_opt_window
+from NEMO_nc_slevel_viewer_lib import pop_up_opt_window,pop_up_info_window,get_help_text
 
 
 
@@ -1283,7 +1283,7 @@ def nemo_slice_zlev(config = 'amm7',
                       'Zoom','Reset zoom',
                       'ColScl','Axis', 'Clim: Reset','Clim: Zoom','Clim: Expand','Clim: pair','Clim: sym',
                       'Surface', 'Near-Bed', 'Surface-Bed','Depth-Mean','Depth level',
-                      'Contours','Grad','T Diff','TS Diag','LD time','Fcst Diag','Vis curr','Obs','Save Figure','Quit'] #'Obs: sel','Obs: opt',
+                      'Contours','Grad','T Diff','TS Diag','LD time','Fcst Diag','Vis curr','Obs','Save Figure','Help','Quit'] #'Obs: sel','Obs: opt',
     
     # if Obs, create empty option fiugre handle, otherwise remove button names
     if not do_Obs:
@@ -3394,243 +3394,8 @@ def nemo_slice_zlev(config = 'amm7',
                     elif but_name == 'Clim: Reset':
                         clim = None
 
-                    elif but_name == 'Obs: sel':
-                        print(mouse_info['button'].name)
-
-
-
-                        #pdb.set_trace()
-                        # select a point on the map
-
-                        # predefine dictionaries
-                        (obs_z_sel,obs_obs_sel,obs_mod_sel,obs_lon_sel,obs_lat_sel,
-                            obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel) = obs_reset_sel(Dataset_lst)
-                        '''
-                        obs_z_sel = {}
-                        obs_obs_sel = {}
-                        obs_mod_sel = {}
-                        obs_lon_sel = {}
-                        obs_lat_sel = {}
-                        
-                        obs_stat_id_sel = {}
-                        obs_stat_type_sel = {}
-                        obs_stat_time_sel = {}
+                    elif but_name == 'Help':
                     
-
-                        for tmp_datstr in Dataset_lst:
-                            obs_z_sel[tmp_datstr] = np.ma.zeros((1))*np.ma.masked
-                            obs_obs_sel[tmp_datstr] = np.ma.zeros((1))*np.ma.masked
-                            obs_mod_sel[tmp_datstr] = np.ma.zeros((1))*np.ma.masked
-                            obs_lon_sel[tmp_datstr] = np.ma.zeros((1))*np.ma.masked
-                            obs_lat_sel[tmp_datstr] = np.ma.zeros((1))*np.ma.masked
-
-                            obs_stat_id_sel[tmp_datstr] = ''
-                            obs_stat_type_sel[tmp_datstr] = None
-                            obs_stat_time_sel[tmp_datstr] = ''
-                        '''
-                        
-                        # select the observation with ginput
-                        tmpobsloc = plt.ginput(1)
-
-                        # convert to the nearest model grid box
-                        
-                        obs_ax,obs_ii,obs_jj,obs_ti,obs_zz, sel_xlocval,sel_ylocval = indices_from_ginput_ax(ax,tmpobsloc[0][0],tmpobsloc[0][1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
-                        '''
-                        try:
-                            obs_ax,obs_ii,obs_jj,obs_ti,obs_zz, sel_xlocval,sel_ylocval = indices_from_ginput_ax(ax,tmpobsloc[0][0],tmpobsloc[0][1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
-                        except:
-                            print('Can''t get obs click location')
-                            #pdb.set_trace()
-                        '''
-                        
-                        # if the main map axis is selected, continue,
-                        if obs_ax == 0:
-                            #if True:
-                            
-                            # extract lat and lon,
-
-                            obs_lon = sel_xlocval # lon_d[1][obs_jj,obs_ii]
-                            obs_lat = sel_ylocval # lat_d[1][obs_jj,obs_ii]
-
-                            if Obs_pair_loc:
-                                ii = obs_ii
-                                jj = obs_jj
-
-                                # and reload slices, and hovmuller/time series
-                                reload_ew = True
-                                reload_ns = True
-                                reload_hov = True
-                                reload_ts = True
-
-                            # set some tmp dictionaries
-                            '''tmpobs_z_sel = {}
-                            tmpobs_obs_sel = {}
-                            tmpobs_mod_sel = {}
-                            tmpobs_lon_sel = {}
-                            tmpobs_lat_sel = {}
-                            tmpobs_dist_sel = {}
-
-
-                            tmpobs_stat_id_sel = {}
-                            tmpobs_stat_type_sel = {}
-                            tmpobs_stat_time_sel = {} 
-                            '''
-                            tmpobs_dist_sel = {}
-                            (tmpobs_z_sel,tmpobs_obs_sel,tmpobs_mod_sel,tmpobs_lon_sel,tmpobs_lat_sel,
-                                tmpobs_stat_id_sel,tmpobs_stat_type_sel,tmpobs_stat_time_sel) = obs_reset_sel(Dataset_lst, Fill = False)
-
-                            # cycle through available Obs types
-                            for ob_var in Obs_var_lst_sub:
-                                tmpobs_z_sel[ob_var] = {}
-                                tmpobs_obs_sel[ob_var] = {}
-                                tmpobs_mod_sel[ob_var] = {}
-                                tmpobs_lon_sel[ob_var] = {}
-                                tmpobs_lat_sel[ob_var] = {}
-                                tmpobs_dist_sel[ob_var] = {}
-
-                                tmpobs_stat_id_sel[ob_var] = {}
-                                tmpobs_stat_type_sel[ob_var] = {}
-                                tmpobs_stat_time_sel[ob_var] = {}
-                                # and data sets.
-                                for tmp_datstr in Dataset_lst:
-                                    # extract Obs: lon, lat, z OBS, mod,, stations info 
-                                    tmpobsx = Obs_dat_dict[tmp_datstr][ob_var]['LONGITUDE']
-                                    tmpobsy = Obs_dat_dict[tmp_datstr][ob_var]['LATITUDE']
-                                    tmpobs_obs = Obs_dat_dict[tmp_datstr][ob_var]['OBS'][:] 
-                                    tmpobs_mod = Obs_dat_dict[tmp_datstr][ob_var]['MOD_HX'][:] 
-                                    tmpobs_z = Obs_dat_dict[tmp_datstr][ob_var]['DEPTH'][:] 
-                                    tmpobs_stat_id = Obs_dat_dict[tmp_datstr][ob_var]['STATION_IDENTIFIER'][:] 
-                                    tmpobs_stat_type = Obs_dat_dict[tmp_datstr][ob_var]['STATION_TYPE'][:] 
-                                    tmpobs_stat_time = Obs_dat_dict[tmp_datstr][ob_var]['JULD_datetime'][:] 
-                                    tmpobs_z = Obs_dat_dict[tmp_datstr][ob_var]['DEPTH'][:] 
-
-                                    # if Obs data is 2d data, reshape to match 3d profile data. 
-                                    if len(tmpobs_obs.shape) == 1:
-
-                                        tmpobs_obs = tmpobs_obs.reshape(-1,1)
-                                        tmpobs_mod = tmpobs_mod.reshape(-1,1)
-                                        tmpobs_z = tmpobs_z.reshape(-1,1)
-                                    # find distance from selected point to all obs in this Obs type    
-                                    tmp_obs_dist = np.sqrt((tmpobsx - obs_lon)**2 +(tmpobsy - obs_lat)**2)
-                                
-                                    # find the minimum value and index
-                                    tmp_obs_obs_dist = tmp_obs_dist.min()
-                                    tmp_obs_obs_ind = tmp_obs_dist.argmin()
-
-                                    #record the profile and distance for that Obs
-                                    tmpobs_z_sel[ob_var][tmp_datstr] = tmpobs_z[tmp_obs_obs_ind]
-                                    tmpobs_obs_sel[ob_var][tmp_datstr] = tmpobs_obs[tmp_obs_obs_ind]
-                                    tmpobs_mod_sel[ob_var][tmp_datstr] = tmpobs_mod[tmp_obs_obs_ind]
-                                    tmpobs_lon_sel[ob_var][tmp_datstr] = tmpobsx[tmp_obs_obs_ind]
-                                    tmpobs_lat_sel[ob_var][tmp_datstr] = tmpobsy[tmp_obs_obs_ind]
-                                    #pdb.set_trace()
-                                    tmpobs_stat_id_sel[ob_var][tmp_datstr] = tmpobs_stat_id[tmp_obs_obs_ind].strip()
-                                    tmpobs_stat_type_sel[ob_var][tmp_datstr] = tmpobs_stat_type[tmp_obs_obs_ind]
-                                    tmpobs_stat_time_sel[ob_var][tmp_datstr] = tmpobs_stat_time[tmp_obs_obs_ind]
-
-                                    tmpobs_dist_sel[ob_var] = tmp_obs_obs_dist
-                            
-                            # put all distances into one array
-                            obs_dist_sel_cf_mat = np.array([tmpobs_dist_sel[ob_var] for ob_var in Obs_var_lst_sub])
-                            
-                            # select the Obs Obs type closest to the selected point
-                            sel_Obs_var = Obs_var_lst_sub[obs_dist_sel_cf_mat.argmin()]
-                            
-                            #select obs data from Obs type closest to the selected point
-                            obs_z_sel = tmpobs_z_sel[sel_Obs_var]
-                            obs_obs_sel = tmpobs_obs_sel[sel_Obs_var]
-                            obs_mod_sel = tmpobs_mod_sel[sel_Obs_var]
-                            obs_lon_sel = tmpobs_lon_sel[sel_Obs_var]
-                            obs_lat_sel = tmpobs_lat_sel[sel_Obs_var]
-
-                            obs_stat_id_sel = tmpobs_stat_id_sel[sel_Obs_var]
-                            obs_stat_type_sel = tmpobs_stat_type_sel[sel_Obs_var]
-                            obs_stat_time_sel = tmpobs_stat_time_sel[sel_Obs_var]
-
-
-                            del(tmpobs_z_sel)
-                            del(tmpobs_obs_sel)
-                            del(tmpobs_mod_sel)
-                            del(tmpobs_lon_sel)
-                            del(tmpobs_lat_sel)
-                            del(tmpobs_dist_sel)
-
-                            del(tmpobs_stat_id_sel)
-                            del(tmpobs_stat_type_sel)
-                            del(tmpobs_stat_time_sel)
-
-
-                            # append this data to an array to help select x and y lims
-                            for tmp_datstr in Dataset_lst:
-                                tmp_pf_ylim_dat = np.ma.append(np.array(tmp_py_ylim),obs_z_sel[tmp_datstr])
-                                #tmp_pf_xlim_dat = np.ma.append(np.ma.append(np.array(pf_xlim),obs_mod_sel)[tmp_datstr],obs_obs_sel)
-                                tmp_pf_xlim_dat = np.ma.append(np.ma.append(np.array(pf_xlim),obs_mod_sel[tmp_datstr]),obs_obs_sel[tmp_datstr])
-                            
-                            
-
-
-                            '''
-
-
-                            pf_xlim_obs = tmp_pf_xlim_dat.min(),tmp_pf_xlim_dat.max()
-                            pf_ylim_obs = tmp_pf_ylim_dat.max(),tmp_pf_ylim_dat.min()
-
-                            
-                            
-                            fig.canvas.draw()
-                            if verbose_debugging: print('Canvas flush', datetime.now())
-                            fig.canvas.flush_events()
-                            if verbose_debugging: print('Canvas drawn and flushed', datetime.now())
-
-                            #ax[5].set_ylim(pf_ylim_obs)
-                            #ax[5].set_xlim(pf_xlim_obs)
-
-                            '''
-                    
-                    elif but_name == 'Obs: opt':#
-                        # Bring up a options window for Obs
-                        
-                        #print('Obs_obstype_hide before:',Obs_obstype_hide)
-
-                        #pdb.set_trace()
-                        #from matplotlib.backend_bases import MouseButton
-                        # button names                            
-                        obs_but_names = ['ProfT','SST_ins','SST_sat','ProfS','SLA','ChlA','Hide_Obs','Edges','Loc','Close']
-                        
-                        
-                        # button switches  
-                        obs_but_sw = {}
-                        obs_but_sw['Hide_Obs'] = {'v':Obs_hide, 'T':'Show Obs','F': 'Hide Obs'}
-                        obs_but_sw['Edges'] = {'v':Obs_hide, 'T':'Show Edges','F': 'Hide Edges'}
-                        obs_but_sw['Loc'] = {'v':Obs_hide, 'T':"Don't Selected point",'F': 'Move Selected point'}
-                        for ob_var in Obs_var_lst_sub:  obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var + ' hidden'}
-                        for ob_var in Obs_varlst:  obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var + ' hidden'}
-
-                        obbut_sel = pop_up_opt_window(obs_but_names, obs_but_sw = obs_but_sw)
-
-
-                        # Set the main figure and axis to be current
-                        plt.figure(fig.figure)
-                        plt.sca(clickax)
-
-       
-                            # if the button closed was one of the Obs types, add or remove from the hide list
-                        for ob_var in ['ProfT','SST_ins','SST_sat','ProfS','SLA','ChlA']:
-                            if obbut_sel == ob_var:
-                                Obs_vis_d['visible'][ob_var] = not Obs_vis_d['visible'][ob_var] 
-                        # if the button closed was one of the Obs types, add or remove from the hide list
-                                    
-                        if obbut_sel == 'Hide_Obs': Obs_hide = not Obs_hide
-                        if obbut_sel == 'Edges':    Obs_hide_edges = not Obs_hide_edges
-                        if obbut_sel == 'Loc':      Obs_pair_loc = not Obs_pair_loc
-
-
-
-                        reload_Obs = True
-                            
-
-
-                    elif but_name == 'Obs':
                         print('      mouse info:  '  )
                         print(mouse_info)
                         print(mouse_info['button'])
@@ -3639,50 +3404,77 @@ def nemo_slice_zlev(config = 'amm7',
                         if mouse_info['button'].name == 'LEFT':
 
 
-                            #pdb.set_trace()
-                            # select a point on the map
+                            # select the Help with ginput
+                            tmphelploc = plt.ginput(1)
+
+                            # convert to the nearest model grid box                            
+                            helploc_ii, helploc_jj, = tmphelploc[0][0],tmphelploc[0][1]
+                            help_ax,help_ii,help_jj,help_ti,help_zz, sel_xlocval,sel_ylocval = indices_from_ginput_ax(ax,helploc_ii, helploc_jj, thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
+                            #
+                            help_type = 'None'
+                            help_but = ''
+                                
+                            if help_ax is None:
+
+                                if verbose_debugging: print('Interpret Mouse click: Functions', datetime.now())
+
+                                ###################################################################################################
+                                ### See if func clicked
+                                ###################################################################################################
+
+                                for but_name in func_but_extent.keys():
+                                    
+                                    but_pos_x0,but_pos_x1,but_pos_y0,but_pos_y1 = func_but_extent[but_name]
+                                    if (helploc_ii >= but_pos_x0) & (helploc_ii <= but_pos_x1) & (helploc_jj >= but_pos_y0) & (helploc_jj <= but_pos_y1):
+                                        help_type = 'func'
+                                        help_but = but_name
+                                
+                                ###################################################################################################
+                                ### See var func clicked
+                                ###################################################################################################
+                                
+                                for but_name in but_extent.keys():
+                                    
+                                    but_pos_x0,but_pos_x1,but_pos_y0,but_pos_y1 = but_extent[but_name]
+                                    if (helploc_ii >= but_pos_x0) & (helploc_ii <= but_pos_x1) & (helploc_jj >= but_pos_y0) & (helploc_jj <= but_pos_y1):
+                                        if but_name in var_but_mat:
+                                            help_type = 'var'
+                                            help_but = but_name
+                                
+                            else:
+
+                                help_type = 'axis'
+                                help_but = 'axis: %s'% letter_mat[help_ax]
+
+                            print(help_type,help_but)
+
+                            help_text = get_help_text(help_type,help_but)
+                            pop_up_info_window(help_text)
+
+                            # Set the main figure and axis to be current
+                            plt.figure(fig.figure)
+                            plt.sca(clickax)
+                            
+                    elif but_name == 'Obs':
+                        #print('      mouse info:  '  )
+                        #print(mouse_info)
+                        #print(mouse_info['button'])
+                        #print(mouse_info['button'].name)
+                        #print('--------------------')
+
+                        if mouse_info['button'].name == 'LEFT':
 
                             # predefine dictionaries
 
                             (obs_z_sel,obs_obs_sel,obs_mod_sel,obs_lon_sel,obs_lat_sel,
                                 obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel) = obs_reset_sel(Dataset_lst)
-                            '''
-                            obs_z_sel = {}
-                            obs_obs_sel = {}
-                            obs_mod_sel = {}
-                            obs_lon_sel = {}
-                            obs_lat_sel = {}
-                            
-                            obs_stat_id_sel = {}
-                            obs_stat_type_sel = {}
-                            obs_stat_time_sel = {}
-                        
-
-                            for tmp_datstr in Dataset_lst:
-                                obs_z_sel[tmp_datstr] = np.ma.zeros((1))*np.ma.masked
-                                obs_obs_sel[tmp_datstr] = np.ma.zeros((1))*np.ma.masked
-                                obs_mod_sel[tmp_datstr] = np.ma.zeros((1))*np.ma.masked
-                                obs_lon_sel[tmp_datstr] = np.ma.zeros((1))*np.ma.masked
-                                obs_lat_sel[tmp_datstr] = np.ma.zeros((1))*np.ma.masked
-
-                                obs_stat_id_sel[tmp_datstr] = ''
-                                obs_stat_type_sel[tmp_datstr] = None
-                                obs_stat_time_sel[tmp_datstr] = ''
-
-                            '''
                             # select the observation with ginput
                             tmpobsloc = plt.ginput(1)
 
                             # convert to the nearest model grid box
                             
                             obs_ax,obs_ii,obs_jj,obs_ti,obs_zz, sel_xlocval,sel_ylocval = indices_from_ginput_ax(ax,tmpobsloc[0][0],tmpobsloc[0][1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
-                            '''
-                            try:
-                                obs_ax,obs_ii,obs_jj,obs_ti,obs_zz, sel_xlocval,sel_ylocval = indices_from_ginput_ax(ax,tmpobsloc[0][0],tmpobsloc[0][1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
-                            except:
-                                print('Can''t get obs click location')
-                                #pdb.set_trace()
-                            '''
+                           
                             
                             # if the main map axis is selected, continue,
                             if obs_ax == 0:
@@ -3707,18 +3499,6 @@ def nemo_slice_zlev(config = 'amm7',
                                 #(obs_z_sel,obs_obs_sel,obs_mod_sel,obs_lon_sel,obs_lat_sel,
                                 #    obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel) = obs_reset_sel(Dataset_lst, Fill = False)
                                 
-                                '''tmpobs_z_sel = {}
-                                tmpobs_obs_sel = {}
-                                tmpobs_mod_sel = {}
-                                tmpobs_lon_sel = {}
-                                tmpobs_lat_sel = {}
-                                tmpobs_dist_sel = {}
-
-
-                                tmpobs_stat_id_sel = {}
-                                tmpobs_stat_type_sel = {}
-                                tmpobs_stat_time_sel = {}
-                                '''
                                 tmpobs_dist_sel = {}
                                 (tmpobs_z_sel,tmpobs_obs_sel,tmpobs_mod_sel,tmpobs_lon_sel,tmpobs_lat_sel,
                                     tmpobs_stat_id_sel,tmpobs_stat_type_sel,tmpobs_stat_time_sel) = obs_reset_sel(Dataset_lst, Fill = False)
@@ -3818,32 +3598,10 @@ def nemo_slice_zlev(config = 'amm7',
                                     (obs_z_sel,obs_obs_sel,obs_mod_sel,obs_lon_sel,obs_lat_sel,
                                         obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel) = obs_reset_sel(Dataset_lst)
 
-
-                                '''
-
-
-                                pf_xlim_obs = tmp_pf_xlim_dat.min(),tmp_pf_xlim_dat.max()
-                                pf_ylim_obs = tmp_pf_ylim_dat.max(),tmp_pf_ylim_dat.min()
-
-                                
-                                
-                                fig.canvas.draw()
-                                if verbose_debugging: print('Canvas flush', datetime.now())
-                                fig.canvas.flush_events()
-                                if verbose_debugging: print('Canvas drawn and flushed', datetime.now())
-
-                                #ax[5].set_ylim(pf_ylim_obs)
-                                #ax[5].set_xlim(pf_xlim_obs)
-
-                                '''
                         elif mouse_info['button'].name == 'RIGHT':
 
                             # Bring up a options window for Obs
                             
-                            #print('Obs_obstype_hide before:',Obs_obstype_hide)
-
-                            #pdb.set_trace()
-                            #from matplotlib.backend_bases import MouseButton
                             # button names                            
                             obs_but_names = ['ProfT','SST_ins','SST_sat','ProfS','SLA','ChlA','Hide_Obs','Edges','Loc','Close']
                             
@@ -3864,7 +3622,7 @@ def nemo_slice_zlev(config = 'amm7',
                             plt.sca(clickax)
 
         
-                                # if the button closed was one of the Obs types, add or remove from the hide list
+                            # if the button closed was one of the Obs types, add or remove from the hide list
                             for ob_var in ['ProfT','SST_ins','SST_sat','ProfS','SLA','ChlA']:
                                 if obbut_sel == ob_var:
                                     Obs_vis_d['visible'][ob_var] = not Obs_vis_d['visible'][ob_var] 
@@ -5207,17 +4965,6 @@ def main():
             if (args.thin_y0) is not None: thd[1]['y0'] = args.thin_y0
             if (args.thin_y1) is not None: thd[1]['y1'] = args.thin_y1
 
-            '''
-
-            if 'thin' in args: thd[1]['dx'] = args.thin
-            if 'thin' in args: thd[1]['dy'] = args.thin
-            if 'thin_x0' in args: 
-                if args.thin_x0 is not None:thd[1]['x0'] = args.thin_x0
-            if 'thin_x1' in args: thd[1]['x1'] = args.thin_x1
-            if 'thin_y0' in args:
-                if args.thin_y0 is not None:thd[1]['y0'] = args.thin_y0
-            if 'thin_y1' in args: thd[1]['y1'] = args.thin_y1
-            '''
             if load_second_files:
                 thd[2] = {}
                 thd[2]['df'] = thd[1]['df']
@@ -5240,20 +4987,6 @@ def main():
                 if (args.thin_y1_2nd) is not None: thd[2]['y1'] = args.thin_y1_2nd
 
 
-
-                '''    
-                if 'thin_files_2nd' in args: thd[2]['df'] = args.thin_files_2nd
-                if 'thin_files_0_2nd' in args: thd[2]['f0'] = args.thin_files_0_2nd
-                if 'thin_files_1_2nd' in args: thd[2]['f1'] = args.thin_files_1_2nd
-                if 'thin_2nd' in args: 
-                    if args.thin_2nd is not None:
-                        thd[2]['dx'] = args.thin_2nd
-                        thd[2]['dy'] = args.thin_2nd
-                if 'thin_x0_2nd' in args: thd[2]['x0'] = args.thin_x0_2nd
-                if 'thin_x1_2nd' in args: thd[2]['x1'] = args.thin_x1_2nd
-                if 'thin_y0_2nd' in args: thd[2]['y0'] = args.thin_y0_2nd
-                if 'thin_y1_2nd' in args: thd[2]['y1'] = args.thin_y1_2nd
-                '''
             #pdb.set_trace()
         
 
@@ -5298,17 +5031,12 @@ def main():
 
 
 
-
-
         for cfi in configd.keys():
             if configd[cfi] is None: continue
             if configd[cfi].upper() in ['ORCA025','ORCA025EXT','ORCA025ICE']: 
                 if thd[cfi]['y1'] is None: thd[cfi]['y1'] = -2
             if configd[cfi].upper() in ['ORCA12','ORCA12ICE']: 
                 if thd[cfi]['y1'] is None: thd[cfi]['y1'] = -200
-                #if thin_y1 is None: thin_y1 = -200
-                #if thin_y0 is None: thin_y1 = 1000
-
 
 
         nemo_slice_zlev(zlim_max = args.zlim_max,
