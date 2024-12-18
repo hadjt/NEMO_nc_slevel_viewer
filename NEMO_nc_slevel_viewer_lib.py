@@ -4117,6 +4117,35 @@ def load_ops_2D_xarray(OPSfname,vartype, nlon = 1458, nlat = 1345,  excl_qc = Fa
 
             print()
         print('    Total time:',tim_lst[-1][1]-tstart)
+
+
+
+
+
+
+
+    if  vartype =='SST_ins' :
+        ops_output_dict['OBS'] = ops_output_dict['SST_OBS'] 
+        ops_output_dict['MOD_HX'] = ops_output_dict['SST_Hx'] 
+    elif  vartype =='SST_sat' :
+        ops_output_dict['OBS'] = ops_output_dict['SST_OBS'] 
+        ops_output_dict['MOD_HX'] = ops_output_dict['SST_Hx'] 
+    elif  vartype =='SLA' :
+        ops_output_dict['OBS'] = ops_output_dict['SLA_OBS']  + ops_output_dict['MDT']
+        ops_output_dict['MOD_HX'] = ops_output_dict['SLA_SSH']  
+    elif  vartype == 'ChlA':
+        ops_output_dict['OBS'] = 10**ops_output_dict['SLCHLTOT_OBS']
+        ops_output_dict['MOD_HX'] = 10**ops_output_dict['SLCHLTOT_Hx'] 
+
+
+
+
+
+
+
+
+
+
     return ops_output_dict
 
 
@@ -4389,8 +4418,40 @@ def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,nlon = 1458, nlat 
     ops_output_dict['DEPTH_QC'] = ops_output_dict['DEPTH_QC'][0,:,:]
 
     '''
+
+
+    if TnotS:
+        ops_output_dict['OBS'] = ops_output_dict['POTM_OBS'] 
+        ops_output_dict['MOD_HX'] = ops_output_dict['POTM_Hx'] 
+
+    else:
+            
+        ops_output_dict['OBS'] = ops_output_dict['PSAL_OBS'] 
+        ops_output_dict['MOD_HX'] = ops_output_dict['PSAL_Hx']
+
+
     return ops_output_dict
 
+
+
+def obs_reset_sel(Dataset_lst, Fill = True):
+
+
+    obs_z_sel,obs_obs_sel,obs_mod_sel,obs_lon_sel,obs_lat_sel = {},{},{},{},{}
+    obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel = {},{},{}
+
+    for tmp_datstr in Dataset_lst:
+        obs_z_sel[tmp_datstr] = np.ma.zeros((1))*np.ma.masked
+        obs_obs_sel[tmp_datstr] = np.ma.zeros((1))*np.ma.masked
+        obs_mod_sel[tmp_datstr] = np.ma.zeros((1))*np.ma.masked
+        obs_lon_sel[tmp_datstr] = np.ma.zeros((1))*np.ma.masked
+        obs_lat_sel[tmp_datstr] = np.ma.zeros((1))*np.ma.masked
+
+        obs_stat_id_sel[tmp_datstr] = ''
+        obs_stat_type_sel[tmp_datstr] = None
+        obs_stat_time_sel[tmp_datstr] = ''
+
+    return obs_z_sel,obs_obs_sel,obs_mod_sel,obs_lon_sel,obs_lat_sel,obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel
 
 
 
@@ -4547,6 +4608,7 @@ def pop_up_opt_window(obs_but_names,obs_but_sw = None):
             plt.close(figobsopt)
 
     return obbut_sel
+
 
 if __name__ == "__main__":
     main()
