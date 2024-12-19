@@ -3750,10 +3750,16 @@ def nemo_slice_zlev(config = 'amm7',
                         #pdb.set_trace()
 
                         tmp_xsect_x,tmp_xsect_z,tmp_xsect_dat = {},{},{}
+
                         for tmp_datstr in Dataset_lst:
-                            tmp_xsect_dat[tmp_datstr] = data_inst[tmp_datstr][:,[xsect_jj_ind_mat],[xsect_ii_ind_mat]][:,0,:]
-                            tmp_xsect_z[tmp_datstr] = grid_dict[tmp_datstr]['gdept'][:,[xsect_jj_ind_mat],[xsect_ii_ind_mat]][:,0,:]
-                            tmp_xsect_x[tmp_datstr] = np.arange(nxsect)
+                            if var_dim[var] == 4:
+                                tmp_xsect_dat[tmp_datstr] = data_inst[tmp_datstr][:,[xsect_jj_ind_mat],[xsect_ii_ind_mat]][:,0,:]
+                                tmp_xsect_z[tmp_datstr] = grid_dict[tmp_datstr]['gdept'][:,[xsect_jj_ind_mat],[xsect_ii_ind_mat]][:,0,:]
+                                tmp_xsect_x[tmp_datstr] = np.arange(nxsect)
+                            elif var_dim[var] == 3:
+                                tmp_xsect_dat[tmp_datstr] = data_inst[tmp_datstr][[xsect_jj_ind_mat],[xsect_ii_ind_mat]][0,:]
+                                tmp_xsect_x[tmp_datstr] = np.arange(nxsect)
+                                #pdb.set_trace()
 
 
                         if figxs is not None:
@@ -3761,8 +3767,8 @@ def nemo_slice_zlev(config = 'amm7',
                                 plt.close(figxs)
 
 
-                        if nDataset == 2:
-
+                        if (nDataset == 2)&(var_dim[var] == 4):
+                            
                             figxs = plt.figure()
                             figxs.set_figheight(10*1.2)
                             figxs.set_figwidth(8*1.5)
@@ -3783,7 +3789,6 @@ def nemo_slice_zlev(config = 'amm7',
                                 plt.colorbar(paxxs[axi], ax = axxs[axi])
                             for xi,tmp_datstr in enumerate(Dataset_lst): set_perc_clim_pcolor_in_region(5,95,ax = axxs[axi])
                             set_perc_clim_pcolor_in_region(5,95,ax = axxs[2], sym = True)
-
                         else:
                             figxs = plt.figure()
                             figxs.set_figheight(4*1.2)
@@ -3792,18 +3797,33 @@ def nemo_slice_zlev(config = 'amm7',
                             plt.subplots_adjust(top=0.89,bottom=0.1,left=0.05,right=0.975,hspace=0.2,wspace=0.6)
                             axxs = [plt.subplot(111)]
                             paxxs = []
-                            paxxs.append(axxs[0].pcolormesh(tmp_xsect_x[secdataset_proc],tmp_xsect_z[secdataset_proc],tmp_xsect_dat[secdataset_proc]))
-                            axxs[0].invert_yaxis()
-                            xs_ylim = np.array(axxs[0].get_ylim())
+                            if var_dim[var] == 4:
+                                paxxs.append(axxs[0].pcolormesh(tmp_xsect_x[secdataset_proc],tmp_xsect_z[secdataset_proc],tmp_xsect_dat[secdataset_proc]))
+                                axxs[0].invert_yaxis()
+                                plt.colorbar(paxxs[0], ax = axxs[0])
+                                set_perc_clim_pcolor_in_region(5,95,ax = axxs[0])
+                            
+                            elif var_dim[var] == 3:
+                                axxs[0].axhline(0,color = 'k', lw = 0.5) 
+                                
+                                for xi,tmp_datstr in enumerate(Dataset_lst):axxs[0].plot(tmp_xsect_x[tmp_datstr],tmp_xsect_dat[tmp_datstr],label = tmp_datstr)
+                                axxs[0].legend()
+
                             xs_xlim = np.array(axxs[0].get_xlim())
+                            xs_ylim = np.array(axxs[0].get_ylim())
+
                             for xi in xsect_pnt_ind:                            axxs[0].axvline(xi,color = 'k', alpha = 0.5, ls = '--') 
-                            for xi in xsect_pnt_ind:         axxs[0].text(xi,xs_ylim[0] - xs_ylim.ptp()*0.9   ,lon_lat_to_str(tmp_xsect_lon[xi],tmp_xsect_lat[xi])[0], rotation = 270, ha = 'left', va = 'top')
-                            plt.colorbar(paxxs[0], ax = axxs[0])
+
+                            if var_dim[var] == 4:
+                                for xi in xsect_pnt_ind:         axxs[0].text(xi,xs_ylim[0] - xs_ylim.ptp()*0.9,lon_lat_to_str(tmp_xsect_lon[xi],tmp_xsect_lat[xi])[0], rotation = 270, ha = 'left', va = 'top')
+                            elif var_dim[var] == 3:
+                                for xi in xsect_pnt_ind:         axxs[0].text(xi,xs_ylim[0] + xs_ylim.ptp()*0.9,lon_lat_to_str(tmp_xsect_lon[xi],tmp_xsect_lat[xi])[0], rotation = 270, ha = 'left', va = 'top')
                             #axxs[0].set_xlim([0,xs_xlim[1]*1.01])
-                            set_perc_clim_pcolor_in_region(5,95,ax = axxs[0])
+                            #pdb.set_trace()
 
 
-
+                        xclickax = figxs.add_axes([0,0,1,1], frameon=False)
+                        xclickax.axis('off')
                         # redraw canvas
                         figxs.canvas.draw()
                         
@@ -3813,15 +3833,43 @@ def nemo_slice_zlev(config = 'amm7',
                         # Show plot, and set it as the current figure and axis
                         figxs.show()
                         plt.figure(figxs.figure)
-                        #plt.sca(xsax)
+                        plt.sca(xclickax)
 
-                        xsbuttonpress = True
-                        while xsbuttonpress: xsbuttonpress = plt.waitforbuttonpress(timeout=10)
+
+                        close_xsax = False
+                        while close_xsax == False:
+
+                            # get click location
+                            tmpxsbutloc = plt.ginput(1, timeout = 3) #[(0.3078781362007169, 0.19398809523809524)]
+                                    
+                            #pdb.set_trace()
+                            if len(tmpxsbutloc)!=1:
+                                print('tmpxsbutloc len != 1',tmpxsbutloc )
+                                #close_xsax = True
+                                continue
+                                #pdb.set_trace()
+                            else:
+                                if len(tmpxsbutloc[0])!=2:
+                                    close_xsax = True
+                                    print('tmpxsbutloc[0] len != 2',tmpxsbutloc )
+                                    continue
+                                    #pdb.set_trace()
+                                # was a button clicked?
+                                # if so, record which and allow the window to close
+                                if (tmpxsbutloc[0][0] >= 0) & (tmpxsbutloc[0][0] <= 1) & (tmpxsbutloc[0][1] >= 0) & (tmpxsbutloc[0][1] <= 1):
+                                    #pdb.set_trace()
+                                    close_xsax = True
+
+                            # quit of option box is closed without button press.
+                            if plt.fignum_exists(figxs) == False:
+                                close_xsax = True
+                                
                         
                         # close figure
-                        if figxs is not None:
-                            if plt.fignum_exists(figxs.number):
-                                plt.close(figxs)
+                        if close_xsax:
+                            if figxs is not None:
+                                if plt.fignum_exists(figxs.number):
+                                    plt.close(figxs)
 
 
 
