@@ -1421,11 +1421,18 @@ def nemo_slice_zlev(config = 'amm7',
 
     func_but_text_han['Axis'].set_text('Axis: Auto')
 
+
+    # Buttons that can be right clicked for different behavour have a douple outline. 
+    str_pe = [pe.Stroke(linewidth=2.5, foreground='k'), pe.Normal()]
+    func_but_line_han['Zoom'][0].set_linewidth(1)
+    func_but_line_han['Zoom'][0].set_color('w')
+    func_but_line_han['Zoom'][0].set_path_effects(str_pe)
     if do_Obs:
         #pdb.set_trace()
-        #func_but_line_han['Obs'].set_linewidth(1.5)
-        func_but_line_han['Obs'][0].set_linewidth(2.5)
-    func_but_line_han['Zoom'][0].set_linewidth(2.5)
+        func_but_line_han['Obs'][0].set_linewidth(1)
+        func_but_line_han['Obs'][0].set_color('w')
+        func_but_line_han['Obs'][0].set_path_effects(str_pe)
+    #pdb.set_trace()
 
 
     ldi = 0

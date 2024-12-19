@@ -4679,6 +4679,7 @@ def get_help_text(help_type,help_but):
     help_text= help_text + 'When clicking an axes, you select a new point, depth or time, depending on the axis selected.\n\n'
     help_text= help_text + 'When a variable button is clicked (on the left hand side) you change the current varaible.\n'
     help_text= help_text + 'When a function button clicked (on the right hand side) a function is executed.\n'
+    help_text= help_text + 'Buttons with a double outline behave differently when right clicked.\n'
         
     help_text = help_text + '\n\n'
 
