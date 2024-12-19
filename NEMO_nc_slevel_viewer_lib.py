@@ -4455,6 +4455,101 @@ def obs_reset_sel(Dataset_lst, Fill = True):
 
 
 
+
+def profile_line(xlim,ylim,nint = 2000,ni = 375,plotting = False):
+
+    # Create a cross-section between two points, containing only N/S/E/W segements.
+    # Also give the direction of each segment, using the DIA/diadct.F90 convention (0:E,1:W,2:S,3:N)
+    #   This is one shorter than the the points. it is zero padded at the end.
+    #
+    #                       Jonathan Tinker 02/09/2018
+
+    #plotting = False
+
+
+    if plotting: plt.plot( xlim,ylim,'r')
+
+    # First, simply interpolate 100 points between the line, and round them to integers - this is a simple first guess
+    #   however, it will also include the occasional diagonal
+
+    #i_int, j_int = np.linspace(xlim[0],xlim[1],nint),np.linspace(ylim[0],ylim[1],nint)
+    #i_int, j_int = np.linspace(xlim[0],xlim[1],nint).astype('int'),np.linspace(ylim[0],ylim[1],nint).astype('int')
+    i_int, j_int = np.linspace(xlim[0],xlim[1],nint).round().astype('int'),np.linspace(ylim[0],ylim[1],nint).round().astype('int')
+
+    if plotting: plt.plot( i_int, j_int,'b.-')
+
+    #Convert the integer indexes into a single value
+    ij_int = i_int*ni + j_int
+
+    if plotting: plt.plot(ij_int//ni,ij_int%ni, 'rx-')
+
+
+
+    # initialise the output directions, and point array (with the first point)
+    #dirn = []
+    ij_out = []
+    ij_out.append(ij_int[0])
+
+
+
+    # Loop throug points.
+    for ij in ij_int[1:]:
+        #note the previous point, and different between it
+        pij = ij_out[-1]
+        dij = ij-ij_out[-1]
+
+
+        # If there is no different, skip the point
+        if dij in [0]:
+            continue
+        # If the difference is not horizontal or vertical, add a point (and direction)
+        # to fill the gap first
+        if dij in [ni-1,ni+1,-ni-1, -ni+1]:
+            if dij in [ni-1,ni+1]:
+                ij_out.append(pij+ni)
+                #dirn.append(1)# West
+            elif dij in [-ni-1, -ni+1]:
+                ij_out.append(pij-ni)
+                #dirn.append(0)# East
+            else:
+                print('should never stop here')
+                pdb.set_trace()
+        # if the dij is vertical or horizontal (or diagonal if added the point)
+        # add the point
+        if  dij in [ni-1,ni+1,-ni-1, -ni+1,ni,-ni,1,-1]:
+
+            ij_out.append(ij)
+
+            #if   dij ==   1: dirn.append(3)# North
+            #elif dij ==  -1: dirn.append(2)# South
+            #elif dij ==  ni: dirn.append(1)# West
+            #elif dij == -ni: dirn.append(0)# East
+            #else:
+            #    print 'incorrect dir!'
+
+
+    # convert the 1d index back to 2d indexes
+    i_out,j_out = np.array(ij_out)//ni, np.array(ij_out)%ni
+
+
+    # increment the direction with a zero at the end.
+    #dirn.append(0)
+
+
+    if plotting: plt.plot(i_out,j_out,'ms-')
+    if plotting: plt.show()
+
+
+    #print len(i_out),len(dirn)
+
+
+    #exterally_calc_dirn = create_dir_from_path(i_out,j_out)
+
+
+    #pdb.set_trace()
+    return i_out,j_out#, exterally_calc_dirn
+
+
 def pop_up_opt_window(obs_but_names,obs_but_sw = None):
     '''
     ##example inputs
@@ -4615,7 +4710,7 @@ def pop_up_info_window(help_text): #obs_but_names,obs_but_sw = None
 
     # create Obs options figure
     fighelp = plt.figure()
-    fighelp.set_figheight(4)
+    fighelp.set_figheight(6)
     fighelp.set_figwidth(6)
     
     #add full screen axes
@@ -4787,6 +4882,15 @@ def get_help_text(help_type,help_but):
             help_text = help_text + '1) After clicking on the Obs button, you can click the map to select an obserations, and it will be displayed on the axes f, the profile window, or\n'
             help_text = help_text + '2) you can right click on the Obs button, and an option window will open, where you can select which obseration type to show, '
             help_text = help_text + 'whether you want show or hide the observations, or their edges.'
+        elif help_but == 'Xsect':
+            help_text = help_text + 'Plot a user defined cross section. \n'
+            help_text = help_text + 'The first click, or subsequent right click allow you to select a cross-section, which is then plotted. Subsequent (left) click '
+            help_text = help_text + 'plots the selected cross section of current variable and time. If two datasets, shows both, and their difference, otherwise shows '
+            help_text = help_text + 'the current dataset. The cross-section window will close when it is clicked.\n\n'
+            help_text = help_text + 'Selecting a cross-section\n'
+            help_text = help_text + '---------------------------\n'
+            help_text = help_text + 'A cross section is selected with ginput(-1) by left clicking on the map. Each point will appear as a red cross. the last point can be '
+            help_text = help_text + 'removed with a right click. When the desired cross section is selected, middle click to exit, and plot. '
         elif help_but == 'Save Figure':
             help_text = help_text + 'Saves a png of the displayed view (excluding the buttons), with a text file containing the current options to allow '
             help_text = help_text + 'the view to be recreated in a batch mode with the just plot options.'

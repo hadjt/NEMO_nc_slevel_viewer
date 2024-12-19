@@ -44,7 +44,7 @@ from NEMO_nc_slevel_viewer_lib import interp1dmat_create_weight
 
 # Plotting modules
 from NEMO_nc_slevel_viewer_lib import get_clim_pcolor, set_clim_pcolor,set_perc_clim_pcolor_in_region,get_colorbar_values
-from NEMO_nc_slevel_viewer_lib import scale_color_map,lon_lat_to_str,current_barb,get_pnts_pcolor_in_region
+from NEMO_nc_slevel_viewer_lib import scale_color_map,lon_lat_to_str,current_barb,get_pnts_pcolor_in_region,profile_line
 
 from NEMO_nc_slevel_viewer_lib import load_ops_prof_TS, load_ops_2D_xarray, obs_reset_sel
 from NEMO_nc_slevel_viewer_lib import pop_up_opt_window,pop_up_info_window,get_help_text
@@ -1283,8 +1283,17 @@ def nemo_slice_zlev(config = 'amm7',
                       'Zoom','Reset zoom',
                       'ColScl','Axis', 'Clim: Reset','Clim: Zoom','Clim: Expand','Clim: pair','Clim: sym',
                       'Surface', 'Near-Bed', 'Surface-Bed','Depth-Mean','Depth level',
-                      'Contours','Grad','T Diff','TS Diag','LD time','Fcst Diag','Vis curr','Obs','Save Figure','Help','Quit'] #'Obs: sel','Obs: opt',
+                      'Contours','Grad','T Diff','TS Diag','LD time','Fcst Diag','Vis curr','Obs','Xsect','Save Figure','Help','Quit'] #'Obs: sel','Obs: opt',
     
+
+    do_Xsect = True
+    loaded_xsect = False
+    if not do_Xsect:
+        
+        func_names_lst.remove('Xsect')
+    else:
+        figxs = None
+
     # if Obs, create empty option fiugre handle, otherwise remove button names
     if not do_Obs:
         #func_names_lst.remove('Obs: sel')
@@ -1360,6 +1369,7 @@ def nemo_slice_zlev(config = 'amm7',
         func_but_text_han[funcname] = clickax.text((func_but_extent[funcname][0]+func_but_extent[funcname][1])/2,(func_but_extent[funcname][2]+func_but_extent[funcname][3])/2,funcname, ha = 'center', va = 'center')
     
     
+
     # if a secondary data set, det default behaviour. 
     if load_second_files: func_but_text_han[secdataset_proc].set_color('darkgreen')
 
@@ -1432,6 +1442,11 @@ def nemo_slice_zlev(config = 'amm7',
         func_but_line_han['Obs'][0].set_linewidth(1)
         func_but_line_han['Obs'][0].set_color('w')
         func_but_line_han['Obs'][0].set_path_effects(str_pe)
+    if do_Xsect:
+        #pdb.set_trace()
+        func_but_line_han['Xsect'][0].set_linewidth(1)
+        func_but_line_han['Xsect'][0].set_color('w')
+        func_but_line_han['Xsect'][0].set_path_effects(str_pe)
     #pdb.set_trace()
 
 
@@ -3687,6 +3702,135 @@ def nemo_slice_zlev(config = 'amm7',
 
                             reload_Obs = True
                     
+
+                    elif but_name == 'Xsect':
+                        
+
+                        if (mouse_info['button'].name == 'RIGHT') | (loaded_xsect == False):
+                            loaded_xsect = True
+
+                            xsectloc_lst = plt.ginput(-1)
+                            #pdb.set_trace()
+
+                            # convert to the nearest model grid box
+                            xsect_ax_pnt_lst = []
+                            xsect_ii_pnt_lst = []
+                            xsect_jj_pnt_lst = []
+                            
+                            for tmpxsectloc in xsectloc_lst: 
+                                tmpxsect_ax,tmpxsect_ii,tmpxsect_jj,tmpxsect_ti,tmpxsect_zz, tmpxsect_sel_xlocval,tmpxsect_sel_ylocval = indices_from_ginput_ax(ax,tmpxsectloc[0],tmpxsectloc[1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
+                                xsect_ax_pnt_lst.append(tmpxsect_ax)
+                                xsect_ii_pnt_lst.append(tmpxsect_ii)
+                                xsect_jj_pnt_lst.append(tmpxsect_jj)
+                            
+                            xsect_jj_npnt = len(xsect_ii_pnt_lst)
+
+                            xsect_ii_ind_lst = []
+                            xsect_jj_ind_lst = []
+                            xsect_n_ind_lst = []
+
+                            for xi in range(xsect_jj_npnt-1):
+                                tmp_xsect_ii_ind,tmp_xsect_jj_ind = profile_line( xsect_ii_pnt_lst[xi:xi+2],xsect_jj_pnt_lst[xi:xi+2])
+                                xsect_ii_ind_lst.append(tmp_xsect_ii_ind)
+                                xsect_jj_ind_lst.append(tmp_xsect_jj_ind)
+                                xsect_n_ind_lst.append(tmp_xsect_ii_ind.size)
+
+                            xsect_ii_ind_mat = np.concatenate(xsect_ii_ind_lst)
+                            xsect_jj_ind_mat = np.concatenate(xsect_jj_ind_lst)
+                            nxsect = xsect_ii_ind_mat.size
+                            th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
+
+                            tmp_xsect_lon = lon_d[th_d_ind][[xsect_jj_ind_mat],[xsect_ii_ind_mat]][0,:]
+                            tmp_xsect_lat = lat_d[th_d_ind][[xsect_jj_ind_mat],[xsect_ii_ind_mat]][0,:]
+                            
+                            xsect_pnt_ind = np.append(0,np.cumsum(xsect_n_ind_lst)-1)
+
+                            select_xsect = False
+                        
+                        #pdb.set_trace()
+
+                        tmp_xsect_x,tmp_xsect_z,tmp_xsect_dat = {},{},{}
+                        for tmp_datstr in Dataset_lst:
+                            tmp_xsect_dat[tmp_datstr] = data_inst[tmp_datstr][:,[xsect_jj_ind_mat],[xsect_ii_ind_mat]][:,0,:]
+                            tmp_xsect_z[tmp_datstr] = grid_dict[tmp_datstr]['gdept'][:,[xsect_jj_ind_mat],[xsect_ii_ind_mat]][:,0,:]
+                            tmp_xsect_x[tmp_datstr] = np.arange(nxsect)
+
+
+                        if figxs is not None:
+                            if plt.fignum_exists(figxs.number):
+                                plt.close(figxs)
+
+
+                        if nDataset == 2:
+
+                            figxs = plt.figure()
+                            figxs.set_figheight(10*1.2)
+                            figxs.set_figwidth(8*1.5)
+                            figxs.suptitle('Cross-section: %s'%nice_varname_dict[var], fontsize = 20)
+                            plt.subplots_adjust(top=0.92,bottom=0.05,left=0.05,right=1,hspace=0.25,wspace=0.6)
+                            axxs = [plt.subplot(311),plt.subplot(312),plt.subplot(313)]
+                            paxxs = []
+                            for xi,tmp_datstr in enumerate(Dataset_lst): paxxs.append(axxs[xi].pcolormesh(tmp_xsect_x[tmp_datstr],tmp_xsect_z[tmp_datstr],tmp_xsect_dat[tmp_datstr]))
+                            paxxs.append(axxs[2].pcolormesh(tmp_xsect_x[secdataset_proc],tmp_xsect_z[secdataset_proc],tmp_xsect_dat[Dataset_lst[1]] - tmp_xsect_dat[Dataset_lst[0]], cmap = matplotlib.cm.seismic))
+                            for tmpax  in axxs: tmpax.invert_yaxis()
+                            for xi,tmp_datstr in enumerate(Dataset_lst): axxs[xi].set_title(tmp_datstr)
+                            axxs[2].set_title('%s - %s'%(Dataset_lst[1],Dataset_lst[0]))
+                            xs_ylim = np.array(axxs[0].get_ylim())
+                            xs_xlim = np.array(axxs[0].get_xlim())
+                            for axi,tmpax  in enumerate(axxs): 
+                                for xi in xsect_pnt_ind: axxs[axi].axvline(xi,color = 'k', alpha = 0.5, ls = '--') 
+                                for xi in xsect_pnt_ind: axxs[axi].text(xi,xs_ylim[0] - xs_ylim.ptp()*0.9   ,lon_lat_to_str(tmp_xsect_lon[xi],tmp_xsect_lat[xi])[0], rotation = 270, ha = 'left', va = 'top')
+                                plt.colorbar(paxxs[axi], ax = axxs[axi])
+                            for xi,tmp_datstr in enumerate(Dataset_lst): set_perc_clim_pcolor_in_region(5,95,ax = axxs[axi])
+                            set_perc_clim_pcolor_in_region(5,95,ax = axxs[2], sym = True)
+
+                        else:
+                            figxs = plt.figure()
+                            figxs.set_figheight(4*1.2)
+                            figxs.set_figwidth(8*1.5)
+                            figxs.suptitle('Cross-section: %s'%nice_varname_dict[var], fontsize = 20)
+                            plt.subplots_adjust(top=0.89,bottom=0.1,left=0.05,right=0.975,hspace=0.2,wspace=0.6)
+                            axxs = [plt.subplot(111)]
+                            paxxs = []
+                            paxxs.append(axxs[0].pcolormesh(tmp_xsect_x[secdataset_proc],tmp_xsect_z[secdataset_proc],tmp_xsect_dat[secdataset_proc]))
+                            axxs[0].invert_yaxis()
+                            xs_ylim = np.array(axxs[0].get_ylim())
+                            xs_xlim = np.array(axxs[0].get_xlim())
+                            for xi in xsect_pnt_ind:                            axxs[0].axvline(xi,color = 'k', alpha = 0.5, ls = '--') 
+                            for xi in xsect_pnt_ind:         axxs[0].text(xi,xs_ylim[0] - xs_ylim.ptp()*0.9   ,lon_lat_to_str(tmp_xsect_lon[xi],tmp_xsect_lat[xi])[0], rotation = 270, ha = 'left', va = 'top')
+                            plt.colorbar(paxxs[0], ax = axxs[0])
+                            #axxs[0].set_xlim([0,xs_xlim[1]*1.01])
+                            set_perc_clim_pcolor_in_region(5,95,ax = axxs[0])
+
+
+
+                        # redraw canvas
+                        figxs.canvas.draw()
+                        
+                        #flush canvas
+                        figxs.canvas.flush_events()
+                        
+                        # Show plot, and set it as the current figure and axis
+                        figxs.show()
+                        plt.figure(figxs.figure)
+                        #plt.sca(xsax)
+
+                        xsbuttonpress = True
+                        while xsbuttonpress: xsbuttonpress = plt.waitforbuttonpress(timeout=10)
+                        
+                        # close figure
+                        if figxs is not None:
+                            if plt.fignum_exists(figxs.number):
+                                plt.close(figxs)
+
+
+
+                        plt.figure(fig.figure)
+                        plt.sca(clickax)
+
+
+
+
                     elif but_name == 'TS Diag':
                         if figts is not None:
                             if plt.fignum_exists(figts.number):
