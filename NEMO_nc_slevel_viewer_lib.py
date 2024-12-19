@@ -4676,9 +4676,9 @@ def pop_up_info_window(help_text): #obs_but_names,obs_but_sw = None
 
 def get_help_text(help_type,help_but):
     help_text = 'Help: %s\n===================================\n\n'%help_but
-    help_text= help_text + 'When clicking an axes, you select a new point, depth or time, depending on the axis selected\n\n'
-    help_text= help_text + 'When a variable button is clicked (on the left hand side) you change the current varaible\n'
-    help_text= help_text + 'When a function button clicked (on the right hand side) a function is executed\n'
+    help_text= help_text + 'When clicking an axes, you select a new point, depth or time, depending on the axis selected.\n\n'
+    help_text= help_text + 'When a variable button is clicked (on the left hand side) you change the current varaible.\n'
+    help_text= help_text + 'When a function button clicked (on the right hand side) a function is executed.\n'
         
     help_text = help_text + '\n\n'
 
@@ -4686,17 +4686,17 @@ def get_help_text(help_type,help_but):
     if help_type.lower() == 'axis':
         help_text= help_text + 'Axis selected:\n\n'
         if help_but == 'axis: a':
-            help_text= help_text + 'The main axis (a) changes the selected location (latitude and longitude)\n'
+            help_text= help_text + 'The main axis (a) changes the selected location (latitude and longitude).\n'
         elif help_but == 'axis: b':
-            help_text= help_text + 'The main axis (b) changes the selected longitude\n'
+            help_text= help_text + 'The main axis (b) changes the selected longitude.\n'
         elif help_but == 'axis: c':
-            help_text= help_text + 'The main axis (c) changes the selected latitude\n'
+            help_text= help_text + 'The main axis (c) changes the selected latitude.\n'
         elif help_but == 'axis: d':
-            help_text= help_text + 'The main axis (d) changes the selected depth\n'
+            help_text= help_text + 'The main axis (d) changes the selected depth.\n'
         elif help_but == 'axis: e':
-            help_text= help_text + 'The main axis (e) changes the selected time\n'
+            help_text= help_text + 'The main axis (e) changes the selected time.\n'
         elif help_but == 'axis: f':
-            help_text= help_text + 'The main axis (f) changes the selected depth\n'   
+            help_text= help_text + 'The main axis (f) changes the selected depth.\n'   
 
 
     elif help_type.lower() == 'var':
@@ -4711,15 +4711,22 @@ def get_help_text(help_type,help_but):
         elif help_but == 'Show Prof':
             help_text = help_text + 'Shows or hides the profile axis (f), adjusting the size of the cross-section panels.'
         elif help_but == 'Zoom':
-            help_text = help_text + 'Click on the main axis (a) twice, to deliniate a square that will then be zoomed into\n'
+            help_text = help_text + 'Zoom in or out (for left or right button click), or setting max depth.\n'
+            help_text = help_text + 'If Zoom is clicked with the LEFT button:\n'
+            help_text = help_text + 'Click on the main axis (a) twice, to deliniate a square that will then be zoomed into.\n'
+            help_text = help_text + 'If Zoom is clicked with the RIGHT button:\n'
+            help_text = help_text + 'Click on the main axis (a) twice, to deliniate a square that will then be zoomed out from - '
+            help_text = help_text + 'i.e. the corners of the current map will be rescaled to the clicked points. The closer to the '
+            help_text = help_text + 'centre you click, more agressive the zoom out will be.\n'
             help_text = help_text + 'or, click on the axis b or c once and the maximum depth will be set.\n'
-            help_text = help_text + 'When you click once, the zoom button will turn red, when you click twice, it will change back to black\n'
+            help_text = help_text + 'When you click once, the zoom button will turn red (or green for right click), '
+            help_text = help_text + 'when you click twice, it will change back to black.'
         elif help_but == 'Reset zoom':
-            help_text = help_text + 'Reset the Zoom to default\n'
+            help_text = help_text + 'Reset the Zoom to default.'
         elif help_but == 'ColScl':
             help_text = help_text + 'Changes the colourmap scale, from linear, to focusing on the high or lower values. '
             help_text = help_text + 'Clicking on this cycles through these options, which is reflected in the button label '
-            help_text = help_text + '(Col: Linear Col: High, Col: Low)'
+            help_text = help_text + '(Col: Linear Col: High, Col: Low).'
         elif help_but == 'Axis':
             help_text = help_text + 'Changes the x- and y-axis scaling for the map axis (a) between Axis: Auto and Axis: Equal '
             help_text = help_text + '(with button labels updating) where Axis: Auto maximises the x and y ranges, '
@@ -4751,7 +4758,7 @@ def get_help_text(help_type,help_but):
             help_text = help_text + 'sets the depth level or processing shown in the map axis (a). The current option is colour red. ' 
             help_text = help_text + 'Clicking on axis d changes the depth, and changes the mode to Depth Level.'
         elif help_but == 'Contours':
-            help_text = help_text + 'Shows or hides contours based on the colourbar tick values'
+            help_text = help_text + 'Shows or hides contours based on the colourbar tick values.'
         elif help_but == 'Grad':
             help_text = help_text + 'Cycles between off (greyed out grad), to the horizontal gradient (Grad: Horiz) and the vertical Gradient (Grad: Vert). '
         elif help_but == 'T Diff':
@@ -4798,14 +4805,14 @@ def get_help_text(help_type,help_but):
             help_text = help_text + 'To reactivated click mode, point the button in the click button and wait for the view to stop cycling '
             help_text = help_text + 'before clicking Click. '
         elif help_but.split(' ')[0] == 'Dataset':
-            help_text = help_text + 'Change between Datasets'
+            help_text = help_text + 'Change between Datasets.'
         elif help_but.split('-')[0] == 'Dat':
-            help_text = help_text + 'The difference between Datasets'
+            help_text = help_text + 'The difference between Datasets.'
         elif help_but == 'regrid_meth':
             help_text = help_text + 'Changes the regridding method when different configurations are compared. '
             help_text = help_text + 'Cycles through Regrid: Bilin for bilinear interpolation and Regrid: NN for nearest neighbour interpolation.'
 
-    help_text = help_text + '\n\nClick on this window to close'
+    help_text = help_text + '\n\nClick on this window to close.'
 
     return help_text
 

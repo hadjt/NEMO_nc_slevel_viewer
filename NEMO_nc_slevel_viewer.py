@@ -1425,6 +1425,7 @@ def nemo_slice_zlev(config = 'amm7',
         #pdb.set_trace()
         #func_but_line_han['Obs'].set_linewidth(1.5)
         func_but_line_han['Obs'][0].set_linewidth(2.5)
+    func_but_line_han['Zoom'][0].set_linewidth(2.5)
 
 
     ldi = 0
@@ -3074,7 +3075,13 @@ def nemo_slice_zlev(config = 'amm7',
                     
                     #if verbose_debugging: print('justplot false, ginput:',justplot, datetime.now())
                     
-                    tmp_press = plt.ginput(1)
+                    #tmp_press = plt.ginput(1)
+                    buttonpress = True
+                    while buttonpress: buttonpress = plt.waitforbuttonpress()
+                    tmp_press = [[mouse_info['xdata'],mouse_info['ydata']]]
+                    del(buttonpress)
+                    #pdb.set_trace()
+                    #mouse_info = {'button':event.button,'x':event.x, 'y':event.y, 'xdata':event.xdata, 'ydata':event.ydata}
             # if tmp_press is empty (button press detected from another window, persist previous location. 
             #    Previously a empty array led to a continue, which led to the bug where additional colorbar were added
             if len(tmp_press) == 0:
@@ -3346,30 +3353,67 @@ def nemo_slice_zlev(config = 'amm7',
                     elif but_name in 'Zoom':
                         # use ginput to take two clicks as zoom region. 
                         # only coded for main axes
+
+                        tmp_zoom_in = True
+                        if mouse_info['button'].name == 'RIGHT':tmp_zoom_in = False
                         
                         plt.sca(clickax)
-                        tmpzoom0 = plt.ginput(1)
-                        func_but_text_han['Zoom'].set_color('r')
+                        #tmpzoom0 = plt.ginput(1)
+
+                        buttonpress = True
+                        while buttonpress: buttonpress = plt.waitforbuttonpress()
+                        tmpzoom0 = [[mouse_info['xdata'],mouse_info['ydata']]]
+                        del(buttonpress)
+
+
+                        if tmp_zoom_in: func_but_text_han['Zoom'].set_color('r')
+                        elif not tmp_zoom_in: func_but_text_han['Zoom'].set_color('g')
                         fig.canvas.draw()
                         zoom0_ax,zoom0_ii,zoom0_jj,zoom0_ti,zoom0_zz,sel_xlocval,sel_ylocval = indices_from_ginput_ax(ax,tmpzoom0[0][0],tmpzoom0[0][1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
                         if zoom0_ax in [1,2,3]:
                             zlim_max = zoom0_zz
                         elif zoom0_ax in [0]:
-                            tmpzoom1 = plt.ginput(1)
+                            #tmpzoom1 = plt.ginput(1)
+                            buttonpress = True
+                            while buttonpress: buttonpress = plt.waitforbuttonpress()
+                            tmpzoom1 = [[mouse_info['xdata'],mouse_info['ydata']]]
+                            del(buttonpress)
+                            
                             zoom1_ax,zoom1_ii,zoom1_jj,zoom1_ti,zoom1_zz, sel_xlocval,sel_ylocval = indices_from_ginput_ax(ax,tmpzoom1[0][0],tmpzoom1[0][1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
                                 
                             if verbose_debugging: print(zoom0_ax,zoom0_ii,zoom0_jj,zoom0_ti,zoom0_zz)
                             if verbose_debugging: print(zoom1_ax,zoom1_ii,zoom1_jj,zoom1_ti,zoom1_zz)
                             if verbose_debugging: print(cur_xlim)
                             if verbose_debugging: print(cur_ylim)
+
                             # if both clicks in main axes, use clicks for the new x and ylims
                             if (zoom0_ax is not None) & (zoom0_ax is not None):
                                 if zoom0_ax == zoom1_ax:
                                     if zoom0_ax == 0:
-                                        cur_xlim = np.array([lon_d[1][zoom0_jj,zoom0_ii],lon_d[1][zoom1_jj,zoom1_ii]])
-                                        cur_ylim = np.array([lat_d[1][zoom0_jj,zoom0_ii],lat_d[1][zoom1_jj,zoom1_ii]])
-                                        cur_xlim.sort()
-                                        cur_ylim.sort()
+                                        cl_cur_xlim = np.array([lon_d[1][zoom0_jj,zoom0_ii],lon_d[1][zoom1_jj,zoom1_ii]])
+                                        cl_cur_ylim = np.array([lat_d[1][zoom0_jj,zoom0_ii],lat_d[1][zoom1_jj,zoom1_ii]])
+                                        cl_cur_xlim.sort()
+                                        cl_cur_ylim.sort()
+                                        if tmp_zoom_in:
+                                            cur_xlim = cl_cur_xlim
+                                            cur_ylim = cl_cur_ylim
+                                        else:
+                                            # If right click (initially, or last time), zoom out. 
+                                            #pdb.set_trace()
+                                            #current width of the x and y axis
+                                            dcur_xlim = cur_xlim.ptp()
+                                            dcur_ylim = cur_ylim.ptp()
+                                            #middle of current the x and y axis
+                                            mncur_xlim = cur_xlim.mean()
+                                            mncur_ylim = cur_ylim.mean()
+                                            #width of the clicked x and y points
+                                            dcur_cl_xlim = cl_cur_xlim.ptp()
+                                            dcur_cl_ylim = cl_cur_ylim.ptp()
+                                            
+                                            # scale up axis width with dcur_xlim/dcur_cl_xlim, and centre.
+                                            cur_xlim = dcur_xlim*(dcur_xlim/dcur_cl_xlim)*np.array([-0.5,0.5])+mncur_xlim
+                                            cur_ylim = dcur_ylim*(dcur_ylim/dcur_cl_ylim)*np.array([-0.5,0.5])+mncur_ylim
+
 
 
                         func_but_text_han['Zoom'].set_color('k')
