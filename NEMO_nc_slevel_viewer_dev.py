@@ -3378,7 +3378,7 @@ def nemo_slice_zlev(config = 'amm7',
                             while buttonpress: buttonpress = plt.waitforbuttonpress()
                             tmpzoom1 = [[mouse_info['xdata'],mouse_info['ydata']]]
                             del(buttonpress)
-                            
+
                             zoom1_ax,zoom1_ii,zoom1_jj,zoom1_ti,zoom1_zz, sel_xlocval,sel_ylocval = indices_from_ginput_ax(ax,tmpzoom1[0][0],tmpzoom1[0][1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
                                 
                             if verbose_debugging: print(zoom0_ax,zoom0_ii,zoom0_jj,zoom0_ti,zoom0_zz)
@@ -5066,7 +5066,7 @@ def main():
                 else:
                     tmp_thval = int(tmp_thval)
                 #pdb.set_trace()
-                if tmp_thvar == 'dxy':
+                if tmp_thvar in ['dxy','dx','dy']:
                     thd[tmp_datstr]['dx'] = tmp_thval
                     thd[tmp_datstr]['dy'] = tmp_thval
                 else:
