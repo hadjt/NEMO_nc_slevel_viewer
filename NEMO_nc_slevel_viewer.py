@@ -44,7 +44,8 @@ from NEMO_nc_slevel_viewer_lib import interp1dmat_create_weight
 
 # Plotting modules
 from NEMO_nc_slevel_viewer_lib import get_clim_pcolor, set_clim_pcolor,set_perc_clim_pcolor_in_region,get_colorbar_values
-from NEMO_nc_slevel_viewer_lib import scale_color_map,lon_lat_to_str,current_barb,get_pnts_pcolor_in_region,profile_line
+from NEMO_nc_slevel_viewer_lib import scale_color_map,lon_lat_to_str,current_barb,get_pnts_pcolor_in_region
+from NEMO_nc_slevel_viewer_lib import connections_gridbox_along_line,profile_line
 
 from NEMO_nc_slevel_viewer_lib import load_ops_prof_TS, load_ops_2D_xarray, obs_reset_sel
 from NEMO_nc_slevel_viewer_lib import pop_up_opt_window,pop_up_info_window,get_help_text
@@ -3713,12 +3714,14 @@ def nemo_slice_zlev(config = 'amm7',
                             #pdb.set_trace()
 
                             print('Xsect: ginput exited')
+                            xs0 = datetime.now()
 
                             # convert to the nearest model grid box
                             xsect_ax_pnt_lst = []
                             xsect_ii_pnt_lst = []
                             xsect_jj_pnt_lst = []
                             
+                            tmpnlat, tmpnlon = lat_d[th_d_ind].shape
                             for tmpxsectloc in xsectloc_lst: 
                                 tmpxsect_ax,tmpxsect_ii,tmpxsect_jj,tmpxsect_ti,tmpxsect_zz, tmpxsect_sel_xlocval,tmpxsect_sel_ylocval = indices_from_ginput_ax(ax,tmpxsectloc[0],tmpxsectloc[1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
                                 xsect_ax_pnt_lst.append(tmpxsect_ax)
@@ -3729,86 +3732,137 @@ def nemo_slice_zlev(config = 'amm7',
 
                             th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
 
-                            if configd[int(secdataset_proc[8:])].lower() in ['amm7','amm15','co9p2','gulf18']:
+                            xs1 = datetime.now()
+                            #if configd[int(secdataset_proc[8:])].lower() in ['amm7','amm15','co9p2','gulf18','orca025']:
+                            #if True:
 
-                                xsect_ii_ind_lst = []
-                                xsect_jj_ind_lst = []
-                                xsect_n_ind_lst = []
+                            xsect_ii_ind_lst = []
+                            xsect_jj_ind_lst = []
+                            xsect_n_ind_lst = []
 
-                                for xi in range(xsect_jj_npnt-1):
-                                    tmp_xsect_ii_ind,tmp_xsect_jj_ind = profile_line( xsect_ii_pnt_lst[xi:xi+2],xsect_jj_pnt_lst[xi:xi+2])
-                                    xsect_ii_ind_lst.append(tmp_xsect_ii_ind)
-                                    xsect_jj_ind_lst.append(tmp_xsect_jj_ind)
-                                    xsect_n_ind_lst.append(tmp_xsect_ii_ind.size)
+                            for xi in range(xsect_jj_npnt-1):
+                                tmp_xsect_ii_ind,tmp_xsect_jj_ind = profile_line( xsect_ii_pnt_lst[xi:xi+2],xsect_jj_pnt_lst[xi:xi+2], ni = tmpnlon )
+                                xsect_ii_ind_lst.append(tmp_xsect_ii_ind)
+                                xsect_jj_ind_lst.append(tmp_xsect_jj_ind)
+                                xsect_n_ind_lst.append(tmp_xsect_ii_ind.size)
 
-                                xsect_ii_ind_mat = np.concatenate(xsect_ii_ind_lst)
-                                xsect_jj_ind_mat = np.concatenate(xsect_jj_ind_lst)
-                                nxsect = xsect_ii_ind_mat.size
+                            xsect_ii_ind_mat = np.concatenate(xsect_ii_ind_lst)
+                            xsect_jj_ind_mat = np.concatenate(xsect_jj_ind_lst)
+                            nxsect = xsect_ii_ind_mat.size
 
-                                tmp_xsect_lon = lon_d[th_d_ind][[xsect_jj_ind_mat],[xsect_ii_ind_mat]][0,:]
-                                tmp_xsect_lat = lat_d[th_d_ind][[xsect_jj_ind_mat],[xsect_ii_ind_mat]][0,:]
-                                
-                                xsect_pnt_ind = np.append(0,np.cumsum(xsect_n_ind_lst)-1)
-                            if configd[int(secdataset_proc[8:])].lower() in ['orca025','orca12']:
+                            tmp_xsect_lon = lon_d[th_d_ind][[xsect_jj_ind_mat],[xsect_ii_ind_mat]][0,:]
+                            tmp_xsect_lat = lat_d[th_d_ind][[xsect_jj_ind_mat],[xsect_ii_ind_mat]][0,:]
+                            
+                            xsect_pnt_ind = np.append(0,np.cumsum(xsect_n_ind_lst)-1)
+                            """
+                            #if configd[int(secdataset_proc[8:])].lower() in ['orca025','orca12']:
+                            #if configd[int(secdataset_proc[8:])].upper() in ['orca025','orca12']:
+                            elif True == False:
 
-
+                                if configd[int(secdataset_proc[8:])].lower() == 'orca025': xs_gridsp = 1./4.
+                                elif configd[int(secdataset_proc[8:])].lower() == 'orca12': xs_gridsp = 1./12.
+                                #xs_gridsp = 1./12.
                                 xsect_lon_ind_lst = []
                                 xsect_lat_ind_lst = []
                                 xsect_n_ind_lst = []
+                                xsmeth = 1
 
-                                for xi in range(xsect_jj_npnt-1):
-                                    #tmp_xsect_ii_ind,tmp_xsect_jj_ind = profile_line( xsect_ii_pnt_lst[xi:xi+2],xsect_jj_pnt_lst[xi:xi+2],nint = 2000)
-                                    tmpxdlon = np.array([lon_d[th_d_ind][xsect_jj_pnt_lst[xi],xsect_ii_pnt_lst[xi]],lon_d[th_d_ind][xsect_jj_pnt_lst[xi+1],xsect_ii_pnt_lst[xi+1]]])
-                                    tmpxdlat = np.array([lat_d[th_d_ind][xsect_jj_pnt_lst[xi],xsect_ii_pnt_lst[xi]],lat_d[th_d_ind][xsect_jj_pnt_lst[xi+1],xsect_ii_pnt_lst[xi+1]]])
-                                    #tmpxdlon = (lon_d[th_d_ind][xsect_ii_pnt_lst[xi],xsect_jj_pnt_lst[xi]],lon_d[th_d_ind][xsect_ii_pnt_lst[xi+1],xsect_jj_pnt_lst[xi+1]])
-                                    #tmpxdlat = (lat_d[th_d_ind][xsect_ii_pnt_lst[xi],xsect_jj_pnt_lst[xi]],lat_d[th_d_ind][xsect_ii_pnt_lst[xi+1],xsect_jj_pnt_lst[xi+1]])
-                                    tmp_xsect_lon_ind,tmp_xsect_lat_ind = profile_line((tmpxdlon+180)*10, (tmpxdlat+90)*10,nint = 300, ni = 4000*50)
-                                    xsect_lon_ind_lst.append((tmp_xsect_lon_ind/10)-180)
-                                    xsect_lat_ind_lst.append((tmp_xsect_lat_ind/10)-90)
-                                    xsect_n_ind_lst.append(tmp_xsect_lon_ind.size)
-                                    #
+                                xs2 = datetime.now()
+                                if xsmeth == 1:
 
-                                xsect_lon_ind_mat = np.concatenate(xsect_lon_ind_lst)
-                                xsect_lat_ind_mat = np.concatenate(xsect_lat_ind_lst)
+                                    for xi in range(xsect_jj_npnt-1):
+
+                                        ##pdb.set_trace()
+                                        
+                                        '''
+                                        pdb.set_trace()
+
+                                        
+
+                                        ii0,ii1,jj0,jj1 = tmpxdlon[0],tmpxdlon[1],tmpxdlat[0],tmpxdlat[1]
+                                        
+                                        iiline = np.linspace(ii0,ii1,1000)
+                                        jjline = np.linspace(jj0,jj1,1000)
+                                        '''
+
+                                        tmpxdlon = np.array([lon_d[th_d_ind][xsect_jj_pnt_lst[xi],xsect_ii_pnt_lst[xi]],lon_d[th_d_ind][xsect_jj_pnt_lst[xi+1],xsect_ii_pnt_lst[xi+1]]])
+                                        tmpxdlat = np.array([lat_d[th_d_ind][xsect_jj_pnt_lst[xi],xsect_ii_pnt_lst[xi]],lat_d[th_d_ind][xsect_jj_pnt_lst[xi+1],xsect_ii_pnt_lst[xi+1]]])
+                                        
+                                        tmp_xsect_lon_ind,tmp_xsect_lat_ind = connections_gridbox_along_line(tmpxdlon[0],tmpxdlon[1],tmpxdlat[0],tmpxdlat[1],lon_d,lat_d,th_d_ind, gridsp = xs_gridsp)
+                                        
+                                        xsect_lon_ind_lst.append(tmp_xsect_lon_ind)
+                                        xsect_lat_ind_lst.append(tmp_xsect_lat_ind)
+                                        xsect_n_ind_lst.append(tmp_xsect_lon_ind.size)
+
+
+                                    xsect_ii_ind_mat = np.concatenate(xsect_lon_ind_lst)
+                                    xsect_jj_ind_mat = np.concatenate(xsect_lat_ind_lst)
+                                    
+                                    xs3 = datetime.now()
+                                else:
+
+
+
+
+                                    for xi in range(xsect_jj_npnt-1):
+                                        tmpxdlon = np.array([lon_d[th_d_ind][xsect_jj_pnt_lst[xi],xsect_ii_pnt_lst[xi]],lon_d[th_d_ind][xsect_jj_pnt_lst[xi+1],xsect_ii_pnt_lst[xi+1]]])
+                                        tmpxdlat = np.array([lat_d[th_d_ind][xsect_jj_pnt_lst[xi],xsect_ii_pnt_lst[xi]],lat_d[th_d_ind][xsect_jj_pnt_lst[xi+1],xsect_ii_pnt_lst[xi+1]]])
+                                        
+                                        tmp_xsect_lon_ind,tmp_xsect_lat_ind = profile_line((tmpxdlon+180)*10, (tmpxdlat+90)*10,nint = 300, ni = 4000*50)
+                                        xsect_lon_ind_lst.append((tmp_xsect_lon_ind/10)-180)
+                                        xsect_lat_ind_lst.append((tmp_xsect_lat_ind/10)-90)
+                                        xsect_n_ind_lst.append(tmp_xsect_lon_ind.size)
+                                        #
+
+                                    xsect_lon_ind_mat = np.concatenate(xsect_lon_ind_lst)
+                                    xsect_lat_ind_mat = np.concatenate(xsect_lat_ind_lst)
 
                                 
 
 
-                                xsect_ii_ind_lst = []
-                                xsect_jj_ind_lst = []
-                                
-                                tmpnlat, tmpnlon = lat_d[th_d_ind].shape
-
-                                for xstmplon, xstmplat in zip(xsect_lon_ind_mat, xsect_lat_ind_mat):
-                                    xs_tmp_minarg = np.argmin((lon_d[th_d_ind] - xstmplon)**2 + (lat_d[th_d_ind] - xstmplat)**2)
+                                    xs3 = datetime.now()
                                     #pdb.set_trace()
-                                    tmpjj = xs_tmp_minarg//tmpnlon
-                                    tmpii = xs_tmp_minarg%tmpnlon
+                                    xsect_ii_ind_lst = []
+                                    xsect_jj_ind_lst = []
+                                    
+                                    tmpnlat, tmpnlon = lat_d[th_d_ind].shape
 
-                                    xsect_ii_ind_lst.append(tmpii)
-                                    xsect_jj_ind_lst.append(tmpjj)
-                                #pdb.set_trace()
+                                    for xstmplon, xstmplat in zip(xsect_lon_ind_mat, xsect_lat_ind_mat):
+                                        xs_tmp_minarg = np.argmin((lon_d[th_d_ind] - xstmplon)**2 + (lat_d[th_d_ind] - xstmplat)**2)
+                                        #pdb.set_trace()
+                                        tmpjj = xs_tmp_minarg//tmpnlon
+                                        tmpii = xs_tmp_minarg%tmpnlon
 
-                                xsect_ii_ind_mat = np.array(xsect_ii_ind_lst)
-                                xsect_jj_ind_mat = np.array(xsect_jj_ind_lst)
-                                #print('xsect_ii_ind_mat.size:',xsect_ii_ind_mat.size)
+                                        xsect_ii_ind_lst.append(tmpii)
+                                        xsect_jj_ind_lst.append(tmpjj)
+                                    #pdb.set_trace()
 
-                                # remove doubled points
-                                xsect_ii_ind_lst = [xsect_ii_ind_mat[0]]
-                                xsect_jj_ind_lst = [xsect_jj_ind_mat[0]]
+                                    xsect_ii_ind_mat = np.array(xsect_ii_ind_lst)
+                                    xsect_jj_ind_mat = np.array(xsect_jj_ind_lst)
+                                    #print('xsect_ii_ind_mat.size:',xsect_ii_ind_mat.size)
 
-                                for xi in range(len(xsect_ii_ind_mat)-1):
-                                    tmpii0 = xsect_ii_ind_mat[xi]
-                                    tmpii1 = xsect_ii_ind_mat[xi+1]
-                                    tmpjj0 = xsect_jj_ind_mat[xi]
-                                    tmpjj1 = xsect_jj_ind_mat[xi+1]
-                                    if ((tmpii0==tmpii1)&(tmpjj0==tmpjj1)) == False:
-                                        xsect_ii_ind_lst.append(tmpii1)
-                                        xsect_jj_ind_lst.append(tmpjj1)
+                                    #xs3 = datetime.now()
+
+                                    # remove doubled points
+                                    xsect_ii_ind_lst = [xsect_ii_ind_mat[0]]
+                                    xsect_jj_ind_lst = [xsect_jj_ind_mat[0]]
+
+                                    for xi in range(len(xsect_ii_ind_mat)-1):
+                                        tmpii0 = xsect_ii_ind_mat[xi]
+                                        tmpii1 = xsect_ii_ind_mat[xi+1]
+                                        tmpjj0 = xsect_jj_ind_mat[xi]
+                                        tmpjj1 = xsect_jj_ind_mat[xi+1]
+                                        if ((tmpii0==tmpii1)&(tmpjj0==tmpjj1)) == False:
+                                            xsect_ii_ind_lst.append(tmpii1)
+                                            xsect_jj_ind_lst.append(tmpjj1)
 
 
-                                xsect_ii_ind_mat = np.array(xsect_ii_ind_lst)
-                                xsect_jj_ind_mat = np.array(xsect_jj_ind_lst)
+                                    xsect_ii_ind_mat = np.array(xsect_ii_ind_lst)
+                                    xsect_jj_ind_mat = np.array(xsect_jj_ind_lst)
+
+
+                                xs4 = datetime.now()
+
 
                                 tmp_xsect_lon = lon_d[th_d_ind][[xsect_jj_ind_mat],[xsect_ii_ind_mat]][0,:]
                                 tmp_xsect_lat = lat_d[th_d_ind][[xsect_jj_ind_mat],[xsect_ii_ind_mat]][0,:]
@@ -3830,13 +3884,26 @@ def nemo_slice_zlev(config = 'amm7',
                                 #pdb.set_trace()
                                 xsect_pnt_ind = np.array(xsect_pnt_ind_lst)
                                 nxsect = xsect_jj_ind_mat.size
+                                
+                                
+                                xs5 = datetime.now()
+
+
+                                print('xs1-xs0',xs1-xs0)
+                                print('xs2-xs1',xs2-xs1)
+                                print('xs3-xs2',xs3-xs2)
+                                print('xs4-xs3',xs4-xs3)
+                                print('xs5-xs4',xs5-xs4)
+                                #print('xs5-xs2',xs5-xs2)
+                                #pdb.set_trace()
                             else:
                                 pdb.set_trace()
 
                             select_xsect = False
                             print('Xsect: indices processed.')
-                        #pdb.set_trace()
-
+                            #pdb.set_trace()
+                            """
+                        print('Xsect: indices processed.')
                         tmp_xsect_x,tmp_xsect_z,tmp_xsect_dat = {},{},{}
 
                         for tmp_datstr in Dataset_lst:
@@ -3964,7 +4031,7 @@ def nemo_slice_zlev(config = 'amm7',
                         plt.figure(fig.figure)
                         plt.sca(clickax)
 
-
+                        #pdb.set_trace()
 
 
                     elif but_name == 'TS Diag':
