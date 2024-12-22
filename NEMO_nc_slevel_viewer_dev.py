@@ -45,7 +45,7 @@ from NEMO_nc_slevel_viewer_lib import interp1dmat_create_weight
 # Plotting modules
 from NEMO_nc_slevel_viewer_lib import get_clim_pcolor, set_clim_pcolor,set_perc_clim_pcolor_in_region,get_colorbar_values
 from NEMO_nc_slevel_viewer_lib import scale_color_map,lon_lat_to_str,current_barb,get_pnts_pcolor_in_region
-from NEMO_nc_slevel_viewer_lib import connections_gridbox_along_line,profile_line
+from NEMO_nc_slevel_viewer_lib import profile_line
 
 from NEMO_nc_slevel_viewer_lib import load_ops_prof_TS, load_ops_2D_xarray, obs_reset_sel
 from NEMO_nc_slevel_viewer_lib import pop_up_opt_window,pop_up_info_window,get_help_text
@@ -3730,6 +3730,11 @@ def nemo_slice_zlev(config = 'amm7',
                             
                             xsect_jj_npnt = len(xsect_ii_pnt_lst)
 
+                            xsect_lon_pnt_mat = lon_d[th_d_ind][[xsect_jj_pnt_lst],[xsect_ii_pnt_lst]][0,:]
+                            xsect_lat_pnt_mat = lat_d[th_d_ind][[xsect_jj_pnt_lst],[xsect_ii_pnt_lst]][0,:]
+
+
+
                             th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
 
                             xs1 = datetime.now()
@@ -3739,9 +3744,9 @@ def nemo_slice_zlev(config = 'amm7',
                             xsect_ii_ind_lst = []
                             xsect_jj_ind_lst = []
                             xsect_n_ind_lst = []
-
+                            #pdb.set_trace()
                             for xi in range(xsect_jj_npnt-1):
-                                tmp_xsect_ii_ind,tmp_xsect_jj_ind = profile_line( xsect_ii_pnt_lst[xi:xi+2],xsect_jj_pnt_lst[xi:xi+2], ni = tmpnlon )
+                                tmp_xsect_ii_ind,tmp_xsect_jj_ind = profile_line( xsect_ii_pnt_lst[xi:xi+2],xsect_jj_pnt_lst[xi:xi+2], ni = tmpnlat )
                                 xsect_ii_ind_lst.append(tmp_xsect_ii_ind)
                                 xsect_jj_ind_lst.append(tmp_xsect_jj_ind)
                                 xsect_n_ind_lst.append(tmp_xsect_ii_ind.size)
@@ -3754,156 +3759,19 @@ def nemo_slice_zlev(config = 'amm7',
                             tmp_xsect_lat = lat_d[th_d_ind][[xsect_jj_ind_mat],[xsect_ii_ind_mat]][0,:]
                             
                             xsect_pnt_ind = np.append(0,np.cumsum(xsect_n_ind_lst)-1)
-                            """
-                            #if configd[int(secdataset_proc[8:])].lower() in ['orca025','orca12']:
-                            #if configd[int(secdataset_proc[8:])].upper() in ['orca025','orca12']:
-                            elif True == False:
-
-                                if configd[int(secdataset_proc[8:])].lower() == 'orca025': xs_gridsp = 1./4.
-                                elif configd[int(secdataset_proc[8:])].lower() == 'orca12': xs_gridsp = 1./12.
-                                #xs_gridsp = 1./12.
-                                xsect_lon_ind_lst = []
-                                xsect_lat_ind_lst = []
-                                xsect_n_ind_lst = []
-                                xsmeth = 1
-
-                                xs2 = datetime.now()
-                                if xsmeth == 1:
-
-                                    for xi in range(xsect_jj_npnt-1):
-
-                                        ##pdb.set_trace()
-                                        
-                                        '''
-                                        pdb.set_trace()
-
-                                        
-
-                                        ii0,ii1,jj0,jj1 = tmpxdlon[0],tmpxdlon[1],tmpxdlat[0],tmpxdlat[1]
-                                        
-                                        iiline = np.linspace(ii0,ii1,1000)
-                                        jjline = np.linspace(jj0,jj1,1000)
-                                        '''
-
-                                        tmpxdlon = np.array([lon_d[th_d_ind][xsect_jj_pnt_lst[xi],xsect_ii_pnt_lst[xi]],lon_d[th_d_ind][xsect_jj_pnt_lst[xi+1],xsect_ii_pnt_lst[xi+1]]])
-                                        tmpxdlat = np.array([lat_d[th_d_ind][xsect_jj_pnt_lst[xi],xsect_ii_pnt_lst[xi]],lat_d[th_d_ind][xsect_jj_pnt_lst[xi+1],xsect_ii_pnt_lst[xi+1]]])
-                                        
-                                        tmp_xsect_lon_ind,tmp_xsect_lat_ind = connections_gridbox_along_line(tmpxdlon[0],tmpxdlon[1],tmpxdlat[0],tmpxdlat[1],lon_d,lat_d,th_d_ind, gridsp = xs_gridsp)
-                                        
-                                        xsect_lon_ind_lst.append(tmp_xsect_lon_ind)
-                                        xsect_lat_ind_lst.append(tmp_xsect_lat_ind)
-                                        xsect_n_ind_lst.append(tmp_xsect_lon_ind.size)
-
-
-                                    xsect_ii_ind_mat = np.concatenate(xsect_lon_ind_lst)
-                                    xsect_jj_ind_mat = np.concatenate(xsect_lat_ind_lst)
-                                    
-                                    xs3 = datetime.now()
-                                else:
-
-
-
-
-                                    for xi in range(xsect_jj_npnt-1):
-                                        tmpxdlon = np.array([lon_d[th_d_ind][xsect_jj_pnt_lst[xi],xsect_ii_pnt_lst[xi]],lon_d[th_d_ind][xsect_jj_pnt_lst[xi+1],xsect_ii_pnt_lst[xi+1]]])
-                                        tmpxdlat = np.array([lat_d[th_d_ind][xsect_jj_pnt_lst[xi],xsect_ii_pnt_lst[xi]],lat_d[th_d_ind][xsect_jj_pnt_lst[xi+1],xsect_ii_pnt_lst[xi+1]]])
-                                        
-                                        tmp_xsect_lon_ind,tmp_xsect_lat_ind = profile_line((tmpxdlon+180)*10, (tmpxdlat+90)*10,nint = 300, ni = 4000*50)
-                                        xsect_lon_ind_lst.append((tmp_xsect_lon_ind/10)-180)
-                                        xsect_lat_ind_lst.append((tmp_xsect_lat_ind/10)-90)
-                                        xsect_n_ind_lst.append(tmp_xsect_lon_ind.size)
-                                        #
-
-                                    xsect_lon_ind_mat = np.concatenate(xsect_lon_ind_lst)
-                                    xsect_lat_ind_mat = np.concatenate(xsect_lat_ind_lst)
-
-                                
-
-
-                                    xs3 = datetime.now()
-                                    #pdb.set_trace()
-                                    xsect_ii_ind_lst = []
-                                    xsect_jj_ind_lst = []
-                                    
-                                    tmpnlat, tmpnlon = lat_d[th_d_ind].shape
-
-                                    for xstmplon, xstmplat in zip(xsect_lon_ind_mat, xsect_lat_ind_mat):
-                                        xs_tmp_minarg = np.argmin((lon_d[th_d_ind] - xstmplon)**2 + (lat_d[th_d_ind] - xstmplat)**2)
-                                        #pdb.set_trace()
-                                        tmpjj = xs_tmp_minarg//tmpnlon
-                                        tmpii = xs_tmp_minarg%tmpnlon
-
-                                        xsect_ii_ind_lst.append(tmpii)
-                                        xsect_jj_ind_lst.append(tmpjj)
-                                    #pdb.set_trace()
-
-                                    xsect_ii_ind_mat = np.array(xsect_ii_ind_lst)
-                                    xsect_jj_ind_mat = np.array(xsect_jj_ind_lst)
-                                    #print('xsect_ii_ind_mat.size:',xsect_ii_ind_mat.size)
-
-                                    #xs3 = datetime.now()
-
-                                    # remove doubled points
-                                    xsect_ii_ind_lst = [xsect_ii_ind_mat[0]]
-                                    xsect_jj_ind_lst = [xsect_jj_ind_mat[0]]
-
-                                    for xi in range(len(xsect_ii_ind_mat)-1):
-                                        tmpii0 = xsect_ii_ind_mat[xi]
-                                        tmpii1 = xsect_ii_ind_mat[xi+1]
-                                        tmpjj0 = xsect_jj_ind_mat[xi]
-                                        tmpjj1 = xsect_jj_ind_mat[xi+1]
-                                        if ((tmpii0==tmpii1)&(tmpjj0==tmpjj1)) == False:
-                                            xsect_ii_ind_lst.append(tmpii1)
-                                            xsect_jj_ind_lst.append(tmpjj1)
-
-
-                                    xsect_ii_ind_mat = np.array(xsect_ii_ind_lst)
-                                    xsect_jj_ind_mat = np.array(xsect_jj_ind_lst)
-
-
-                                xs4 = datetime.now()
-
-
-                                tmp_xsect_lon = lon_d[th_d_ind][[xsect_jj_ind_mat],[xsect_ii_ind_mat]][0,:]
-                                tmp_xsect_lat = lat_d[th_d_ind][[xsect_jj_ind_mat],[xsect_ii_ind_mat]][0,:]
-                                #print('xsect_ii_ind_mat.size:',xsect_ii_ind_mat.size)
-                                #pdb.set_trace()
-                                #tmp_xsect_lon = lon_d[th_d_ind][[xsect_jj_ind_mat],[xsect_ii_ind_mat]][0,:]
-                                #tmp_xsect_lat = lat_d[th_d_ind][[xsect_jj_ind_mat],[xsect_ii_ind_mat]][0,:]
-                                
-
-                                xsect_pnt_ind_lst = []
-                                for xi in range(xsect_jj_npnt):
-                                    tmpxlon = lon_d[th_d_ind][xsect_jj_pnt_lst[xi],xsect_ii_pnt_lst[xi]]
-                                    tmpxlat = lat_d[th_d_ind][xsect_jj_pnt_lst[xi],xsect_ii_pnt_lst[xi]]
-                                    xs_tmp_minarg = np.argmin((tmp_xsect_lon - tmpxlon)**2 + (tmp_xsect_lat - tmpxlat)**2)
-                                    #pdb.set_trace()
-                                    xsect_pnt_ind_lst.append(xs_tmp_minarg)
-
-
-                                #pdb.set_trace()
-                                xsect_pnt_ind = np.array(xsect_pnt_ind_lst)
-                                nxsect = xsect_jj_ind_mat.size
-                                
-                                
-                                xs5 = datetime.now()
-
-
-                                print('xs1-xs0',xs1-xs0)
-                                print('xs2-xs1',xs2-xs1)
-                                print('xs3-xs2',xs3-xs2)
-                                print('xs4-xs3',xs4-xs3)
-                                print('xs5-xs4',xs5-xs4)
-                                #print('xs5-xs2',xs5-xs2)
-                                #pdb.set_trace()
-                            else:
-                                pdb.set_trace()
-
-                            select_xsect = False
-                            print('Xsect: indices processed.')
-                            #pdb.set_trace()
-                            """
+                            
                         print('Xsect: indices processed.')
+
+
+                        xs_map_ax_lst = [ax[0].plot(tmp_xsect_lon,tmp_xsect_lat,'r.-')]
+                        xs_map_ax_lst.append(ax[0].plot(xsect_lon_pnt_mat,xsect_lat_pnt_mat,'ko-'))
+
+                        fig.canvas.draw()
+                        if verbose_debugging: print('Canvas flush', datetime.now())
+                        fig.canvas.flush_events()
+                        if verbose_debugging: print('Canvas drawn and flushed', datetime.now())
+
+         
                         tmp_xsect_x,tmp_xsect_z,tmp_xsect_dat = {},{},{}
 
                         for tmp_datstr in Dataset_lst:
@@ -3944,6 +3812,21 @@ def nemo_slice_zlev(config = 'amm7',
                                 plt.colorbar(paxxs[axi], ax = axxs[axi])
                             for xi,tmp_datstr in enumerate(Dataset_lst): set_perc_clim_pcolor_in_region(5,95,ax = axxs[axi])
                             set_perc_clim_pcolor_in_region(5,95,ax = axxs[2], sym = True)
+
+                            #xmapax = figxs.add_axes([0.075,0.15,0.2,0.5], frameon=False)
+                            #xmapax = figxs.add_axes([0.075,0.15,0.175,0.4], frameon=False)
+                            xmapax = figxs.add_axes([0.075,0.025,0.175,0.2], frameon=False)
+                            #pdb.set_trace()
+                            xs_pe = [pe.Stroke(linewidth=2, foreground='w'), pe.Normal()]
+                            #pdb.set_trace()
+                            xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][0][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
+                            xmapax.plot(tmp_xsect_lon,tmp_xsect_lat,'r-', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                            xmapax.plot(xsect_lon_pnt_mat,xsect_lat_pnt_mat,'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                            xmapax.plot(xsect_lon_pnt_mat[0],xsect_lat_pnt_mat[0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                            xmapax.axis('equal')
+                            xmapax.set_xticks([])
+                            xmapax.set_yticks([]) 
+
                         else:
                             figxs = plt.figure()
                             figxs.set_figheight(4*1.2)
@@ -3976,9 +3859,30 @@ def nemo_slice_zlev(config = 'amm7',
                             #axxs[0].set_xlim([0,xs_xlim[1]*1.01])
                             #pdb.set_trace()
 
+                            #xmapax = figxs.add_axes([0.075,0.15,0.2,0.5], frameon=False)
+                            xmapax = figxs.add_axes([0.075,0.15,0.175,0.4], frameon=False)
+                            
+                            #pdb.set_trace()
+                            xs_pe = [pe.Stroke(linewidth=2, foreground='w'), pe.Normal()]
+                            #pdb.set_trace()
+                            xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][0][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
+                            xmapax.plot(tmp_xsect_lon,tmp_xsect_lat,'r-', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                            xmapax.plot(xsect_lon_pnt_mat,xsect_lat_pnt_mat,'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                            xmapax.plot(xsect_lon_pnt_mat[0],xsect_lat_pnt_mat[0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                            xmapax.axis('equal')
+                            xmapax.set_xticks([])
+                            xmapax.set_yticks([]) 
 
-                        xclickax = figxs.add_axes([0,0,1,1], frameon=False)
-                        xclickax.axis('off')
+
+
+                        xs_close_win_meth = 1
+                        # 1: closes when you click on it
+                        # 2: stays open till you close it
+
+                        if xs_close_win_meth == 1:
+                            xclickax = figxs.add_axes([0,0,1,1], frameon=False)
+                            xclickax.axis('off')
+
                         # redraw canvas
                         figxs.canvas.draw()
                         
@@ -3988,50 +3892,66 @@ def nemo_slice_zlev(config = 'amm7',
                         # Show plot, and set it as the current figure and axis
                         figxs.show()
                         plt.figure(figxs.figure)
-                        plt.sca(xclickax)
+                        
+
+                        if xs_close_win_meth == 1:
+                            plt.sca(xclickax)
+                        
+                            ###################################
+                            # Close on button press: #JT COBP #
+                            ###################################
 
 
-                        close_xsax = False
-                        while close_xsax == False:
+                            close_xsax = False
+                            while close_xsax == False:
 
-                            # get click location
-                            tmpxsbutloc = plt.ginput(1, timeout = 3) #[(0.3078781362007169, 0.19398809523809524)]
-                                    
-                            #pdb.set_trace()
-                            if len(tmpxsbutloc)!=1:
-                                print('tmpxsbutloc len != 1',tmpxsbutloc )
-                                #close_xsax = True
-                                continue
+                                # get click location
+                                tmpxsbutloc = plt.ginput(1, timeout = 3) #[(0.3078781362007169, 0.19398809523809524)]
+                                        
                                 #pdb.set_trace()
-                            else:
-                                if len(tmpxsbutloc[0])!=2:
-                                    close_xsax = True
-                                    print('tmpxsbutloc[0] len != 2',tmpxsbutloc )
+                                if len(tmpxsbutloc)!=1:
+                                    print('tmpxsbutloc len != 1',tmpxsbutloc )
+                                    #close_xsax = True
                                     continue
                                     #pdb.set_trace()
-                                # was a button clicked?
-                                # if so, record which and allow the window to close
-                                if (tmpxsbutloc[0][0] >= 0) & (tmpxsbutloc[0][0] <= 1) & (tmpxsbutloc[0][1] >= 0) & (tmpxsbutloc[0][1] <= 1):
-                                    #pdb.set_trace()
+                                else:
+                                    if len(tmpxsbutloc[0])!=2:
+                                        close_xsax = True
+                                        print('tmpxsbutloc[0] len != 2',tmpxsbutloc )
+                                        continue
+                                        #pdb.set_trace()
+                                    # was a button clicked?
+                                    # if so, record which and allow the window to close
+                                    if (tmpxsbutloc[0][0] >= 0) & (tmpxsbutloc[0][0] <= 1) & (tmpxsbutloc[0][1] >= 0) & (tmpxsbutloc[0][1] <= 1):
+                                        #pdb.set_trace()
+                                        close_xsax = True
+
+                                # quit of option box is closed without button press.
+                                if plt.fignum_exists(figxs) == False:
                                     close_xsax = True
+                                    
+                            
+                            # close figure
+                            if close_xsax:
+                                if figxs is not None:
+                                    if plt.fignum_exists(figxs.number):
+                                        plt.close(figxs)
+                            ##import time            
+                            #figxs_exists = plt.fignum_exists(figxs.number)
+                            #while figxs_exists:
+                            #    time.sleep(0.5)
+                            #    figxs_exists = plt.fignum_exists(figxs.number)
 
-                            # quit of option box is closed without button press.
-                            if plt.fignum_exists(figxs) == False:
-                                close_xsax = True
-                                
                         
-                        # close figure
-                        if close_xsax:
-                            if figxs is not None:
-                                if plt.fignum_exists(figxs.number):
-                                    plt.close(figxs)
+                        for xs_map_ax in xs_map_ax_lst:
+                            rem_loc = xs_map_ax.pop(0)
+                            rem_loc.remove()
+                            
 
-
-
-                        plt.figure(fig.figure)
-                        plt.sca(clickax)
-
-                        #pdb.set_trace()
+                        figxs.canvas.draw()
+                        figxs.canvas.flush_events()
+                        #plt.figure(fig.figure)
+                        #plt.sca(clickax)
 
 
                     elif but_name == 'TS Diag':

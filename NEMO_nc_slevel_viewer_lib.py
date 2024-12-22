@@ -4454,67 +4454,6 @@ def obs_reset_sel(Dataset_lst, Fill = True):
     return obs_z_sel,obs_obs_sel,obs_mod_sel,obs_lon_sel,obs_lat_sel,obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel
 
 
-def connections_gridbox_along_line(ii0,ii1,jj0,jj1,lon_d,lat_d,th_d_ind,gridsp = 1./12.,npntpgb=1,timing = False):
-    
-    if timing:t0 = datetime.now()
-    #pdb.set_trace()
-    dx_deg = np.sqrt((ii0-ii1)**2 + (jj0-jj1)**2)
-    iiline = np.linspace(ii0,ii1,int(np.ceil(npntpgb*dx_deg/gridsp)))
-    jjline = np.linspace(jj0,jj1,int(np.ceil(npntpgb*dx_deg/gridsp)))
-
-    tmpnlat, tmpnlon = lat_d[th_d_ind].shape
-    xsect_ii_ind_lst = []
-    xsect_jj_ind_lst = []
-
-    if timing:
-        t1 = datetime.now()
-        print('t1',t1-t0)
-        print('npntpgb:',npntpgb,'dx_deg:',dx_deg,'gridsp:',gridsp,'iiline.size:', iiline.size)
-
-    for xstmplon, xstmplat in zip(iiline, jjline):
-        xs_tmp_minarg = np.argmin((lon_d[th_d_ind] - xstmplon)**2 + (lat_d[th_d_ind] - xstmplat)**2)
-        #pdb.set_trace()
-        tmpjj = xs_tmp_minarg//tmpnlon
-        tmpii = xs_tmp_minarg%tmpnlon
-
-        xsect_ii_ind_lst.append(tmpii)
-        xsect_jj_ind_lst.append(tmpjj)
-    #pdb.set_trace()
-    if timing:
-        t2 = datetime.now()
-        print('t2',t2-t1)
-    
-    xsect_ii_ind_mat = np.array(xsect_ii_ind_lst)
-    xsect_jj_ind_mat = np.array(xsect_jj_ind_lst)
-    #print('xsect_ii_ind_mat.size:',xsect_ii_ind_mat.size)
-    if len(xsect_ii_ind_mat)==0: 
-        pdb.set_trace()
-
-    # remove doubled points
-    xsect_ii_ind_lst = [xsect_ii_ind_mat[0]]
-    xsect_jj_ind_lst = [xsect_jj_ind_mat[0]]
-
-    for xi in range(len(xsect_ii_ind_mat)-1):
-        tmpii0 = xsect_ii_ind_mat[xi]
-        tmpii1 = xsect_ii_ind_mat[xi+1]
-        tmpjj0 = xsect_jj_ind_mat[xi]
-        tmpjj1 = xsect_jj_ind_mat[xi+1]
-        if ((tmpii0==tmpii1)&(tmpjj0==tmpjj1)) == False:
-            xsect_ii_ind_lst.append(tmpii1)
-            xsect_jj_ind_lst.append(tmpjj1)
-    if timing:
-        t3 = datetime.now()
-        print('t3',t3-t2)
-
-
-    xsect_ii_ind_mat = np.array(xsect_ii_ind_lst)
-    xsect_jj_ind_mat = np.array(xsect_jj_ind_lst)
-
-    return xsect_ii_ind_mat,xsect_jj_ind_mat
-    pdb.set_trace()
-
-
-
 def profile_line(xlim,ylim,nint = 2000,ni = 375,plotting = False):
 
     # Create a cross-section between two points, containing only N/S/E/W segements.
@@ -4522,6 +4461,11 @@ def profile_line(xlim,ylim,nint = 2000,ni = 375,plotting = False):
     #   This is one shorter than the the points. it is zero padded at the end.
     #
     #                       Jonathan Tinker 02/09/2018
+    #
+    # ni = number of lat, perhaps should be nj. i.e.
+    # AMM7: ni = 375
+    # AMM15: ni = 375
+    # ORCA25
 
     #plotting = False
 
