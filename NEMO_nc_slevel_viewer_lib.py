@@ -4602,26 +4602,26 @@ def profile_line(xlim,ylim,nint = 2000,ni = 375,plotting = False):
     return i_out,j_out#, exterally_calc_dirn
 
 
-def pop_up_opt_window(obs_but_names,obs_but_sw = None):
+def pop_up_opt_window(opt_but_names,opt_but_sw = None):
     '''
     ##example inputs
     
 
-    obs_but_names = ['ProfT','SST_ins','SST_sat','ProfS','SLA','ChlA','Hide_Obs','Edges','Loc','Close']
+    opt_but_names = ['ProfT','SST_ins','SST_sat','ProfS','SLA','ChlA','Hide_Obs','Edges','Loc','Close']
                         
                         
     # button switches  
-    obs_but_sw = {}
-    obs_but_sw['Hide_Obs'] = {'v':Obs_hide, 'T':'Show Obs','F': 'Hide Obs'}
-    obs_but_sw['Edges'] = {'v':Obs_hide, 'T':'Show Edges','F': 'Hide Edges'}
-    obs_but_sw['Loc'] = {'v':Obs_hide, 'T':"Don't Selected point",'F': 'Move Selected point'}
-    for ob_var in Obs_var_lst_sub:  obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var + ' hidden'}
-    for ob_var in Obs_varlst:  obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var + ' hidden'}
+    opt_but_sw = {}
+    opt_but_sw['Hide_Obs'] = {'v':Obs_hide, 'T':'Show Obs','F': 'Hide Obs'}
+    opt_but_sw['Edges'] = {'v':Obs_hide, 'T':'Show Edges','F': 'Hide Edges'}
+    opt_but_sw['Loc'] = {'v':Obs_hide, 'T':"Don't Selected point",'F': 'Move Selected point'}
+    for ob_var in Obs_var_lst_sub:  opt_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var + ' hidden'}
+    for ob_var in Obs_varlst:  opt_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var + ' hidden'}
 
 
     example use:
 
-    obbut_sel = pop_up_opt_window(obs_but_names, obs_but_sw = obs_but_sw)
+    obbut_sel = pop_up_opt_window(opt_but_names, opt_but_sw = opt_but_sw)
 
 
     # Set the main figure and axis to be current
@@ -4656,20 +4656,20 @@ def pop_up_opt_window(obs_but_names,obs_but_sw = None):
 
     #Create list of dictionaries with the name, and x and y ranges
     obsobbox_l = []
-    for obs_i,obs_ss in enumerate(obs_but_names):
-        #tmp_obsx0 = (( obs_i*0.2 + 0.1 )//0.8)*0.45 + 0.05
+    for opt_i,opt_ss in enumerate(opt_but_names):
+        #tmp_obsx0 = (( opt_i*0.2 + 0.1 )//0.8)*0.45 + 0.05
         #tmp_obsdx = 0.4
-        tmp_obsx0 = (( obs_i*0.2 + 0.1 )//0.8)*(0.3 + 0.025) + 0.025
+        tmp_obsx0 = (( opt_i*0.2 + 0.1 )//0.8)*(0.3 + 0.025) + 0.025
         tmp_obsdx = 0.3
-        #tmp_obsy0 = (( obs_i*0.2 + 0.1 )%0.8)
+        #tmp_obsy0 = (( opt_i*0.2 + 0.1 )%0.8)
         #tmp_obsdy = 0.15
-        #tmp_obsy0 = 1-(( obs_i*0.2 + 0.1 )%0.8)
+        #tmp_obsy0 = 1-(( opt_i*0.2 + 0.1 )%0.8)
         #tmp_obsdy = -0.15
-        #tmp_obsy0 = 1-(( obs_i*0.16 + 0.04 )%0.8)
+        #tmp_obsy0 = 1-(( opt_i*0.16 + 0.04 )%0.8)
         tmp_obsdy = -0.2
-        tmp_obsy0 = 1-(( obs_i*0.24 + 0.04 )%(1-0.04))
+        tmp_obsy0 = 1-(( opt_i*0.24 + 0.04 )%(1-0.04))
 
-        obsobbox_l.append({'x':np.array([tmp_obsx0,tmp_obsx0+tmp_obsdx]),'y':np.array([tmp_obsy0,tmp_obsy0+tmp_obsdy]),'name':obs_ss})
+        obsobbox_l.append({'x':np.array([tmp_obsx0,tmp_obsx0+tmp_obsdx]),'y':np.array([tmp_obsy0,tmp_obsy0+tmp_obsdy]),'name':opt_ss})
 
 
     # draw buttons
@@ -4682,12 +4682,12 @@ def pop_up_opt_window(obs_but_names,obs_but_sw = None):
    
 
     # if a swich is provided, change button titles based on T/F in switch
-    if obs_but_sw is not None:
-        for tmpoob in obs_but_sw.keys():
-            if obs_but_sw[tmpoob]['v']:
-                obcax_tx_hd[tmpoob].set_text(obs_but_sw[tmpoob]['T'])
+    if opt_but_sw is not None:
+        for tmpoob in opt_but_sw.keys():
+            if opt_but_sw[tmpoob]['v']:
+                obcax_tx_hd[tmpoob].set_text(opt_but_sw[tmpoob]['T'])
             else:
-                obcax_tx_hd[tmpoob].set_text(obs_but_sw[tmpoob]['F'])
+                obcax_tx_hd[tmpoob].set_text(opt_but_sw[tmpoob]['F'])
 
     # Set x and y lims
     obcax.set_xlim(0,1)
@@ -4859,7 +4859,9 @@ def get_help_text(help_type,help_but):
         elif help_but == 'Show Prof':
             help_text = help_text + 'Shows or hides the profile axis (f), adjusting the size of the cross-section panels.'
         elif help_but == 'Zoom':
-            help_text = help_text + 'Zoom in or out (for left or right button click), or setting max depth.\n'
+            help_text = help_text + 'Zoom in or out or reset (for left or right or middle button click), or setting max depth.\n'
+            help_text = help_text + 'If Zoom is clicked with the MIDDLE button:\n'
+            help_text = help_text + 'The zoom is reset.\n'
             help_text = help_text + 'If Zoom is clicked with the LEFT button:\n'
             help_text = help_text + 'Click on the main axis (a) twice, to deliniate a square that will then be zoomed into.\n'
             help_text = help_text + 'If Zoom is clicked with the RIGHT button:\n'
@@ -4881,18 +4883,24 @@ def get_help_text(help_type,help_but):
             help_text = help_text + 'which can distort the map image, and Axis: Equal where one 1 degree of latitude is '
             help_text = help_text + 'the same size as 1 degree of longitude, which is also a distortion, but sometime less so.'
             help_text = help_text + ''
-        elif help_but == 'Clim: Reset':
-            help_text = help_text + 'Resets the colour map limits to the default (showing the 5th and 95th percentile values of the image).'
-            help_text = help_text + ''
-            help_text = help_text + ''
-        elif help_but == 'Clim: Zoom':
+        #elif help_but == 'Clim: Reset':
+        #    help_text = help_text + 'Resets the colour map limits to the default (showing the 5th and 95th percentile values of the image).'
+        #    help_text = help_text + ''
+        #    help_text = help_text + ''
+        elif help_but == 'Clim: Zoom (zooms in, expands or resets colourmap limits for left, right and middle click)':
+            help_text = help_text + 'If Clim: Zoom is clicked with the LEFT button:\n'
             help_text = help_text + 'Allows the user to zoom the colormap limits, with two click on the axis a colormap, '
             help_text = help_text + 'one for the desired colourmap minima and one for the desired colourmap maxima.'
-            help_text = help_text + ''
-        elif help_but == 'Clim: Expand':
+            help_text = help_text + 'If Clim: Zoom is clicked with the RIGHT button:\n'
             help_text = help_text + 'Expands the colourmap limit, increasing both the minima and maxima by 50% of the range, '
             help_text = help_text + 'this allows the user to select the colourmap limits outside those shown.'
+            help_text = help_text + 'If Clim: Zoom is clicked with the MIDDLE button:\n'
+            help_text = help_text + 'Resets the colour map limits to the default (showing the 5th and 95th percentile values of the image).'
             help_text = help_text + ''
+        #elif help_but == 'Clim: Expand':
+        #    help_text = help_text + 'Expands the colourmap limit, increasing both the minima and maxima by 50% of the range, '
+        #    help_text = help_text + 'this allows the user to select the colourmap limits outside those shown.'
+        #    help_text = help_text + ''
         elif help_but == 'Clim: pair':
             help_text = help_text + 'When two different datasets are shown, their colourmap limits are optimised for the current view '
             help_text = help_text + 'for each dataset. Clim: pair links these together, so the two dataset can be compared visually.'

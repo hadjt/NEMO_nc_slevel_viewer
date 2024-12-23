@@ -1284,11 +1284,12 @@ def nemo_slice_zlev(config = 'amm7',
     mode_name_lst = ['Click','Loop']
 
     func_names_lst = ['Hov/Time','Show Prof',
-                      'Zoom','Reset zoom',
-                      'ColScl','Axis', 'Clim: Reset','Clim: Zoom','Clim: Expand','Clim: pair','Clim: sym',
+                      'Zoom',
+                      'Axis', 'ColScl', 'Clim: Zoom','Clim: pair','Clim: sym',
                       'Surface', 'Near-Bed', 'Surface-Bed','Depth-Mean','Depth level',
-                      'Contours','Grad','T Diff','TS Diag','LD time','Fcst Diag','Vis curr','MLD','Obs','Xsect','Save Figure','Help','Quit'] #'Obs: sel','Obs: opt',
-    
+                      'Contours','Grad','T Diff','TS Diag','LD time','Fcst Diag','Vis curr','MLD','Obs','Xsect','Save Figure','Help','Quit'] 
+    #'Reset zoom','Obs: sel','Obs: opt','Clim: Reset','Clim: Expand',
+
 
     do_Xsect = True
     loaded_xsect = False
@@ -1306,9 +1307,11 @@ def nemo_slice_zlev(config = 'amm7',
     else:
         reload_MLD = True
         MLD_show = True
+        MLD_var_lst = ['mld25h_1','mld25h_2']
         MLD_var = 'mld25h_1'
         data_mld = {}
         mldax_lst = []
+        #figmlopt = None
 
 
     # if Obs, create empty option fiugre handle, otherwise remove button names
@@ -1316,8 +1319,8 @@ def nemo_slice_zlev(config = 'amm7',
         #func_names_lst.remove('Obs: sel')
         #func_names_lst.remove('Obs: opt')
         func_names_lst.remove('Obs')
-    else:
-        figobsopt = None
+    #else:
+        #figobsopt = None
         
 
     if add_TSProf:
@@ -1454,6 +1457,9 @@ def nemo_slice_zlev(config = 'amm7',
     func_but_line_han['Zoom'][0].set_linewidth(1)
     func_but_line_han['Zoom'][0].set_color('w')
     func_but_line_han['Zoom'][0].set_path_effects(str_pe)
+    func_but_line_han['Clim: Zoom'][0].set_linewidth(1)
+    func_but_line_han['Clim: Zoom'][0].set_color('w')
+    func_but_line_han['Clim: Zoom'][0].set_path_effects(str_pe)
     if do_Obs:
         #pdb.set_trace()
         func_but_line_han['Obs'][0].set_linewidth(1)
@@ -1464,6 +1470,11 @@ def nemo_slice_zlev(config = 'amm7',
         func_but_line_han['Xsect'][0].set_linewidth(1)
         func_but_line_han['Xsect'][0].set_color('w')
         func_but_line_han['Xsect'][0].set_path_effects(str_pe)
+    if do_MLD:
+        #pdb.set_trace()
+        func_but_line_han['MLD'][0].set_linewidth(1)
+        func_but_line_han['MLD'][0].set_color('w')
+        func_but_line_han['MLD'][0].set_path_effects(str_pe)
     #pdb.set_trace()
 
 
@@ -2030,7 +2041,7 @@ def nemo_slice_zlev(config = 'amm7',
 
                 if reload_MLD:
                     data_inst_mld,preload_data_ti_mld,preload_data_var_mld,preload_data_ldi_mld= reload_data_instances(MLD_var,thd,ldi,ti,var_d,var_grid['Dataset 1'], xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
-
+                    reload_MLD = False
 
 
             ###################################################################################################
@@ -3422,72 +3433,77 @@ def nemo_slice_zlev(config = 'amm7',
                     elif but_name in 'Zoom':
                         # use ginput to take two clicks as zoom region. 
                         # only coded for main axes
+                        if mouse_info['button'].name == 'MIDDLE':
+                            cur_xlim = np.array([lon_d[1].min(),lon_d[1].max()])
+                            cur_ylim = np.array([lat_d[1].min(),lat_d[1].max()])
+                            zlim_max = None
+                        else:
 
-                        tmp_zoom_in = True
-                        if mouse_info['button'].name == 'RIGHT':tmp_zoom_in = False
-                        
-                        plt.sca(clickax)
-                        #tmpzoom0 = plt.ginput(1)
+                            tmp_zoom_in = True
+                            if mouse_info['button'].name == 'RIGHT':tmp_zoom_in = False
+                            
+                            plt.sca(clickax)
+                            #tmpzoom0 = plt.ginput(1)
 
-                        buttonpress = True
-                        while buttonpress: buttonpress = plt.waitforbuttonpress()
-                        tmpzoom0 = [[mouse_info['xdata'],mouse_info['ydata']]]
-                        del(buttonpress)
-
-
-                        if tmp_zoom_in: func_but_text_han['Zoom'].set_color('r')
-                        elif not tmp_zoom_in: func_but_text_han['Zoom'].set_color('g')
-                        fig.canvas.draw()
-                        zoom0_ax,zoom0_ii,zoom0_jj,zoom0_ti,zoom0_zz,sel_xlocval,sel_ylocval = indices_from_ginput_ax(ax,tmpzoom0[0][0],tmpzoom0[0][1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
-                        if zoom0_ax in [1,2,3]:
-                            zlim_max = zoom0_zz
-                        elif zoom0_ax in [0]:
-                            #tmpzoom1 = plt.ginput(1)
                             buttonpress = True
                             while buttonpress: buttonpress = plt.waitforbuttonpress()
-                            tmpzoom1 = [[mouse_info['xdata'],mouse_info['ydata']]]
+                            tmpzoom0 = [[mouse_info['xdata'],mouse_info['ydata']]]
                             del(buttonpress)
 
-                            zoom1_ax,zoom1_ii,zoom1_jj,zoom1_ti,zoom1_zz, sel_xlocval,sel_ylocval = indices_from_ginput_ax(ax,tmpzoom1[0][0],tmpzoom1[0][1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
-                                
-                            if verbose_debugging: print(zoom0_ax,zoom0_ii,zoom0_jj,zoom0_ti,zoom0_zz)
-                            if verbose_debugging: print(zoom1_ax,zoom1_ii,zoom1_jj,zoom1_ti,zoom1_zz)
-                            if verbose_debugging: print(cur_xlim)
-                            if verbose_debugging: print(cur_ylim)
 
-                            # if both clicks in main axes, use clicks for the new x and ylims
-                            if (zoom0_ax is not None) & (zoom0_ax is not None):
-                                if zoom0_ax == zoom1_ax:
-                                    if zoom0_ax == 0:
-                                        cl_cur_xlim = np.array([lon_d[1][zoom0_jj,zoom0_ii],lon_d[1][zoom1_jj,zoom1_ii]])
-                                        cl_cur_ylim = np.array([lat_d[1][zoom0_jj,zoom0_ii],lat_d[1][zoom1_jj,zoom1_ii]])
-                                        cl_cur_xlim.sort()
-                                        cl_cur_ylim.sort()
-                                        if tmp_zoom_in:
-                                            cur_xlim = cl_cur_xlim
-                                            cur_ylim = cl_cur_ylim
-                                        else:
-                                            # If right click (initially, or last time), zoom out. 
-                                            #pdb.set_trace()
-                                            #current width of the x and y axis
-                                            dcur_xlim = cur_xlim.ptp()
-                                            dcur_ylim = cur_ylim.ptp()
-                                            #middle of current the x and y axis
-                                            mncur_xlim = cur_xlim.mean()
-                                            mncur_ylim = cur_ylim.mean()
-                                            #width of the clicked x and y points
-                                            dcur_cl_xlim = cl_cur_xlim.ptp()
-                                            dcur_cl_ylim = cl_cur_ylim.ptp()
+                            if tmp_zoom_in: func_but_text_han['Zoom'].set_color('r')
+                            elif not tmp_zoom_in: func_but_text_han['Zoom'].set_color('g')
+                            fig.canvas.draw()
+                            zoom0_ax,zoom0_ii,zoom0_jj,zoom0_ti,zoom0_zz,sel_xlocval,sel_ylocval = indices_from_ginput_ax(ax,tmpzoom0[0][0],tmpzoom0[0][1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
+                            if zoom0_ax in [1,2,3]:
+                                zlim_max = zoom0_zz
+                            elif zoom0_ax in [0]:
+                                #tmpzoom1 = plt.ginput(1)
+                                buttonpress = True
+                                while buttonpress: buttonpress = plt.waitforbuttonpress()
+                                tmpzoom1 = [[mouse_info['xdata'],mouse_info['ydata']]]
+                                del(buttonpress)
+
+                                zoom1_ax,zoom1_ii,zoom1_jj,zoom1_ti,zoom1_zz, sel_xlocval,sel_ylocval = indices_from_ginput_ax(ax,tmpzoom1[0][0],tmpzoom1[0][1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
+                                    
+                                if verbose_debugging: print(zoom0_ax,zoom0_ii,zoom0_jj,zoom0_ti,zoom0_zz)
+                                if verbose_debugging: print(zoom1_ax,zoom1_ii,zoom1_jj,zoom1_ti,zoom1_zz)
+                                if verbose_debugging: print(cur_xlim)
+                                if verbose_debugging: print(cur_ylim)
+
+                                # if both clicks in main axes, use clicks for the new x and ylims
+                                if (zoom0_ax is not None) & (zoom0_ax is not None):
+                                    if zoom0_ax == zoom1_ax:
+                                        if zoom0_ax == 0:
+                                            cl_cur_xlim = np.array([lon_d[1][zoom0_jj,zoom0_ii],lon_d[1][zoom1_jj,zoom1_ii]])
+                                            cl_cur_ylim = np.array([lat_d[1][zoom0_jj,zoom0_ii],lat_d[1][zoom1_jj,zoom1_ii]])
+                                            cl_cur_xlim.sort()
+                                            cl_cur_ylim.sort()
+                                            if tmp_zoom_in:
+                                                cur_xlim = cl_cur_xlim
+                                                cur_ylim = cl_cur_ylim
+                                            else:
+                                                # If right click (initially, or last time), zoom out. 
+                                                #pdb.set_trace()
+                                                #current width of the x and y axis
+                                                dcur_xlim = cur_xlim.ptp()
+                                                dcur_ylim = cur_ylim.ptp()
+                                                #middle of current the x and y axis
+                                                mncur_xlim = cur_xlim.mean()
+                                                mncur_ylim = cur_ylim.mean()
+                                                #width of the clicked x and y points
+                                                dcur_cl_xlim = cl_cur_xlim.ptp()
+                                                dcur_cl_ylim = cl_cur_ylim.ptp()
+                                                
+                                                # scale up axis width with dcur_xlim/dcur_cl_xlim, and centre.
+                                                cur_xlim = dcur_xlim*(dcur_xlim/dcur_cl_xlim)*np.array([-0.5,0.5])+mncur_xlim
+                                                cur_ylim = dcur_ylim*(dcur_ylim/dcur_cl_ylim)*np.array([-0.5,0.5])+mncur_ylim
+
+
+
+                            func_but_text_han['Zoom'].set_color('k')
+                            fig.canvas.draw()
                                             
-                                            # scale up axis width with dcur_xlim/dcur_cl_xlim, and centre.
-                                            cur_xlim = dcur_xlim*(dcur_xlim/dcur_cl_xlim)*np.array([-0.5,0.5])+mncur_xlim
-                                            cur_ylim = dcur_ylim*(dcur_ylim/dcur_cl_ylim)*np.array([-0.5,0.5])+mncur_ylim
-
-
-
-                        func_but_text_han['Zoom'].set_color('k')
-                        fig.canvas.draw()
-                                        
                                             
                     elif but_name == 'Axis':
                         if axis_scale == 'Auto':
@@ -3502,21 +3518,61 @@ def nemo_slice_zlev(config = 'amm7',
                             ax[0].axis('auto')
                             #cur_xlim = np.array([lon_d[1].min(),lon_d[1].max()])
                             #cur_ylim = np.array([lat_d[1].min(),lat_d[1].max()])
-
-
+                        '''
                     elif but_name == 'Clim: Reset':
                         clim = None
 
-
+                        '''
                     elif but_name == 'MLD':
-                        if MLD_show == True:
+                        if mouse_info['button'].name == 'LEFT':
+                            if MLD_show == True:
 
-                            func_but_text_han['MLD'].set_color('0.5')
-                            MLD_show = False
-                        elif MLD_show == False:
+                                func_but_text_han['MLD'].set_color('0.5')
+                                MLD_show = False
+                            elif MLD_show == False:
 
-                            func_but_text_han['MLD'].set_color('k')
-                            MLD_show = True
+                                func_but_text_han['MLD'].set_color('k')
+                                MLD_show = True
+
+
+
+
+                        elif mouse_info['button'].name == 'RIGHT':
+
+                            # Bring up a options window for Obs
+                            
+                            # button names                            
+                            mld_but_names = MLD_var_lst + ['Close']
+                            
+                            
+                            # button switches  
+                            mld_but_sw = {}
+                            #obs_but_sw['Hide_Obs'] = {'v':Obs_hide, 'T':'Show Obs','F': 'Hide Obs'}
+                            #obs_but_sw['Edges'] = {'v':Obs_hide, 'T':'Show Edges','F': 'Hide Edges'}
+                            #obs_but_sw['Loc'] = {'v':Obs_hide, 'T':"Don't Selected point",'F': 'Move Selected point'}
+                            for m_var in MLD_var_lst:  mld_but_sw[m_var] = {'v':m_var == MLD_var ,'T': m_var + ' selected','F':'choose ' +m_var}
+
+                            mldbut_sel = pop_up_opt_window(mld_but_names, opt_but_sw = mld_but_sw)
+
+                            
+
+                            # Set the main figure and axis to be current
+                            plt.figure(fig.figure)
+                            plt.sca(clickax)
+
+                            if mldbut_sel in MLD_var_lst:
+                                MLD_var = mldbut_sel
+                                reload_MLD = True
+                                print('mldbut_sel:',mldbut_sel)
+                                print('MLD_var:',MLD_var)
+                                print('reload_MLD:',reload_MLD)
+
+                            # if the button closed was one of the Obs types, add or remove from the hide list
+                            #for m_var in MLD_var_lst:  
+                            #    if mld_but_sw[m_var]['v']:
+                            #        MLD_var = m_var
+                                    
+                    
 
                     elif but_name == 'Help':
                     
@@ -3738,7 +3794,7 @@ def nemo_slice_zlev(config = 'amm7',
                             for ob_var in Obs_var_lst_sub:  obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var + ' hidden'}
                             for ob_var in Obs_varlst:  obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var + ' hidden'}
 
-                            obbut_sel = pop_up_opt_window(obs_but_names, obs_but_sw = obs_but_sw)
+                            obbut_sel = pop_up_opt_window(obs_but_names, opt_but_sw = obs_but_sw)
 
 
                             # Set the main figure and axis to be current
@@ -4131,19 +4187,30 @@ def nemo_slice_zlev(config = 'amm7',
                             #    print('TS Diag error')
                             #    pdb.set_trace()
                     elif but_name == 'Clim: Zoom': 
+                        if mouse_info['button'].name == 'MIDDLE':
+                            clim = None
+                        elif mouse_info['button'].name == 'LEFT':
 
 
-                        plt.sca(clickax)
-            
-                        func_but_text_han['Clim: Zoom'].set_color('r')
-                        fig.canvas.draw()
-                        tmpczoom = plt.ginput(2)
-                        clim = np.array([tmpczoom[0][1],tmpczoom[1][1]])
-                        clim.sort()
+                            plt.sca(clickax)
+                
+                            func_but_text_han['Clim: Zoom'].set_color('r')
+                            fig.canvas.draw()
+                            tmpczoom = plt.ginput(2)
+                            clim = np.array([tmpczoom[0][1],tmpczoom[1][1]])
+                            clim.sort()
 
-                        func_but_text_han['Clim: Zoom'].set_color('k')
-                        fig.canvas.draw()
+                            func_but_text_han['Clim: Zoom'].set_color('k')
+                            fig.canvas.draw()
 
+                        elif mouse_info['button'].name == 'RIGHT':
+                            clim = np.array(get_clim_pcolor(ax = ax[0]))
+                            if climnorm is None:
+                                clim = np.array([clim.mean() - clim.ptp(),clim.mean() + clim.ptp()])
+                            else:
+                                clim = np.log10(np.array([(10**clim).mean() - (10**clim).ptp(),(10**clim).mean() + (10**clim).ptp()]))
+                    
+                        '''
 
                     elif but_name == 'Clim: Expand': 
                         clim = np.array(get_clim_pcolor(ax = ax[0]))
@@ -4152,12 +4219,7 @@ def nemo_slice_zlev(config = 'amm7',
                         else:
                             clim = np.log10(np.array([(10**clim).mean() - (10**clim).ptp(),(10**clim).mean() + (10**clim).ptp()]))
                         
-                    
-                    #elif but_name == 'Clim: perc': 
-                    #    clim = None
-
-                    
-
+                        '''
 
                     elif but_name == 'LD time':
                         ldi+=1
@@ -4762,8 +4824,7 @@ def main():
         3) clicking on the map at the top right hand point of your area of interest, 
         4) clicking on some white space.
 
-    You can reset the zoom by clicking Reset zoom, and the white space
-    
+    Yo 
 
     Colour Zooming
     ==============
