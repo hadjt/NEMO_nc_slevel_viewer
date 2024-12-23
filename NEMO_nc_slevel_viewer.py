@@ -125,7 +125,8 @@ def nemo_slice_zlev(config = 'amm7',
     vis_curr = -1, vis_curr_meth = 'barb',
     resample_freq = None,
     verbose_debugging = False,
-    Obs_dict = None, Obs_reloadmeth = 2):
+    Obs_dict = None, Obs_reloadmeth = 2,
+    do_MLD = True):
 
     print('Initialise at ',datetime.now())
     init_timer = []
@@ -140,6 +141,8 @@ def nemo_slice_zlev(config = 'amm7',
         cutyind = [0,None]
     else:
         cutout_data = True
+    
+    
 
     # if arguement Obs_dict is not None, set do_Obs to true
     #Obs_dict = Obs_fname
@@ -1284,7 +1287,7 @@ def nemo_slice_zlev(config = 'amm7',
                       'Zoom','Reset zoom',
                       'ColScl','Axis', 'Clim: Reset','Clim: Zoom','Clim: Expand','Clim: pair','Clim: sym',
                       'Surface', 'Near-Bed', 'Surface-Bed','Depth-Mean','Depth level',
-                      'Contours','Grad','T Diff','TS Diag','LD time','Fcst Diag','Vis curr','Obs','Xsect','Save Figure','Help','Quit'] #'Obs: sel','Obs: opt',
+                      'Contours','Grad','T Diff','TS Diag','LD time','Fcst Diag','Vis curr','MLD','Obs','Xsect','Save Figure','Help','Quit'] #'Obs: sel','Obs: opt',
     
 
     do_Xsect = True
@@ -1294,6 +1297,19 @@ def nemo_slice_zlev(config = 'amm7',
         func_names_lst.remove('Xsect')
     else:
         figxs = None
+
+
+
+    
+    if not do_MLD:        
+        func_names_lst.remove('MLD')
+    else:
+        reload_MLD = True
+        MLD_show = True
+        MLD_var = 'mld25h_1'
+        data_mld = {}
+        mldax_lst = []
+
 
     # if Obs, create empty option fiugre handle, otherwise remove button names
     if not do_Obs:
@@ -2012,6 +2028,10 @@ def nemo_slice_zlev(config = 'amm7',
 
 
 
+                if reload_MLD:
+                    data_inst_mld,preload_data_ti_mld,preload_data_var_mld,preload_data_ldi_mld= reload_data_instances(MLD_var,thd,ldi,ti,var_d,var_grid['Dataset 1'], xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
+
+
 
             ###################################################################################################
             ### Status of buttons
@@ -2111,9 +2131,17 @@ def nemo_slice_zlev(config = 'amm7',
             if verbose_debugging: print('Reloaded vis current map data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now(),'; dt = %s'%(datetime.now()-prevtime))
             prevtime = datetime.now()
 
+            if do_MLD:
+                #pdb.set_trace()
+                if reload_ns:
+                    mld_ns_slice_dict = reload_ns_data_comb(ii,jj, data_inst_mld, lon_d[1], lat_d[1], grid_dict, var_dim[MLD_var],regrid_meth, iijj_ind,Dataset_lst,configd)
+                if reload_ew:
+                    mld_ew_slice_dict = reload_ew_data_comb(ii,jj, data_inst_mld, lon_d[1], lat_d[1], grid_dict, var_dim[MLD_var],regrid_meth, iijj_ind,Dataset_lst,configd)
+ 
+
             if reload_ew:
                 if var_dim[var] == 4:
-                    ew_slice_dict = reload_ew_data_comb(ii,jj, data_inst, lon_d[1], lat_d[1], grid_dict, regrid_meth,iijj_ind,Dataset_lst,configd)
+                    ew_slice_dict = reload_ew_data_comb(ii,jj, data_inst, lon_d[1], lat_d[1], grid_dict, var_dim[var], regrid_meth,iijj_ind,Dataset_lst,configd)
 
                     if do_grad == 1:
                         #ew_slice_dict['Dataset 1'], ew_slice_dict['Dataset 2'] = grad_horiz_ew_data(thd,grid_dict,jj, ew_slice_dict['Dataset 1'],ew_slice_dict['Dataset 2'])
@@ -2132,7 +2160,7 @@ def nemo_slice_zlev(config = 'amm7',
 
             if reload_ns:
                 if var_dim[var] == 4:               
-                    ns_slice_dict = reload_ns_data_comb(ii,jj, data_inst, lon_d[1], lat_d[1], grid_dict, regrid_meth, iijj_ind,Dataset_lst,configd)
+                    ns_slice_dict = reload_ns_data_comb(ii,jj, data_inst, lon_d[1], lat_d[1], grid_dict, var_dim[var],regrid_meth, iijj_ind,Dataset_lst,configd)
  
                     if do_grad == 1:
                         #ns_slice_dict['Dataset 1'], ns_slice_dict['Dataset 2'] = grad_horiz_ns_data(thd,grid_dict,ii, ns_slice_dict['Dataset 1'],ns_slice_dict['Dataset 2'])
@@ -2146,6 +2174,7 @@ def nemo_slice_zlev(config = 'amm7',
                     ns_slice_dict['y'] = grid_dict['Dataset 1']['gdept'][:,:,ii]
                   
                 reload_ns = False
+
 
             if verbose_debugging: print('Reloaded  ns data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now(),'; dt = %s'%(datetime.now()-prevtime))
             prevtime = datetime.now()
@@ -2332,6 +2361,11 @@ def nemo_slice_zlev(config = 'amm7',
                 if vis_curr > 0:
                     map_dat_U = map_dat_dict_U[secdataset_proc]
                     map_dat_V = map_dat_dict_V[secdataset_proc]
+
+
+                if do_MLD:
+                    mld_ns_slice_dat = mld_ns_slice_dict[secdataset_proc]
+                    mld_ew_slice_dat = mld_ew_slice_dict[secdataset_proc]
             else:
                 tmpdataset_1 = 'Dataset ' + secdataset_proc[3]
                 tmpdataset_2 = 'Dataset ' + secdataset_proc[8]
@@ -2349,6 +2383,10 @@ def nemo_slice_zlev(config = 'amm7',
                         map_dat_V = map_dat_dict_V[tmpdataset_1] - map_dat_dict_V[tmpdataset_2]
                 else:
                     pdb.set_trace()
+
+                if do_MLD:  
+                    mld_ns_slice_dat = mld_ns_slice_dict['Dataset 1'].copy()*0.
+                    mld_ew_slice_dat = mld_ew_slice_dict['Dataset 1'].copy()*0.
                     
 
             ###################################################################################################
@@ -2360,6 +2398,7 @@ def nemo_slice_zlev(config = 'amm7',
             stage_timer_name[7] = 'Plot Data '
 
 
+            mldax_lst = []
 
             if verbose_debugging: print("Do pcolormesh for ii = %i,jj = %i,ti = %i,zz = %i, var = '%s'"%(ii,jj, ti, zz,var), datetime.now())
             pax.append(ax[0].pcolormesh(map_dat_dict['x'],map_dat_dict['y'],map_dat,cmap = curr_cmap,norm = climnorm))
@@ -2368,6 +2407,11 @@ def nemo_slice_zlev(config = 'amm7',
                 pax.append(ax[1].pcolormesh(ew_slice_dict['x'],ew_slice_dict['y'],ew_slice_dat,cmap = curr_cmap,norm = climnorm))
                 pax.append(ax[2].pcolormesh(ns_slice_dict['x'],ns_slice_dict['y'],ns_slice_dat,cmap = curr_cmap,norm = climnorm))
                 pax.append(ax[3].pcolormesh(hov_dat_dict['x'],hov_dat_dict['y'],hov_dat,cmap = curr_cmap,norm = climnorm))
+            if do_MLD:
+                #pdb.set_trace()
+                if MLD_show:
+                    mldax_lst.append(ax[1].plot(mld_ew_slice_dict['x'],mld_ew_slice_dat,'k', lw = 0.5))
+                    mldax_lst.append(ax[2].plot(mld_ns_slice_dict['x'],mld_ns_slice_dat,'k', lw = 0.5))
 
             tsax_lst = []
             #Dataset_col = ['r','b','darkgreen','gold']
@@ -3281,6 +3325,8 @@ def nemo_slice_zlev(config = 'amm7',
 
                 if do_Obs:
                     reload_Obs = True
+                if do_MLD:
+                    reload_MLD = True
    
             
             if mode == 'Loop':
@@ -3460,6 +3506,17 @@ def nemo_slice_zlev(config = 'amm7',
 
                     elif but_name == 'Clim: Reset':
                         clim = None
+
+
+                    elif but_name == 'MLD':
+                        if MLD_show == True:
+
+                            func_but_text_han['MLD'].set_color('0.5')
+                            MLD_show = False
+                        elif MLD_show == False:
+
+                            func_but_text_han['MLD'].set_color('k')
+                            MLD_show = True
 
                     elif but_name == 'Help':
                     
@@ -4443,7 +4500,13 @@ def nemo_slice_zlev(config = 'amm7',
             for pfax in pfax_lst:
                 rem_loc = pfax.pop(0)
                 rem_loc.remove()
-
+            if do_MLD:
+                #pdb.set_trace()
+                # remove profile
+                for mldax in mldax_lst:
+                    rem_loc = mldax.pop(0)
+                    rem_loc.remove()
+                
             if do_Obs:
                 # remove profile
                 for opax in opax_lst:

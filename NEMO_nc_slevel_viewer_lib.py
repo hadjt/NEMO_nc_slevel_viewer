@@ -2251,7 +2251,7 @@ def reload_map_data_comb_zmeth_zindex(data_inst,zi,regrid_params,regrid_meth,thd
 
 
 
-def reload_ew_data_comb(ii,jj, data_inst, nav_lon, nav_lat, grid_dict,regrid_meth, iijj_ind,Dataset_lst,configd):
+def reload_ew_data_comb(ii,jj, data_inst, nav_lon, nav_lat, grid_dict,n_dim_in,regrid_meth, iijj_ind,Dataset_lst,configd):
     #Dataset_lst = [ss for ss in data_inst.keys()]
     Dataset_lst_secondary = Dataset_lst.copy()
     if 'Dataset 1' in Dataset_lst_secondary: Dataset_lst_secondary.remove('Dataset 1')  
@@ -2267,7 +2267,10 @@ def reload_ew_data_comb(ii,jj, data_inst, nav_lon, nav_lat, grid_dict,regrid_met
 
     ew_slice_dict['x'] =  nav_lon[jj,:]
     ew_slice_dict['y'] =  grid_dict['Dataset 1']['gdept'][:,jj,:]
-    ew_slice_dict['Dataset 1'] = np.ma.masked_invalid(data_inst['Dataset 1'][:,jj,:])
+    if n_dim_in == 3:   
+        ew_slice_dict['Dataset 1'] = np.ma.masked_invalid(data_inst['Dataset 1'][jj,:])
+    elif n_dim_in == 4:   
+        ew_slice_dict['Dataset 1'] = np.ma.masked_invalid(data_inst['Dataset 1'][:,jj,:])
 
     for tmp_datstr in Dataset_lst_secondary:
         th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
@@ -2275,27 +2278,44 @@ def reload_ew_data_comb(ii,jj, data_inst, nav_lon, nav_lat, grid_dict,regrid_met
 
 
         if configd[th_d_ind] == configd[1]: #if configd[th_d_ind] is None:
-            ew_slice_dict[tmp_datstr] = np.ma.masked_invalid(data_inst[tmp_datstr][:,jj,:])
+            if n_dim_in == 3:   
+                ew_slice_dict[tmp_datstr] = np.ma.masked_invalid(data_inst[tmp_datstr][jj,:])
+            elif n_dim_in == 4:   
+                ew_slice_dict[tmp_datstr] = np.ma.masked_invalid(data_inst[tmp_datstr][:,jj,:])
         else:
 
             ew_ii_2nd_ind,ew_jj_2nd_ind,ew_bl_jj_ind_final,ew_bl_ii_ind_final,ew_wgt = iijj_ind[tmp_datstr]['ew_ii'],iijj_ind[tmp_datstr]['ew_jj'], iijj_ind[tmp_datstr]['ew_bl_jj'],iijj_ind[tmp_datstr]['ew_bl_ii'],iijj_ind[tmp_datstr]['ew_wgt']
 
             if regrid_meth == 1:
-                tmpdat_ew_slice = np.ma.masked_invalid(data_inst[tmp_datstr][:,ew_jj_2nd_ind,ew_ii_2nd_ind].T)
-            elif regrid_meth == 2:            
-                tmp_data_inst_2_bl = data_inst[tmp_datstr][:,ew_bl_jj_ind_final,ew_bl_ii_ind_final]
-                tmp_ew_wgt = ew_wgt.copy()
-                tmp_ew_wgt.mask = tmp_ew_wgt.mask | tmp_data_inst_2_bl.mask
-                tmpdat_ew_slice = ((tmp_data_inst_2_bl* tmp_ew_wgt).sum(axis = 1)/tmp_ew_wgt.sum(axis = 0)).T
+                if n_dim_in == 3:   
+                    tmpdat_ew_slice = np.ma.masked_invalid(data_inst[tmp_datstr][:,ew_jj_2nd_ind,ew_ii_2nd_ind].T)
+                elif n_dim_in == 4: 
+                    tmpdat_ew_slice = np.ma.masked_invalid(data_inst[tmp_datstr][ew_jj_2nd_ind,ew_ii_2nd_ind].T)  
+            elif regrid_meth == 2:  
+                if n_dim_in == 3: 
+                    tmp_data_inst_2_bl = data_inst[tmp_datstr][ew_bl_jj_ind_final,ew_bl_ii_ind_final]
+                    tmp_ew_wgt = ew_wgt.copy()
+                    tmp_ew_wgt.mask = tmp_ew_wgt.mask | tmp_data_inst_2_bl.mask
+                    tmpdat_ew_slice = ((tmp_data_inst_2_bl* tmp_ew_wgt).sum(axis = 0)/tmp_ew_wgt.sum(axis = 0)).T           
+                elif n_dim_in == 4:  
+                    tmp_data_inst_2_bl = data_inst[tmp_datstr][:,ew_bl_jj_ind_final,ew_bl_ii_ind_final]
+                    tmp_ew_wgt = ew_wgt.copy()
+                    tmp_ew_wgt.mask = tmp_ew_wgt.mask | tmp_data_inst_2_bl.mask
+                    tmpdat_ew_slice = ((tmp_data_inst_2_bl* tmp_ew_wgt).sum(axis = 1)/tmp_ew_wgt.sum(axis = 0)).T
 
 
-            tmpdat_ew_gdept=grid_dict[tmp_datstr]['gdept'][:,ew_jj_2nd_ind,ew_ii_2nd_ind].T
-            ew_slice_dict[tmp_datstr] = np.ma.zeros(data_inst['Dataset 1'].shape[0::2])*np.ma.masked
-            for i_i,(tmpdat,tmpz,tmpzorig) in enumerate(zip(tmpdat_ew_slice,tmpdat_ew_gdept,ew_slice_dict['y'].T)):ew_slice_dict[tmp_datstr][:,i_i] = np.ma.masked_invalid(np.interp(tmpzorig, tmpz, np.ma.array(tmpdat.copy(),fill_value=np.nan).filled()  ))
+            if n_dim_in == 3: 
+                tmpdat_ew_gdept=grid_dict[tmp_datstr]['gdept'][:,ew_jj_2nd_ind,ew_ii_2nd_ind].T
+                ew_slice_dict[tmp_datstr] = np.ma.zeros(data_inst['Dataset 1'].shape[0::2])*np.ma.masked
+                for i_i,(tmpdat,tmpz,tmpzorig) in enumerate(zip(tmpdat_ew_slice,tmpdat_ew_gdept,ew_slice_dict['y'].T)):ew_slice_dict[tmp_datstr][:,i_i] = np.ma.masked_invalid(np.interp(tmpzorig, tmpz, np.ma.array(tmpdat.copy(),fill_value=np.nan).filled()  ))
+            if n_dim_in == 4: 
+                tmpdat_ew_gdept=grid_dict[tmp_datstr]['gdept'][:,ew_jj_2nd_ind,ew_ii_2nd_ind].T
+                ew_slice_dict[tmp_datstr] = np.ma.zeros(data_inst['Dataset 1'].shape[0::2])*np.ma.masked
+                for i_i,(tmpdat,tmpz,tmpzorig) in enumerate(zip(tmpdat_ew_slice,tmpdat_ew_gdept,ew_slice_dict['y'].T)):ew_slice_dict[tmp_datstr][:,i_i] = np.ma.masked_invalid(np.interp(tmpzorig, tmpz, np.ma.array(tmpdat.copy(),fill_value=np.nan).filled()  ))
 
     return ew_slice_dict
 
-def reload_ns_data_comb(ii,jj, data_inst, nav_lon, nav_lat, grid_dict, regrid_meth,iijj_ind,Dataset_lst,configd):        
+def reload_ns_data_comb(ii,jj, data_inst, nav_lon, nav_lat, grid_dict, n_dim_in,regrid_meth,iijj_ind,Dataset_lst,configd):        
     #Dataset_lst = [ss for ss in data_inst.keys()]      
     Dataset_lst_secondary = Dataset_lst.copy()
     if 'Dataset 1' in Dataset_lst_secondary: Dataset_lst_secondary.remove('Dataset 1')  
@@ -2313,7 +2333,10 @@ def reload_ns_data_comb(ii,jj, data_inst, nav_lon, nav_lat, grid_dict, regrid_me
     ns_slice_dict['y'] =  grid_dict['Dataset 1']['gdept'][:,:,ii]
 
 
-    ns_slice_dict['Dataset 1'] = np.ma.masked_invalid(data_inst['Dataset 1'][:,:,ii])
+    if n_dim_in == 3:   
+        ns_slice_dict['Dataset 1'] = np.ma.masked_invalid(data_inst['Dataset 1'][:,ii])
+    elif n_dim_in == 4:   
+        ns_slice_dict['Dataset 1'] = np.ma.masked_invalid(data_inst['Dataset 1'][:,:,ii])
 
     for tmp_datstr in Dataset_lst_secondary:
         th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
@@ -2322,22 +2345,43 @@ def reload_ns_data_comb(ii,jj, data_inst, nav_lon, nav_lat, grid_dict, regrid_me
 
 
         if configd[th_d_ind] == configd[1]: #if configd[th_d_ind] is None:
-            ns_slice_dict[tmp_datstr] = np.ma.masked_invalid(data_inst[tmp_datstr][:,:,ii])
+            #ns_slice_dict[tmp_datstr] = np.ma.masked_invalid(data_inst[tmp_datstr][:,:,ii])
+
+
+            if n_dim_in == 3:   
+                ns_slice_dict[tmp_datstr] = np.ma.masked_invalid(data_inst[tmp_datstr][:,ii])
+            elif n_dim_in == 4:   
+                ns_slice_dict[tmp_datstr] = np.ma.masked_invalid(data_inst[tmp_datstr][:,:,ii])
         else:
             
 
             ns_ii_2nd_ind,ns_jj_2nd_ind,ns_bl_jj_ind_final,ns_bl_ii_ind_final,ns_wgt = iijj_ind[tmp_datstr]['ns_ii'],iijj_ind[tmp_datstr]['ns_jj'], iijj_ind[tmp_datstr]['ns_bl_jj'],iijj_ind[tmp_datstr]   ['ns_bl_ii'],iijj_ind[tmp_datstr]['ns_wgt']
             if regrid_meth == 1:
-                tmpdat_ns_slice = np.ma.masked_invalid(data_inst[tmp_datstr][:,ns_jj_2nd_ind,ns_ii_2nd_ind].T)
+                if n_dim_in == 3:  
+                    tmpdat_ns_slice = np.ma.masked_invalid(data_inst[tmp_datstr][ns_jj_2nd_ind,ns_ii_2nd_ind].T)
+                elif n_dim_in == 4:    
+                    tmpdat_ns_slice = np.ma.masked_invalid(data_inst[tmp_datstr][:,ns_jj_2nd_ind,ns_ii_2nd_ind].T)
             elif regrid_meth == 2:
-                tmp_data_inst_2_bl = data_inst[tmp_datstr][:,ns_bl_jj_ind_final,ns_bl_ii_ind_final]
-                tmp_ns_wgt = ns_wgt.copy()
-                tmp_ns_wgt.mask = tmp_ns_wgt.mask | tmp_data_inst_2_bl.mask
-                tmpdat_ns_slice = ((tmp_data_inst_2_bl* tmp_ns_wgt).sum(axis = 1)/tmp_ns_wgt.sum(axis = 0)).T
+                if n_dim_in == 3:  
+                    tmp_data_inst_2_bl = data_inst[tmp_datstr][ns_bl_jj_ind_final,ns_bl_ii_ind_final]
+                    tmp_ns_wgt = ns_wgt.copy()
+                    tmp_ns_wgt.mask = tmp_ns_wgt.mask | tmp_data_inst_2_bl.mask
+                    tmpdat_ns_slice = ((tmp_data_inst_2_bl* tmp_ns_wgt).sum(axis = 0)/tmp_ns_wgt.sum(axis = 0)).T
+                elif n_dim_in == 4:  
+                    tmp_data_inst_2_bl = data_inst[tmp_datstr][:,ns_bl_jj_ind_final,ns_bl_ii_ind_final]
+                    tmp_ns_wgt = ns_wgt.copy()
+                    tmp_ns_wgt.mask = tmp_ns_wgt.mask | tmp_data_inst_2_bl.mask
+                    tmpdat_ns_slice = ((tmp_data_inst_2_bl* tmp_ns_wgt).sum(axis = 1)/tmp_ns_wgt.sum(axis = 0)).T
 
-            tmpdat_ns_gdept = grid_dict[tmp_datstr]['gdept'][:,ns_jj_2nd_ind,ns_ii_2nd_ind].T
-            ns_slice_dict[tmp_datstr] = np.ma.zeros(data_inst['Dataset 1'].shape[0:2])*np.ma.masked
-            for i_i,(tmpdat,tmpz,tmpzorig) in enumerate(zip(tmpdat_ns_slice,tmpdat_ns_gdept,ns_slice_dict['y'].T)):ns_slice_dict[tmp_datstr][:,i_i] = np.ma.masked_invalid(np.interp(tmpzorig, tmpz, np.ma.array(tmpdat.copy(),fill_value=np.nan).filled()  ))
+            if n_dim_in == 3:                  
+                tmpdat_ns_gdept = grid_dict[tmp_datstr]['gdept'][:,ns_jj_2nd_ind,ns_ii_2nd_ind].T
+                ns_slice_dict[tmp_datstr] = np.ma.zeros(data_inst['Dataset 1'].shape[0:2])*np.ma.masked
+                for i_i,(tmpdat,tmpz,tmpzorig) in enumerate(zip(tmpdat_ns_slice,tmpdat_ns_gdept,ns_slice_dict['y'].T)):ns_slice_dict[tmp_datstr][:,i_i] = np.ma.masked_invalid(np.interp(tmpzorig, tmpz, np.ma.array(tmpdat.copy(),fill_value=np.nan).filled()  ))
+
+            elif n_dim_in == 4:  
+                tmpdat_ns_gdept = grid_dict[tmp_datstr]['gdept'][:,ns_jj_2nd_ind,ns_ii_2nd_ind].T
+                ns_slice_dict[tmp_datstr] = np.ma.zeros(data_inst['Dataset 1'].shape[0:2])*np.ma.masked
+                for i_i,(tmpdat,tmpz,tmpzorig) in enumerate(zip(tmpdat_ns_slice,tmpdat_ns_gdept,ns_slice_dict['y'].T)):ns_slice_dict[tmp_datstr][:,i_i] = np.ma.masked_invalid(np.interp(tmpzorig, tmpz, np.ma.array(tmpdat.copy(),fill_value=np.nan).filled()  ))
 
 
     return ns_slice_dict
