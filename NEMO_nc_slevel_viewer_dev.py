@@ -3834,7 +3834,6 @@ def nemo_slice_zlev(config = 'amm7',
                             xsect_ii_pnt_lst = []
                             xsect_jj_pnt_lst = []
                             
-                            tmpnlat, tmpnlon = lat_d[th_d_ind].shape
                             for tmpxsectloc in xsectloc_lst: 
                                 tmpxsect_ax,tmpxsect_ii,tmpxsect_jj,tmpxsect_ti,tmpxsect_zz, tmpxsect_sel_xlocval,tmpxsect_sel_ylocval = indices_from_ginput_ax(ax,tmpxsectloc[0],tmpxsectloc[1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
                                 xsect_ax_pnt_lst.append(tmpxsect_ax)
@@ -3843,10 +3842,62 @@ def nemo_slice_zlev(config = 'amm7',
                             
                             xsect_jj_npnt = len(xsect_ii_pnt_lst)
 
-                            xsect_lon_pnt_mat = lon_d[th_d_ind][[xsect_jj_pnt_lst],[xsect_ii_pnt_lst]][0,:]
-                            xsect_lat_pnt_mat = lat_d[th_d_ind][[xsect_jj_pnt_lst],[xsect_ii_pnt_lst]][0,:]
+                            xsect_lon_dict = {}
+                            xsect_lat_dict = {}
+                            xsect_lon_pnt_dict = {}
+                            xsect_lat_pnt_dict = {}
+                            xsect_jj_ind_dict = {}
+                            xsect_ii_ind_dict = {}
+                            xsect_pnt_ind_dict = {}
+                            nxsect_dict = {}
+
+                            for tmp_datstr in Dataset_lst:
+
+                                xsect_lon_pnt_mat = lon_d[th_d_ind][[xsect_jj_pnt_lst],[xsect_ii_pnt_lst]][0,:]
+                                xsect_lat_pnt_mat = lat_d[th_d_ind][[xsect_jj_pnt_lst],[xsect_ii_pnt_lst]][0,:]
 
 
+
+                                tmpnlat, tmpnlon = lat_d[th_d_ind].shape
+                                #th_d_ind1 = int(tmp_datstr1[-1])
+                                #t#h_d_ind1 = int(tmp_datstr1[8:])
+                                th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
+
+                                xs1 = datetime.now()
+                                #if configd[int(secdataset_proc[8:])].lower() in ['amm7','amm15','co9p2','gulf18','orca025']:
+                                #if True:
+
+                                xsect_ii_ind_lst = []
+                                xsect_jj_ind_lst = []
+                                xsect_n_ind_lst = []
+                                #pdb.set_trace()
+                                for xi in range(xsect_jj_npnt-1):
+                                    tmp_xsect_ii_ind,tmp_xsect_jj_ind = profile_line( xsect_ii_pnt_lst[xi:xi+2],xsect_jj_pnt_lst[xi:xi+2], ni = tmpnlat )
+                                    xsect_ii_ind_lst.append(tmp_xsect_ii_ind)
+                                    xsect_jj_ind_lst.append(tmp_xsect_jj_ind)
+                                    xsect_n_ind_lst.append(tmp_xsect_ii_ind.size)
+
+                                xsect_ii_ind_mat = np.concatenate(xsect_ii_ind_lst)
+                                xsect_jj_ind_mat = np.concatenate(xsect_jj_ind_lst)
+                                nxsect = xsect_ii_ind_mat.size
+
+                                xsect_lon_mat = lon_d[th_d_ind][[xsect_jj_ind_mat],[xsect_ii_ind_mat]][0,:]
+                                xsect_lat_mat = lat_d[th_d_ind][[xsect_jj_ind_mat],[xsect_ii_ind_mat]][0,:]
+                                
+                                xsect_pnt_ind = np.append(0,np.cumsum(xsect_n_ind_lst)-1)
+
+
+                                xsect_lon_dict[tmp_datstr] = xsect_lon_mat
+                                xsect_lat_dict[tmp_datstr] = xsect_lat_mat
+                                xsect_lon_pnt_dict[tmp_datstr] = xsect_lon_pnt_mat
+                                xsect_lat_pnt_dict[tmp_datstr] = xsect_lat_pnt_mat
+                                xsect_ii_ind_dict[tmp_datstr] = xsect_ii_ind_mat
+                                xsect_jj_ind_dict[tmp_datstr] = xsect_jj_ind_mat
+                                xsect_pnt_ind_dict[tmp_datstr] = xsect_pnt_ind
+                                nxsect_dict[tmp_datstr] = nxsect
+
+                                
+                            """
 
                             th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
 
@@ -3868,16 +3919,19 @@ def nemo_slice_zlev(config = 'amm7',
                             xsect_jj_ind_mat = np.concatenate(xsect_jj_ind_lst)
                             nxsect = xsect_ii_ind_mat.size
 
-                            tmp_xsect_lon = lon_d[th_d_ind][[xsect_jj_ind_mat],[xsect_ii_ind_mat]][0,:]
-                            tmp_xsect_lat = lat_d[th_d_ind][[xsect_jj_ind_mat],[xsect_ii_ind_mat]][0,:]
+                            xsect_lon_mat = lon_d[th_d_ind][[xsect_jj_ind_mat],[xsect_ii_ind_mat]][0,:]
+                            xsect_lat_mat = lat_d[th_d_ind][[xsect_jj_ind_mat],[xsect_ii_ind_mat]][0,:]
                             
                             xsect_pnt_ind = np.append(0,np.cumsum(xsect_n_ind_lst)-1)
+                            """
                             
                         print('Xsect: indices processed.')
 
 
-                        xs_map_ax_lst = [ax[0].plot(tmp_xsect_lon,tmp_xsect_lat,'r.-')]
-                        xs_map_ax_lst.append(ax[0].plot(xsect_lon_pnt_mat,xsect_lat_pnt_mat,'ko-'))
+                        #xs_map_ax_lst = [ax[0].plot(xsect_lon_mat,xsect_lat_mat,'r.-')]
+                        #xs_map_ax_lst.append(ax[0].plot(xsect_lon_pnt_mat,xsect_lat_pnt_mat,'ko-'))
+                        xs_map_ax_lst = [ax[0].plot(xsect_lon_dict[secdataset_proc],xsect_lat_dict[secdataset_proc],'r.-')]
+                        xs_map_ax_lst.append(ax[0].plot(xsect_lon_pnt_dict[secdataset_proc],xsect_lat_pnt_dict[secdataset_proc],'ko-'))
 
                         fig.canvas.draw()
                         if verbose_debugging: print('Canvas flush', datetime.now())
@@ -3887,6 +3941,7 @@ def nemo_slice_zlev(config = 'amm7',
          
                         tmp_xsect_x,tmp_xsect_z,tmp_xsect_dat = {},{},{}
 
+                        '''
                         for tmp_datstr in Dataset_lst:
                             if var_dim[var] == 4:
                                 tmp_xsect_dat[tmp_datstr] = data_inst[tmp_datstr][:,[xsect_jj_ind_mat],[xsect_ii_ind_mat]][:,0,:]
@@ -3896,6 +3951,18 @@ def nemo_slice_zlev(config = 'amm7',
                                 tmp_xsect_dat[tmp_datstr] = data_inst[tmp_datstr][[xsect_jj_ind_mat],[xsect_ii_ind_mat]][0,:]
                                 tmp_xsect_x[tmp_datstr] = np.arange(nxsect)
                                 #pdb.set_trace()
+                        '''
+                        #pdb.set_trace()
+                        for tmp_datstr in Dataset_lst:
+                            if var_dim[var] == 4:
+                                tmp_xsect_dat[tmp_datstr] = data_inst[tmp_datstr][:,[xsect_jj_ind_dict[tmp_datstr]],[xsect_ii_ind_dict[tmp_datstr]]][:,0,:]
+                                tmp_xsect_z[tmp_datstr] = grid_dict[tmp_datstr]['gdept'][:,[xsect_jj_ind_dict[tmp_datstr]],[xsect_ii_ind_dict[tmp_datstr]]][:,0,:]
+                                tmp_xsect_x[tmp_datstr] = np.arange(nxsect_dict[tmp_datstr])
+                            elif var_dim[var] == 3:
+                                tmp_xsect_dat[tmp_datstr] = data_inst[tmp_datstr][[xsect_jj_ind_dict[tmp_datstr]],[xsect_ii_ind_dict[tmp_datstr]]][0,:]
+                                tmp_xsect_x[tmp_datstr] = np.arange(nxsect_dict[tmp_datstr])
+                                #pdb.set_trace()
+
 
 
                         if figxs is not None:
@@ -3921,7 +3988,7 @@ def nemo_slice_zlev(config = 'amm7',
                             xs_xlim = np.array(axxs[0].get_xlim())
                             for axi,tmpax  in enumerate(axxs): 
                                 for xi in xsect_pnt_ind: axxs[axi].axvline(xi,color = 'k', alpha = 0.5, ls = '--') 
-                                for xi in xsect_pnt_ind: axxs[axi].text(xi,xs_ylim[0] - xs_ylim.ptp()*0.9   ,lon_lat_to_str(tmp_xsect_lon[xi],tmp_xsect_lat[xi])[0], rotation = 270, ha = 'left', va = 'top')
+                                for xi in xsect_pnt_ind: axxs[axi].text(xi,xs_ylim[0] - xs_ylim.ptp()*0.9   ,lon_lat_to_str(xsect_lon_mat[xi],xsect_lat_mat[xi])[0], rotation = 270, ha = 'left', va = 'top')
                                 plt.colorbar(paxxs[axi], ax = axxs[axi])
                             for xi,tmp_datstr in enumerate(Dataset_lst): set_perc_clim_pcolor_in_region(5,95,ax = axxs[axi])
                             set_perc_clim_pcolor_in_region(5,95,ax = axxs[2], sym = True)
@@ -3933,9 +4000,11 @@ def nemo_slice_zlev(config = 'amm7',
                             xs_pe = [pe.Stroke(linewidth=2, foreground='w'), pe.Normal()]
                             #pdb.set_trace()
                             xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][0][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
-                            xmapax.plot(tmp_xsect_lon,tmp_xsect_lat,'r-', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                            xmapax.plot(xsect_lon_pnt_mat,xsect_lat_pnt_mat,'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                            xmapax.plot(xsect_lon_pnt_mat[0],xsect_lat_pnt_mat[0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                            xmapax.plot(xsect_lon_mat,xsect_lat_mat,'r-', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                            #xmapax.plot(xsect_lon_pnt_mat,xsect_lat_pnt_mat,'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                            #xmapax.plot(xsect_lon_pnt_mat[0],xsect_lat_pnt_mat[0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                            xmapax.plot(xsect_lon_pnt_dict[secdataset_proc],xsect_lat_pnt_dict[secdataset_proc],'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                            xmapax.plot(xsect_lon_pnt_dict[secdataset_proc][0],xsect_lat_pnt_dict[secdataset_proc][0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
                             xmapax.axis('equal')
                             xmapax.set_xticks([])
                             xmapax.set_yticks([]) 
@@ -3966,9 +4035,9 @@ def nemo_slice_zlev(config = 'amm7',
                             for xi in xsect_pnt_ind:                            axxs[0].axvline(xi,color = 'k', alpha = 0.5, ls = '--') 
 
                             if var_dim[var] == 4:
-                                for xi in xsect_pnt_ind:         axxs[0].text(xi,xs_ylim[0] - xs_ylim.ptp()*0.9,lon_lat_to_str(tmp_xsect_lon[xi],tmp_xsect_lat[xi])[0], rotation = 270, ha = 'left', va = 'top')
+                                for xi in xsect_pnt_ind:         axxs[0].text(xi,xs_ylim[0] - xs_ylim.ptp()*0.9,lon_lat_to_str(xsect_lon_mat[xi],xsect_lat_mat[xi])[0], rotation = 270, ha = 'left', va = 'top')
                             elif var_dim[var] == 3:
-                                for xi in xsect_pnt_ind:         axxs[0].text(xi,xs_ylim[0] + xs_ylim.ptp()*0.9,lon_lat_to_str(tmp_xsect_lon[xi],tmp_xsect_lat[xi])[0], rotation = 270, ha = 'left', va = 'top')
+                                for xi in xsect_pnt_ind:         axxs[0].text(xi,xs_ylim[0] + xs_ylim.ptp()*0.9,lon_lat_to_str(xsect_lon_mat[xi],xsect_lat_mat[xi])[0], rotation = 270, ha = 'left', va = 'top')
                             #axxs[0].set_xlim([0,xs_xlim[1]*1.01])
                             #pdb.set_trace()
 
@@ -3979,9 +4048,12 @@ def nemo_slice_zlev(config = 'amm7',
                             xs_pe = [pe.Stroke(linewidth=2, foreground='w'), pe.Normal()]
                             #pdb.set_trace()
                             xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][0][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
-                            xmapax.plot(tmp_xsect_lon,tmp_xsect_lat,'r-', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                            xmapax.plot(xsect_lon_pnt_mat,xsect_lat_pnt_mat,'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                            xmapax.plot(xsect_lon_pnt_mat[0],xsect_lat_pnt_mat[0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                            #xmapax.plot(xsect_lon_mat,xsect_lat_mat,'r-', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                            #xmapax.plot(xsect_lon_pnt_mat,xsect_lat_pnt_mat,'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                            #xmapax.plot(xsect_lon_pnt_mat[0],xsect_lat_pnt_mat[0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                            #xmapax.plot(xsect_lon_dict[secdataset_proc],xsect_lat_dict[secdataset_proc],'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                            xmapax.plot(xsect_lon_pnt_dict[secdataset_proc],xsect_lat_pnt_dict[secdataset_proc],'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                            xmapax.plot(xsect_lon_pnt_dict[secdataset_proc][0],xsect_lat_pnt_dict[secdataset_proc][0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
                             xmapax.axis('equal')
                             xmapax.set_xticks([])
                             xmapax.set_yticks([]) 
