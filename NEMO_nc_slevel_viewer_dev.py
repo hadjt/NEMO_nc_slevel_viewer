@@ -1307,8 +1307,9 @@ def nemo_slice_zlev(config = 'amm7',
     else:
         reload_MLD = True
         MLD_show = True
-        MLD_var_lst = ['mld25h_1','mld25h_2']
-        MLD_var = 'mld25h_1'
+        poss_MLD_var_lst_lower = ['mld','karamld','mld25h_1','mld25h_2']
+        MLD_var_lst = [ss for ss in var_but_mat if ss.lower() in poss_MLD_var_lst_lower]
+        MLD_var = MLD_var_lst[0] # 'mld25h_1'
         data_mld = {}
         mldax_lst = []
         #figmlopt = None
@@ -3563,6 +3564,8 @@ def nemo_slice_zlev(config = 'amm7',
                             if mldbut_sel in MLD_var_lst:
                                 MLD_var = mldbut_sel
                                 reload_MLD = True
+                                reload_ew = True
+                                reload_ns = True
                                 print('mldbut_sel:',mldbut_sel)
                                 print('MLD_var:',MLD_var)
                                 print('reload_MLD:',reload_MLD)
