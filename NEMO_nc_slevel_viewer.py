@@ -3551,7 +3551,8 @@ def nemo_slice_zlev(config = 'amm7',
                             #obs_but_sw['Hide_Obs'] = {'v':Obs_hide, 'T':'Show Obs','F': 'Hide Obs'}
                             #obs_but_sw['Edges'] = {'v':Obs_hide, 'T':'Show Edges','F': 'Hide Edges'}
                             #obs_but_sw['Loc'] = {'v':Obs_hide, 'T':"Don't Selected point",'F': 'Move Selected point'}
-                            for m_var in MLD_var_lst:  mld_but_sw[m_var] = {'v':m_var == MLD_var ,'T': m_var + ' selected','F':'choose ' +m_var}
+                            #for m_var in MLD_var_lst:  mld_but_sw[m_var] = {'v':m_var == MLD_var ,'T': m_var + ' selected','F':'choose ' +m_var,'T_col': 'k','F_col':'0.5'}
+                            for m_var in MLD_var_lst:  mld_but_sw[m_var] = {'v':m_var == MLD_var ,'T': m_var ,'F': m_var,'T_col': 'k','F_col':'0.5'}
 
                             mldbut_sel = pop_up_opt_window(mld_but_names, opt_but_sw = mld_but_sw)
 
@@ -3794,8 +3795,11 @@ def nemo_slice_zlev(config = 'amm7',
                             obs_but_sw['Hide_Obs'] = {'v':Obs_hide, 'T':'Show Obs','F': 'Hide Obs'}
                             obs_but_sw['Edges'] = {'v':Obs_hide, 'T':'Show Edges','F': 'Hide Edges'}
                             obs_but_sw['Loc'] = {'v':Obs_hide, 'T':"Don't Selected point",'F': 'Move Selected point'}
-                            for ob_var in Obs_var_lst_sub:  obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var + ' hidden'}
-                            for ob_var in Obs_varlst:  obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var + ' hidden'}
+                            #for ob_var in Obs_var_lst_sub:  obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var + ' hidden'}
+                            #for ob_var in Obs_varlst:  obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var + ' hidden'}
+                            for ob_var in Obs_var_lst_sub:  obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var,'T_col':'k','F_col':'0.5'}
+                            #for ob_var in Obs_var_lst_sub:  obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var + ' hidden'}
+                            for ob_var in Obs_varlst:  obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var,'T_col':'k','F_col':'0.5'}
 
                             obbut_sel = pop_up_opt_window(obs_but_names, opt_but_sw = obs_but_sw)
 

@@ -4686,8 +4686,10 @@ def pop_up_opt_window(opt_but_names,opt_but_sw = None):
         for tmpoob in opt_but_sw.keys():
             if opt_but_sw[tmpoob]['v']:
                 obcax_tx_hd[tmpoob].set_text(opt_but_sw[tmpoob]['T'])
+                if 'T_col' in opt_but_sw[tmpoob].keys():obcax_tx_hd[tmpoob].set_color(opt_but_sw[tmpoob]['T_col'])
             else:
                 obcax_tx_hd[tmpoob].set_text(opt_but_sw[tmpoob]['F'])
+                if 'F_col' in opt_but_sw[tmpoob].keys():obcax_tx_hd[tmpoob].set_color(opt_but_sw[tmpoob]['F_col'])
 
     # Set x and y lims
     obcax.set_xlim(0,1)
