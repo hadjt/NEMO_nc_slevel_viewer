@@ -4981,9 +4981,13 @@ def get_help_text(help_type,help_but):
 
     return help_text
 
-
+def jjii_from_lon_lat(lon_in, lat_in, lon_d_in,lat_d_in,config = 'orca12'):
     
+    tmp_distmat = np.sqrt((lon_in - lon_d_in)**2 + (lat_in - lat_d_in)**2)
 
 
+    sel_jj,sel_ii = tmp_distmat.argmin()//tmp_distmat.shape[1], tmp_distmat.argmin()%tmp_distmat.shape[1]
+
+    return sel_jj,sel_ii
 if __name__ == "__main__":
     main()
