@@ -2162,9 +2162,13 @@ def nemo_slice_zlev(config = 'amm7',
                         #ew_slice_dict['Dataset 1'], ew_slice_dict['Dataset 2'] = grad_vert_ew_data(ew_slice_dict['Dataset 1'],ew_slice_dict['Dataset 2'],ew_slice_dict['y'])
                         ew_slice_dict = grad_vert_ew_data(ew_slice_dict)
                 else:
+                    '''
                     ew_slice_dict = {}
                     ew_slice_dict['x'] = lon_d[1][jj,:]
                     ew_slice_dict['y'] = grid_dict['Dataset 1']['gdept'][:,jj,:]
+                    '''
+                    ew_slice_dict = reload_ew_data_comb(ii,jj, data_inst, lon_d[1], lat_d[1], grid_dict, var_dim[var], regrid_meth,iijj_ind,Dataset_lst,configd)
+
                 reload_ew = False
 
             if verbose_debugging: print('Reloaded  ew data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now(),'; dt = %s'%(datetime.now()-prevtime))
@@ -2181,9 +2185,14 @@ def nemo_slice_zlev(config = 'amm7',
                         #ns_slice_dict['Dataset 1'], ns_slice_dict['Dataset 2'] = grad_vert_ns_data(ns_slice_dict['Dataset 1'],ns_slice_dict['Dataset 2'],ns_slice_dict['y'])
                         ns_slice_dict = grad_vert_ns_data(ns_slice_dict)
                 else:
+                    '''
                     ns_slice_dict = {}
                     ns_slice_dict['x'] = lat_d[1][:,ii]
                     ns_slice_dict['y'] = grid_dict['Dataset 1']['gdept'][:,:,ii]
+                    '''
+
+                    xsect_jjii_npnt = reload_ns_data_comb(ii,jj, data_inst, lon_d[1], lat_d[1], grid_dict, var_dim[var],regrid_meth, iijj_ind,Dataset_lst,configd)
+ 
                   
                 reload_ns = False
 
@@ -2369,6 +2378,10 @@ def nemo_slice_zlev(config = 'amm7',
                     ns_slice_dat = ns_slice_dict[secdataset_proc]
                     ew_slice_dat = ew_slice_dict[secdataset_proc]
                     hov_dat = hov_dat_dict[secdataset_proc]
+
+                ns_slice_dat = ns_slice_dict[secdataset_proc]
+                ew_slice_dat = ew_slice_dict[secdataset_proc]
+                
                 ts_dat = ts_dat_dict[secdataset_proc]
                 if vis_curr > 0:
                     map_dat_U = map_dat_dict_U[secdataset_proc]
@@ -2422,8 +2435,10 @@ def nemo_slice_zlev(config = 'amm7',
             if do_MLD:
                 #pdb.set_trace()
                 if MLD_show:
-                    mldax_lst.append(ax[1].plot(mld_ew_slice_dict['x'],mld_ew_slice_dat,'k', lw = 0.5))
-                    mldax_lst.append(ax[2].plot(mld_ns_slice_dict['x'],mld_ns_slice_dat,'k', lw = 0.5))
+                    #pdb.set_trace()
+                    if var_dim[var]== 4:
+                        mldax_lst.append(ax[1].plot(mld_ew_slice_dict['x'],mld_ew_slice_dat,'k', lw = 0.5))
+                        mldax_lst.append(ax[2].plot(mld_ns_slice_dict['x'],mld_ns_slice_dat,'k', lw = 0.5))
 
             tsax_lst = []
             #Dataset_col = ['r','b','darkgreen','gold']
@@ -3552,7 +3567,7 @@ def nemo_slice_zlev(config = 'amm7',
                             #obs_but_sw['Edges'] = {'v':Obs_hide, 'T':'Show Edges','F': 'Hide Edges'}
                             #obs_but_sw['Loc'] = {'v':Obs_hide, 'T':"Don't Selected point",'F': 'Move Selected point'}
                             #for m_var in MLD_var_lst:  mld_but_sw[m_var] = {'v':m_var == MLD_var ,'T': m_var + ' selected','F':'choose ' +m_var,'T_col': 'k','F_col':'0.5'}
-                            for m_var in MLD_var_lst:  mld_but_sw[m_var] = {'v':m_var == MLD_var ,'T': m_var ,'F': m_var,'T_col': 'k','F_col':'0.5'}
+                            for m_var in MLD_var_lst:  mld_but_sw[m_var] = {'v':m_var == MLD_var ,'T': m_var ,'F': m_var,'T_col': 'r','F_col':'k'}
 
                             mldbut_sel = pop_up_opt_window(mld_but_names, opt_but_sw = mld_but_sw)
 
@@ -3830,8 +3845,14 @@ def nemo_slice_zlev(config = 'amm7',
                         if (mouse_info['button'].name == 'RIGHT') | (loaded_xsect == False):
                             loaded_xsect = True
 
-                            xsectloc_lst = plt.ginput(-1)
+                            xsect_jjii_npnt = 0
+                            while xsect_jjii_npnt<2:
+                                xsectloc_lst = plt.ginput(-1)
+                                xsect_jjii_npnt = len(xsectloc_lst)
+                                if xsect_jjii_npnt<2:
+                                    print('you much select at least 2 points. You have selected %i points'%xsect_jjii_npnt)
                             #pdb.set_trace()
+
 
                             print('Xsect: ginput exited')
                             xs0 = datetime.now()
@@ -3847,7 +3868,7 @@ def nemo_slice_zlev(config = 'amm7',
                                 xsect_ii_pnt_lst.append(tmpxsect_ii)
                                 xsect_jj_pnt_lst.append(tmpxsect_jj)
                             
-                            xsect_jj_npnt = len(xsect_ii_pnt_lst)
+                            xsect_jjii_npnt = len(xsect_ii_pnt_lst)
 
                             sec_th_d_ind = int(secdataset_proc[8:]) # int(tmp_datstr[-1])
                             
@@ -3891,7 +3912,7 @@ def nemo_slice_zlev(config = 'amm7',
                                 tmp_xsect_jj_pnt_dict = []
 
                                 #convert selected  points into lon lat points for current grid
-                                for xi in range(xsect_jj_npnt):
+                                for xi in range(xsect_jjii_npnt):
 
                                     #pdb.set_trace()
                                     tmp_jj_jjii_from_lon_lat,tmp_ii_jjii_from_lon_lat = jjii_from_lon_lat(xsect_lon_pnt_mat[xi],xsect_lat_pnt_mat[xi],lon_d[th_d_ind],lat_d[th_d_ind])
@@ -3904,7 +3925,7 @@ def nemo_slice_zlev(config = 'amm7',
                                 del(tmp_xsect_jj_pnt_dict)
 
                                 #pdb.set_trace()
-                                for xi in range(xsect_jj_npnt-1):
+                                for xi in range(xsect_jjii_npnt-1):
 
                                     #pdb.set_trace()
 
@@ -3947,7 +3968,7 @@ def nemo_slice_zlev(config = 'amm7',
                             xsect_jj_ind_lst = []
                             xsect_n_ind_lst = []
                             #pdb.set_trace()
-                            for xi in range(xsect_jj_npnt-1):
+                            for xi in range(xsect_jjii_npnt-1):
                                 tmp_xsect_ii_ind,tmp_xsect_jj_ind = profile_line( xsect_ii_pnt_lst[xi:xi+2],xsect_jj_pnt_lst[xi:xi+2], ni = tmpnlat )
                                 xsect_ii_ind_lst.append(tmp_xsect_ii_ind)
                                 xsect_jj_ind_lst.append(tmp_xsect_jj_ind)
