@@ -2191,7 +2191,7 @@ def nemo_slice_zlev(config = 'amm7',
                     ns_slice_dict['y'] = grid_dict['Dataset 1']['gdept'][:,:,ii]
                     '''
 
-                    xsect_jjii_npnt = reload_ns_data_comb(ii,jj, data_inst, lon_d[1], lat_d[1], grid_dict, var_dim[var],regrid_meth, iijj_ind,Dataset_lst,configd)
+                    ns_slice_dict = reload_ns_data_comb(ii,jj, data_inst, lon_d[1], lat_d[1], grid_dict, var_dim[var],regrid_meth, iijj_ind,Dataset_lst,configd)
  
                   
                 reload_ns = False
@@ -2375,13 +2375,13 @@ def nemo_slice_zlev(config = 'amm7',
             if secdataset_proc in Dataset_lst:
                 map_dat = map_dat_dict[secdataset_proc]
                 if var_dim[var] == 4:
-                    ns_slice_dat = ns_slice_dict[secdataset_proc]
-                    ew_slice_dat = ew_slice_dict[secdataset_proc]
+                    #ns_slice_dat = ns_slice_dict[secdataset_proc]
+                    #ew_slice_dat = ew_slice_dict[secdataset_proc]
                     hov_dat = hov_dat_dict[secdataset_proc]
 
                 ns_slice_dat = ns_slice_dict[secdataset_proc]
                 ew_slice_dat = ew_slice_dict[secdataset_proc]
-                
+
                 ts_dat = ts_dat_dict[secdataset_proc]
                 if vis_curr > 0:
                     map_dat_U = map_dat_dict_U[secdataset_proc]
@@ -2402,6 +2402,11 @@ def nemo_slice_zlev(config = 'amm7',
                         ew_slice_dat = ew_slice_dict[tmpdataset_1] - ew_slice_dict[tmpdataset_2]
                         #pdb.set_trace()
                         hov_dat = hov_dat_dict[tmpdataset_1] - hov_dat_dict[tmpdataset_2]
+
+                    elif var_dim[var] == 3:
+                        ns_slice_dat = ns_slice_dict[tmpdataset_1] - ns_slice_dict[tmpdataset_2]
+                        ew_slice_dat = ew_slice_dict[tmpdataset_1] - ew_slice_dict[tmpdataset_2]
+
                     ts_dat = ts_dat_dict[tmpdataset_1] - ts_dat_dict[tmpdataset_2]
                     if vis_curr > 0:
                         map_dat_U = map_dat_dict_U[tmpdataset_1] - map_dat_dict_U[tmpdataset_2]
@@ -2424,7 +2429,7 @@ def nemo_slice_zlev(config = 'amm7',
 
 
             mldax_lst = []
-
+            pax2d = []
             if verbose_debugging: print("Do pcolormesh for ii = %i,jj = %i,ti = %i,zz = %i, var = '%s'"%(ii,jj, ti, zz,var), datetime.now())
             pax.append(ax[0].pcolormesh(map_dat_dict['x'],map_dat_dict['y'],map_dat,cmap = curr_cmap,norm = climnorm))
             if var_dim[var] == 4:
@@ -2432,6 +2437,10 @@ def nemo_slice_zlev(config = 'amm7',
                 pax.append(ax[1].pcolormesh(ew_slice_dict['x'],ew_slice_dict['y'],ew_slice_dat,cmap = curr_cmap,norm = climnorm))
                 pax.append(ax[2].pcolormesh(ns_slice_dict['x'],ns_slice_dict['y'],ns_slice_dat,cmap = curr_cmap,norm = climnorm))
                 pax.append(ax[3].pcolormesh(hov_dat_dict['x'],hov_dat_dict['y'],hov_dat,cmap = curr_cmap,norm = climnorm))
+            elif var_dim[var] == 3:
+                #pdb.set_trace()
+                pax2d.append(ax[1].plot(ew_slice_dict['x'],ew_slice_dat,'r'))
+                pax2d.append(ax[2].plot(ns_slice_dict['x'],ns_slice_dat,'r'))
             if do_MLD:
                 #pdb.set_trace()
                 if MLD_show:
@@ -2710,8 +2719,9 @@ def nemo_slice_zlev(config = 'amm7',
                 if tmpew_visible_ind.any(): tmp_ew_ylim = [ew_slice_dict['y'][:,tmpew_visible_ind].max(),zlim_min]
                 if tmpns_visible_ind.any(): tmp_ns_ylim = [ns_slice_dict['y'][:,tmpns_visible_ind].max(),zlim_min]
                 tmp_hov_ylim = [hov_dat_dict['y'].max(),zlim_min]
-                ax[1].set_ylim(tmp_ew_ylim)
-                ax[2].set_ylim(tmp_ns_ylim)
+                if var_dim[var] == 4:
+                    ax[1].set_ylim(tmp_ew_ylim)
+                    ax[2].set_ylim(tmp_ns_ylim)
                 ax[3].set_ylim(tmp_hov_ylim)
 
                 if profvis:
@@ -2720,8 +2730,9 @@ def nemo_slice_zlev(config = 'amm7',
                     ax[5].set_xlim(pf_xlim)
                     #
             else:
-                ax[1].set_ylim([zlim_max,zlim_min])
-                ax[2].set_ylim([zlim_max,zlim_min])
+                if var_dim[var] == 4:
+                    ax[1].set_ylim([zlim_max,zlim_min])
+                    ax[2].set_ylim([zlim_max,zlim_min])
                 ax[3].set_ylim([np.minimum(zlim_max,hov_dat_dict['y'].max()),zlim_min])
                 if profvis:
                     tmp_py_ylim = [np.minimum(zlim_max,pf_dat_dict['y'].max()),zlim_min]
@@ -2729,6 +2740,15 @@ def nemo_slice_zlev(config = 'amm7',
                     ax[5].set_xlim(pf_xlim)
                 #pdb.set_trace()
 
+            if var_dim[var] == 3:
+                tmpew_xlim = ax[1].get_xlim()
+                tmpns_xlim = ax[2].get_xlim()
+                tmpew_visible_ind = (ew_slice_dict['x']>=tmpew_xlim[0]) & (ew_slice_dict['x']<=tmpew_xlim[1]) 
+                tmpns_visible_ind = (ns_slice_dict['x']>=tmpns_xlim[0]) & (ns_slice_dict['x']<=tmpns_xlim[1]) 
+                tmp_ew_ylim = np.array([ew_slice_dat[tmpew_visible_ind].min(),ew_slice_dat[tmpew_visible_ind].max()])
+                tmp_ns_ylim = np.array([ns_slice_dat[tmpns_visible_ind].min(),ns_slice_dat[tmpns_visible_ind].max()])
+                ax[1].set_ylim(tmp_ew_ylim)
+                ax[2].set_ylim(tmp_ns_ylim)
         
             ###################################################################################################
             ### add color lims
@@ -2866,8 +2886,9 @@ def nemo_slice_zlev(config = 'amm7',
             cs_line.append(ax[2].axvline(lat_d[1][jj,ii],color = '0.5', alpha = 0.5))
             cs_line.append(ax[3].axvline(time_datetime_since_1970[ti],color = '0.5', alpha = 0.5))
             cs_line.append(ax[4].axvline(time_datetime_since_1970[ti],color = '0.5', alpha = 0.5))
-            cs_line.append(ax[1].axhline(zz,color = '0.5', alpha = 0.5))
-            cs_line.append(ax[2].axhline(zz,color = '0.5', alpha = 0.5))
+            if var_dim[var] == 4:
+                cs_line.append(ax[1].axhline(zz,color = '0.5', alpha = 0.5))
+                cs_line.append(ax[2].axhline(zz,color = '0.5', alpha = 0.5))
             cs_line.append(ax[3].axhline(zz,color = '0.5', alpha = 0.5))
             if np.prod(ax[4].get_ylim())<0: # if xlim straddles zero
                 cs_line.append(ax[4].axhline(0,color = '0.5', alpha = 0.5))
@@ -4726,7 +4747,10 @@ def nemo_slice_zlev(config = 'amm7',
 
             for tmp_pax in pax:tmp_pax.remove()
             for tmp_cs_line in cs_line:tmp_cs_line.remove()
-
+            if var_dim[var] == 3:
+                for tmppax2d in pax2d:
+                    rem_loc = tmppax2d.pop(0)
+                    rem_loc.remove()
 
             for tsax in tsax_lst:
                 rem_loc = tsax.pop(0)
