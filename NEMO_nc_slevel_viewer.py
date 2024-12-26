@@ -2439,8 +2439,78 @@ def nemo_slice_zlev(config = 'amm7',
                 pax.append(ax[3].pcolormesh(hov_dat_dict['x'],hov_dat_dict['y'],hov_dat,cmap = curr_cmap,norm = climnorm))
             elif var_dim[var] == 3:
                 #pdb.set_trace()
-                pax2d.append(ax[1].plot(ew_slice_dict['x'],ew_slice_dat,'r'))
-                pax2d.append(ax[2].plot(ns_slice_dict['x'],ns_slice_dat,'r'))
+                #pax2d.append(ax[1].plot(ew_slice_dict['x'],ew_slice_dat,'r'))
+                #pax2d.append(ax[2].plot(ns_slice_dict['x'],ns_slice_dat,'r'))
+
+
+
+
+                if secdataset_proc in Dataset_lst:
+                    
+                    for dsi,tmp_datstr in enumerate(Dataset_lst):
+                        tmplw = 0.5
+                        if secdataset_proc == tmp_datstr:tmplw = 1
+                        pax2d.append(ax[1].plot(ew_slice_dict['x'],ew_slice_dict[tmp_datstr],Dataset_col[dsi], lw = tmplw))
+                        pax2d.append(ax[2].plot(ns_slice_dict['x'],ns_slice_dict[tmp_datstr],Dataset_col[dsi], lw = tmplw))
+                
+                else:
+                    # only plot the current dataset difference
+                    tmpdataset_1 = 'Dataset ' + secdataset_proc[3]
+                    tmpdataset_2 = 'Dataset ' + secdataset_proc[8]
+                    tmpdataset_oper = secdataset_proc[4]
+                    if tmpdataset_oper == '-': 
+                        
+                        #tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ts_dat_dict[tmpdataset_1] - ts_dat_dict[tmpdataset_2],Dataset_col_diff_dict[secdataset_proc]))
+                        #tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ts_dat_dict['Dataset 1']*0, color = '0.5', ls = '--'))
+
+                        pax2d.append(ax[1].plot(ew_slice_dict['x'],ew_slice_dict[tmpdataset_1] - ew_slice_dict[tmpdataset_2],Dataset_col_diff_dict[secdataset_proc]))
+                        pax2d.append(ax[1].plot(ew_slice_dict['x'],ew_slice_dict['Dataset 1']*0, color = '0.5', ls = '--'))
+
+                        pax2d.append(ax[2].plot(ns_slice_dict['x'],ns_slice_dict[tmpdataset_1] - ns_slice_dict[tmpdataset_2],Dataset_col_diff_dict[secdataset_proc]))
+                        pax2d.append(ax[2].plot(ns_slice_dict['x'],ns_slice_dict['Dataset 1']*0, color = '0.5', ls = '--'))
+
+                        for tmp_datstr1 in Dataset_lst:
+                            #th_d_ind1 = int(tmp_datstr1[-1])
+                            th_d_ind1 = int(tmp_datstr1[8:])
+                            for tmp_datstr2 in Dataset_lst:
+                                #th_d_ind2 = int(tmp_datstr2[-1])
+                                th_d_ind2 = int(tmp_datstr2[8:])
+                                if tmp_datstr1!=tmp_datstr2:
+                                    tmp_diff_str_name = 'Dat%i-Dat%i'%(th_d_ind1,th_d_ind2)                               
+                                    tmplw = 0.5
+                                    if secdataset_proc == tmp_diff_str_name:tmplw = 1
+
+                                    #tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ts_dat_dict[tmp_datstr1] - ts_dat_dict[tmp_datstr2],Dataset_col_diff_dict[tmp_diff_str_name], lw = tmplw))
+                                    pax2d.append(ax[1].plot(ew_slice_dict['x'],ew_slice_dict[tmp_datstr1] - ew_slice_dict[tmp_datstr2],Dataset_col_diff_dict[tmp_diff_str_name], lw = tmplw))
+                                    pax2d.append(ax[2].plot(ns_slice_dict['x'],ns_slice_dict[tmp_datstr1] - ns_slice_dict[tmp_datstr2],Dataset_col_diff_dict[tmp_diff_str_name], lw = tmplw))
+                                                
+                            #tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ts_dat_dict['Dataset 1']*0, color = '0.5', ls = '--'))
+                            pax2d.append(ax[1].plot(ew_slice_dict['x'],ew_slice_dict['Dataset 1']*0, color = '0.5', ls = '--'))
+                            pax2d.append(ax[2].plot(ns_slice_dict['x'],ns_slice_dict['Dataset 1']*0, color = '0.5', ls = '--'))
+
+
+                
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             if do_MLD:
                 #pdb.set_trace()
                 if MLD_show:
