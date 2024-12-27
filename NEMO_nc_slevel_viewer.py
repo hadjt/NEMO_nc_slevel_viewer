@@ -1549,6 +1549,8 @@ def nemo_slice_zlev(config = 'amm7',
     #global map_x,map_y,map_dat,ew_slice_dict['x'],ew_slice_dict['y'],ew_slice_dat,ns_slice_dict['x'],ns_slice_dict['y'],ns_slice_dat,hov_x,hov_y,hov_dat,ts_x,ts_dat
     #global ii,jj
 
+    #
+
     if verbose_debugging: print('Create inner functions', datetime.now())
     init_timer.append((datetime.now(),'Create inner functions'))
 
@@ -1563,6 +1565,10 @@ def nemo_slice_zlev(config = 'amm7',
         we therefore trick ginput to give use figure coordinate (with a dummy, invisible full figure size subplot
         in front of everything, and then use this function to turn those coordinates into the coordinates within the 
         the subplot, and the which axis/subplot it is ax,
+
+        NB   indices_from_ginput_ax hard coded to return indices for Dataset 1.
+            because uses configd[1], and lon_d[1]
+
         '''
         sel_ii,sel_jj,sel_ti ,sel_zz = None,None,None,None
         sel_ax = None
@@ -3936,14 +3942,15 @@ def nemo_slice_zlev(config = 'amm7',
                         if (mouse_info['button'].name == 'RIGHT') | (loaded_xsect == False):
                             loaded_xsect = True
 
-                            xsect_jjii_npnt = 0
-                            while xsect_jjii_npnt<2:
+                            tmp_xsect_jjii_npnt = 0
+                            while tmp_xsect_jjii_npnt<2:
                                 xsectloc_lst = plt.ginput(-1)
-                                xsect_jjii_npnt = len(xsectloc_lst)
-                                if xsect_jjii_npnt<2:
-                                    print('you much select at least 2 points. You have selected %i points'%xsect_jjii_npnt)
+                                tmp_xsect_jjii_npnt = len(xsectloc_lst)
+                                if tmp_xsect_jjii_npnt<2:
+                                    print('Xsect: you must select at least 2 points. You have selected %i points'%tmp_xsect_jjii_npnt)
+                                    print('Xsect: start selection again')
                             #pdb.set_trace()
-
+                            del(tmp_xsect_jjii_npnt)
 
                             print('Xsect: ginput exited')
                             xs0 = datetime.now()
@@ -3955,19 +3962,37 @@ def nemo_slice_zlev(config = 'amm7',
                             
                             for tmpxsectloc in xsectloc_lst: 
                                 tmpxsect_ax,tmpxsect_ii,tmpxsect_jj,tmpxsect_ti,tmpxsect_zz, tmpxsect_sel_xlocval,tmpxsect_sel_ylocval = indices_from_ginput_ax(ax,tmpxsectloc[0],tmpxsectloc[1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
+                                if (tmpxsect_ax is None)|(tmpxsect_ii is None)|(tmpxsect_jj is None): 
+                                    print('Xsect: selected point outside axis, skipping')
+                                    continue
                                 xsect_ax_pnt_lst.append(tmpxsect_ax)
                                 xsect_ii_pnt_lst.append(tmpxsect_ii)
                                 xsect_jj_pnt_lst.append(tmpxsect_jj)
+
                             
                             xsect_jjii_npnt = len(xsect_ii_pnt_lst)
+                            if xsect_jjii_npnt < 2: 
+                                print('Xsect: you must select at least 2 points. You have selected %i points'%xsect_jjii_npnt)
+                                print('Xsect: exiting Xsect')
+                                continue
+                                
+
 
                             sec_th_d_ind = int(secdataset_proc[8:]) # int(tmp_datstr[-1])
-                            
+                            #pdb.set_trace()
 
                             #convert selected indices into Lat and Lon 
-                            xsect_lon_pnt_mat = lon_d[sec_th_d_ind][[xsect_jj_pnt_lst],[xsect_ii_pnt_lst]][0,:]
-                            xsect_lat_pnt_mat = lat_d[sec_th_d_ind][[xsect_jj_pnt_lst],[xsect_ii_pnt_lst]][0,:]
+                            #   indices_from_ginput_ax hard coded to return indices for Dataset 1.
 
+                            xsect_lon_pnt_mat = lon_d[1][[xsect_jj_pnt_lst],[xsect_ii_pnt_lst]][0,:]
+                            xsect_lat_pnt_mat = lat_d[1][[xsect_jj_pnt_lst],[xsect_ii_pnt_lst]][0,:]
+                            '''
+                            try:
+                                xsect_lon_pnt_mat = lon_d[sec_th_d_ind][[xsect_jj_pnt_lst],[xsect_ii_pnt_lst]][0,:]
+                                xsect_lat_pnt_mat = lat_d[sec_th_d_ind][[xsect_jj_pnt_lst],[xsect_ii_pnt_lst]][0,:]
+                            except:
+                                pdb.set_trace()
+                            '''
                             xsect_lon_dict = {}
                             xsect_lat_dict = {}
                             xsect_lon_pnt_dict = {}
