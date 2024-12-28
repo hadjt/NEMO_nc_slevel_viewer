@@ -1309,9 +1309,15 @@ def nemo_slice_zlev(config = 'amm7',
         MLD_show = True
         poss_MLD_var_lst_lower = ['mld','karamld','mld25h_1','mld25h_2']
         MLD_var_lst = [ss for ss in var_but_mat if ss.lower() in poss_MLD_var_lst_lower]
-        MLD_var = MLD_var_lst[0] # 'mld25h_1'
-        data_mld = {}
-        mldax_lst = []
+        if len(MLD_var_lst)>0:
+            MLD_var = MLD_var_lst[0] # 'mld25h_1'
+            data_mld = {}
+            mldax_lst = []
+        else:
+            do_MLD = False      
+            func_names_lst.remove('MLD')
+            reload_MLD = False
+            MLD_show = False
         #figmlopt = None
 
 
@@ -2049,7 +2055,6 @@ def nemo_slice_zlev(config = 'amm7',
                 if reload_MLD:
                     data_inst_mld,preload_data_ti_mld,preload_data_var_mld,preload_data_ldi_mld= reload_data_instances(MLD_var,thd,ldi,ti,var_d,var_grid['Dataset 1'], xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
                     reload_MLD = False
-
 
             ###################################################################################################
             ### Status of buttons
@@ -4178,7 +4183,10 @@ def nemo_slice_zlev(config = 'amm7',
                                 #pdb.set_trace()
                                 xs_pe = [pe.Stroke(linewidth=2, foreground='w'), pe.Normal()]
                                 #pdb.set_trace()
-                                xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][0][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
+                                if var_dim[var] == 3:
+                                    xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
+                                elif var_dim[var] == 4:
+                                    xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][0][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
                                 xmapax.plot(xsect_lon_dict[secdataset_proc],xsect_lat_dict[secdataset_proc],'r-', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
                                 #xmapax.plot(xsect_lon_pnt_mat,xsect_lat_pnt_mat,'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
                                 #xmapax.plot(xsect_lon_pnt_mat[0],xsect_lat_pnt_mat[0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
@@ -4215,7 +4223,10 @@ def nemo_slice_zlev(config = 'amm7',
                                 #pdb.set_trace()
                                 xs_pe = [pe.Stroke(linewidth=2, foreground='w'), pe.Normal()]
                                 #pdb.set_trace()
-                                xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][0][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
+                                if var_dim[var] == 3:
+                                    xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
+                                elif var_dim[var] == 4:
+                                    xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][0][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
                                 xmapax.plot(xsect_lon_dict[secdataset_proc],xsect_lat_dict[secdataset_proc],'r-', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
                                 #xmapax.plot(xsect_lon_pnt_mat,xsect_lat_pnt_mat,'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
                                 #xmapax.plot(xsect_lon_pnt_mat[0],xsect_lat_pnt_mat[0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
@@ -4263,7 +4274,10 @@ def nemo_slice_zlev(config = 'amm7',
                             #pdb.set_trace()
                             xs_pe = [pe.Stroke(linewidth=2, foreground='w'), pe.Normal()]
                             #pdb.set_trace()
-                            xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][0][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
+                            if var_dim[var] == 3:
+                                xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
+                            elif var_dim[var] == 4:
+                                xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][0][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
                             xmapax.plot(xsect_lon_dict[secdataset_proc],xsect_lat_dict[secdataset_proc],'r-', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
                             #xmapax.plot(xsect_lon_mat,xsect_lat_mat,'r-', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
                             #xmapax.plot(xsect_lon_pnt_mat,xsect_lat_pnt_mat,'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
