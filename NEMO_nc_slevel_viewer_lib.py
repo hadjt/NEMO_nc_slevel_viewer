@@ -12,8 +12,6 @@ import csv
 
 import matplotlib.pyplot as plt
 
-#from python3_plotting_function import set_perc_clim_pcolor, get_clim_pcolor, set_clim_pcolor,set_perc_clim_pcolor_in_region
-
 
 from matplotlib.colors import LinearSegmentedColormap, ListedColormap
 

@@ -995,7 +995,7 @@ def nemo_slice_zlev(config = 'amm7',
     print('Creating Figure', datetime.now())
 
     ax = []
-    pax = []
+    #pax = []
     #Set up Obs if in use
     if do_Obs:
         ob_ti = ti
@@ -2955,6 +2955,8 @@ def nemo_slice_zlev(config = 'amm7',
             ### add current loc lines
             ###################################################################################################
 
+            stage_timer[11] = datetime.now() #  redraw
+            stage_timer_name[11] = 'Add current location lines'
             if verbose_debugging: print('Plot location lines for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now())
             
             ## add lines to show current point. 
@@ -2999,6 +3001,8 @@ def nemo_slice_zlev(config = 'amm7',
             ###################################################################################################
             ### add contours
             ###################################################################################################
+            stage_timer[12] = datetime.now() #  redraw
+            stage_timer_name[12] = 'Do Contours'
             conax = [] # define it outside if statement
             if do_cont:
 
@@ -3021,6 +3025,8 @@ def nemo_slice_zlev(config = 'amm7',
             ### add Observations to map as scatter plot to 
             ###################################################################################################
             
+            stage_timer[13] = datetime.now() #  redraw
+            stage_timer_name[13] = 'Do Observations'
             if do_Obs:
 
                 oax_lst = []
@@ -3093,6 +3099,8 @@ def nemo_slice_zlev(config = 'amm7',
             ###################################################################################################
             ### add vectors
             ###################################################################################################
+            stage_timer[14] = datetime.now() #  redraw
+            stage_timer_name[14] = 'Do Vectors'
             visax = []
             if vis_curr > 0:  
                 if vis_curr_meth == 'barb':
@@ -3213,10 +3221,10 @@ def nemo_slice_zlev(config = 'amm7',
             func_but_text_han['waiting'].set_text('Waiting')
             if verbose_debugging: print('Canvas draw', datetime.now())
 
-            stage_timer[11] = datetime.now() #  redraw
-            stage_timer_name[11] = 'Redraw'
+            stage_timer[14] = datetime.now() #  redraw
+            stage_timer_name[14] = 'Redraw'
 
-            fig.canvas.draw()
+            fig.canvas.draw_idle()
             if verbose_debugging: print('Canvas flush', datetime.now())
             fig.canvas.flush_events()
             if verbose_debugging: print('Canvas drawn and flushed', datetime.now())
@@ -3229,8 +3237,8 @@ def nemo_slice_zlev(config = 'amm7',
             ### Runtime stats
             ###################################################################################################
 
-            stage_timer[12] = datetime.now() #  redrawn
-            stage_timer_name[12] = 'Redrawn'
+            stage_timer[16] = datetime.now() #  redrawn
+            stage_timer_name[16] = 'Redrawn'
 
             if stage_timer_name[1] is not None:
                 if verbose_debugging:
@@ -3238,7 +3246,7 @@ def nemo_slice_zlev(config = 'amm7',
                     for i_i in range(2,12+1):print('Stage time %02i - %02i: %s - %s - %s '%(i_i-1,i_i,stage_timer[i_i] - stage_timer[i_i-1], stage_timer_name[i_i-1], stage_timer_name[i_i]))
                     print()
             
-                print('Stage time 1 - 12: %s'%(stage_timer[12] - stage_timer[1]))
+                print('Stage time 1 - End: %s'%(stage_timer[16] - stage_timer[1]))
                 if verbose_debugging: print()
 
             
@@ -3296,7 +3304,7 @@ def nemo_slice_zlev(config = 'amm7',
             if verbose_debugging: print('Button pressed!', datetime.now())
             
             func_but_text_han['waiting'].set_color('r')
-            fig.canvas.draw()
+            fig.canvas.draw_idle()
             if verbose_debugging: print('Canvas flush wait label', datetime.now())
             fig.canvas.flush_events()
             if verbose_debugging: print('Canvas drawn and flushed wait label', datetime.now())
@@ -3481,546 +3489,618 @@ def nemo_slice_zlev(config = 'amm7',
             ### If var clicked, change var
             ###################################################################################################
 
-
+            if not is_in_axes:  
             
-            for but_name in but_extent.keys():
-                
-                but_pos_x0,but_pos_x1,but_pos_y0,but_pos_y1 = but_extent[but_name]
-                if (clii >= but_pos_x0) & (clii <= but_pos_x1) & (cljj >= but_pos_y0) & (cljj <= but_pos_y1):
-                    is_in_axes = True
-                    if but_name in var_but_mat:
-                        var = but_name
+                for but_name in but_extent.keys():
+                    
+                    but_pos_x0,but_pos_x1,but_pos_y0,but_pos_y1 = but_extent[but_name]
+                    if (clii >= but_pos_x0) & (clii <= but_pos_x1) & (cljj >= but_pos_y0) & (cljj <= but_pos_y1):
+                        is_in_axes = True
+                        if but_name in var_but_mat:
+                            var = but_name
+
+                            func_but_text_han['waiting'].set_text('Waiting: ' + but_name)
+
+                            # redraw canvas
+                            fig.canvas.draw_idle()
+                            
+                            #flush canvas
+                            fig.canvas.flush_events()
+
+                            if var_dim[var] == 3:
+                                z_meth = z_meth_default
+
+                                func_but_text_han['Depth level'].set_color('r')
+                                func_but_text_han['Surface'].set_color('k')
+                                func_but_text_han['Near-Bed'].set_color('k')
+                                func_but_text_han['Surface-Bed'].set_color('k')
+                                func_but_text_han['Depth-Mean'].set_color('k')
+                            
+                            for vi,var_dat in enumerate(var_but_mat): but_text_han[var_dat].set_color('k')
+                            but_text_han[but_name].set_color('r')
+
+                            # redraw canvas
+                            fig.canvas.draw_idle()
+                            
+                            #flush canvas
+                            fig.canvas.flush_events()
+                            
+                            climnorm = None 
+
+                            reload_map = True
+                            reload_ew = True
+                            reload_ns = True
+                            reload_hov = True
+                            reload_ts = True
+                            if do_Obs:
+                                reload_Obs = True
+
+                ###################################################################################################
+                ### If function clicked, call function
+                ###################################################################################################
+
+                if verbose_debugging: print('Interpret Mouse click: Functions', datetime.now())
+                for but_name in func_but_extent.keys():
+                    
+                    but_pos_x0,but_pos_x1,but_pos_y0,but_pos_y1 = func_but_extent[but_name]
+                    if (clii >= but_pos_x0) & (clii <= but_pos_x1) & (cljj >= but_pos_y0) & (cljj <= but_pos_y1):
+                        is_in_axes = True
+                        print('but_name:',but_name)
 
                         func_but_text_han['waiting'].set_text('Waiting: ' + but_name)
 
                         # redraw canvas
-                        fig.canvas.draw()
+                        fig.canvas.draw_idle()
                         
                         #flush canvas
                         fig.canvas.flush_events()
 
-                        if var_dim[var] == 3:
-                            z_meth = z_meth_default
 
-                            func_but_text_han['Depth level'].set_color('r')
-                            func_but_text_han['Surface'].set_color('k')
-                            func_but_text_han['Near-Bed'].set_color('k')
-                            func_but_text_han['Surface-Bed'].set_color('k')
-                            func_but_text_han['Depth-Mean'].set_color('k')
-                        
-                        for vi,var_dat in enumerate(var_but_mat): but_text_han[var_dat].set_color('k')
-                        but_text_han[but_name].set_color('r')
-                        fig.canvas.draw()
-                        
-                        climnorm = None 
-
-                        reload_map = True
-                        reload_ew = True
-                        reload_ns = True
-                        reload_hov = True
-                        reload_ts = True
-                        if do_Obs:
-                            reload_Obs = True
-
-            ###################################################################################################
-            ### If function clicked, call function
-            ###################################################################################################
-
-            if verbose_debugging: print('Interpret Mouse click: Functions', datetime.now())
-            for but_name in func_but_extent.keys():
-                
-                but_pos_x0,but_pos_x1,but_pos_y0,but_pos_y1 = func_but_extent[but_name]
-                if (clii >= but_pos_x0) & (clii <= but_pos_x1) & (cljj >= but_pos_y0) & (cljj <= but_pos_y1):
-                    is_in_axes = True
-                    print('but_name:',but_name)
-
-                    func_but_text_han['waiting'].set_text('Waiting: ' + but_name)
-
-                    # redraw canvas
-                    fig.canvas.draw()
-                    
-                    #flush canvas
-                    fig.canvas.flush_events()
-
-
-                    if but_name in 'Reset zoom':
-                        # set xlim and ylim to max size possible from lat_d[1] and nav_lon
-                        cur_xlim = np.array([lon_d[1].min(),lon_d[1].max()])
-                        cur_ylim = np.array([lat_d[1].min(),lat_d[1].max()])
-                        zlim_max = None
-                    elif but_name in 'Zoom':
-                        # use ginput to take two clicks as zoom region. 
-                        # only coded for main axes
-                        if mouse_info['button'].name == 'MIDDLE':
+                        if but_name in 'Reset zoom':
+                            # set xlim and ylim to max size possible from lat_d[1] and nav_lon
                             cur_xlim = np.array([lon_d[1].min(),lon_d[1].max()])
                             cur_ylim = np.array([lat_d[1].min(),lat_d[1].max()])
                             zlim_max = None
-                        else:
-
-                            tmp_zoom_in = True
-                            if mouse_info['button'].name == 'RIGHT':tmp_zoom_in = False
-                            
-                            plt.sca(clickax)
-                            #tmpzoom0 = plt.ginput(1)
-
-                            buttonpress = True
-                            while buttonpress: buttonpress = plt.waitforbuttonpress()
-                            tmpzoom0 = [[mouse_info['xdata'],mouse_info['ydata']]]
-                            del(buttonpress)
-
-
-                            if tmp_zoom_in: func_but_text_han['Zoom'].set_color('r')
-                            elif not tmp_zoom_in: func_but_text_han['Zoom'].set_color('g')
-                            fig.canvas.draw()
-                            zoom0_ax,zoom0_ii,zoom0_jj,zoom0_ti,zoom0_zz,sel_xlocval,sel_ylocval = indices_from_ginput_ax(ax,tmpzoom0[0][0],tmpzoom0[0][1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
-                            if zoom0_ax in [1,2,3]:
-                                zlim_max = zoom0_zz
-                            elif zoom0_ax in [0]:
-                                #tmpzoom1 = plt.ginput(1)
-                                buttonpress = True
-                                while buttonpress: buttonpress = plt.waitforbuttonpress()
-                                tmpzoom1 = [[mouse_info['xdata'],mouse_info['ydata']]]
-                                del(buttonpress)
-
-                                zoom1_ax,zoom1_ii,zoom1_jj,zoom1_ti,zoom1_zz, sel_xlocval,sel_ylocval = indices_from_ginput_ax(ax,tmpzoom1[0][0],tmpzoom1[0][1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
-                                    
-                                if verbose_debugging: print(zoom0_ax,zoom0_ii,zoom0_jj,zoom0_ti,zoom0_zz)
-                                if verbose_debugging: print(zoom1_ax,zoom1_ii,zoom1_jj,zoom1_ti,zoom1_zz)
-                                if verbose_debugging: print(cur_xlim)
-                                if verbose_debugging: print(cur_ylim)
-
-                                # if both clicks in main axes, use clicks for the new x and ylims
-                                if (zoom0_ax is not None) & (zoom0_ax is not None):
-                                    if zoom0_ax == zoom1_ax:
-                                        if zoom0_ax == 0:
-                                            cl_cur_xlim = np.array([lon_d[1][zoom0_jj,zoom0_ii],lon_d[1][zoom1_jj,zoom1_ii]])
-                                            cl_cur_ylim = np.array([lat_d[1][zoom0_jj,zoom0_ii],lat_d[1][zoom1_jj,zoom1_ii]])
-                                            cl_cur_xlim.sort()
-                                            cl_cur_ylim.sort()
-                                            if tmp_zoom_in:
-                                                cur_xlim = cl_cur_xlim
-                                                cur_ylim = cl_cur_ylim
-                                            else:
-                                                # If right click (initially, or last time), zoom out. 
-                                                #pdb.set_trace()
-                                                #current width of the x and y axis
-                                                dcur_xlim = cur_xlim.ptp()
-                                                dcur_ylim = cur_ylim.ptp()
-                                                #middle of current the x and y axis
-                                                mncur_xlim = cur_xlim.mean()
-                                                mncur_ylim = cur_ylim.mean()
-                                                #width of the clicked x and y points
-                                                dcur_cl_xlim = cl_cur_xlim.ptp()
-                                                dcur_cl_ylim = cl_cur_ylim.ptp()
-                                                
-                                                # scale up axis width with dcur_xlim/dcur_cl_xlim, and centre.
-                                                cur_xlim = dcur_xlim*(dcur_xlim/dcur_cl_xlim)*np.array([-0.5,0.5])+mncur_xlim
-                                                cur_ylim = dcur_ylim*(dcur_ylim/dcur_cl_ylim)*np.array([-0.5,0.5])+mncur_ylim
-
-
-
-                            func_but_text_han['Zoom'].set_color('k')
-                            fig.canvas.draw()
-                                            
-                                            
-                    elif but_name == 'Axis':
-                        if axis_scale == 'Auto':
-
-                            func_but_text_han['Axis'].set_text('Axis: Equal')
-                            ax[0].axis('equal')
-                            axis_scale = 'Equal'
-                        elif axis_scale == 'Equal':
-
-                            func_but_text_han['Axis'].set_text('Axis: Auto')
-                            axis_scale = 'Auto'
-                            ax[0].axis('auto')
-                            #cur_xlim = np.array([lon_d[1].min(),lon_d[1].max()])
-                            #cur_ylim = np.array([lat_d[1].min(),lat_d[1].max()])
-                        '''
-                    elif but_name == 'Clim: Reset':
-                        clim = None
-
-                        '''
-                    elif but_name == 'MLD':
-                        if mouse_info['button'].name == 'LEFT':
-                            if MLD_show == True:
-
-                                func_but_text_han['MLD'].set_color('0.5')
-                                MLD_show = False
-                            elif MLD_show == False:
-
-                                func_but_text_han['MLD'].set_color('k')
-                                MLD_show = True
-
-
-
-
-                        elif mouse_info['button'].name == 'RIGHT':
-
-                            # Bring up a options window for Obs
-                            
-                            # button names                            
-                            mld_but_names = MLD_var_lst + ['Close']
-                            
-                            
-                            # button switches  
-                            mld_but_sw = {}
-                            #obs_but_sw['Hide_Obs'] = {'v':Obs_hide, 'T':'Show Obs','F': 'Hide Obs'}
-                            #obs_but_sw['Edges'] = {'v':Obs_hide, 'T':'Show Edges','F': 'Hide Edges'}
-                            #obs_but_sw['Loc'] = {'v':Obs_hide, 'T':"Don't Selected point",'F': 'Move Selected point'}
-                            #for m_var in MLD_var_lst:  mld_but_sw[m_var] = {'v':m_var == MLD_var ,'T': m_var + ' selected','F':'choose ' +m_var,'T_col': 'k','F_col':'0.5'}
-                            for m_var in MLD_var_lst:  mld_but_sw[m_var] = {'v':m_var == MLD_var ,'T': m_var ,'F': m_var,'T_col': 'r','F_col':'k'}
-
-                            mldbut_sel = pop_up_opt_window(mld_but_names, opt_but_sw = mld_but_sw)
-
-                            
-
-                            # Set the main figure and axis to be current
-                            plt.figure(fig.figure)
-                            plt.sca(clickax)
-
-                            if mldbut_sel in MLD_var_lst:
-                                MLD_var = mldbut_sel
-                                reload_MLD = True
-                                reload_ew = True
-                                reload_ns = True
-                                print('mldbut_sel:',mldbut_sel)
-                                print('MLD_var:',MLD_var)
-                                print('reload_MLD:',reload_MLD)
-
-                            # if the button closed was one of the Obs types, add or remove from the hide list
-                            #for m_var in MLD_var_lst:  
-                            #    if mld_but_sw[m_var]['v']:
-                            #        MLD_var = m_var
-                                    
-                    
-
-                    elif but_name == 'Help':
-                    
-                        print('      mouse info:  '  )
-                        print(mouse_info)
-                        print(mouse_info['button'])
-                        print(mouse_info['button'].name)
-                        print('--------------------')
-                        if mouse_info['button'].name == 'LEFT':
-
-
-                            # select the Help with ginput
-                            tmphelploc = plt.ginput(1)
-
-                            # convert to the nearest model grid box                            
-                            helploc_ii, helploc_jj, = tmphelploc[0][0],tmphelploc[0][1]
-                            help_ax,help_ii,help_jj,help_ti,help_zz, sel_xlocval,sel_ylocval = indices_from_ginput_ax(ax,helploc_ii, helploc_jj, thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
-                            #
-                            help_type = 'None'
-                            help_but = ''
-                                
-                            if help_ax is None:
-
-                                if verbose_debugging: print('Interpret Mouse click: Functions', datetime.now())
-
-                                ###################################################################################################
-                                ### See if func clicked
-                                ###################################################################################################
-
-                                for but_name in func_but_extent.keys():
-                                    
-                                    but_pos_x0,but_pos_x1,but_pos_y0,but_pos_y1 = func_but_extent[but_name]
-                                    if (helploc_ii >= but_pos_x0) & (helploc_ii <= but_pos_x1) & (helploc_jj >= but_pos_y0) & (helploc_jj <= but_pos_y1):
-                                        help_type = 'func'
-                                        help_but = but_name
-                                
-                                ###################################################################################################
-                                ### See var func clicked
-                                ###################################################################################################
-                                
-                                for but_name in but_extent.keys():
-                                    
-                                    but_pos_x0,but_pos_x1,but_pos_y0,but_pos_y1 = but_extent[but_name]
-                                    if (helploc_ii >= but_pos_x0) & (helploc_ii <= but_pos_x1) & (helploc_jj >= but_pos_y0) & (helploc_jj <= but_pos_y1):
-                                        if but_name in var_but_mat:
-                                            help_type = 'var'
-                                            help_but = but_name
-                                
+                        elif but_name in 'Zoom':
+                            # use ginput to take two clicks as zoom region. 
+                            # only coded for main axes
+                            if mouse_info['button'].name == 'MIDDLE':
+                                cur_xlim = np.array([lon_d[1].min(),lon_d[1].max()])
+                                cur_ylim = np.array([lat_d[1].min(),lat_d[1].max()])
+                                zlim_max = None
                             else:
 
-                                help_type = 'axis'
-                                help_but = 'axis: %s'% letter_mat[help_ax]
-
-                            print(help_type,help_but)
-
-                            help_text = get_help_text(help_type,help_but)
-                            pop_up_info_window(help_text)
-
-                            # Set the main figure and axis to be current
-                            plt.figure(fig.figure)
-                            plt.sca(clickax)
-                            
-                    elif but_name == 'Obs':
-                        #print('      mouse info:  '  )
-                        #print(mouse_info)
-                        #print(mouse_info['button'])
-                        #print(mouse_info['button'].name)
-                        #print('--------------------')
-
-                        if mouse_info['button'].name == 'LEFT':
-
-                            # predefine dictionaries
-
-                            (obs_z_sel,obs_obs_sel,obs_mod_sel,obs_lon_sel,obs_lat_sel,
-                                obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel) = obs_reset_sel(Dataset_lst)
-                            # select the observation with ginput
-                            tmpobsloc = plt.ginput(1)
-
-                            # convert to the nearest model grid box
-                            
-                            obs_ax,obs_ii,obs_jj,obs_ti,obs_zz, sel_xlocval,sel_ylocval = indices_from_ginput_ax(ax,tmpobsloc[0][0],tmpobsloc[0][1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
-                           
-                            
-                            # if the main map axis is selected, continue,
-                            if obs_ax == 0:
-                                #if True:
+                                tmp_zoom_in = True
+                                if mouse_info['button'].name == 'RIGHT':tmp_zoom_in = False
                                 
-                                # extract lat and lon,
+                                plt.sca(clickax)
+                                #tmpzoom0 = plt.ginput(1)
 
-                                obs_lon = sel_xlocval # lon_d[1][obs_jj,obs_ii]
-                                obs_lat = sel_ylocval # lat_d[1][obs_jj,obs_ii]
+                                buttonpress = True
+                                while buttonpress: buttonpress = plt.waitforbuttonpress()
+                                tmpzoom0 = [[mouse_info['xdata'],mouse_info['ydata']]]
+                                del(buttonpress)
 
-                                if Obs_pair_loc:
-                                    ii = obs_ii
-                                    jj = obs_jj
 
-                                    # and reload slices, and hovmuller/time series
+                                if tmp_zoom_in: func_but_text_han['Zoom'].set_color('r')
+                                elif not tmp_zoom_in: func_but_text_han['Zoom'].set_color('g')
+                                # redraw canvas
+                                fig.canvas.draw_idle()
+                                
+                                #flush canvas
+                                fig.canvas.flush_events()
+                                zoom0_ax,zoom0_ii,zoom0_jj,zoom0_ti,zoom0_zz,sel_xlocval,sel_ylocval = indices_from_ginput_ax(ax,tmpzoom0[0][0],tmpzoom0[0][1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
+                                if zoom0_ax in [1,2,3]:
+                                    zlim_max = zoom0_zz
+                                elif zoom0_ax in [0]:
+                                    #tmpzoom1 = plt.ginput(1)
+                                    buttonpress = True
+                                    while buttonpress: buttonpress = plt.waitforbuttonpress()
+                                    tmpzoom1 = [[mouse_info['xdata'],mouse_info['ydata']]]
+                                    del(buttonpress)
+
+                                    zoom1_ax,zoom1_ii,zoom1_jj,zoom1_ti,zoom1_zz, sel_xlocval,sel_ylocval = indices_from_ginput_ax(ax,tmpzoom1[0][0],tmpzoom1[0][1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
+                                        
+                                    if verbose_debugging: print(zoom0_ax,zoom0_ii,zoom0_jj,zoom0_ti,zoom0_zz)
+                                    if verbose_debugging: print(zoom1_ax,zoom1_ii,zoom1_jj,zoom1_ti,zoom1_zz)
+                                    if verbose_debugging: print(cur_xlim)
+                                    if verbose_debugging: print(cur_ylim)
+
+                                    # if both clicks in main axes, use clicks for the new x and ylims
+                                    if (zoom0_ax is not None) & (zoom0_ax is not None):
+                                        if zoom0_ax == zoom1_ax:
+                                            if zoom0_ax == 0:
+                                                cl_cur_xlim = np.array([lon_d[1][zoom0_jj,zoom0_ii],lon_d[1][zoom1_jj,zoom1_ii]])
+                                                cl_cur_ylim = np.array([lat_d[1][zoom0_jj,zoom0_ii],lat_d[1][zoom1_jj,zoom1_ii]])
+                                                cl_cur_xlim.sort()
+                                                cl_cur_ylim.sort()
+                                                if tmp_zoom_in:
+                                                    cur_xlim = cl_cur_xlim
+                                                    cur_ylim = cl_cur_ylim
+                                                else:
+                                                    # If right click (initially, or last time), zoom out. 
+                                                    #pdb.set_trace()
+                                                    #current width of the x and y axis
+                                                    dcur_xlim = cur_xlim.ptp()
+                                                    dcur_ylim = cur_ylim.ptp()
+                                                    #middle of current the x and y axis
+                                                    mncur_xlim = cur_xlim.mean()
+                                                    mncur_ylim = cur_ylim.mean()
+                                                    #width of the clicked x and y points
+                                                    dcur_cl_xlim = cl_cur_xlim.ptp()
+                                                    dcur_cl_ylim = cl_cur_ylim.ptp()
+                                                    
+                                                    # scale up axis width with dcur_xlim/dcur_cl_xlim, and centre.
+                                                    cur_xlim = dcur_xlim*(dcur_xlim/dcur_cl_xlim)*np.array([-0.5,0.5])+mncur_xlim
+                                                    cur_ylim = dcur_ylim*(dcur_ylim/dcur_cl_ylim)*np.array([-0.5,0.5])+mncur_ylim
+
+
+
+                                func_but_text_han['Zoom'].set_color('k')
+                                # redraw canvas
+                                fig.canvas.draw_idle()
+                                
+                                #flush canvas
+                                fig.canvas.flush_events()
+                                                
+                                                
+                        elif but_name == 'Axis':
+                            if axis_scale == 'Auto':
+
+                                func_but_text_han['Axis'].set_text('Axis: Equal')
+                                ax[0].axis('equal')
+                                axis_scale = 'Equal'
+                            elif axis_scale == 'Equal':
+
+                                func_but_text_han['Axis'].set_text('Axis: Auto')
+                                axis_scale = 'Auto'
+                                ax[0].axis('auto')
+                                #cur_xlim = np.array([lon_d[1].min(),lon_d[1].max()])
+                                #cur_ylim = np.array([lat_d[1].min(),lat_d[1].max()])
+                            '''
+                        elif but_name == 'Clim: Reset':
+                            clim = None
+
+                            '''
+                        elif but_name == 'MLD':
+                            if mouse_info['button'].name == 'LEFT':
+                                if MLD_show == True:
+
+                                    func_but_text_han['MLD'].set_color('0.5')
+                                    MLD_show = False
+                                elif MLD_show == False:
+
+                                    func_but_text_han['MLD'].set_color('k')
+                                    MLD_show = True
+
+
+
+
+                            elif mouse_info['button'].name == 'RIGHT':
+
+                                # Bring up a options window for Obs
+                                
+                                # button names                            
+                                mld_but_names = MLD_var_lst + ['Close']
+                                
+                                
+                                # button switches  
+                                mld_but_sw = {}
+                                #obs_but_sw['Hide_Obs'] = {'v':Obs_hide, 'T':'Show Obs','F': 'Hide Obs'}
+                                #obs_but_sw['Edges'] = {'v':Obs_hide, 'T':'Show Edges','F': 'Hide Edges'}
+                                #obs_but_sw['Loc'] = {'v':Obs_hide, 'T':"Don't Selected point",'F': 'Move Selected point'}
+                                #for m_var in MLD_var_lst:  mld_but_sw[m_var] = {'v':m_var == MLD_var ,'T': m_var + ' selected','F':'choose ' +m_var,'T_col': 'k','F_col':'0.5'}
+                                for m_var in MLD_var_lst:  mld_but_sw[m_var] = {'v':m_var == MLD_var ,'T': m_var ,'F': m_var,'T_col': 'r','F_col':'k'}
+
+                                mldbut_sel = pop_up_opt_window(mld_but_names, opt_but_sw = mld_but_sw)
+
+                                
+
+                                # Set the main figure and axis to be current
+                                plt.figure(fig.figure)
+                                plt.sca(clickax)
+
+                                if mldbut_sel in MLD_var_lst:
+                                    MLD_var = mldbut_sel
+                                    reload_MLD = True
                                     reload_ew = True
                                     reload_ns = True
-                                    reload_hov = True
-                                    reload_ts = True
+                                    print('mldbut_sel:',mldbut_sel)
+                                    print('MLD_var:',MLD_var)
+                                    print('reload_MLD:',reload_MLD)
 
-                                # set some tmp dictionaries
-                                #(obs_z_sel,obs_obs_sel,obs_mod_sel,obs_lon_sel,obs_lat_sel,
-                                #    obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel) = obs_reset_sel(Dataset_lst, Fill = False)
-                                
-                                tmpobs_dist_sel = {}
-                                (tmpobs_z_sel,tmpobs_obs_sel,tmpobs_mod_sel,tmpobs_lon_sel,tmpobs_lat_sel,
-                                    tmpobs_stat_id_sel,tmpobs_stat_type_sel,tmpobs_stat_time_sel) = obs_reset_sel(Dataset_lst, Fill = False)
-
-                                
-                                # cycle through available Obs types
-                                for ob_var in Obs_var_lst_sub:
-                                    tmpobs_z_sel[ob_var] = {}
-                                    tmpobs_obs_sel[ob_var] = {}
-                                    tmpobs_mod_sel[ob_var] = {}
-                                    tmpobs_lon_sel[ob_var] = {}
-                                    tmpobs_lat_sel[ob_var] = {}
-                                    tmpobs_dist_sel[ob_var] = {}
-
-                                    tmpobs_stat_id_sel[ob_var] = {}
-                                    tmpobs_stat_type_sel[ob_var] = {}
-                                    tmpobs_stat_time_sel[ob_var] = {}
-                                    # and data sets.
-                                    for tmp_datstr in Dataset_lst:
-                                        # extract Obs: lon, lat, z OBS, mod,, stations info 
-                                        tmpobsx = Obs_dat_dict[tmp_datstr][ob_var]['LONGITUDE']
-                                        tmpobsy = Obs_dat_dict[tmp_datstr][ob_var]['LATITUDE']
-                                        tmpobs_obs = Obs_dat_dict[tmp_datstr][ob_var]['OBS'][:] 
-                                        tmpobs_mod = Obs_dat_dict[tmp_datstr][ob_var]['MOD_HX'][:] 
-                                        tmpobs_z = Obs_dat_dict[tmp_datstr][ob_var]['DEPTH'][:] 
-                                        tmpobs_stat_id = Obs_dat_dict[tmp_datstr][ob_var]['STATION_IDENTIFIER'][:] 
-                                        tmpobs_stat_type = Obs_dat_dict[tmp_datstr][ob_var]['STATION_TYPE'][:] 
-                                        tmpobs_stat_time = Obs_dat_dict[tmp_datstr][ob_var]['JULD_datetime'][:] 
-                                        tmpobs_z = Obs_dat_dict[tmp_datstr][ob_var]['DEPTH'][:] 
-
-                                        # if Obs data is 2d data, reshape to match 3d profile data. 
-                                        if len(tmpobs_obs.shape) == 1:
-
-                                            tmpobs_obs = tmpobs_obs.reshape(-1,1)
-                                            tmpobs_mod = tmpobs_mod.reshape(-1,1)
-                                            tmpobs_z = tmpobs_z.reshape(-1,1)
-                                        # find distance from selected point to all obs in this Obs type    
-                                        tmp_obs_dist = np.sqrt((tmpobsx - obs_lon)**2 +(tmpobsy - obs_lat)**2)
-                                    
-                                        # find the minimum value and index
-                                        tmp_obs_obs_dist = tmp_obs_dist.min()
-                                        tmp_obs_obs_ind = tmp_obs_dist.argmin()
-
-                                        #record the profile and distance for that Obs
-                                        tmpobs_z_sel[ob_var][tmp_datstr] = tmpobs_z[tmp_obs_obs_ind]
-                                        tmpobs_obs_sel[ob_var][tmp_datstr] = tmpobs_obs[tmp_obs_obs_ind]
-                                        tmpobs_mod_sel[ob_var][tmp_datstr] = tmpobs_mod[tmp_obs_obs_ind]
-                                        tmpobs_lon_sel[ob_var][tmp_datstr] = tmpobsx[tmp_obs_obs_ind]
-                                        tmpobs_lat_sel[ob_var][tmp_datstr] = tmpobsy[tmp_obs_obs_ind]
-                                        #pdb.set_trace()
-                                        tmpobs_stat_id_sel[ob_var][tmp_datstr] = tmpobs_stat_id[tmp_obs_obs_ind].strip()
-                                        tmpobs_stat_type_sel[ob_var][tmp_datstr] = tmpobs_stat_type[tmp_obs_obs_ind]
-                                        tmpobs_stat_time_sel[ob_var][tmp_datstr] = tmpobs_stat_time[tmp_obs_obs_ind]
-
-                                        tmpobs_dist_sel[ob_var] = tmp_obs_obs_dist
-                                
-                                # put all distances into one array
-                                obs_dist_sel_cf_mat = np.array([tmpobs_dist_sel[ob_var] for ob_var in Obs_var_lst_sub])
-
-                                if (obs_dist_sel_cf_mat).size >0:
-                                    
-                                    # select the Obs Obs type closest to the selected point
-                                    sel_Obs_var = Obs_var_lst_sub[obs_dist_sel_cf_mat.argmin()]
-                                    
-                                    #select obs data from Obs type closest to the selected point
-                                    obs_z_sel = tmpobs_z_sel[sel_Obs_var]
-                                    obs_obs_sel = tmpobs_obs_sel[sel_Obs_var]
-                                    obs_mod_sel = tmpobs_mod_sel[sel_Obs_var]
-                                    obs_lon_sel = tmpobs_lon_sel[sel_Obs_var]
-                                    obs_lat_sel = tmpobs_lat_sel[sel_Obs_var]
-
-                                    obs_stat_id_sel = tmpobs_stat_id_sel[sel_Obs_var]
-                                    obs_stat_type_sel = tmpobs_stat_type_sel[sel_Obs_var]
-                                    obs_stat_time_sel = tmpobs_stat_time_sel[sel_Obs_var]
-
-
-                                    del(tmpobs_z_sel)
-                                    del(tmpobs_obs_sel)
-                                    del(tmpobs_mod_sel)
-                                    del(tmpobs_lon_sel)
-                                    del(tmpobs_lat_sel)
-                                    del(tmpobs_dist_sel)
-
-                                    del(tmpobs_stat_id_sel)
-                                    del(tmpobs_stat_type_sel)
-                                    del(tmpobs_stat_time_sel)
-
-
-                                    # append this data to an array to help select x and y lims
-                                    for tmp_datstr in Dataset_lst:
-                                        tmp_pf_ylim_dat = np.ma.append(np.array(tmp_py_ylim),obs_z_sel[tmp_datstr])
-                                        #tmp_pf_xlim_dat = np.ma.append(np.ma.append(np.array(pf_xlim),obs_mod_sel)[tmp_datstr],obs_obs_sel)
-                                        tmp_pf_xlim_dat = np.ma.append(np.ma.append(np.array(pf_xlim),obs_mod_sel[tmp_datstr]),obs_obs_sel[tmp_datstr])
-                                    
-                                else:
-                                    
-                                    (obs_z_sel,obs_obs_sel,obs_mod_sel,obs_lon_sel,obs_lat_sel,
-                                        obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel) = obs_reset_sel(Dataset_lst)
-
-                        elif mouse_info['button'].name == 'RIGHT':
-
-                            # Bring up a options window for Obs
-                            
-                            # button names                            
-                            obs_but_names = ['ProfT','SST_ins','SST_sat','ProfS','SLA','ChlA','Hide_Obs','Edges','Loc','Close']
-                            
-                            
-                            # button switches  
-                            obs_but_sw = {}
-                            obs_but_sw['Hide_Obs'] = {'v':Obs_hide, 'T':'Show Obs','F': 'Hide Obs'}
-                            obs_but_sw['Edges'] = {'v':Obs_hide, 'T':'Show Edges','F': 'Hide Edges'}
-                            obs_but_sw['Loc'] = {'v':Obs_hide, 'T':"Don't Selected point",'F': 'Move Selected point'}
-                            #for ob_var in Obs_var_lst_sub:  obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var + ' hidden'}
-                            #for ob_var in Obs_varlst:  obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var + ' hidden'}
-                            for ob_var in Obs_var_lst_sub:  obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var,'T_col':'k','F_col':'0.5'}
-                            #for ob_var in Obs_var_lst_sub:  obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var + ' hidden'}
-                            for ob_var in Obs_varlst:  obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var,'T_col':'k','F_col':'0.5'}
-
-                            obbut_sel = pop_up_opt_window(obs_but_names, opt_but_sw = obs_but_sw)
-
-
-                            # Set the main figure and axis to be current
-                            plt.figure(fig.figure)
-                            plt.sca(clickax)
-
-        
-                            # if the button closed was one of the Obs types, add or remove from the hide list
-                            for ob_var in ['ProfT','SST_ins','SST_sat','ProfS','SLA','ChlA']:
-                                if obbut_sel == ob_var:
-                                    Obs_vis_d['visible'][ob_var] = not Obs_vis_d['visible'][ob_var] 
-                            # if the button closed was one of the Obs types, add or remove from the hide list
+                                # if the button closed was one of the Obs types, add or remove from the hide list
+                                #for m_var in MLD_var_lst:  
+                                #    if mld_but_sw[m_var]['v']:
+                                #        MLD_var = m_var
                                         
-                            if obbut_sel == 'Hide_Obs': Obs_hide = not Obs_hide
-                            if obbut_sel == 'Edges':    Obs_hide_edges = not Obs_hide_edges
-                            if obbut_sel == 'Loc':      Obs_pair_loc = not Obs_pair_loc
-
-
-
-                            reload_Obs = True
-                    
-
-                    elif but_name == 'Xsect':
                         
 
-                        if (mouse_info['button'].name == 'RIGHT') | (loaded_xsect == False):
-                            loaded_xsect = True
+                        elif but_name == 'Help':
+                        
+                            print('      mouse info:  '  )
+                            print(mouse_info)
+                            print(mouse_info['button'])
+                            print(mouse_info['button'].name)
+                            print('--------------------')
+                            if mouse_info['button'].name == 'LEFT':
 
-                            tmp_xsect_jjii_npnt = 0
-                            while tmp_xsect_jjii_npnt<2:
-                                xsectloc_lst = plt.ginput(-1)
-                                tmp_xsect_jjii_npnt = len(xsectloc_lst)
-                                if tmp_xsect_jjii_npnt<2:
-                                    print('Xsect: you must select at least 2 points. You have selected %i points'%tmp_xsect_jjii_npnt)
-                                    print('Xsect: start selection again')
-                            #pdb.set_trace()
-                            del(tmp_xsect_jjii_npnt)
 
-                            print('Xsect: ginput exited')
-                            xs0 = datetime.now()
+                                # select the Help with ginput
+                                tmphelploc = plt.ginput(1)
 
-                            # convert to the nearest model grid box
-                            xsect_ax_pnt_lst = []
-                            xsect_ii_pnt_lst = []
-                            xsect_jj_pnt_lst = []
-                            
-                            for tmpxsectloc in xsectloc_lst: 
-                                tmpxsect_ax,tmpxsect_ii,tmpxsect_jj,tmpxsect_ti,tmpxsect_zz, tmpxsect_sel_xlocval,tmpxsect_sel_ylocval = indices_from_ginput_ax(ax,tmpxsectloc[0],tmpxsectloc[1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
-                                if (tmpxsect_ax is None)|(tmpxsect_ii is None)|(tmpxsect_jj is None): 
-                                    print('Xsect: selected point outside axis, skipping')
-                                    continue
-                                xsect_ax_pnt_lst.append(tmpxsect_ax)
-                                xsect_ii_pnt_lst.append(tmpxsect_ii)
-                                xsect_jj_pnt_lst.append(tmpxsect_jj)
+                                # convert to the nearest model grid box                            
+                                helploc_ii, helploc_jj, = tmphelploc[0][0],tmphelploc[0][1]
+                                help_ax,help_ii,help_jj,help_ti,help_zz, sel_xlocval,sel_ylocval = indices_from_ginput_ax(ax,helploc_ii, helploc_jj, thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
+                                #
+                                help_type = 'None'
+                                help_but = ''
+                                    
+                                if help_ax is None:
 
-                            
-                            xsect_jjii_npnt = len(xsect_ii_pnt_lst)
-                            if xsect_jjii_npnt < 2: 
-                                print('Xsect: you must select at least 2 points. You have selected %i points'%xsect_jjii_npnt)
-                                print('Xsect: exiting Xsect')
-                                continue
+                                    if verbose_debugging: print('Interpret Mouse click: Functions', datetime.now())
+
+                                    ###################################################################################################
+                                    ### See if func clicked
+                                    ###################################################################################################
+
+                                    for but_name in func_but_extent.keys():
+                                        
+                                        but_pos_x0,but_pos_x1,but_pos_y0,but_pos_y1 = func_but_extent[but_name]
+                                        if (helploc_ii >= but_pos_x0) & (helploc_ii <= but_pos_x1) & (helploc_jj >= but_pos_y0) & (helploc_jj <= but_pos_y1):
+                                            help_type = 'func'
+                                            help_but = but_name
+                                    
+                                    ###################################################################################################
+                                    ### See var func clicked
+                                    ###################################################################################################
+                                    
+                                    for but_name in but_extent.keys():
+                                        
+                                        but_pos_x0,but_pos_x1,but_pos_y0,but_pos_y1 = but_extent[but_name]
+                                        if (helploc_ii >= but_pos_x0) & (helploc_ii <= but_pos_x1) & (helploc_jj >= but_pos_y0) & (helploc_jj <= but_pos_y1):
+                                            if but_name in var_but_mat:
+                                                help_type = 'var'
+                                                help_but = but_name
+                                    
+                                else:
+
+                                    help_type = 'axis'
+                                    help_but = 'axis: %s'% letter_mat[help_ax]
+
+                                print(help_type,help_but)
+
+                                help_text = get_help_text(help_type,help_but)
+                                pop_up_info_window(help_text)
+
+                                # Set the main figure and axis to be current
+                                plt.figure(fig.figure)
+                                plt.sca(clickax)
                                 
+                        elif but_name == 'Obs':
+                            #print('      mouse info:  '  )
+                            #print(mouse_info)
+                            #print(mouse_info['button'])
+                            #print(mouse_info['button'].name)
+                            #print('--------------------')
+
+                            if mouse_info['button'].name == 'LEFT':
+
+                                # predefine dictionaries
+
+                                (obs_z_sel,obs_obs_sel,obs_mod_sel,obs_lon_sel,obs_lat_sel,
+                                    obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel) = obs_reset_sel(Dataset_lst)
+                                # select the observation with ginput
+                                tmpobsloc = plt.ginput(1)
+
+                                # convert to the nearest model grid box
+                                
+                                obs_ax,obs_ii,obs_jj,obs_ti,obs_zz, sel_xlocval,sel_ylocval = indices_from_ginput_ax(ax,tmpobsloc[0][0],tmpobsloc[0][1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
+                            
+                                
+                                # if the main map axis is selected, continue,
+                                if obs_ax == 0:
+                                    #if True:
+                                    
+                                    # extract lat and lon,
+
+                                    obs_lon = sel_xlocval # lon_d[1][obs_jj,obs_ii]
+                                    obs_lat = sel_ylocval # lat_d[1][obs_jj,obs_ii]
+
+                                    if Obs_pair_loc:
+                                        ii = obs_ii
+                                        jj = obs_jj
+
+                                        # and reload slices, and hovmuller/time series
+                                        reload_ew = True
+                                        reload_ns = True
+                                        reload_hov = True
+                                        reload_ts = True
+
+                                    # set some tmp dictionaries
+                                    #(obs_z_sel,obs_obs_sel,obs_mod_sel,obs_lon_sel,obs_lat_sel,
+                                    #    obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel) = obs_reset_sel(Dataset_lst, Fill = False)
+                                    
+                                    tmpobs_dist_sel = {}
+                                    (tmpobs_z_sel,tmpobs_obs_sel,tmpobs_mod_sel,tmpobs_lon_sel,tmpobs_lat_sel,
+                                        tmpobs_stat_id_sel,tmpobs_stat_type_sel,tmpobs_stat_time_sel) = obs_reset_sel(Dataset_lst, Fill = False)
+
+                                    
+                                    # cycle through available Obs types
+                                    for ob_var in Obs_var_lst_sub:
+                                        tmpobs_z_sel[ob_var] = {}
+                                        tmpobs_obs_sel[ob_var] = {}
+                                        tmpobs_mod_sel[ob_var] = {}
+                                        tmpobs_lon_sel[ob_var] = {}
+                                        tmpobs_lat_sel[ob_var] = {}
+                                        tmpobs_dist_sel[ob_var] = {}
+
+                                        tmpobs_stat_id_sel[ob_var] = {}
+                                        tmpobs_stat_type_sel[ob_var] = {}
+                                        tmpobs_stat_time_sel[ob_var] = {}
+                                        # and data sets.
+                                        for tmp_datstr in Dataset_lst:
+                                            # extract Obs: lon, lat, z OBS, mod,, stations info 
+                                            tmpobsx = Obs_dat_dict[tmp_datstr][ob_var]['LONGITUDE']
+                                            tmpobsy = Obs_dat_dict[tmp_datstr][ob_var]['LATITUDE']
+                                            tmpobs_obs = Obs_dat_dict[tmp_datstr][ob_var]['OBS'][:] 
+                                            tmpobs_mod = Obs_dat_dict[tmp_datstr][ob_var]['MOD_HX'][:] 
+                                            tmpobs_z = Obs_dat_dict[tmp_datstr][ob_var]['DEPTH'][:] 
+                                            tmpobs_stat_id = Obs_dat_dict[tmp_datstr][ob_var]['STATION_IDENTIFIER'][:] 
+                                            tmpobs_stat_type = Obs_dat_dict[tmp_datstr][ob_var]['STATION_TYPE'][:] 
+                                            tmpobs_stat_time = Obs_dat_dict[tmp_datstr][ob_var]['JULD_datetime'][:] 
+                                            tmpobs_z = Obs_dat_dict[tmp_datstr][ob_var]['DEPTH'][:] 
+
+                                            # if Obs data is 2d data, reshape to match 3d profile data. 
+                                            if len(tmpobs_obs.shape) == 1:
+
+                                                tmpobs_obs = tmpobs_obs.reshape(-1,1)
+                                                tmpobs_mod = tmpobs_mod.reshape(-1,1)
+                                                tmpobs_z = tmpobs_z.reshape(-1,1)
+                                            # find distance from selected point to all obs in this Obs type    
+                                            tmp_obs_dist = np.sqrt((tmpobsx - obs_lon)**2 +(tmpobsy - obs_lat)**2)
+                                        
+                                            # find the minimum value and index
+                                            tmp_obs_obs_dist = tmp_obs_dist.min()
+                                            tmp_obs_obs_ind = tmp_obs_dist.argmin()
+
+                                            #record the profile and distance for that Obs
+                                            tmpobs_z_sel[ob_var][tmp_datstr] = tmpobs_z[tmp_obs_obs_ind]
+                                            tmpobs_obs_sel[ob_var][tmp_datstr] = tmpobs_obs[tmp_obs_obs_ind]
+                                            tmpobs_mod_sel[ob_var][tmp_datstr] = tmpobs_mod[tmp_obs_obs_ind]
+                                            tmpobs_lon_sel[ob_var][tmp_datstr] = tmpobsx[tmp_obs_obs_ind]
+                                            tmpobs_lat_sel[ob_var][tmp_datstr] = tmpobsy[tmp_obs_obs_ind]
+                                            #pdb.set_trace()
+                                            tmpobs_stat_id_sel[ob_var][tmp_datstr] = tmpobs_stat_id[tmp_obs_obs_ind].strip()
+                                            tmpobs_stat_type_sel[ob_var][tmp_datstr] = tmpobs_stat_type[tmp_obs_obs_ind]
+                                            tmpobs_stat_time_sel[ob_var][tmp_datstr] = tmpobs_stat_time[tmp_obs_obs_ind]
+
+                                            tmpobs_dist_sel[ob_var] = tmp_obs_obs_dist
+                                    
+                                    # put all distances into one array
+                                    obs_dist_sel_cf_mat = np.array([tmpobs_dist_sel[ob_var] for ob_var in Obs_var_lst_sub])
+
+                                    if (obs_dist_sel_cf_mat).size >0:
+                                        
+                                        # select the Obs Obs type closest to the selected point
+                                        sel_Obs_var = Obs_var_lst_sub[obs_dist_sel_cf_mat.argmin()]
+                                        
+                                        #select obs data from Obs type closest to the selected point
+                                        obs_z_sel = tmpobs_z_sel[sel_Obs_var]
+                                        obs_obs_sel = tmpobs_obs_sel[sel_Obs_var]
+                                        obs_mod_sel = tmpobs_mod_sel[sel_Obs_var]
+                                        obs_lon_sel = tmpobs_lon_sel[sel_Obs_var]
+                                        obs_lat_sel = tmpobs_lat_sel[sel_Obs_var]
+
+                                        obs_stat_id_sel = tmpobs_stat_id_sel[sel_Obs_var]
+                                        obs_stat_type_sel = tmpobs_stat_type_sel[sel_Obs_var]
+                                        obs_stat_time_sel = tmpobs_stat_time_sel[sel_Obs_var]
 
 
-                            sec_th_d_ind = int(secdataset_proc[8:]) # int(tmp_datstr[-1])
-                            #pdb.set_trace()
+                                        del(tmpobs_z_sel)
+                                        del(tmpobs_obs_sel)
+                                        del(tmpobs_mod_sel)
+                                        del(tmpobs_lon_sel)
+                                        del(tmpobs_lat_sel)
+                                        del(tmpobs_dist_sel)
 
-                            #convert selected indices into Lat and Lon 
-                            #   indices_from_ginput_ax hard coded to return indices for Dataset 1.
+                                        del(tmpobs_stat_id_sel)
+                                        del(tmpobs_stat_type_sel)
+                                        del(tmpobs_stat_time_sel)
 
-                            xsect_lon_pnt_mat = lon_d[1][[xsect_jj_pnt_lst],[xsect_ii_pnt_lst]][0,:]
-                            xsect_lat_pnt_mat = lat_d[1][[xsect_jj_pnt_lst],[xsect_ii_pnt_lst]][0,:]
-                            '''
-                            try:
-                                xsect_lon_pnt_mat = lon_d[sec_th_d_ind][[xsect_jj_pnt_lst],[xsect_ii_pnt_lst]][0,:]
-                                xsect_lat_pnt_mat = lat_d[sec_th_d_ind][[xsect_jj_pnt_lst],[xsect_ii_pnt_lst]][0,:]
-                            except:
-                                pdb.set_trace()
-                            '''
-                            xsect_lon_dict = {}
-                            xsect_lat_dict = {}
-                            xsect_lon_pnt_dict = {}
-                            xsect_lat_pnt_dict = {}
-                            xsect_ii_pnt_dict = {}
-                            xsect_jj_pnt_dict = {}
-                            xsect_jj_ind_dict = {}
-                            xsect_ii_ind_dict = {}
-                            xsect_pnt_ind_dict = {}
-                            nxsect_dict = {}
 
-                            for tmp_datstr in Dataset_lst:
+                                        # append this data to an array to help select x and y lims
+                                        for tmp_datstr in Dataset_lst:
+                                            tmp_pf_ylim_dat = np.ma.append(np.array(tmp_py_ylim),obs_z_sel[tmp_datstr])
+                                            #tmp_pf_xlim_dat = np.ma.append(np.ma.append(np.array(pf_xlim),obs_mod_sel)[tmp_datstr],obs_obs_sel)
+                                            tmp_pf_xlim_dat = np.ma.append(np.ma.append(np.array(pf_xlim),obs_mod_sel[tmp_datstr]),obs_obs_sel[tmp_datstr])
+                                        
+                                    else:
+                                        
+                                        (obs_z_sel,obs_obs_sel,obs_mod_sel,obs_lon_sel,obs_lat_sel,
+                                            obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel) = obs_reset_sel(Dataset_lst)
+
+                            elif mouse_info['button'].name == 'RIGHT':
+
+                                # Bring up a options window for Obs
+                                
+                                # button names                            
+                                obs_but_names = ['ProfT','SST_ins','SST_sat','ProfS','SLA','ChlA','Hide_Obs','Edges','Loc','Close']
+                                
+                                
+                                # button switches  
+                                obs_but_sw = {}
+                                obs_but_sw['Hide_Obs'] = {'v':Obs_hide, 'T':'Show Obs','F': 'Hide Obs'}
+                                obs_but_sw['Edges'] = {'v':Obs_hide, 'T':'Show Edges','F': 'Hide Edges'}
+                                obs_but_sw['Loc'] = {'v':Obs_hide, 'T':"Don't Selected point",'F': 'Move Selected point'}
+                                #for ob_var in Obs_var_lst_sub:  obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var + ' hidden'}
+                                #for ob_var in Obs_varlst:  obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var + ' hidden'}
+                                for ob_var in Obs_var_lst_sub:  obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var,'T_col':'k','F_col':'0.5'}
+                                #for ob_var in Obs_var_lst_sub:  obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var + ' hidden'}
+                                for ob_var in Obs_varlst:  obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var,'T_col':'k','F_col':'0.5'}
+
+                                obbut_sel = pop_up_opt_window(obs_but_names, opt_but_sw = obs_but_sw)
+
+
+                                # Set the main figure and axis to be current
+                                plt.figure(fig.figure)
+                                plt.sca(clickax)
+
+            
+                                # if the button closed was one of the Obs types, add or remove from the hide list
+                                for ob_var in ['ProfT','SST_ins','SST_sat','ProfS','SLA','ChlA']:
+                                    if obbut_sel == ob_var:
+                                        Obs_vis_d['visible'][ob_var] = not Obs_vis_d['visible'][ob_var] 
+                                # if the button closed was one of the Obs types, add or remove from the hide list
+                                            
+                                if obbut_sel == 'Hide_Obs': Obs_hide = not Obs_hide
+                                if obbut_sel == 'Edges':    Obs_hide_edges = not Obs_hide_edges
+                                if obbut_sel == 'Loc':      Obs_pair_loc = not Obs_pair_loc
+
+
+
+                                reload_Obs = True
+                        
+
+                        elif but_name == 'Xsect':
+                            
+
+                            if (mouse_info['button'].name == 'RIGHT') | (loaded_xsect == False):
+                                loaded_xsect = True
+
+                                tmp_xsect_jjii_npnt = 0
+                                while tmp_xsect_jjii_npnt<2:
+                                    xsectloc_lst = plt.ginput(-1)
+                                    tmp_xsect_jjii_npnt = len(xsectloc_lst)
+                                    if tmp_xsect_jjii_npnt<2:
+                                        print('Xsect: you must select at least 2 points. You have selected %i points'%tmp_xsect_jjii_npnt)
+                                        print('Xsect: start selection again')
+                                #pdb.set_trace()
+                                del(tmp_xsect_jjii_npnt)
+
+                                print('Xsect: ginput exited')
+                                xs0 = datetime.now()
+
+                                # convert to the nearest model grid box
+                                xsect_ax_pnt_lst = []
+                                xsect_ii_pnt_lst = []
+                                xsect_jj_pnt_lst = []
+                                
+                                for tmpxsectloc in xsectloc_lst: 
+                                    tmpxsect_ax,tmpxsect_ii,tmpxsect_jj,tmpxsect_ti,tmpxsect_zz, tmpxsect_sel_xlocval,tmpxsect_sel_ylocval = indices_from_ginput_ax(ax,tmpxsectloc[0],tmpxsectloc[1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
+                                    if (tmpxsect_ax is None)|(tmpxsect_ii is None)|(tmpxsect_jj is None): 
+                                        print('Xsect: selected point outside axis, skipping')
+                                        continue
+                                    xsect_ax_pnt_lst.append(tmpxsect_ax)
+                                    xsect_ii_pnt_lst.append(tmpxsect_ii)
+                                    xsect_jj_pnt_lst.append(tmpxsect_jj)
+
+                                
+                                xsect_jjii_npnt = len(xsect_ii_pnt_lst)
+                                if xsect_jjii_npnt < 2: 
+                                    print('Xsect: you must select at least 2 points. You have selected %i points'%xsect_jjii_npnt)
+                                    print('Xsect: exiting Xsect')
+                                    continue
+                                    
+
+
+                                sec_th_d_ind = int(secdataset_proc[8:]) # int(tmp_datstr[-1])
+                                #pdb.set_trace()
+
+                                #convert selected indices into Lat and Lon 
+                                #   indices_from_ginput_ax hard coded to return indices for Dataset 1.
+
+                                xsect_lon_pnt_mat = lon_d[1][[xsect_jj_pnt_lst],[xsect_ii_pnt_lst]][0,:]
+                                xsect_lat_pnt_mat = lat_d[1][[xsect_jj_pnt_lst],[xsect_ii_pnt_lst]][0,:]
+                                '''
+                                try:
+                                    xsect_lon_pnt_mat = lon_d[sec_th_d_ind][[xsect_jj_pnt_lst],[xsect_ii_pnt_lst]][0,:]
+                                    xsect_lat_pnt_mat = lat_d[sec_th_d_ind][[xsect_jj_pnt_lst],[xsect_ii_pnt_lst]][0,:]
+                                except:
+                                    pdb.set_trace()
+                                '''
+                                xsect_lon_dict = {}
+                                xsect_lat_dict = {}
+                                xsect_lon_pnt_dict = {}
+                                xsect_lat_pnt_dict = {}
+                                xsect_ii_pnt_dict = {}
+                                xsect_jj_pnt_dict = {}
+                                xsect_jj_ind_dict = {}
+                                xsect_ii_ind_dict = {}
+                                xsect_pnt_ind_dict = {}
+                                nxsect_dict = {}
+
+                                for tmp_datstr in Dataset_lst:
+
+                                    th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
+                                    
+                                    #xsect_lon_pnt_mat = lon_d[th_d_ind][[xsect_jj_pnt_lst],[xsect_ii_pnt_lst]][0,:]
+                                    #xsect_lat_pnt_mat = lat_d[th_d_ind][[xsect_jj_pnt_lst],[xsect_ii_pnt_lst]][0,:]
+
+
+
+                                    tmpnlat, tmpnlon = lat_d[th_d_ind].shape
+                                    #th_d_ind1 = int(tmp_datstr1[-1])
+                                    #t#h_d_ind1 = int(tmp_datstr1[8:])
+
+                                    xs1 = datetime.now()
+                                    #if configd[int(secdataset_proc[8:])].lower() in ['amm7','amm15','co9p2','gulf18','orca025']:
+                                    #if True:
+
+                                    xsect_ii_ind_lst = []
+                                    xsect_jj_ind_lst = []
+                                    xsect_n_ind_lst = []
+                                    tmp_xsect_ii_pnt_dict = []
+                                    tmp_xsect_jj_pnt_dict = []
+
+                                    #convert selected  points into lon lat points for current grid
+                                    for xi in range(xsect_jjii_npnt):
+
+                                        #pdb.set_trace()
+                                        tmp_jj_jjii_from_lon_lat,tmp_ii_jjii_from_lon_lat = jjii_from_lon_lat(xsect_lon_pnt_mat[xi],xsect_lat_pnt_mat[xi],lon_d[th_d_ind],lat_d[th_d_ind])
+                                        #tmp_lonlatijdist_iijj = np.sqrt((xsect_lon_pnt_mat[xi] - lon_d[th_d_ind])**2 + (xsect_lat_pnt_mat[xi] - lat_d[th_d_ind])**2)).argmin()
+                                        tmp_xsect_ii_pnt_dict.append(tmp_ii_jjii_from_lon_lat)
+                                        tmp_xsect_jj_pnt_dict.append(tmp_jj_jjii_from_lon_lat)
+                                    xsect_ii_pnt_dict[tmp_datstr] = np.array(tmp_xsect_ii_pnt_dict)
+                                    xsect_jj_pnt_dict[tmp_datstr] = np.array(tmp_xsect_jj_pnt_dict)
+                                    del(tmp_xsect_ii_pnt_dict)
+                                    del(tmp_xsect_jj_pnt_dict)
+
+                                    #pdb.set_trace()
+                                    for xi in range(xsect_jjii_npnt-1):
+
+                                        #pdb.set_trace()
+
+                                        #tmp_ii = (xsect_lon_pnt_mat[xi] - lon_d[th_d_ind]**2) + (xsect_lat_pnt_mat[xi] - lat_d[th_d_ind]**2)
+                                        #tmp_xsect_ii_ind,tmp_xsect_jj_ind = profile_line( xsect_ii_pnt_lst[xi:xi+2],xsect_jj_pnt_lst[xi:xi+2], ni = tmpnlat )
+                                        tmp_xsect_ii_ind,tmp_xsect_jj_ind = profile_line( xsect_ii_pnt_dict[tmp_datstr][xi:xi+2],xsect_jj_pnt_dict[tmp_datstr][xi:xi+2], ni = tmpnlat )
+                                        xsect_ii_ind_lst.append(tmp_xsect_ii_ind)
+                                        xsect_jj_ind_lst.append(tmp_xsect_jj_ind)
+                                        xsect_n_ind_lst.append(tmp_xsect_ii_ind.size)
+
+                                    xsect_ii_ind_mat = np.concatenate(xsect_ii_ind_lst)
+                                    xsect_jj_ind_mat = np.concatenate(xsect_jj_ind_lst)
+                                    nxsect = xsect_ii_ind_mat.size
+
+                                    xsect_lon_mat = lon_d[th_d_ind][[xsect_jj_ind_mat],[xsect_ii_ind_mat]][0,:]
+                                    xsect_lat_mat = lat_d[th_d_ind][[xsect_jj_ind_mat],[xsect_ii_ind_mat]][0,:]
+                                    
+                                    xsect_pnt_ind = np.append(0,np.cumsum(xsect_n_ind_lst)-1)
+
+
+                                    xsect_lon_dict[tmp_datstr] = xsect_lon_mat
+                                    xsect_lat_dict[tmp_datstr] = xsect_lat_mat
+                                    xsect_lon_pnt_dict[tmp_datstr] = xsect_lon_pnt_mat
+                                    xsect_lat_pnt_dict[tmp_datstr] = xsect_lat_pnt_mat
+                                    xsect_ii_ind_dict[tmp_datstr] = xsect_ii_ind_mat
+                                    xsect_jj_ind_dict[tmp_datstr] = xsect_jj_ind_mat
+                                    xsect_pnt_ind_dict[tmp_datstr] = xsect_pnt_ind
+                                    nxsect_dict[tmp_datstr] = nxsect
+
+                                    
+                                """
 
                                 th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
-                                
-                                #xsect_lon_pnt_mat = lon_d[th_d_ind][[xsect_jj_pnt_lst],[xsect_ii_pnt_lst]][0,:]
-                                #xsect_lat_pnt_mat = lat_d[th_d_ind][[xsect_jj_pnt_lst],[xsect_ii_pnt_lst]][0,:]
-
-
-
-                                tmpnlat, tmpnlon = lat_d[th_d_ind].shape
-                                #th_d_ind1 = int(tmp_datstr1[-1])
-                                #t#h_d_ind1 = int(tmp_datstr1[8:])
 
                                 xs1 = datetime.now()
                                 #if configd[int(secdataset_proc[8:])].lower() in ['amm7','amm15','co9p2','gulf18','orca025']:
@@ -4029,30 +4109,9 @@ def nemo_slice_zlev(config = 'amm7',
                                 xsect_ii_ind_lst = []
                                 xsect_jj_ind_lst = []
                                 xsect_n_ind_lst = []
-                                tmp_xsect_ii_pnt_dict = []
-                                tmp_xsect_jj_pnt_dict = []
-
-                                #convert selected  points into lon lat points for current grid
-                                for xi in range(xsect_jjii_npnt):
-
-                                    #pdb.set_trace()
-                                    tmp_jj_jjii_from_lon_lat,tmp_ii_jjii_from_lon_lat = jjii_from_lon_lat(xsect_lon_pnt_mat[xi],xsect_lat_pnt_mat[xi],lon_d[th_d_ind],lat_d[th_d_ind])
-                                    #tmp_lonlatijdist_iijj = np.sqrt((xsect_lon_pnt_mat[xi] - lon_d[th_d_ind])**2 + (xsect_lat_pnt_mat[xi] - lat_d[th_d_ind])**2)).argmin()
-                                    tmp_xsect_ii_pnt_dict.append(tmp_ii_jjii_from_lon_lat)
-                                    tmp_xsect_jj_pnt_dict.append(tmp_jj_jjii_from_lon_lat)
-                                xsect_ii_pnt_dict[tmp_datstr] = np.array(tmp_xsect_ii_pnt_dict)
-                                xsect_jj_pnt_dict[tmp_datstr] = np.array(tmp_xsect_jj_pnt_dict)
-                                del(tmp_xsect_ii_pnt_dict)
-                                del(tmp_xsect_jj_pnt_dict)
-
                                 #pdb.set_trace()
                                 for xi in range(xsect_jjii_npnt-1):
-
-                                    #pdb.set_trace()
-
-                                    #tmp_ii = (xsect_lon_pnt_mat[xi] - lon_d[th_d_ind]**2) + (xsect_lat_pnt_mat[xi] - lat_d[th_d_ind]**2)
-                                    #tmp_xsect_ii_ind,tmp_xsect_jj_ind = profile_line( xsect_ii_pnt_lst[xi:xi+2],xsect_jj_pnt_lst[xi:xi+2], ni = tmpnlat )
-                                    tmp_xsect_ii_ind,tmp_xsect_jj_ind = profile_line( xsect_ii_pnt_dict[tmp_datstr][xi:xi+2],xsect_jj_pnt_dict[tmp_datstr][xi:xi+2], ni = tmpnlat )
+                                    tmp_xsect_ii_ind,tmp_xsect_jj_ind = profile_line( xsect_ii_pnt_lst[xi:xi+2],xsect_jj_pnt_lst[xi:xi+2], ni = tmpnlat )
                                     xsect_ii_ind_lst.append(tmp_xsect_ii_ind)
                                     xsect_jj_ind_lst.append(tmp_xsect_jj_ind)
                                     xsect_n_ind_lst.append(tmp_xsect_ii_ind.size)
@@ -4065,778 +4124,752 @@ def nemo_slice_zlev(config = 'amm7',
                                 xsect_lat_mat = lat_d[th_d_ind][[xsect_jj_ind_mat],[xsect_ii_ind_mat]][0,:]
                                 
                                 xsect_pnt_ind = np.append(0,np.cumsum(xsect_n_ind_lst)-1)
-
-
-                                xsect_lon_dict[tmp_datstr] = xsect_lon_mat
-                                xsect_lat_dict[tmp_datstr] = xsect_lat_mat
-                                xsect_lon_pnt_dict[tmp_datstr] = xsect_lon_pnt_mat
-                                xsect_lat_pnt_dict[tmp_datstr] = xsect_lat_pnt_mat
-                                xsect_ii_ind_dict[tmp_datstr] = xsect_ii_ind_mat
-                                xsect_jj_ind_dict[tmp_datstr] = xsect_jj_ind_mat
-                                xsect_pnt_ind_dict[tmp_datstr] = xsect_pnt_ind
-                                nxsect_dict[tmp_datstr] = nxsect
-
+                                """
                                 
-                            """
-
-                            th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
-
-                            xs1 = datetime.now()
-                            #if configd[int(secdataset_proc[8:])].lower() in ['amm7','amm15','co9p2','gulf18','orca025']:
-                            #if True:
-
-                            xsect_ii_ind_lst = []
-                            xsect_jj_ind_lst = []
-                            xsect_n_ind_lst = []
-                            #pdb.set_trace()
-                            for xi in range(xsect_jjii_npnt-1):
-                                tmp_xsect_ii_ind,tmp_xsect_jj_ind = profile_line( xsect_ii_pnt_lst[xi:xi+2],xsect_jj_pnt_lst[xi:xi+2], ni = tmpnlat )
-                                xsect_ii_ind_lst.append(tmp_xsect_ii_ind)
-                                xsect_jj_ind_lst.append(tmp_xsect_jj_ind)
-                                xsect_n_ind_lst.append(tmp_xsect_ii_ind.size)
-
-                            xsect_ii_ind_mat = np.concatenate(xsect_ii_ind_lst)
-                            xsect_jj_ind_mat = np.concatenate(xsect_jj_ind_lst)
-                            nxsect = xsect_ii_ind_mat.size
-
-                            xsect_lon_mat = lon_d[th_d_ind][[xsect_jj_ind_mat],[xsect_ii_ind_mat]][0,:]
-                            xsect_lat_mat = lat_d[th_d_ind][[xsect_jj_ind_mat],[xsect_ii_ind_mat]][0,:]
-                            
-                            xsect_pnt_ind = np.append(0,np.cumsum(xsect_n_ind_lst)-1)
-                            """
-                            
-                        print('Xsect: indices processed.')
+                            print('Xsect: indices processed.')
 
 
-                        #xs_map_ax_lst = [ax[0].plot(xsect_lon_mat,xsect_lat_mat,'r.-')]
-                        #xs_map_ax_lst.append(ax[0].plot(xsect_lon_pnt_mat,xsect_lat_pnt_mat,'ko-'))
-                        xs_map_ax_lst = [ax[0].plot(xsect_lon_dict[secdataset_proc],xsect_lat_dict[secdataset_proc],'r.-')]
-                        xs_map_ax_lst.append(ax[0].plot(xsect_lon_pnt_dict[secdataset_proc],xsect_lat_pnt_dict[secdataset_proc],'ko-'))
+                            #xs_map_ax_lst = [ax[0].plot(xsect_lon_mat,xsect_lat_mat,'r.-')]
+                            #xs_map_ax_lst.append(ax[0].plot(xsect_lon_pnt_mat,xsect_lat_pnt_mat,'ko-'))
+                            xs_map_ax_lst = [ax[0].plot(xsect_lon_dict[secdataset_proc],xsect_lat_dict[secdataset_proc],'r.-')]
+                            xs_map_ax_lst.append(ax[0].plot(xsect_lon_pnt_dict[secdataset_proc],xsect_lat_pnt_dict[secdataset_proc],'ko-'))
 
-                        fig.canvas.draw()
-                        if verbose_debugging: print('Canvas flush', datetime.now())
-                        fig.canvas.flush_events()
-                        if verbose_debugging: print('Canvas drawn and flushed', datetime.now())
+                            fig.canvas.draw_idle()
+                            if verbose_debugging: print('Canvas flush', datetime.now())
+                            fig.canvas.flush_events()
+                            if verbose_debugging: print('Canvas drawn and flushed', datetime.now())
 
-         
-                        tmp_xsect_x,tmp_xsect_z,tmp_xsect_dat = {},{},{}
+            
+                            tmp_xsect_x,tmp_xsect_z,tmp_xsect_dat = {},{},{}
 
-                        '''
-                        for tmp_datstr in Dataset_lst:
-                            if var_dim[var] == 4:
-                                tmp_xsect_dat[tmp_datstr] = data_inst[tmp_datstr][:,[xsect_jj_ind_mat],[xsect_ii_ind_mat]][:,0,:]
-                                tmp_xsect_z[tmp_datstr] = grid_dict[tmp_datstr]['gdept'][:,[xsect_jj_ind_mat],[xsect_ii_ind_mat]][:,0,:]
-                                tmp_xsect_x[tmp_datstr] = np.arange(nxsect)
-                            elif var_dim[var] == 3:
-                                tmp_xsect_dat[tmp_datstr] = data_inst[tmp_datstr][[xsect_jj_ind_mat],[xsect_ii_ind_mat]][0,:]
-                                tmp_xsect_x[tmp_datstr] = np.arange(nxsect)
-                                #pdb.set_trace()
-                        '''
-                        #pdb.set_trace()
-                        for tmp_datstr in Dataset_lst:
-                            if var_dim[var] == 4:
-                                tmp_xsect_dat[tmp_datstr] = data_inst[tmp_datstr][:,[xsect_jj_ind_dict[tmp_datstr]],[xsect_ii_ind_dict[tmp_datstr]]][:,0,:]
-                                tmp_xsect_z[tmp_datstr] = grid_dict[tmp_datstr]['gdept'][:,[xsect_jj_ind_dict[tmp_datstr]],[xsect_ii_ind_dict[tmp_datstr]]][:,0,:]
-                                tmp_xsect_x[tmp_datstr] = np.arange(nxsect_dict[tmp_datstr])
-                            elif var_dim[var] == 3:
-                                tmp_xsect_dat[tmp_datstr] = data_inst[tmp_datstr][[xsect_jj_ind_dict[tmp_datstr]],[xsect_ii_ind_dict[tmp_datstr]]][0,:]
-                                tmp_xsect_x[tmp_datstr] = np.arange(nxsect_dict[tmp_datstr])
-                                #pdb.set_trace()
-
-
-
-                        if figxs is not None:
-                            if plt.fignum_exists(figxs.number):
-                                plt.close(figxs)
-
-
-                        if (nDataset == 2)&(var_dim[var] == 4):
-                            if (configd[1] == configd[2]):
-                            
-                                figxs = plt.figure()
-                                figxs.set_figheight(10*1.2)
-                                figxs.set_figwidth(8*1.5)
-                                figxs.suptitle('Cross-section: %s'%nice_varname_dict[var], fontsize = 20)
-                                plt.subplots_adjust(top=0.92,bottom=0.05,left=0.05,right=1,hspace=0.25,wspace=0.6)
-                                axxs = [plt.subplot(311),plt.subplot(312),plt.subplot(313)]
-                                paxxs = []
-                                for xi,tmp_datstr in enumerate(Dataset_lst): paxxs.append(axxs[xi].pcolormesh(tmp_xsect_x[tmp_datstr],tmp_xsect_z[tmp_datstr],tmp_xsect_dat[tmp_datstr]))
-                                paxxs.append(axxs[2].pcolormesh(tmp_xsect_x[secdataset_proc],tmp_xsect_z[secdataset_proc],tmp_xsect_dat[Dataset_lst[1]] - tmp_xsect_dat[Dataset_lst[0]], cmap = matplotlib.cm.seismic))
-                                for tmpax  in axxs: tmpax.invert_yaxis()
-                                for xi,tmp_datstr in enumerate(Dataset_lst): axxs[xi].set_title(tmp_datstr)
-                                axxs[2].set_title('%s - %s'%(Dataset_lst[1],Dataset_lst[0]))
-                                xs_ylim = np.array(axxs[0].get_ylim())
-                                xs_xlim = np.array(axxs[0].get_xlim())
-                                #for axi,tmpax  in enumerate(axxs): 
-                                for axi,tmp_datstr in enumerate(Dataset_lst): 
-                                    
-                                    #tmpax = axxs[xi]
-                                    for xi in xsect_pnt_ind_dict[tmp_datstr]: axxs[axi].axvline(xi,color = 'k', alpha = 0.5, ls = '--') 
-                                    for xi in xsect_pnt_ind_dict[tmp_datstr]: axxs[axi].text(xi,xs_ylim[0] - xs_ylim.ptp()*0.9   ,lon_lat_to_str(xsect_lon_dict[tmp_datstr][xi],xsect_lat_dict[tmp_datstr][xi])[0], rotation = 270, ha = 'left', va = 'top')
-                                    plt.colorbar(paxxs[axi], ax = axxs[axi])
-                                for xi,tmp_datstr in enumerate(Dataset_lst): set_perc_clim_pcolor_in_region(5,95,ax = axxs[axi])
-                                set_perc_clim_pcolor_in_region(5,95,ax = axxs[2], sym = True)
-
-                                #xmapax = figxs.add_axes([0.075,0.15,0.2,0.5], frameon=False)
-                                #xmapax = figxs.add_axes([0.075,0.15,0.175,0.4], frameon=False)
-                                xmapax = figxs.add_axes([0.075,0.025,0.175,0.2], frameon=False)
-                                #pdb.set_trace()
-                                xs_pe = [pe.Stroke(linewidth=2, foreground='w'), pe.Normal()]
-                                #pdb.set_trace()
-                                if var_dim[var] == 3:
-                                    xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
-                                elif var_dim[var] == 4:
-                                    xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][0][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
-                                xmapax.plot(xsect_lon_dict[secdataset_proc],xsect_lat_dict[secdataset_proc],'r-', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                                #xmapax.plot(xsect_lon_pnt_mat,xsect_lat_pnt_mat,'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                                #xmapax.plot(xsect_lon_pnt_mat[0],xsect_lat_pnt_mat[0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                                xmapax.plot(xsect_lon_pnt_dict[secdataset_proc],xsect_lat_pnt_dict[secdataset_proc],'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                                xmapax.plot(xsect_lon_pnt_dict[secdataset_proc][0],xsect_lat_pnt_dict[secdataset_proc][0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                                xmapax.axis('equal')
-                                xmapax.set_xticks([])
-                                xmapax.set_yticks([]) 
-                            else:
-                            
-                                figxs = plt.figure()
-                                figxs.set_figheight(8)
-                                figxs.set_figwidth(8*1.5)
-                                figxs.suptitle('Cross-section: %s'%nice_varname_dict[var], fontsize = 20)
-                                plt.subplots_adjust(top=0.92,bottom=0.05,left=0.05,right=1,hspace=0.25,wspace=0.6)
-                                axxs = [plt.subplot(211),plt.subplot(212)]
-                                paxxs = []
-                                for xi,tmp_datstr in enumerate(Dataset_lst): paxxs.append(axxs[xi].pcolormesh(tmp_xsect_x[tmp_datstr],tmp_xsect_z[tmp_datstr],tmp_xsect_dat[tmp_datstr]))
-                                for tmpax  in axxs: tmpax.invert_yaxis()
-                                for xi,tmp_datstr in enumerate(Dataset_lst): axxs[xi].set_title(tmp_datstr)
-                                xs_ylim = np.array(axxs[0].get_ylim())
-                                xs_xlim = np.array(axxs[0].get_xlim())
-                                #for axi,tmpax  in enumerate(axxs): 
-                                for axi,tmp_datstr in enumerate(Dataset_lst): 
-                                    #tmpax = axxs[axi]
-                                    for xi in xsect_pnt_ind_dict[tmp_datstr]: axxs[axi].axvline(xi,color = 'k', alpha = 0.5, ls = '--') 
-                                    for xi in xsect_pnt_ind_dict[tmp_datstr]: axxs[axi].text(xi,xs_ylim[0] - xs_ylim.ptp()*0.9   ,lon_lat_to_str(xsect_lon_dict[tmp_datstr][xi],xsect_lat_dict[tmp_datstr][xi])[0], rotation = 270, ha = 'left', va = 'top')
-                                    plt.colorbar(paxxs[axi], ax = axxs[axi])
-                                for xi,tmp_datstr in enumerate(Dataset_lst): set_perc_clim_pcolor_in_region(5,95,ax = axxs[axi])
-                                
-                                #xmapax = figxs.add_axes([0.075,0.15,0.2,0.5], frameon=False)
-                                #xmapax = figxs.add_axes([0.075,0.15,0.175,0.4], frameon=False)
-                                xmapax = figxs.add_axes([0.075,0.025,0.175,0.2], frameon=False)
-                                #pdb.set_trace()
-                                xs_pe = [pe.Stroke(linewidth=2, foreground='w'), pe.Normal()]
-                                #pdb.set_trace()
-                                if var_dim[var] == 3:
-                                    xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
-                                elif var_dim[var] == 4:
-                                    xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][0][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
-                                xmapax.plot(xsect_lon_dict[secdataset_proc],xsect_lat_dict[secdataset_proc],'r-', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                                #xmapax.plot(xsect_lon_pnt_mat,xsect_lat_pnt_mat,'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                                #xmapax.plot(xsect_lon_pnt_mat[0],xsect_lat_pnt_mat[0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                                xmapax.plot(xsect_lon_pnt_dict[secdataset_proc],xsect_lat_pnt_dict[secdataset_proc],'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                                xmapax.plot(xsect_lon_pnt_dict[secdataset_proc][0],xsect_lat_pnt_dict[secdataset_proc][0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                                xmapax.axis('equal')
-                                xmapax.set_xticks([])
-                                xmapax.set_yticks([]) 
-
-                        else:
-                            figxs = plt.figure()
-                            figxs.set_figheight(4*1.2)
-                            figxs.set_figwidth(8*1.5)
-                            figxs.suptitle('Cross-section: %s'%nice_varname_dict[var], fontsize = 20)
-                            plt.subplots_adjust(top=0.89,bottom=0.1,left=0.05,right=0.975,hspace=0.2,wspace=0.6)
-                            axxs = [plt.subplot(111)]
-                            paxxs = []
-                            if var_dim[var] == 4:
-                                paxxs.append(axxs[0].pcolormesh(tmp_xsect_x[secdataset_proc],tmp_xsect_z[secdataset_proc],tmp_xsect_dat[secdataset_proc]))
-                                axxs[0].invert_yaxis()
-                                plt.colorbar(paxxs[0], ax = axxs[0])
-                                set_perc_clim_pcolor_in_region(5,95,ax = axxs[0])
-                            
-                            elif var_dim[var] == 3:
-                                axxs[0].axhline(0,color = 'k', lw = 0.5) 
-                                
-                                for xi,tmp_datstr in enumerate(Dataset_lst):axxs[0].plot(tmp_xsect_x[tmp_datstr],tmp_xsect_dat[tmp_datstr],label = tmp_datstr)
-                                axxs[0].legend()
-
-                            xs_xlim = np.array(axxs[0].get_xlim())
-                            xs_ylim = np.array(axxs[0].get_ylim())
-
-                            for xi in xsect_pnt_ind_dict[secdataset_proc]:                            axxs[0].axvline(xi,color = 'k', alpha = 0.5, ls = '--') 
-
-                            if var_dim[var] == 4:
-                                for xi in xsect_pnt_ind_dict[secdataset_proc]:         axxs[0].text(xi,xs_ylim[0] - xs_ylim.ptp()*0.9,lon_lat_to_str(xsect_lon_dict[tmp_datstr][xi],xsect_lat_dict[tmp_datstr][xi])[0], rotation = 270, ha = 'left', va = 'top')
-                            elif var_dim[var] == 3:
-                                for xi in xsect_pnt_ind_dict[secdataset_proc]:         axxs[0].text(xi,xs_ylim[0] + xs_ylim.ptp()*0.9,lon_lat_to_str(xsect_lon_dict[tmp_datstr][xi],xsect_lat_dict[tmp_datstr][xi])[0], rotation = 270, ha = 'left', va = 'top')
-                            #axxs[0].set_xlim([0,xs_xlim[1]*1.01])
-                            #pdb.set_trace()
-
-                            #xmapax = figxs.add_axes([0.075,0.15,0.2,0.5], frameon=False)
-                            xmapax = figxs.add_axes([0.075,0.15,0.175,0.4], frameon=False)
-                            
-                            #pdb.set_trace()
-                            xs_pe = [pe.Stroke(linewidth=2, foreground='w'), pe.Normal()]
-                            #pdb.set_trace()
-                            if var_dim[var] == 3:
-                                xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
-                            elif var_dim[var] == 4:
-                                xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][0][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
-                            xmapax.plot(xsect_lon_dict[secdataset_proc],xsect_lat_dict[secdataset_proc],'r-', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                            #xmapax.plot(xsect_lon_mat,xsect_lat_mat,'r-', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                            #xmapax.plot(xsect_lon_pnt_mat,xsect_lat_pnt_mat,'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                            #xmapax.plot(xsect_lon_pnt_mat[0],xsect_lat_pnt_mat[0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                            #xmapax.plot(xsect_lon_dict[secdataset_proc],xsect_lat_dict[secdataset_proc],'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                            xmapax.plot(xsect_lon_pnt_dict[secdataset_proc],xsect_lat_pnt_dict[secdataset_proc],'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                            xmapax.plot(xsect_lon_pnt_dict[secdataset_proc][0],xsect_lat_pnt_dict[secdataset_proc][0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                            xmapax.axis('equal')
-                            xmapax.set_xticks([])
-                            xmapax.set_yticks([]) 
-
-
-
-                        xs_close_win_meth = 1
-                        # 1: closes when you click on it
-                        # 2: stays open till you close it
-
-                        if xs_close_win_meth == 1:
-                            xclickax = figxs.add_axes([0,0,1,1], frameon=False)
-                            xclickax.axis('off')
-
-                        # redraw canvas
-                        figxs.canvas.draw()
-                        
-                        #flush canvas
-                        figxs.canvas.flush_events()
-                        
-                        # Show plot, and set it as the current figure and axis
-                        figxs.show()
-                        plt.figure(figxs.figure)
-                        
-
-                        if xs_close_win_meth == 1:
-                            plt.sca(xclickax)
-                        
-                            ###################################
-                            # Close on button press: #JT COBP #
-                            ###################################
-
-
-                            close_xsax = False
-                            while close_xsax == False:
-
-                                # get click location
-                                tmpxsbutloc = plt.ginput(1, timeout = 3) #[(0.3078781362007169, 0.19398809523809524)]
-                                        
-                                #pdb.set_trace()
-                                if len(tmpxsbutloc)!=1:
-                                    print('tmpxsbutloc len != 1',tmpxsbutloc )
-                                    #close_xsax = True
-                                    continue
+                            '''
+                            for tmp_datstr in Dataset_lst:
+                                if var_dim[var] == 4:
+                                    tmp_xsect_dat[tmp_datstr] = data_inst[tmp_datstr][:,[xsect_jj_ind_mat],[xsect_ii_ind_mat]][:,0,:]
+                                    tmp_xsect_z[tmp_datstr] = grid_dict[tmp_datstr]['gdept'][:,[xsect_jj_ind_mat],[xsect_ii_ind_mat]][:,0,:]
+                                    tmp_xsect_x[tmp_datstr] = np.arange(nxsect)
+                                elif var_dim[var] == 3:
+                                    tmp_xsect_dat[tmp_datstr] = data_inst[tmp_datstr][[xsect_jj_ind_mat],[xsect_ii_ind_mat]][0,:]
+                                    tmp_xsect_x[tmp_datstr] = np.arange(nxsect)
                                     #pdb.set_trace()
+                            '''
+                            #pdb.set_trace()
+                            for tmp_datstr in Dataset_lst:
+                                if var_dim[var] == 4:
+                                    tmp_xsect_dat[tmp_datstr] = data_inst[tmp_datstr][:,[xsect_jj_ind_dict[tmp_datstr]],[xsect_ii_ind_dict[tmp_datstr]]][:,0,:]
+                                    tmp_xsect_z[tmp_datstr] = grid_dict[tmp_datstr]['gdept'][:,[xsect_jj_ind_dict[tmp_datstr]],[xsect_ii_ind_dict[tmp_datstr]]][:,0,:]
+                                    tmp_xsect_x[tmp_datstr] = np.arange(nxsect_dict[tmp_datstr])
+                                elif var_dim[var] == 3:
+                                    tmp_xsect_dat[tmp_datstr] = data_inst[tmp_datstr][[xsect_jj_ind_dict[tmp_datstr]],[xsect_ii_ind_dict[tmp_datstr]]][0,:]
+                                    tmp_xsect_x[tmp_datstr] = np.arange(nxsect_dict[tmp_datstr])
+                                    #pdb.set_trace()
+
+
+
+                            if figxs is not None:
+                                if plt.fignum_exists(figxs.number):
+                                    plt.close(figxs)
+
+
+                            if (nDataset == 2)&(var_dim[var] == 4):
+                                if (configd[1] == configd[2]):
+                                
+                                    figxs = plt.figure()
+                                    figxs.set_figheight(10*1.2)
+                                    figxs.set_figwidth(8*1.5)
+                                    figxs.suptitle('Cross-section: %s'%nice_varname_dict[var], fontsize = 20)
+                                    plt.subplots_adjust(top=0.92,bottom=0.05,left=0.05,right=1,hspace=0.25,wspace=0.6)
+                                    axxs = [plt.subplot(311),plt.subplot(312),plt.subplot(313)]
+                                    paxxs = []
+                                    for xi,tmp_datstr in enumerate(Dataset_lst): paxxs.append(axxs[xi].pcolormesh(tmp_xsect_x[tmp_datstr],tmp_xsect_z[tmp_datstr],tmp_xsect_dat[tmp_datstr]))
+                                    paxxs.append(axxs[2].pcolormesh(tmp_xsect_x[secdataset_proc],tmp_xsect_z[secdataset_proc],tmp_xsect_dat[Dataset_lst[1]] - tmp_xsect_dat[Dataset_lst[0]], cmap = matplotlib.cm.seismic))
+                                    for tmpax  in axxs: tmpax.invert_yaxis()
+                                    for xi,tmp_datstr in enumerate(Dataset_lst): axxs[xi].set_title(tmp_datstr)
+                                    axxs[2].set_title('%s - %s'%(Dataset_lst[1],Dataset_lst[0]))
+                                    xs_ylim = np.array(axxs[0].get_ylim())
+                                    xs_xlim = np.array(axxs[0].get_xlim())
+                                    #for axi,tmpax  in enumerate(axxs): 
+                                    for axi,tmp_datstr in enumerate(Dataset_lst): 
+                                        
+                                        #tmpax = axxs[xi]
+                                        for xi in xsect_pnt_ind_dict[tmp_datstr]: axxs[axi].axvline(xi,color = 'k', alpha = 0.5, ls = '--') 
+                                        for xi in xsect_pnt_ind_dict[tmp_datstr]: axxs[axi].text(xi,xs_ylim[0] - xs_ylim.ptp()*0.9   ,lon_lat_to_str(xsect_lon_dict[tmp_datstr][xi],xsect_lat_dict[tmp_datstr][xi])[0], rotation = 270, ha = 'left', va = 'top')
+                                        plt.colorbar(paxxs[axi], ax = axxs[axi])
+                                    for xi,tmp_datstr in enumerate(Dataset_lst): set_perc_clim_pcolor_in_region(5,95,ax = axxs[axi])
+                                    set_perc_clim_pcolor_in_region(5,95,ax = axxs[2], sym = True)
+
+                                    #xmapax = figxs.add_axes([0.075,0.15,0.2,0.5], frameon=False)
+                                    #xmapax = figxs.add_axes([0.075,0.15,0.175,0.4], frameon=False)
+                                    xmapax = figxs.add_axes([0.075,0.025,0.175,0.2], frameon=False)
+                                    #pdb.set_trace()
+                                    xs_pe = [pe.Stroke(linewidth=2, foreground='w'), pe.Normal()]
+                                    #pdb.set_trace()
+                                    if var_dim[var] == 3:
+                                        xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
+                                    elif var_dim[var] == 4:
+                                        xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][0][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
+                                    xmapax.plot(xsect_lon_dict[secdataset_proc],xsect_lat_dict[secdataset_proc],'r-', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                    #xmapax.plot(xsect_lon_pnt_mat,xsect_lat_pnt_mat,'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                    #xmapax.plot(xsect_lon_pnt_mat[0],xsect_lat_pnt_mat[0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                    xmapax.plot(xsect_lon_pnt_dict[secdataset_proc],xsect_lat_pnt_dict[secdataset_proc],'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                    xmapax.plot(xsect_lon_pnt_dict[secdataset_proc][0],xsect_lat_pnt_dict[secdataset_proc][0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                    xmapax.axis('equal')
+                                    xmapax.set_xticks([])
+                                    xmapax.set_yticks([]) 
                                 else:
-                                    if len(tmpxsbutloc[0])!=2:
-                                        close_xsax = True
-                                        print('tmpxsbutloc[0] len != 2',tmpxsbutloc )
+                                
+                                    figxs = plt.figure()
+                                    figxs.set_figheight(8)
+                                    figxs.set_figwidth(8*1.5)
+                                    figxs.suptitle('Cross-section: %s'%nice_varname_dict[var], fontsize = 20)
+                                    plt.subplots_adjust(top=0.92,bottom=0.05,left=0.05,right=1,hspace=0.25,wspace=0.6)
+                                    axxs = [plt.subplot(211),plt.subplot(212)]
+                                    paxxs = []
+                                    for xi,tmp_datstr in enumerate(Dataset_lst): paxxs.append(axxs[xi].pcolormesh(tmp_xsect_x[tmp_datstr],tmp_xsect_z[tmp_datstr],tmp_xsect_dat[tmp_datstr]))
+                                    for tmpax  in axxs: tmpax.invert_yaxis()
+                                    for xi,tmp_datstr in enumerate(Dataset_lst): axxs[xi].set_title(tmp_datstr)
+                                    xs_ylim = np.array(axxs[0].get_ylim())
+                                    xs_xlim = np.array(axxs[0].get_xlim())
+                                    #for axi,tmpax  in enumerate(axxs): 
+                                    for axi,tmp_datstr in enumerate(Dataset_lst): 
+                                        #tmpax = axxs[axi]
+                                        for xi in xsect_pnt_ind_dict[tmp_datstr]: axxs[axi].axvline(xi,color = 'k', alpha = 0.5, ls = '--') 
+                                        for xi in xsect_pnt_ind_dict[tmp_datstr]: axxs[axi].text(xi,xs_ylim[0] - xs_ylim.ptp()*0.9   ,lon_lat_to_str(xsect_lon_dict[tmp_datstr][xi],xsect_lat_dict[tmp_datstr][xi])[0], rotation = 270, ha = 'left', va = 'top')
+                                        plt.colorbar(paxxs[axi], ax = axxs[axi])
+                                    for xi,tmp_datstr in enumerate(Dataset_lst): set_perc_clim_pcolor_in_region(5,95,ax = axxs[axi])
+                                    
+                                    #xmapax = figxs.add_axes([0.075,0.15,0.2,0.5], frameon=False)
+                                    #xmapax = figxs.add_axes([0.075,0.15,0.175,0.4], frameon=False)
+                                    xmapax = figxs.add_axes([0.075,0.025,0.175,0.2], frameon=False)
+                                    #pdb.set_trace()
+                                    xs_pe = [pe.Stroke(linewidth=2, foreground='w'), pe.Normal()]
+                                    #pdb.set_trace()
+                                    if var_dim[var] == 3:
+                                        xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
+                                    elif var_dim[var] == 4:
+                                        xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][0][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
+                                    xmapax.plot(xsect_lon_dict[secdataset_proc],xsect_lat_dict[secdataset_proc],'r-', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                    #xmapax.plot(xsect_lon_pnt_mat,xsect_lat_pnt_mat,'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                    #xmapax.plot(xsect_lon_pnt_mat[0],xsect_lat_pnt_mat[0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                    xmapax.plot(xsect_lon_pnt_dict[secdataset_proc],xsect_lat_pnt_dict[secdataset_proc],'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                    xmapax.plot(xsect_lon_pnt_dict[secdataset_proc][0],xsect_lat_pnt_dict[secdataset_proc][0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                    xmapax.axis('equal')
+                                    xmapax.set_xticks([])
+                                    xmapax.set_yticks([]) 
+
+                            else:
+                                figxs = plt.figure()
+                                figxs.set_figheight(4*1.2)
+                                figxs.set_figwidth(8*1.5)
+                                figxs.suptitle('Cross-section: %s'%nice_varname_dict[var], fontsize = 20)
+                                plt.subplots_adjust(top=0.89,bottom=0.1,left=0.05,right=0.975,hspace=0.2,wspace=0.6)
+                                axxs = [plt.subplot(111)]
+                                paxxs = []
+                                if var_dim[var] == 4:
+                                    paxxs.append(axxs[0].pcolormesh(tmp_xsect_x[secdataset_proc],tmp_xsect_z[secdataset_proc],tmp_xsect_dat[secdataset_proc]))
+                                    axxs[0].invert_yaxis()
+                                    plt.colorbar(paxxs[0], ax = axxs[0])
+                                    set_perc_clim_pcolor_in_region(5,95,ax = axxs[0])
+                                
+                                elif var_dim[var] == 3:
+                                    axxs[0].axhline(0,color = 'k', lw = 0.5) 
+                                    
+                                    for xi,tmp_datstr in enumerate(Dataset_lst):axxs[0].plot(tmp_xsect_x[tmp_datstr],tmp_xsect_dat[tmp_datstr],label = tmp_datstr)
+                                    axxs[0].legend()
+
+                                xs_xlim = np.array(axxs[0].get_xlim())
+                                xs_ylim = np.array(axxs[0].get_ylim())
+
+                                for xi in xsect_pnt_ind_dict[secdataset_proc]:                            axxs[0].axvline(xi,color = 'k', alpha = 0.5, ls = '--') 
+
+                                if var_dim[var] == 4:
+                                    for xi in xsect_pnt_ind_dict[secdataset_proc]:         axxs[0].text(xi,xs_ylim[0] - xs_ylim.ptp()*0.9,lon_lat_to_str(xsect_lon_dict[tmp_datstr][xi],xsect_lat_dict[tmp_datstr][xi])[0], rotation = 270, ha = 'left', va = 'top')
+                                elif var_dim[var] == 3:
+                                    for xi in xsect_pnt_ind_dict[secdataset_proc]:         axxs[0].text(xi,xs_ylim[0] + xs_ylim.ptp()*0.9,lon_lat_to_str(xsect_lon_dict[tmp_datstr][xi],xsect_lat_dict[tmp_datstr][xi])[0], rotation = 270, ha = 'left', va = 'top')
+                                #axxs[0].set_xlim([0,xs_xlim[1]*1.01])
+                                #pdb.set_trace()
+
+                                #xmapax = figxs.add_axes([0.075,0.15,0.2,0.5], frameon=False)
+                                xmapax = figxs.add_axes([0.075,0.15,0.175,0.4], frameon=False)
+                                
+                                #pdb.set_trace()
+                                xs_pe = [pe.Stroke(linewidth=2, foreground='w'), pe.Normal()]
+                                #pdb.set_trace()
+                                if var_dim[var] == 3:
+                                    xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
+                                elif var_dim[var] == 4:
+                                    xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][0][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
+                                xmapax.plot(xsect_lon_dict[secdataset_proc],xsect_lat_dict[secdataset_proc],'r-', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                #xmapax.plot(xsect_lon_mat,xsect_lat_mat,'r-', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                #xmapax.plot(xsect_lon_pnt_mat,xsect_lat_pnt_mat,'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                #xmapax.plot(xsect_lon_pnt_mat[0],xsect_lat_pnt_mat[0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                #xmapax.plot(xsect_lon_dict[secdataset_proc],xsect_lat_dict[secdataset_proc],'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                xmapax.plot(xsect_lon_pnt_dict[secdataset_proc],xsect_lat_pnt_dict[secdataset_proc],'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                xmapax.plot(xsect_lon_pnt_dict[secdataset_proc][0],xsect_lat_pnt_dict[secdataset_proc][0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                xmapax.axis('equal')
+                                xmapax.set_xticks([])
+                                xmapax.set_yticks([]) 
+
+
+
+                            xs_close_win_meth = 1
+                            # 1: closes when you click on it
+                            # 2: stays open till you close it
+
+                            if xs_close_win_meth == 1:
+                                xclickax = figxs.add_axes([0,0,1,1], frameon=False)
+                                xclickax.axis('off')
+
+                            # redraw canvas
+                            figxs.canvas.draw()
+                            
+                            #flush canvas
+                            figxs.canvas.flush_events()
+                            
+                            # Show plot, and set it as the current figure and axis
+                            figxs.show()
+                            plt.figure(figxs.figure)
+                            
+
+                            if xs_close_win_meth == 1:
+                                plt.sca(xclickax)
+                            
+                                ###################################
+                                # Close on button press: #JT COBP #
+                                ###################################
+
+
+                                close_xsax = False
+                                while close_xsax == False:
+
+                                    # get click location
+                                    tmpxsbutloc = plt.ginput(1, timeout = 3) #[(0.3078781362007169, 0.19398809523809524)]
+                                            
+                                    #pdb.set_trace()
+                                    if len(tmpxsbutloc)!=1:
+                                        print('tmpxsbutloc len != 1',tmpxsbutloc )
+                                        #close_xsax = True
                                         continue
                                         #pdb.set_trace()
-                                    # was a button clicked?
-                                    # if so, record which and allow the window to close
-                                    if (tmpxsbutloc[0][0] >= 0) & (tmpxsbutloc[0][0] <= 1) & (tmpxsbutloc[0][1] >= 0) & (tmpxsbutloc[0][1] <= 1):
-                                        #pdb.set_trace()
+                                    else:
+                                        if len(tmpxsbutloc[0])!=2:
+                                            close_xsax = True
+                                            print('tmpxsbutloc[0] len != 2',tmpxsbutloc )
+                                            continue
+                                            #pdb.set_trace()
+                                        # was a button clicked?
+                                        # if so, record which and allow the window to close
+                                        if (tmpxsbutloc[0][0] >= 0) & (tmpxsbutloc[0][0] <= 1) & (tmpxsbutloc[0][1] >= 0) & (tmpxsbutloc[0][1] <= 1):
+                                            #pdb.set_trace()
+                                            close_xsax = True
+
+                                    # quit of option box is closed without button press.
+                                    if plt.fignum_exists(figxs) == False:
                                         close_xsax = True
+                                        
+                                
+                                # close figure
+                                if close_xsax:
+                                    if figxs is not None:
+                                        if plt.fignum_exists(figxs.number):
+                                            plt.close(figxs)
+                                ##import time            
+                                #figxs_exists = plt.fignum_exists(figxs.number)
+                                #while figxs_exists:
+                                #    time.sleep(0.5)
+                                #    figxs_exists = plt.fignum_exists(figxs.number)
 
-                                # quit of option box is closed without button press.
-                                if plt.fignum_exists(figxs) == False:
-                                    close_xsax = True
+                            
+                            for xs_map_ax in xs_map_ax_lst:
+                                rem_loc = xs_map_ax.pop(0)
+                                rem_loc.remove()
+                                
+
+                            figxs.canvas.draw()
+                            figxs.canvas.flush_events()
+                            #plt.figure(fig.figure)
+                            #plt.sca(clickax)
+
+
+                        elif but_name == 'TS Diag':
+                            if figts is not None:
+                                if plt.fignum_exists(figts.number):
+                                    plt.close(figts)
+                                
+
+                            #pdb.set_trace()
+                            if button_press:
+                            #if ts_diag_coord.mask.all() 
+                            #    if ((ts_diag_coord == np.ma.array([ii,jj,ti])).all() == False):
+                                secondary_fig = True
+
+                                ## TS diagram Pycnoclines
+                                tmp_t_arr = np.arange(0,30,.1)
+                                tmp_s_arr = np.arange(15,40,.1)
+
+                                tmp_s_mat,tmp_t_mat = np.meshgrid(tmp_s_arr,tmp_t_arr)
+                                tmp_rho_mat = sw_dens(tmp_t_mat,tmp_s_mat)
+
+
+
+                                
+                                tmp_T_data = {}
+                                tmp_S_data = {}
+                                tmp_gdept = {}
+                                tmp_mld1 = {}
+                                tmp_mld2 = {}
+                                tmp_sigma_density_data = {}
+
+                                for tmp_datstr in Dataset_lst:
+
+                                    tmp_T_data[tmp_datstr] = np.ma.zeros((nz))*np.ma.masked
+                                    tmp_S_data[tmp_datstr] = np.ma.zeros((nz))*np.ma.masked
+                                    tmp_gdept[tmp_datstr] = np.ma.zeros((nz))*np.ma.masked
+                                    tmp_mld1[tmp_datstr] = np.ma.zeros((nz))*np.ma.masked
+                                    tmp_mld2[tmp_datstr] = np.ma.zeros((nz))*np.ma.masked
+                                    tmp_sigma_density_data[tmp_datstr] = np.ma.zeros((nz))*np.ma.masked
+
+
+                                    th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
+
                                     
+                                    if (configd[th_d_ind] == configd[1])| (tmp_datstr== Dataset_lst[0]):
+                                        tmp_T_data[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][ldi].variables['votemper'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,jj,ii].load())
+                                        tmp_S_data[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][ldi].variables['vosaline'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,jj,ii].load())
+                                        tmp_gdept[tmp_datstr] = grid_dict[tmp_datstr]['gdept'][:,jj,ii]
+                                        tmp_mld1[tmp_datstr] = np.ma.masked
+                                        tmp_mld2[tmp_datstr] = np.ma.masked
+                                        if 'mld25h_1' in var_d[th_d_ind]['mat']: tmp_mld1[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][ldi].variables['mld25h_1'][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][jj,ii].load())
+                                        if 'mld25h_2' in var_d[th_d_ind]['mat']: tmp_mld2[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][ldi].variables['mld25h_2'][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][jj,ii].load())
+
+                                    else:
+                                        if 'votemper' in var_d[th_d_ind]['mat']:tmp_T_data[tmp_datstr]  = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][ldi].variables['votemper'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']].load())
+                                        if 'vosaline' in var_d[th_d_ind]['mat']:tmp_S_data[tmp_datstr]  = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][ldi].variables['vosaline'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']].load())
+                                        if 'mld25h_1' in var_d[th_d_ind]['mat']:tmp_mld1[tmp_datstr]  = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][ldi].variables['mld25h_1'][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']].load())
+                                        if 'mld25h_2' in var_d[th_d_ind]['mat']:tmp_mld2[tmp_datstr]  = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][ldi].variables['mld25h_2'][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']].load())
+                                        tmp_gdept[tmp_datstr] =  grid_dict[tmp_datstr]['gdept'][:,iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']]               
+
+                                    
+                                    tmp_sigma_density_data[tmp_datstr] = sw_dens(tmp_T_data[tmp_datstr],tmp_S_data[tmp_datstr])-1000.
                             
-                            # close figure
-                            if close_xsax:
-                                if figxs is not None:
-                                    if plt.fignum_exists(figxs.number):
-                                        plt.close(figxs)
-                            ##import time            
-                            #figxs_exists = plt.fignum_exists(figxs.number)
-                            #while figxs_exists:
-                            #    time.sleep(0.5)
-                            #    figxs_exists = plt.fignum_exists(figxs.number)
-
-                        
-                        for xs_map_ax in xs_map_ax_lst:
-                            rem_loc = xs_map_ax.pop(0)
-                            rem_loc.remove()
-                            
-
-                        figxs.canvas.draw()
-                        figxs.canvas.flush_events()
-                        #plt.figure(fig.figure)
-                        #plt.sca(clickax)
-
-
-                    elif but_name == 'TS Diag':
-                        if figts is not None:
-                            if plt.fignum_exists(figts.number):
-                                plt.close(figts)
-                            
-
-                        #pdb.set_trace()
-                        if button_press:
-                        #if ts_diag_coord.mask.all() 
-                        #    if ((ts_diag_coord == np.ma.array([ii,jj,ti])).all() == False):
-                            secondary_fig = True
-
-                            ## TS diagram Pycnoclines
-                            tmp_t_arr = np.arange(0,30,.1)
-                            tmp_s_arr = np.arange(15,40,.1)
-
-                            tmp_s_mat,tmp_t_mat = np.meshgrid(tmp_s_arr,tmp_t_arr)
-                            tmp_rho_mat = sw_dens(tmp_t_mat,tmp_s_mat)
-
-
-
-                            
-                            tmp_T_data = {}
-                            tmp_S_data = {}
-                            tmp_gdept = {}
-                            tmp_mld1 = {}
-                            tmp_mld2 = {}
-                            tmp_sigma_density_data = {}
-
-                            for tmp_datstr in Dataset_lst:
-
-                                tmp_T_data[tmp_datstr] = np.ma.zeros((nz))*np.ma.masked
-                                tmp_S_data[tmp_datstr] = np.ma.zeros((nz))*np.ma.masked
-                                tmp_gdept[tmp_datstr] = np.ma.zeros((nz))*np.ma.masked
-                                tmp_mld1[tmp_datstr] = np.ma.zeros((nz))*np.ma.masked
-                                tmp_mld2[tmp_datstr] = np.ma.zeros((nz))*np.ma.masked
-                                tmp_sigma_density_data[tmp_datstr] = np.ma.zeros((nz))*np.ma.masked
-
-
-                                th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
+                                figts = plt.figure()
+                                figts.set_figheight(8*1.2)
+                                figts.set_figwidth(6*1.5)
+                                axsp = figts.add_axes([0.1, 0.10, 0.3,  0.75])
+                                axts = figts.add_axes([0.5, 0.55, 0.4,  0.30])
+                                plt.subplots_adjust(top=0.8,bottom=0.11,left=0.125,right=0.9,hspace=0.2,wspace=0.6)
+                                for dsi,tmp_datstr in enumerate(Dataset_lst):axsp.plot(tmp_S_data[tmp_datstr],tmp_gdept[tmp_datstr],color = 'g', linestyle = linestyle_str[dsi])
+                                for dsi,tmp_datstr in enumerate(Dataset_lst):axsp.axhline(tmp_mld1[tmp_datstr], color = '0.5', linestyle = linestyle_str[dsi])
+                                for dsi,tmp_datstr in enumerate(Dataset_lst):axsp.axhline(tmp_mld2[tmp_datstr], color = '0.25', linestyle = linestyle_str[dsi])
+                                axsp.spines['bottom'].set_color('g')
+                                axsp.spines['top'].set_visible(False)
+                                axsp.set_xlabel('Salinity')  
+                                axsp.xaxis.label.set_color('g')
+                                axsp.tick_params(axis = 'x',colors = 'g')
+                                axsp.invert_yaxis()
+                                #
+                                axtp = axsp.twiny()
+                                for dsi,tmp_datstr in enumerate(Dataset_lst):axtp.plot(tmp_T_data[tmp_datstr],tmp_gdept[tmp_datstr],color = 'r',  linestyle = linestyle_str[dsi])
+                                for dsi,tmp_datstr in enumerate(Dataset_lst):axtp.plot(np.ma.masked,color = 'k', label =  fig_lab_d[tmp_datstr], linestyle = linestyle_str[dsi])
+                                plt.legend(loc = 'lower left', fancybox=True, framealpha=0.75)
+                                axtp.set_xlabel('Temperature')
+                                axtp.spines['top'].set_color('r')
+                                axtp.tick_params(axis = 'x',colors = 'r')
+                                axtp.spines['bottom'].set_visible(False)
+                                axtp.xaxis.label.set_color('r')
+                                axrp = axsp.twiny()
+                                for dsi,tmp_datstr in enumerate(Dataset_lst):axrp.plot(tmp_sigma_density_data[tmp_datstr],tmp_gdept[tmp_datstr],color = 'b', lw = 0.5, linestyle = linestyle_str[dsi])
+                                axrp.set_xlabel('Density')
+                                axrp.spines['top'].set_color('b')
+                                axrp.tick_params(axis = 'x',colors = 'b')
+                                axrp.spines['bottom'].set_visible(False)
+                                axrp.xaxis.label.set_color('b')
+                                axrp.spines['top'].set_position(('axes', 1.1))
+                                #
+                                for dsi,tmp_datstr in enumerate(Dataset_lst):axts.plot(tmp_S_data[tmp_datstr],tmp_T_data[tmp_datstr],color = 'b', linestyle = linestyle_str[dsi])
+                                axts.set_xlabel('Salinity')
+                                axts.set_ylabel('Temperature')
+                                tmprhoxlim = axts.get_xlim()
+                                tmprhoylim = axts.get_ylim()
+                                axts.contour(tmp_s_mat,tmp_t_mat,tmp_rho_mat, np.arange(0,50,0.1), colors = 'k', linewidths = 0.5, alphas = 0.5, linestyles = '--')
+                                axts.set_xlim(tmprhoxlim)
+                                axts.set_ylim(tmprhoylim)
+                                figts_lab_str = '%s\n\n%s'%(lon_lat_to_str(lon_d[1][jj,ii],lat_d[1][jj,ii])[0],time_datetime[ti])
+                                #for dsi,tmp_datstr in enumerate(Dataset_lst): figts_lab_str = figts_lab_str + '\n\n%s'%fig_lab_d[tmp_datstr]
+                                #plt.text(0.5, 0.1, figts_lab_str, fontsize=14, transform=figts.transFigure, ha = 'left', va = 'bottom')
+                                plt.text(0.5, 0.9, figts_lab_str, fontsize=14, transform=figts.transFigure, ha = 'left', va = 'bottom')
 
                                 
-                                if (configd[th_d_ind] == configd[1])| (tmp_datstr== Dataset_lst[0]):
-                                    tmp_T_data[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][ldi].variables['votemper'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,jj,ii].load())
-                                    tmp_S_data[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][ldi].variables['vosaline'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,jj,ii].load())
-                                    tmp_gdept[tmp_datstr] = grid_dict[tmp_datstr]['gdept'][:,jj,ii]
-                                    tmp_mld1[tmp_datstr] = np.ma.masked
-                                    tmp_mld2[tmp_datstr] = np.ma.masked
-                                    if 'mld25h_1' in var_d[th_d_ind]['mat']: tmp_mld1[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][ldi].variables['mld25h_1'][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][jj,ii].load())
-                                    if 'mld25h_2' in var_d[th_d_ind]['mat']: tmp_mld2[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][ldi].variables['mld25h_2'][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][jj,ii].load())
+                                TSfig_out_name = '%s/output_TSDiag_%s_%s_%s'%(fig_dir,fig_lab,lon_lat_to_str(lon_d[1][jj,ii],lat_d[1][jj,ii])[3],time_datetime[ti].strftime('%Y%m%dT%H%MZ'))
+                                
+                                figts.savefig(TSfig_out_name + '.png')
+                                figts.show()
 
+
+
+                                #except:
+                                #    print('TS Diag error')
+                                #    pdb.set_trace()
+                        elif but_name == 'Clim: Zoom': 
+                            if mouse_info['button'].name == 'MIDDLE':
+                                clim = None
+                            elif mouse_info['button'].name == 'LEFT':
+
+
+                                plt.sca(clickax)
+                    
+                                func_but_text_han['Clim: Zoom'].set_color('r')
+                                # redraw canvas
+                                fig.canvas.draw_idle()
+                                
+                                #flush canvas
+                                fig.canvas.flush_events()
+                                tmpczoom = plt.ginput(2)
+                                clim = np.array([tmpczoom[0][1],tmpczoom[1][1]])
+                                clim.sort()
+
+                                func_but_text_han['Clim: Zoom'].set_color('k')
+                                # redraw canvas
+                                fig.canvas.draw_idle()
+                                
+                                #flush canvas
+                                fig.canvas.flush_events()
+
+                            elif mouse_info['button'].name == 'RIGHT':
+                                clim = np.array(get_clim_pcolor(ax = ax[0]))
+                                if climnorm is None:
+                                    clim = np.array([clim.mean() - clim.ptp(),clim.mean() + clim.ptp()])
                                 else:
-                                    if 'votemper' in var_d[th_d_ind]['mat']:tmp_T_data[tmp_datstr]  = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][ldi].variables['votemper'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']].load())
-                                    if 'vosaline' in var_d[th_d_ind]['mat']:tmp_S_data[tmp_datstr]  = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][ldi].variables['vosaline'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']].load())
-                                    if 'mld25h_1' in var_d[th_d_ind]['mat']:tmp_mld1[tmp_datstr]  = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][ldi].variables['mld25h_1'][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']].load())
-                                    if 'mld25h_2' in var_d[th_d_ind]['mat']:tmp_mld2[tmp_datstr]  = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][ldi].variables['mld25h_2'][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']].load())
-                                    tmp_gdept[tmp_datstr] =  grid_dict[tmp_datstr]['gdept'][:,iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']]               
+                                    clim = np.log10(np.array([(10**clim).mean() - (10**clim).ptp(),(10**clim).mean() + (10**clim).ptp()]))
+                        
+                            '''
 
-                                
-                                tmp_sigma_density_data[tmp_datstr] = sw_dens(tmp_T_data[tmp_datstr],tmp_S_data[tmp_datstr])-1000.
-                          
-                            figts = plt.figure()
-                            figts.set_figheight(8*1.2)
-                            figts.set_figwidth(6*1.5)
-                            axsp = figts.add_axes([0.1, 0.10, 0.3,  0.75])
-                            axts = figts.add_axes([0.5, 0.55, 0.4,  0.30])
-                            plt.subplots_adjust(top=0.8,bottom=0.11,left=0.125,right=0.9,hspace=0.2,wspace=0.6)
-                            for dsi,tmp_datstr in enumerate(Dataset_lst):axsp.plot(tmp_S_data[tmp_datstr],tmp_gdept[tmp_datstr],color = 'g', linestyle = linestyle_str[dsi])
-                            for dsi,tmp_datstr in enumerate(Dataset_lst):axsp.axhline(tmp_mld1[tmp_datstr], color = '0.5', linestyle = linestyle_str[dsi])
-                            for dsi,tmp_datstr in enumerate(Dataset_lst):axsp.axhline(tmp_mld2[tmp_datstr], color = '0.25', linestyle = linestyle_str[dsi])
-                            axsp.spines['bottom'].set_color('g')
-                            axsp.spines['top'].set_visible(False)
-                            axsp.set_xlabel('Salinity')  
-                            axsp.xaxis.label.set_color('g')
-                            axsp.tick_params(axis = 'x',colors = 'g')
-                            axsp.invert_yaxis()
-                            #
-                            axtp = axsp.twiny()
-                            for dsi,tmp_datstr in enumerate(Dataset_lst):axtp.plot(tmp_T_data[tmp_datstr],tmp_gdept[tmp_datstr],color = 'r',  linestyle = linestyle_str[dsi])
-                            for dsi,tmp_datstr in enumerate(Dataset_lst):axtp.plot(np.ma.masked,color = 'k', label =  fig_lab_d[tmp_datstr], linestyle = linestyle_str[dsi])
-                            plt.legend(loc = 'lower left', fancybox=True, framealpha=0.75)
-                            axtp.set_xlabel('Temperature')
-                            axtp.spines['top'].set_color('r')
-                            axtp.tick_params(axis = 'x',colors = 'r')
-                            axtp.spines['bottom'].set_visible(False)
-                            axtp.xaxis.label.set_color('r')
-                            axrp = axsp.twiny()
-                            for dsi,tmp_datstr in enumerate(Dataset_lst):axrp.plot(tmp_sigma_density_data[tmp_datstr],tmp_gdept[tmp_datstr],color = 'b', lw = 0.5, linestyle = linestyle_str[dsi])
-                            axrp.set_xlabel('Density')
-                            axrp.spines['top'].set_color('b')
-                            axrp.tick_params(axis = 'x',colors = 'b')
-                            axrp.spines['bottom'].set_visible(False)
-                            axrp.xaxis.label.set_color('b')
-                            axrp.spines['top'].set_position(('axes', 1.1))
-                            #
-                            for dsi,tmp_datstr in enumerate(Dataset_lst):axts.plot(tmp_S_data[tmp_datstr],tmp_T_data[tmp_datstr],color = 'b', linestyle = linestyle_str[dsi])
-                            axts.set_xlabel('Salinity')
-                            axts.set_ylabel('Temperature')
-                            tmprhoxlim = axts.get_xlim()
-                            tmprhoylim = axts.get_ylim()
-                            axts.contour(tmp_s_mat,tmp_t_mat,tmp_rho_mat, np.arange(0,50,0.1), colors = 'k', linewidths = 0.5, alphas = 0.5, linestyles = '--')
-                            axts.set_xlim(tmprhoxlim)
-                            axts.set_ylim(tmprhoylim)
-                            figts_lab_str = '%s\n\n%s'%(lon_lat_to_str(lon_d[1][jj,ii],lat_d[1][jj,ii])[0],time_datetime[ti])
-                            #for dsi,tmp_datstr in enumerate(Dataset_lst): figts_lab_str = figts_lab_str + '\n\n%s'%fig_lab_d[tmp_datstr]
-                            #plt.text(0.5, 0.1, figts_lab_str, fontsize=14, transform=figts.transFigure, ha = 'left', va = 'bottom')
-                            plt.text(0.5, 0.9, figts_lab_str, fontsize=14, transform=figts.transFigure, ha = 'left', va = 'bottom')
-
-                            
-                            TSfig_out_name = '%s/output_TSDiag_%s_%s_%s'%(fig_dir,fig_lab,lon_lat_to_str(lon_d[1][jj,ii],lat_d[1][jj,ii])[3],time_datetime[ti].strftime('%Y%m%dT%H%MZ'))
-                            
-                            figts.savefig(TSfig_out_name + '.png')
-                            figts.show()
-
-
-
-                            #except:
-                            #    print('TS Diag error')
-                            #    pdb.set_trace()
-                    elif but_name == 'Clim: Zoom': 
-                        if mouse_info['button'].name == 'MIDDLE':
-                            clim = None
-                        elif mouse_info['button'].name == 'LEFT':
-
-
-                            plt.sca(clickax)
-                
-                            func_but_text_han['Clim: Zoom'].set_color('r')
-                            fig.canvas.draw()
-                            tmpczoom = plt.ginput(2)
-                            clim = np.array([tmpczoom[0][1],tmpczoom[1][1]])
-                            clim.sort()
-
-                            func_but_text_han['Clim: Zoom'].set_color('k')
-                            fig.canvas.draw()
-
-                        elif mouse_info['button'].name == 'RIGHT':
+                        elif but_name == 'Clim: Expand': 
                             clim = np.array(get_clim_pcolor(ax = ax[0]))
                             if climnorm is None:
                                 clim = np.array([clim.mean() - clim.ptp(),clim.mean() + clim.ptp()])
                             else:
                                 clim = np.log10(np.array([(10**clim).mean() - (10**clim).ptp(),(10**clim).mean() + (10**clim).ptp()]))
-                    
-                        '''
+                            
+                            '''
 
-                    elif but_name == 'Clim: Expand': 
-                        clim = np.array(get_clim_pcolor(ax = ax[0]))
-                        if climnorm is None:
-                            clim = np.array([clim.mean() - clim.ptp(),clim.mean() + clim.ptp()])
-                        else:
-                            clim = np.log10(np.array([(10**clim).mean() - (10**clim).ptp(),(10**clim).mean() + (10**clim).ptp()]))
+                        elif but_name == 'LD time':
+                            ldi+=1
+                            if ldi == nldi: ldi = 0
+                            func_but_text_han['LD time'].set_text('LD time: %s'%ld_lab_mat[ldi])
+                            reload_map = True
+                            reload_ew = True
+                            reload_ns = True
+                            reload_hov = True
+                            reload_ts = True
+
+
+
+                        elif but_name == 'Fcst Diag':
+                            if figfc is not None:
+                                if plt.fignum_exists(figfc.number):
+                                    plt.close(figfc)
+                                
+
+                            #pdb.set_trace()
+                            if button_press:
+                                secondary_fig = True
+
+                                fsct_hov_dat_dict = {}
+                                fsct_ts_dat_dict = {}
+                                for tmp_datstr in Dataset_lst:fsct_hov_dat_dict[tmp_datstr] = np.ma.zeros(((nldi,)+hov_dat_dict[tmp_datstr].shape))*np.ma.masked 
+                                for tmp_datstr in Dataset_lst:fsct_ts_dat_dict[tmp_datstr] = np.ma.zeros(((nldi,)+ts_dat_dict[tmp_datstr].shape))*np.ma.masked 
+
+                                fsct_hov_x = np.ma.zeros((nldi,)+hov_dat_dict['x'].shape, dtype = 'object')*np.ma.masked
+                                fsct_ts_x = np.ma.zeros((nldi,)+ts_dat_dict['x'].shape, dtype = 'object')*np.ma.masked
+
+
+                                try:
+                                    ld_time_offset = [int(ss) for ss in ld_lab_mat]
+                                except:
+                                    ld_time_offset = [int(ss*24 - 36) for ss in range(nldi)]
+
+                                fcdata_start = datetime.now()
+                                print('Extracting forecast data:',fcdata_start)
+
+
+                                for fcst_ldi in range(nldi):
+
+                                    fsct_hov_dat = reload_hov_data_comb(var,var_d[1]['mat'],var_grid['Dataset 1'],var_d['d'],fcst_ldi, thd,time_datetime, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict, load_second_files,Dataset_lst,configd)
+                                    for tmp_datstr in Dataset_lst:fsct_hov_dat_dict[tmp_datstr][fcst_ldi] = fsct_hov_dat[tmp_datstr]
+                                    fsct_hov_x[fcst_ldi] = fsct_hov_dat['x'] + timedelta(hours = ld_time_offset[fcst_ldi])
+                
+                                    fsct_ts_dat = reload_ts_data_comb(var,var_dim,var_grid['Dataset 1'],ii,jj,iijj_ind,fcst_ldi,fsct_hov_dat,time_datetime,z_meth,zz,zi,xarr_dict,grid_dict,thd,var_d[1]['mat'],var_d['d'],nz,ntime,configd,Dataset_lst,load_second_files)
+                                    
+                                    for tmp_datstr in Dataset_lst:fsct_ts_dat_dict[tmp_datstr][fcst_ldi] = fsct_ts_dat[tmp_datstr]
+                                    fsct_ts_x[fcst_ldi] = fsct_ts_dat['x'] + timedelta(hours = ld_time_offset[fcst_ldi])
+                                print('Extracted forecast data:',datetime.now(), datetime.now() - fcdata_start)
+
+
+                                
+
+                                    
+                                figfc_lab_str = '%s forecast diagram for \n%s'%(nice_varname_dict[var],lon_lat_to_str(lon_d[1][jj,ii],lat_d[1][jj,ii])[0])
+
+
+                                if var_dim[var] == 4:  
+                                    figfc_lab_str = '%s (%s) forecast diagram\nfor %s'%(nice_varname_dict[var],nice_lev,lon_lat_to_str(lon_d[1][jj,ii],lat_d[1][jj,ii])[0])
+                                elif var_dim[var] == 3:
+                                    figfc_lab_str = '%s forecast diagram\nfor %s'%(nice_varname_dict[var],lon_lat_to_str(lon_d[1][jj,ii],lat_d[1][jj,ii])[0])
+
+
+
+                                figfc = plt.figure()
+                                figfc.set_figheight(5)
+                                figfc.set_figwidth(6)
+                                figfc.suptitle(figfc_lab_str, fontsize = 16) 
+                                axfc = []
+                                if load_second_files:                       
+                                    figfc.set_figheight(8)    
+                                    axfc.append(plt.subplot(2,1,1))  
+                                    axfc.append(plt.subplot(2,1,2))
+                                    plt.subplots_adjust(top=0.875,bottom=0.11,left=0.125,right=0.9,hspace=0.2,wspace=0.6) 
+                                else:
+                                    plt.subplots_adjust(top=0.825,bottom=0.11,left=0.125,right=0.9,hspace=0.2,wspace=0.6) 
+                                    axfc.append(plt.subplot(1,1,1)) 
+
+
+                                axfc[0].plot(fsct_ts_x,fsct_ts_dat_dict['Dataset 1'][:,:], '0.5' )                   
+                                axfc[0].plot(fsct_ts_x[0,:],fsct_ts_dat_dict['Dataset 1'][0,:],'ro' )            
+                                axfc[0].plot(fsct_ts_x[-1,:],fsct_ts_dat_dict['Dataset 1'][-1,:],'x', color = '0.5')
+                                axfc[0].set_title(fig_lab_d['Dataset 1'])
+                                if load_second_files:       
+                                    axfc[1].plot(fsct_ts_x,fsct_ts_dat_dict['Dataset 2'][:,:], '0.5' )                   
+                                    axfc[1].plot(fsct_ts_x[0,:],fsct_ts_dat_dict['Dataset 2'][0,:],'ro' )
+                                    axfc[1].plot(fsct_ts_x[-1,:],fsct_ts_dat_dict['Dataset 2'][-1,:],'x', color = '0.5')
+                                    axfc[1].set_title(fig_lab_d['Dataset 2'])
+                                figfc.show()
+
+                            #pdb.set_trace()
+
+                        elif but_name == 'Clim: pair':
+                            if clim_pair:
+                                func_but_text_han['Clim: pair'].set_color('k')
+                                clim_pair = False
+                            else:
+                                func_but_text_han['Clim: pair'].set_color('gold')
+                                clim_pair = True
+
+                        elif but_name == 'Clim: sym':
+                            if clim_sym_but == 0:
+                                func_but_text_han['Clim: sym'].set_color('r')
+                                #curr_cmap = scnd_cmap
+                                clim_sym_but = 1
+                                #clim_sym_but_norm_val = clim_sym
+                                clim_sym = True
+                                
+                            elif clim_sym_but == 1:
+                                func_but_text_han['Clim: sym'].set_color('k')
+                                clim_sym_but = 0
+                                
+                                
+                                #curr_cmap = base_cmap
+                                #func_but_text_han['ColScl'].set_text('Col: Linear')
+                                #col_scl = 0
+                                #clim_sym = clim_sym_but_norm_val
+                                
+
+                        elif but_name == 'Hov/Time':
+                            if hov_time:
+                                func_but_text_han['Hov/Time'].set_color('0.5')
+                                hov_time = False
+                            else:
+                                func_but_text_han['Hov/Time'].set_color('darkgreen')
+                                hov_time = True
+                                reload_hov = True
+                                reload_ts = True
+
+                        elif but_name == 'Show Prof':
+                            if profvis:
+                                func_but_text_han['Show Prof'].set_color('0.5')
+                                profvis = False
+                                for tmpax, tmppos in zip(ax,ax_position_dims): tmpax.set_position(tmppos)
+                                ax[-1].set_visible(profvis)
+
+                            else:
+                                func_but_text_han['Show Prof'].set_color('darkgreen')
+                                profvis = True
+                                for tmpax, tmppos in zip(ax,ax_position_dims_prof): tmpax.set_position(tmppos)
+                                ax[-1].set_visible(profvis)
+
+
+                        elif but_name == 'regrid_meth':
+                            if regrid_meth == 1:
+                                func_but_text_han['regrid_meth'].set_text('Regrid: Bilin')
+                                regrid_meth = 2
+                                reload_map = True
+                                reload_ew = True
+                                reload_ns = True
+                            elif regrid_meth == 2:
+                                func_but_text_han['regrid_meth'].set_text('Regrid: NN')
+                                regrid_meth = 1
+                                reload_map = True
+                                reload_ew = True
+                                reload_ns = True
+
+                        elif but_name == 'Contours':
+                            if do_cont:
+                                func_but_text_han['Contours'].set_color('k')
+                                do_cont = False
+                            else:
+                                func_but_text_han['Contours'].set_color('darkgreen')
+                                do_cont = True
+
+
+                        elif but_name == 'Grad':
+                            if do_grad == 0:
+                                func_but_text_han['Grad'].set_color('darkgreen')
+                                func_but_text_han['Grad'].set_text('Horiz Grad')
+                                do_grad = 1
+                                reload_map = True
+                                reload_ew = True
+                                reload_ns = True
+                                reload_hov = True
+                                reload_ts = True
+                            elif do_grad == 1:
+                                func_but_text_han['Grad'].set_color('gold')
+                                func_but_text_han['Grad'].set_text('Vert Grad')
+
+                                do_grad = 2
+                                reload_map = True
+                                reload_ew = True
+                                reload_ns = True
+                                reload_hov = True
+                                reload_ts = True
+                            elif do_grad == 2:
+                                func_but_text_han['Grad'].set_color('0.5')
+                                func_but_text_han['Grad'].set_text('Grad')
+
+                                do_grad = 0
+                                reload_map = True
+                                reload_ew = True
+                                reload_ns = True
+                                reload_hov = True
+                                reload_ts = True
+    
+
+                        elif but_name == 'Vis curr':
+
                         
-                        '''
-
-                    elif but_name == 'LD time':
-                        ldi+=1
-                        if ldi == nldi: ldi = 0
-                        func_but_text_han['LD time'].set_text('LD time: %s'%ld_lab_mat[ldi])
-                        reload_map = True
-                        reload_ew = True
-                        reload_ns = True
-                        reload_hov = True
-                        reload_ts = True
-
-
-
-                    elif but_name == 'Fcst Diag':
-                        if figfc is not None:
-                            if plt.fignum_exists(figfc.number):
-                                plt.close(figfc)
-                            
-
-                        #pdb.set_trace()
-                        if button_press:
-                            secondary_fig = True
-
-                            fsct_hov_dat_dict = {}
-                            fsct_ts_dat_dict = {}
-                            for tmp_datstr in Dataset_lst:fsct_hov_dat_dict[tmp_datstr] = np.ma.zeros(((nldi,)+hov_dat_dict[tmp_datstr].shape))*np.ma.masked 
-                            for tmp_datstr in Dataset_lst:fsct_ts_dat_dict[tmp_datstr] = np.ma.zeros(((nldi,)+ts_dat_dict[tmp_datstr].shape))*np.ma.masked 
-
-                            fsct_hov_x = np.ma.zeros((nldi,)+hov_dat_dict['x'].shape, dtype = 'object')*np.ma.masked
-                            fsct_ts_x = np.ma.zeros((nldi,)+ts_dat_dict['x'].shape, dtype = 'object')*np.ma.masked
-
-
-                            try:
-                                ld_time_offset = [int(ss) for ss in ld_lab_mat]
-                            except:
-                                ld_time_offset = [int(ss*24 - 36) for ss in range(nldi)]
-
-                            fcdata_start = datetime.now()
-                            print('Extracting forecast data:',fcdata_start)
-
-
-                            for fcst_ldi in range(nldi):
-
-                                fsct_hov_dat = reload_hov_data_comb(var,var_d[1]['mat'],var_grid['Dataset 1'],var_d['d'],fcst_ldi, thd,time_datetime, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict, load_second_files,Dataset_lst,configd)
-                                for tmp_datstr in Dataset_lst:fsct_hov_dat_dict[tmp_datstr][fcst_ldi] = fsct_hov_dat[tmp_datstr]
-                                fsct_hov_x[fcst_ldi] = fsct_hov_dat['x'] + timedelta(hours = ld_time_offset[fcst_ldi])
-            
-                                fsct_ts_dat = reload_ts_data_comb(var,var_dim,var_grid['Dataset 1'],ii,jj,iijj_ind,fcst_ldi,fsct_hov_dat,time_datetime,z_meth,zz,zi,xarr_dict,grid_dict,thd,var_d[1]['mat'],var_d['d'],nz,ntime,configd,Dataset_lst,load_second_files)
-                                
-                                for tmp_datstr in Dataset_lst:fsct_ts_dat_dict[tmp_datstr][fcst_ldi] = fsct_ts_dat[tmp_datstr]
-                                fsct_ts_x[fcst_ldi] = fsct_ts_dat['x'] + timedelta(hours = ld_time_offset[fcst_ldi])
-                            print('Extracted forecast data:',datetime.now(), datetime.now() - fcdata_start)
-
-
-                            
-
-                                
-                            figfc_lab_str = '%s forecast diagram for \n%s'%(nice_varname_dict[var],lon_lat_to_str(lon_d[1][jj,ii],lat_d[1][jj,ii])[0])
-
-
-                            if var_dim[var] == 4:  
-                                figfc_lab_str = '%s (%s) forecast diagram\nfor %s'%(nice_varname_dict[var],nice_lev,lon_lat_to_str(lon_d[1][jj,ii],lat_d[1][jj,ii])[0])
-                            elif var_dim[var] == 3:
-                                figfc_lab_str = '%s forecast diagram\nfor %s'%(nice_varname_dict[var],lon_lat_to_str(lon_d[1][jj,ii],lat_d[1][jj,ii])[0])
-
-
-
-                            figfc = plt.figure()
-                            figfc.set_figheight(5)
-                            figfc.set_figwidth(6)
-                            figfc.suptitle(figfc_lab_str, fontsize = 16) 
-                            axfc = []
-                            if load_second_files:                       
-                                figfc.set_figheight(8)    
-                                axfc.append(plt.subplot(2,1,1))  
-                                axfc.append(plt.subplot(2,1,2))
-                                plt.subplots_adjust(top=0.875,bottom=0.11,left=0.125,right=0.9,hspace=0.2,wspace=0.6) 
+                            if vis_curr == 1:
+                                vis_curr = 0
+                                reload_UV_map = False
+                                func_but_text_han['Vis curr'].set_color('k')
                             else:
-                                plt.subplots_adjust(top=0.825,bottom=0.11,left=0.125,right=0.9,hspace=0.2,wspace=0.6) 
-                                axfc.append(plt.subplot(1,1,1)) 
+                                vis_curr = 1
+                                reload_UV_map = True
+                                func_but_text_han['Vis curr'].set_color('darkgreen')
 
 
-                            axfc[0].plot(fsct_ts_x,fsct_ts_dat_dict['Dataset 1'][:,:], '0.5' )                   
-                            axfc[0].plot(fsct_ts_x[0,:],fsct_ts_dat_dict['Dataset 1'][0,:],'ro' )            
-                            axfc[0].plot(fsct_ts_x[-1,:],fsct_ts_dat_dict['Dataset 1'][-1,:],'x', color = '0.5')
-                            axfc[0].set_title(fig_lab_d['Dataset 1'])
-                            if load_second_files:       
-                                axfc[1].plot(fsct_ts_x,fsct_ts_dat_dict['Dataset 2'][:,:], '0.5' )                   
-                                axfc[1].plot(fsct_ts_x[0,:],fsct_ts_dat_dict['Dataset 2'][0,:],'ro' )
-                                axfc[1].plot(fsct_ts_x[-1,:],fsct_ts_dat_dict['Dataset 2'][-1,:],'x', color = '0.5')
-                                axfc[1].set_title(fig_lab_d['Dataset 2'])
-                            figfc.show()
+                        elif but_name == 'T Diff':
 
-                        #pdb.set_trace()
-
-                    elif but_name == 'Clim: pair':
-                        if clim_pair:
-                            func_but_text_han['Clim: pair'].set_color('k')
-                            clim_pair = False
-                        else:
-                            func_but_text_han['Clim: pair'].set_color('gold')
-                            clim_pair = True
-
-                    elif but_name == 'Clim: sym':
-                        if clim_sym_but == 0:
-                            func_but_text_han['Clim: sym'].set_color('r')
-                            #curr_cmap = scnd_cmap
-                            clim_sym_but = 1
-                            #clim_sym_but_norm_val = clim_sym
-                            clim_sym = True
-                            
-                        elif clim_sym_but == 1:
-                            func_but_text_han['Clim: sym'].set_color('k')
-                            clim_sym_but = 0
-                            
-                            
-                            #curr_cmap = base_cmap
-                            #func_but_text_han['ColScl'].set_text('Col: Linear')
-                            #col_scl = 0
-                            #clim_sym = clim_sym_but_norm_val
-                            
-
-                    elif but_name == 'Hov/Time':
-                        if hov_time:
-                            func_but_text_han['Hov/Time'].set_color('0.5')
-                            hov_time = False
-                        else:
-                            func_but_text_han['Hov/Time'].set_color('darkgreen')
-                            hov_time = True
-                            reload_hov = True
-                            reload_ts = True
-
-                    elif but_name == 'Show Prof':
-                        if profvis:
-                            func_but_text_han['Show Prof'].set_color('0.5')
-                            profvis = False
-                            for tmpax, tmppos in zip(ax,ax_position_dims): tmpax.set_position(tmppos)
-                            ax[-1].set_visible(profvis)
-
-                        else:
-                            func_but_text_han['Show Prof'].set_color('darkgreen')
-                            profvis = True
-                            for tmpax, tmppos in zip(ax,ax_position_dims_prof): tmpax.set_position(tmppos)
-                            ax[-1].set_visible(profvis)
-
-
-                    elif but_name == 'regrid_meth':
-                        if regrid_meth == 1:
-                            func_but_text_han['regrid_meth'].set_text('Regrid: Bilin')
-                            regrid_meth = 2
-                            reload_map = True
-                            reload_ew = True
-                            reload_ns = True
-                        elif regrid_meth == 2:
-                            func_but_text_han['regrid_meth'].set_text('Regrid: NN')
-                            regrid_meth = 1
-                            reload_map = True
-                            reload_ew = True
-                            reload_ns = True
-
-                    elif but_name == 'Contours':
-                        if do_cont:
-                            func_but_text_han['Contours'].set_color('k')
-                            do_cont = False
-                        else:
-                            func_but_text_han['Contours'].set_color('darkgreen')
-                            do_cont = True
-
-
-                    elif but_name == 'Grad':
-                        if do_grad == 0:
-                            func_but_text_han['Grad'].set_color('darkgreen')
-                            func_but_text_han['Grad'].set_text('Horiz Grad')
-                            do_grad = 1
-                            reload_map = True
-                            reload_ew = True
-                            reload_ns = True
-                            reload_hov = True
-                            reload_ts = True
-                        elif do_grad == 1:
-                            func_but_text_han['Grad'].set_color('gold')
-                            func_but_text_han['Grad'].set_text('Vert Grad')
-
-                            do_grad = 2
-                            reload_map = True
-                            reload_ew = True
-                            reload_ns = True
-                            reload_hov = True
-                            reload_ts = True
-                        elif do_grad == 2:
-                            func_but_text_han['Grad'].set_color('0.5')
-                            func_but_text_han['Grad'].set_text('Grad')
-
-                            do_grad = 0
-                            reload_map = True
-                            reload_ew = True
-                            reload_ns = True
-                            reload_hov = True
-                            reload_ts = True
- 
-
-                    elif but_name == 'Vis curr':
-
-                    
-                        if vis_curr == 1:
-                            vis_curr = 0
-                            reload_UV_map = False
-                            func_but_text_han['Vis curr'].set_color('k')
-                        else:
-                            vis_curr = 1
-                            reload_UV_map = True
-                            func_but_text_han['Vis curr'].set_color('darkgreen')
-
-
-                    elif but_name == 'T Diff':
-
-                        if ti == 0:
-                            func_but_text_han['T Diff'].set_color('0.5')
-                        else:
-                            if Time_Diff:
-                                Time_Diff = False
-                                func_but_text_han['T Diff'].set_color('k')
+                            if ti == 0:
+                                func_but_text_han['T Diff'].set_color('0.5')
                             else:
-                                Time_Diff = True
-                                func_but_text_han['T Diff'].set_color('darkgreen')
+                                if Time_Diff:
+                                    Time_Diff = False
+                                    func_but_text_han['T Diff'].set_color('k')
+                                else:
+                                    Time_Diff = True
+                                    func_but_text_han['T Diff'].set_color('darkgreen')
 
 
-                    elif but_name == 'ColScl':
-                        if secdataset_proc in Dataset_lst:
-                            if col_scl == 0:
-                                func_but_text_han['ColScl'].set_text('Col: High')
-                                col_scl = 1
-                                curr_cmap = base_cmap_high
-                            elif col_scl == 1:
-                                func_but_text_han['ColScl'].set_text('Col: Low')
-                                curr_cmap = base_cmap_low
-                                col_scl = 2
-                            elif col_scl == 2:
-                                func_but_text_han['ColScl'].set_text('Col: Linear')
-                                curr_cmap = base_cmap
-                                col_scl = 0
-                        else:
-                            curr_cmap = scnd_cmap
+                        elif but_name == 'ColScl':
+                            if secdataset_proc in Dataset_lst:
+                                if col_scl == 0:
+                                    func_but_text_han['ColScl'].set_text('Col: High')
+                                    col_scl = 1
+                                    curr_cmap = base_cmap_high
+                                elif col_scl == 1:
+                                    func_but_text_han['ColScl'].set_text('Col: Low')
+                                    curr_cmap = base_cmap_low
+                                    col_scl = 2
+                                elif col_scl == 2:
+                                    func_but_text_han['ColScl'].set_text('Col: Linear')
+                                    curr_cmap = base_cmap
+                                    col_scl = 0
+                            else:
+                                curr_cmap = scnd_cmap
 
 
-                    
-                    elif but_name in secdataset_proc_list:
-                        secdataset_proc = but_name
+                        
+                        elif but_name in secdataset_proc_list:
+                            secdataset_proc = but_name
 
 
-                        for tmpsecdataset_proc in secdataset_proc_list: func_but_text_han[tmpsecdataset_proc].set_color('k')
+                            for tmpsecdataset_proc in secdataset_proc_list: func_but_text_han[tmpsecdataset_proc].set_color('k')
 
 
-                        func_but_text_han[but_name].set_color('darkgreen')
+                            func_but_text_han[but_name].set_color('darkgreen')
 
 
-                    elif but_name in ['Surface','Near-Bed','Surface-Bed','Depth-Mean']:
-                        if var_dim[var] == 4:
-                            
-                            if but_name == 'Surface':z_meth = 'ss'
-                            if but_name == 'Near-Bed': z_meth = 'nb'
-                            if but_name == 'Surface-Bed': z_meth = 'df'
-                            if but_name == 'Depth-Mean': z_meth = 'zm'
-                            reload_map = True
-                            reload_ts = True
+                        elif but_name in ['Surface','Near-Bed','Surface-Bed','Depth-Mean']:
+                            if var_dim[var] == 4:
+                                
+                                if but_name == 'Surface':z_meth = 'ss'
+                                if but_name == 'Near-Bed': z_meth = 'nb'
+                                if but_name == 'Surface-Bed': z_meth = 'df'
+                                if but_name == 'Depth-Mean': z_meth = 'zm'
+                                reload_map = True
+                                reload_ts = True
 
+                                func_but_text_han['Depth level'].set_color('k')
+                                func_but_text_han['Surface'].set_color('k')
+                                func_but_text_han['Near-Bed'].set_color('k')
+                                func_but_text_han['Surface-Bed'].set_color('k')
+                                func_but_text_han['Depth-Mean'].set_color('k')
+                                func_but_text_han[but_name].set_color('r')
+                                # redraw canvas
+                                fig.canvas.draw_idle()
+                                
+                                #flush canvas
+                                fig.canvas.flush_events()
+
+                        elif but_name in ['Depth level']:
                             func_but_text_han['Depth level'].set_color('k')
                             func_but_text_han['Surface'].set_color('k')
                             func_but_text_han['Near-Bed'].set_color('k')
                             func_but_text_han['Surface-Bed'].set_color('k')
                             func_but_text_han['Depth-Mean'].set_color('k')
                             func_but_text_han[but_name].set_color('r')
-                            fig.canvas.draw()
+                            z_meth = z_meth_default    
+                            reload_map = True
+                            reload_ts = True
+                        elif but_name in ['Save Figure']:                        
+                            save_figure_funct()
 
-                    elif but_name in ['Depth level']:
-                        func_but_text_han['Depth level'].set_color('k')
-                        func_but_text_han['Surface'].set_color('k')
-                        func_but_text_han['Near-Bed'].set_color('k')
-                        func_but_text_han['Surface-Bed'].set_color('k')
-                        func_but_text_han['Depth-Mean'].set_color('k')
-                        func_but_text_han[but_name].set_color('r')
-                        z_meth = z_meth_default    
-                        reload_map = True
-                        reload_ts = True
-                    elif but_name in ['Save Figure']:                        
-                        save_figure_funct()
-
-                    elif but_name in mode_name_lst:
-                        if mode == 'Loop': 
-                            mouse_in_Click = False
-                        mode = but_name
-                        func_but_text_han['Click'].set_color('k')
-                        func_but_text_han['Loop'].set_color('k')
-                        func_but_text_han[mode].set_color('gold')
-                        reload_map = True
-                        reload_ew = True
-                        reload_ns = True
-                        reload_hov = False
-                        reload_ts = False
-                        if do_Obs:
-                            reload_Obs = True
-                    elif but_name in 'Quit':
-                        print('Closing')
-                        print('')
-                        print('')
-                        print('')
-                        return
-                    else:
-                        print('but_name:',but_name)
-                        print('No function for but_name')
-                        pdb.set_trace()
-                    if verbose_debugging: print('clim:',clim)
-                        
-                        
+                        elif but_name in mode_name_lst:
+                            if mode == 'Loop': 
+                                mouse_in_Click = False
+                            mode = but_name
+                            func_but_text_han['Click'].set_color('k')
+                            func_but_text_han['Loop'].set_color('k')
+                            func_but_text_han[mode].set_color('gold')
+                            reload_map = True
+                            reload_ew = True
+                            reload_ns = True
+                            reload_hov = False
+                            reload_ts = False
+                            if do_Obs:
+                                reload_Obs = True
+                        elif but_name in 'Quit':
+                            print('Closing')
+                            print('')
+                            print('')
+                            print('')
+                            return
+                        else:
+                            print('but_name:',but_name)
+                            print('No function for but_name')
+                            pdb.set_trace()
+                        if verbose_debugging: print('clim:',clim)
+                            
+                            
 
             plt.sca(ax[0])
                     
