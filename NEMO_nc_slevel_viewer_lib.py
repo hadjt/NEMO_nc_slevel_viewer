@@ -349,7 +349,6 @@ def set_perc_clim_pcolor(perc_in_min,perc_in_max, sym = False,ax = None):
             if sym == True:
                 perc_out = np.abs(perc_out).max()*np.array([-1,1])
             child.set_clim(perc_out)
-            #return
 
 
 
@@ -360,15 +359,6 @@ def set_perc_clim_pcolor_in_region(perc_in_min,perc_in_max, illtype = 'pcolor', 
         plt.sca(ax)
     else:
         plt.sca(ax)
-
-    '''
-    if a pcolor/pcolormesh, use
-        illtype = pcolor/pcolor mesh (default)
-    if scatter, use
-        illtype = scatter
-    if what to specify absolute values, use perc = False
-    if what to get clims, rather than set them, set_not_get = True.
-    '''
 
 
     perc_in_tuple = (perc_in_min,perc_in_max)
@@ -465,62 +455,13 @@ def set_perc_clim_pcolor_in_region(perc_in_min,perc_in_max, illtype = 'pcolor', 
 
 
 
-    '''
-
-    plt.pcolormesh(lon,lat,notide_SSS_seas)
-    print notide_SSS_seas.shape
-    plt.xlim(0,5)
-    plt.ylim(50,55)
-
-    for child in plt.gca().get_children():child.__class__.__name__
-
-    tmp_data_mat = plt.gca().get_children()[0].get_array()
-    for ss in dir(plt.gca().get_children()[0]): ss
-
-    '''
-
 
 def get_colorbar_values(cb, verbose = False):
-    '''
-    return cb.ax.get_yticks()
-    '''
+
 
 
     #print ('Think this is simpler with Python3')
     return cb.ax.get_yticks()
-    '''
-    # cb = plt.colorbar()
-
-    #cbtickes = [float(ss.get_text()) for ss in cb.ax.get_yticklabels()]
-
-    #because it didn't like minus number (the minus was actually u'\u2212', replace it with a -
-    ticks_strings = cb.ax.get_yticklabels()
-
-
-    # there was a unicode issue. Sometimes matplotlib used u'\u2212' for a minus symbol, which is beyond the first 128 values.
-    # therefore when it was read from the figure, it crashed.
-    # Now, I check the first character to see if it has a value of 8722 (   ord(u'\u2212')   ), and if it does, use a '-' instead
-
-
-
-    cbtickes = []
-    for ss in ticks_strings:
-        #pdb.set_trace()
-        ss_str = ss.get_text()
-        if ss_str== '': continue
-        #print (ss_str)
-        #pdb.set_trace()
-        if ord(ss_str[0]) == 8722:
-            ss_str = '-' + ss_str[1:]
-        cbtickes.append(ss_str)
-
-    # cbtickes = [float(ss.get_text().decode("utf-8").replace(u'\u2212','-')) for ss in ticks_strings]
-    if verbose: print(cbtickes)
-
-    return cbtickes
-    '''
-
-
 
 
 def get_pnts_pcolor_in_region(illtype = 'pcolor', ax = None):
@@ -531,14 +472,6 @@ def get_pnts_pcolor_in_region(illtype = 'pcolor', ax = None):
     else:
         plt.sca(ax)
 
-    '''
-    if a pcolor/pcolormesh, use
-        illtype = pcolor/pcolor mesh (default)
-    if scatter, use
-        illtype = scatter
-    if what to specify absolute values, use perc = False
-    if what to get clims, rather than set them, set_not_get = True.
-    '''
 
     # find the 'PolyCollection' associated with the the current ax (i.e. pcolor - assume only has one). find the data assoicated with it. Find the percentile values associated with it. Set the colour clims to these values
     xlim = np.array(plt.gca().get_xlim()).copy()
@@ -710,15 +643,6 @@ def interp1dmat_create_weight(gdept,z_lev):
 
     wgt_mask = (z_lev > gdept_ma_max) | (z_lev < gdept_ma_min) | (gdept_ma_ptp<1)
 
-    '''
-    plt.pcolormesh(wgt1*gdept_ma[ind1,xind_mat,yind_mat]) ; plt.colorbar() ; plt.show()
-    plt.pcolormesh(wgt2*gdept_ma[ind2,xind_mat,yind_mat]) ; plt.colorbar() ; plt.show()
-    plt.pcolormesh(wgt1*gdept_ma[ind1,xind_mat,yind_mat] + wgt2*gdept_ma[ind2,xind_mat,yind_mat]) ; plt.colorbar() ; plt.show()
-
-    interpval = wgt1*gdept_ma[ind1,xind_mat,yind_mat] + wgt2*gdept_ma[ind2,xind_mat,yind_mat]
-    plt.pcolormesh(interpval) ; plt.colorbar() ; plt.show()
-
-    '''
 
     if z_lev == 0:
         ind1[:,:]= 1
@@ -838,115 +762,8 @@ def nearbed_index_func(tmp_var):
 
     return nbind,tmask
 
-'''
-def nearbed_index(filename, variable_4d,nemo_nb_i_filename = 'nemo_nb_i.nc'):
 
 
-    rootgrp = Dataset(filename, 'r', format='NETCDF3_CLASSIC')#NETCDF3_CLASSIC
-    tmp_var = rootgrp.variables[variable_4d][0,:,:,:]
-    rootgrp.close()
-
-
-    if ismask(tmp_var):
-        tmask = tmp_var.mask.copy()
-    else:
-        tmp_var = np.ma.masked_equal(tmp_var, 0)
-        tmask = tmp_var.mask.copy()
-
-    nz, nj, ni = tmask.shape
-
-
-    # make an array of the size of the domain with the level numbers
-    #zindmat = np.tile(np.arange(51),(297,375,1)).T
-    zindmat = np.tile(np.arange(nz),(ni, nj,1)).T
-
-    # Multiply this by the domain mask, so grid boxes below the sea bed are set to zero
-    zindmatT = zindmat*(~tmask)
-
-    # Identify the maximum model level for each grid box.
-    zindmax = zindmatT.max(axis = 0)
-
-    # ... and turn this into a 3d array, matching the domain grid size
-    #zindmaxmat = np.tile(zindmax,(51,1,1))
-    zindmaxmat = np.tile(zindmax,(nz,1,1))
-
-    # Find where the grid boxes are not the near bed values (so True where we want to mask)
-    nbind = zindmaxmat != zindmat
-
-    #if ((nbind*1).sum(axis = 0).min() != 50) | ((nbind*1).sum(axis = 0).max() != 50) :
-    if ((nbind*1).sum(axis = 0).min() != (nz-1)) | ((nbind*1).sum(axis = 0).max() != (nz-1)) :
-        print("ERROR, nbind has found more than one near bed boxes...")
-        pdb.set_trace()
-
-
-    #pdb.set_trace()
-
-    rootgrp_out = Dataset(nemo_nb_i_filename, 'w', format='NETCDF3_CLASSIC')
-    rootgrp_out.createDimension('x',ni)
-    rootgrp_out.createDimension('y',nj)
-    rootgrp_out.createDimension('z',nz)
-    nb_i_out = rootgrp_out.createVariable('nb_i','i4',('z','y','x',),fill_value = -99)
-    tmask_out = rootgrp_out.createVariable('t_mask','i4',('z','y','x',),fill_value = -99)
-    nb_i_out[:,:] = nbind
-    tmask_out[:,:] = tmask
-    rootgrp_out.close()
-
-
-    rootgrp_in = Dataset(nemo_nb_i_filename, 'r', format='NETCDF3_CLASSIC')
-    nb_i_in = (rootgrp_in.variables['nb_i'][:,:,:] == 1)
-    tmask = (rootgrp_in.variables['t_mask'][:,:,:] == 1)
-
-    return nbind,tmask
-'''
-'''
-def load_nearbed_index(nemo_nb_i_filename):
-
-
-    rootgrp_in = Dataset(nemo_nb_i_filename, 'r', format='NETCDF3_CLASSIC')
-    nbind = (rootgrp_in.variables['nb_i'][:,:,:] == 1)
-    tmask = (rootgrp_in.variables['t_mask'][:,:,:] == 1)
-    rootgrp_in.close()
-
-    return nbind,tmask
-    
-def extract_nb(var_in,nbind):
-
-
-    if ismask(var_in):
-        tmpvar = var_in.copy()
-    else:
-        tmpvar = np.ma.masked_equal(var_in.copy(), 0)
-
-    tmpvar.mask = tmpvar.mask | nbind
-
-    nbvar = tmpvar.sum(axis = 0)
-
-    return nbvar
-
-
-def extract_ss(var_in,nbind):
-
-    tmpvar = var_in.copy()
-    ssvar = tmpvar[0,:,:]
-
-    return ssvar
-
-def extract_ss_nb_df(var_in,nbind,mask_in):
-
-    ismask = False
-    if isinstance(var_in,np.ma.core.MaskedArray):
-        ismask = True
-    if ismask:
-         var_mask_in = var_in
-    else:
-         var_mask_in = np.ma.array(var_in, mask = mask_in)
-
-
-    nbvar = extract_nb(var_mask_in,nbind)
-    ssvar = extract_ss(var_mask_in,nbind)
-    dfvar = ssvar - nbvar
-    return ssvar,nbvar,dfvar
-'''
 def weighted_depth_mean_masked_var(tmpvar_in, e3_in,output_weighting = False):
     # tmpvar_in and e3_in must be 3d (nz, ny, nx)
     
@@ -1055,19 +872,6 @@ def current_barb(x1,y1,u_in,v_in,evx = 2,evy = 2,x0 = 0,y0 = 2,arrow_style = 'ba
     x2 = x1+dx
     y2 = y1+dy
 
-    '''
-    uvlenr = (uvlen)[::evy,::evx].ravel().reshape(1,-1)
-    uvr = (uv)[::evy,::evx].ravel().reshape(1,-1)
-    x1r = (x1)[::evy,::evx].ravel().reshape(1,-1)
-    x2r = (x2)[::evy,::evx].ravel().reshape(1,-1)
-    dxr = (dx)[::evy,::evx].ravel().reshape(1,-1)
-    dx2r = (dx2)[::evy,::evx].ravel().reshape(1,-1)
-    y1r = (y1)[::evy,::evx].ravel().reshape(1,-1)
-    y2r = (y2)[::evy,::evx].ravel().reshape(1,-1)
-    dyr = (dy)[::evy,::evx].ravel().reshape(1,-1)
-    dy2r = (dy2)[::evy,::evx].ravel().reshape(1,-1)
-    '''
-
     uvlenr = (uvlen)[y0::evy,x0::evx].ravel().reshape(1,-1)
     uvr = (uv)[y0::evy,x0::evx].ravel().reshape(1,-1)
     x1r = (x1)[y0::evy,x0::evx].ravel().reshape(1,-1)
@@ -1133,26 +937,6 @@ def current_barb(x1,y1,u_in,v_in,evx = 2,evy = 2,x0 = 0,y0 = 2,arrow_style = 'ba
         x12_barb_45 = np.concatenate( (  x1r*np.nan,x1r,(x1r+dxr),(x1r+dxr*(1. - hl)+hw*dx2r), (x1r+dxr), (x1r+(1-bsp)*dxr),(x1r+(dxr*((1. - hl)-bsp))+hw*dx2r), (x1r+(1-bsp)*dxr), (x1r+((1-2*bsp)*dxr)),(x1r+(dxr*((1. - hl)-2*bsp))+hw*dx2r), (x1r+((1-2*bsp)*dxr)), (x1r+((1-3*bsp)*dxr)),(x1r+(dxr*((1. - hl)-3*bsp))+hw*dx2r), (x1r+((1-3*bsp)*dxr)), (x1r+((1-4*bsp)*dxr)),(x1r+(dxr*((1. - hl/2)-4*bsp))+hw*dx2r/2), (x1r+((1-4*bsp)*dxr))   ),axis =0).T
         y12_barb_45 = np.concatenate( (  y1r*np.nan,y1r,(y1r+dyr),(y1r+dyr*(1. - hl)+hw*dy2r), (y1r+dyr), (y1r+(1-bsp)*dyr),(y1r+(dyr*((1. - hl)-bsp))+hw*dy2r), (y1r+(1-bsp)*dyr), (y1r+((1-2*bsp)*dyr)),(y1r+(dyr*((1. - hl)-2*bsp))+hw*dy2r), (y1r+((1-2*bsp)*dyr)), (y1r+((1-3*bsp)*dyr)),(y1r+(dyr*((1. - hl)-3*bsp))+hw*dy2r), (y1r+((1-3*bsp)*dyr)), (y1r+((1-4*bsp)*dyr)),(y1r+(dyr*((1. - hl/2)-4*bsp))+hw*dy2r/2), (y1r+((1-4*bsp)*dyr))   ),axis =0).T
 
-        ''''
-        # manual cut off
-        cutoff=np.percentile(uvr[uvr.mask==False],(25,50,75))
-        cutoff_perc = 100.*np.arange(1.,8.)/8.
-        cutoff=np.percentile(uvr[uvr.mask==False], cutoff_perc)
-        ind_0 = (uvr< cutoff[1])
-        ind_1 = (uvr >= cutoff[0]) & (uvr< cutoff[1])
-        ind_2 = (uvr >= cutoff[1]) & (uvr< cutoff[2])
-        ind_3 = (uvr >= cutoff[2]) & (uvr< cutoff[3])
-        ind_4 = (uvr >= cutoff[3]) & (uvr< cutoff[4])
-        ind_5 = (uvr >= cutoff[4]) & (uvr< cutoff[5])
-        ind_6 = (uvr >= cutoff[5]) & (uvr< cutoff[6])
-        ind_7 = (uvr >= cutoff[6])
-
-
-        x12 = np.concatenate((x12_barb_00[ind_0.ravel(),:].ravel(),x12_barb_05[ind_1.ravel(),:].ravel(),x12_barb_10[ind_2.ravel(),:].ravel()))
-        y12 = np.concatenate((y12_barb_10[ind_1.ravel(),:].ravel(),y12_barb_20[ind_2.ravel(),:].ravel(),y12_barb_30[ind_3.ravel(),:].ravel()))
-
-        '''
-
         #cutoff_perc = 100.*np.arange(1.,10.)/10.
 
         if cutoff is None:
@@ -1170,46 +954,6 @@ def current_barb(x1,y1,u_in,v_in,evx = 2,evy = 2,x0 = 0,y0 = 2,arrow_style = 'ba
         for tmpind,ybarb in zip(ind_lst,[y12_barb_00,y12_barb_05,y12_barb_10,y12_barb_15,y12_barb_20,y12_barb_25,y12_barb_30,y12_barb_35,y12_barb_40,y12_barb_45]):y12_lst.append(ybarb[tmpind.ravel(),:].ravel())
         x12,y12 = [jj for ii in x12_lst for jj in ii ],[jj for ii in y12_lst for jj in ii ]
 
-
-
-
-
-    '''
-
-
-
-        x12 = np.append(x1[::ev].ravel().reshape(1,-1),x2[::ev].ravel().reshape(1,-1),axis =0)
-        y12 = np.append(y1[::ev].ravel().reshape(1,-1),y2[::ev].ravel().reshape(1,-1),axis =0)
-
-
-        x12 = np.append(x1[::ev].ravel().reshape(1,-1),(x1[::ev] + dx[::ev]).ravel().reshape(1,-1),axis =0)
-        y12 = np.append(y1[::ev].ravel().reshape(1,-1),(y1[::ev] + dx[::ev]).ravel().reshape(1,-1),axis =0)
-
-        x12 = np.append(x1[::ev].ravel().reshape(1,-1),(x1[::ev] + dx[::ev]).ravel().reshape(1,-1),(x1[::ev] + 0.75*dx[::ev] + 0.25*dx2[::ev]).ravel().reshape(1,-1),axis =0)
-        y12 = np.append(y1[::ev].ravel().reshape(1,-1),(y1[::ev] + dx[::ev]).ravel().reshape(1,-1),(y1[::ev] + 0.75*dy[::ev] + 0.25*dy2[::ev]).ravel().reshape(1,-1),axis =0)
-
-
-        x12 = np.concatenate( (  x1[::ev].ravel().reshape(1,-1)*np.nan,  x1[::ev].ravel().reshape(1,-1), (x1[::ev] + dx[::ev]).ravel().reshape(1,-1),(x1[::ev] + 0.75*dx[::ev] + 0.15*dx2[::ev]).ravel().reshape(1,-1) ,(x1[::ev] + 0.75*dx[::ev] - 0.15*dx2[::ev]).ravel().reshape(1,-1), (x1[::ev] + dx[::ev]).ravel().reshape(1,-1)  ),axis =0).T.ravel()
-        y12 = np.concatenate( (  y1[::ev].ravel().reshape(1,-1)*np.nan,  y1[::ev].ravel().reshape(1,-1), (y1[::ev] + dx[::ev]).ravel().reshape(1,-1),(y1[::ev] + 0.75*dy[::ev] + 0.15*dy2[::ev]).ravel().reshape(1,-1),(y1[::ev] + 0.75*dy[::ev] - 0.15*dy2[::ev]).ravel().reshape(1,-1)  ,(y1[::ev] + dx[::ev]).ravel().reshape(1,-1)  ),axis =0).T.ravel()
-
-
-        x12 = np.concatenate( (  x1[::ev].ravel().reshape(1,-1)*np.nan,  x1[::ev].ravel().reshape(1,-1), (x2[::ev]).ravel().reshape(1,-1),(x1[::ev] + 0.75*dx[::ev] + 0.15*dx2[::ev]).ravel().reshape(1,-1) ,(x1[::ev] + 0.75*dx[::ev] - 0.15*dx2[::ev]).ravel().reshape(1,-1), (x2[::ev]).ravel().reshape(1,-1)  ),axis =0).T.ravel()
-        y12 = np.concatenate( (  y1[::ev].ravel().reshape(1,-1)*np.nan,  y1[::ev].ravel().reshape(1,-1), (y2[::ev]).ravel().reshape(1,-1),(y1[::ev] + 0.75*dy[::ev] + 0.15*dy2[::ev]).ravel().reshape(1,-1),(y1[::ev] + 0.75*dy[::ev] - 0.15*dy2[::ev]).ravel().reshape(1,-1)  ,(y2[::ev]).ravel().reshape(1,-1)  ),axis =0).T.ravel()
-
-
-
-        #x12 = np.concatenate( (  x1[::ev].ravel().reshape(1,-1)*np.nan,  x1[::ev].ravel().reshape(1,-1), (x1[::ev] + dx[::ev]).ravel().reshape(1,-1),(x1[::ev]).ravel().reshape(1,-1),(x1[::ev] + dx2[::ev] ).ravel().reshape(1,-1) ),axis =0).T.ravel()
-        #y12 = np.concatenate( (  y1[::ev].ravel().reshape(1,-1)*np.nan,  y1[::ev].ravel().reshape(1,-1), (y1[::ev] + dx[::ev]).ravel().reshape(1,-1),(y1[::ev]).ravel().reshape(1,-1),(y1[::ev] + dy2[::ev] ).ravel().reshape(1,-1)    ),axis =0).T.ravel()
-        #lined arrows
-        x12 = np.concatenate( (  x1[::evy,::evx].ravel().reshape(1,-1)*np.nan,  x1[::evy,::evx].ravel().reshape(1,-1), (x2[::evy,::evx]).ravel().reshape(1,-1),(x1[::evy,::evx] + 0.75*dx[::evy,::evx] + 0.15*dx2[::evy,::evx]).ravel().reshape(1,-1) ,(x1[::evy,::evx] + 0.75*dx[::evy,::evx] - 0.15*dx2[::evy,::evx]).ravel().reshape(1,-1), (x2[::evy,::evx]).ravel().reshape(1,-1)  ),axis =0).T.ravel()
-        y12 = np.concatenate( (  y1[::evy,::evx].ravel().reshape(1,-1)*np.nan,  y1[::evy,::evx].ravel().reshape(1,-1), (y2[::evy,::evx]).ravel().reshape(1,-1),(y1[::evy,::evx] + 0.75*dy[::evy,::evx] + 0.15*dy2[::evy,::evx]).ravel().reshape(1,-1),(y1[::evy,::evx] + 0.75*dy[::evy,::evx] - 0.15*dy2[::evy,::evx]).ravel().reshape(1,-1)  ,(y2[::evy,::evx]).ravel().reshape(1,-1)  ),axis =0).T.ravel()
-
-        x12 = np.concatenate( (  x1[::evy,::evx].ravel().reshape(1,-1)*np.nan,  x1[::evy,::evx].ravel().reshape(1,-1), (x1[::evy,::evx]).ravel().reshape(1,-1),(x1[::evy,::evx] + 0.75*dx[::evy,::evx] + 0.15*dx2[::evy,::evx]).ravel().reshape(1,-1) ,(x1[::evy,::evx] + 0.75*dx[::evy,::evx] - 0.15*dx2[::evy,::evx]).ravel().reshape(1,-1), (x2[::evy,::evx]).ravel().reshape(1,-1)  ),axis =0).T.ravel()
-        y12 = np.concatenate( (  y1[::evy,::evx].ravel().reshape(1,-1)*np.nan,  y1[::evy,::evx].ravel().reshape(1,-1), (y1[::evy,::evx]).ravel().reshape(1,-1),(y1[::evy,::evx] + 0.75*dy[::evy,::evx] + 0.15*dy2[::evy,::evx]).ravel().reshape(1,-1),(y1[::evy,::evx] + 0.75*dy[::evy,::evx] - 0.15*dy2[::evy,::evx]).ravel().reshape(1,-1)  ,(y2[::evy,::evx]).ravel().reshape(1,-1)  ),axis =0).T.ravel()
-
-
-
-    '''
 
     #plt.plot(np.ma.array(x1, mask = ma)[::evy,::evx].ravel(),y1[::evy,::evx].ravel(),'ko',ms = 2.5)
     handle = plt.plot(x12,y12,**kwargs)
@@ -1773,58 +1517,6 @@ def vector_curl(tmpU, tmpV, tmpdx, tmpdy):
     return curl_out
 
 
-
-
-"""
-def pycnocline_params_time(rho_4d,gdept_4d,e3t_4d):
-
-    '''
-    N2,Pync_Z,Pync_Th,N2_max = pycnocline_params(data_inst[tmp_datstr][np.newaxis],grid_dict[tmp_datstr]['gdept'],grid_dict[tmp_datstr]['e3t'])
-
-    '''
-    #pdb.set_trace()
-    # vertical density gradient
-    drho =  rho_4d[:,2:,:,:] -  rho_4d[:,:-2,:,:]
-    dz = gdept_4d[:,2:,:,:] - gdept_4d[:,:-2,:,:]
-
-    drho_dz = drho/dz
-    
-    # N, Brunt-Vaisala frequency
-    # N**2
-    N2 = rho_4d.copy()*0*np.ma.masked
-    N2[:,1:-1,:,:]  = drho_dz*(-9.81/rho_4d[:,1:-1,:,:])
-    N2[:,0,:,:]= N2[:,1,:,:]
-
-    # https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2018JC014307
-    # Equation 14
-
-    
-    # Pycnocline Depth:
-    Pync_Z = ((N2*gdept_4d)*e3t_4d).sum(axis = 1)/(N2*e3t_4d).sum(axis = 1)
-                    
-    # Pycnocline thickness:
-    Pync_Th  = np.sqrt(((N2*(gdept_4d.T-Pync_Z.T).T**2)*e3t_4d).sum(axis = 1)/(N2*e3t_4d).sum(axis = 1))
-
-
-    # Depth of max Nz
-    # find array size
-    n_t,n_z, n_j, n_i = rho_4d.shape
-
-    # Make dummy index array
-    n_i_mat, n_j_mat = np.meshgrid(range(n_i), range(n_j))
-
-    # find index of maximum N2 depth
-    N2_max_arg = N2.argmax(axis = 1)
-    N2_max = N2.argmax(axis = 1)
-
-    # use gdept to calcuate these as a depth
-    N2_maxZ = gdept_4d[0][N2_max_arg,np.tile(n_j_mat,(n_t,1,1)),np.tile(n_i_mat,(n_t,1,1))]
-
-    return N2,Pync_Z,Pync_Th,N2_max, N2_maxZ
-                      
-
-
-"""
 
 
 
@@ -3694,185 +3386,6 @@ def resample_xarray(xarr_dict,resample_freq,time_varname):
 
 
     return xarr_dict
-
-
-"""
-def safe_extract_time_from_xarr(xarr_dict_in,ex_fname_in,time_varname_in,t_dim,date_in_ind,date_fmt,ti,verbose_debugging):
-
-    '''
-    
-    time_datetime,time_datetime_since_1970,ntime = extract_time_from_xarr(xarr_dict['Dataset 1']['T'],fname_dict['Dataset 1']['T'][0],date_in_ind,date_fmt,verbose_debugging)
-    '''
-    #pdb.set_trace()
-    
-    print ('xarray start reading nctime',datetime.now())
-
-
-    
-    #if both time and time_counter used, (as in increments), use time_counter
-    if ('time' in xarr_dict_in[0].variables.keys()) & ('time_counter' in xarr_dict_in[0].variables.keys()):
-        time_varname = 'time_counter'
-    else:
-        time_varname = time_varname_in
-
-
-
-    nctime = xarr_dict_in[0].variables[time_varname]
-
-    # if all time is 0, and no time_origin
-    #if ((nctime.load()[:] == 0).all()) & ('time_origin' not in nctime.attrs.keys()):
-    if ('time_origin' not in nctime.attrs.keys()):
-        #pdb.set_trace()
-        #if ((nctime.load()[:] == 0).all()):
-        try:
-            all_time_0 = (nctime.load()[:] == 0).all()
-        except:
-            pdb.set_trace()
-        if all_time_0:
-
-            time_datetime = np.array([datetime(datetime.now().year, datetime.now().month, datetime.now().day) + timedelta(days = i_i) for i_i in range( xarr_dict_in[0].dims[t_dim])])
-            print("xarr_dict_in[0].dims[t_dim]")
-            #except:
-            #    time_datetime = np.array([datetime(datetime.now().year, datetime.now().month, datetime.now().day) + timedelta(days = i_i) for i_i in range( xarr_dict_in[0][0].dims[t_dim])])
-            #    print("xarr_dict_in[0][0].dims[t_dim]")
-            time_datetime_since_1970 = np.array([(ss - datetime(1970,1,1,0,0)).total_seconds()/86400 for ss in time_datetime])
-
-            if date_in_ind is not None: ti = 0
-            ntime = time_datetime.size
-            nctime_calendar_type = 'greg'
-
-            print('No time origin and all time values == 0')
-
-            return time_datetime,time_datetime_since_1970,ntime,ti, nctime_calendar_type
-
-
-
-    try:
-        
-        if 'time_origin' in nctime.attrs.keys():
-            nc_time_origin = nctime.attrs['time_origin']
-        else:
-            nc_time_origin = '1980-01-01 00:00:00'
-            print('No time origin set - set to 1/1/1980. Other Time parameters likely to be missing')
-    except:
-        print('Except: extract_time_from_xarr, couldn''t to read time_origin from xarray, using netCDF4')
-        pdb.set_trace()
-        rootgrp_hpc_time = Dataset(ex_fname_in, 'r', format='NETCDF4')
-        
-        nc_time_var = rootgrp_hpc_time.variables[time_varname]
-        if 'time_origin' in nc_time_var.ncattrs():
-            nc_time_origin = nc_time_var.time_origin
-        else:
-            nc_time_origin = '1980-01-01 00:00:00'
-            print('No time origin set - set to 1/1/1980. Other Time parameters likely to be missing')
-
-            #pdb.set_trace()
-        rootgrp_hpc_time.close()
-
-
-
-
-    #different treatment for 360 days and gregorian calendars... needs time_datetime for plotting, and time_datetime_since_1970 for index selection
-    nctime_calendar_type = None
-    #pdb.set_trace()
-
-    if str(type(nctime.load().data[0])).find('Datetime360Day')>0:
-        nctime_calendar_type = '360_day'
-    else:
-        nctime_calendar_type = 'greg'
-
-    
-
-    '''
-    try:
-        #https://github.com/pydata/xarray/issues/5155
-        # Perhaps the best way to access calendar
-        if 'calendar' in nctime.to_index()._attributes:
-            nctime_calendar_type = nctime.to_index().calendar
-        else:
-            nctime_calendar_type = None
-
-
-    except:
-        print('Except: extract_time_from_xarr, couldn''t to read calendar from xarray, using netCDF4')
-        pdb.set_trace()
-        try:
-            if 'calendar' in nctime.attrs.keys():
-                nctime_calendar_type = nc_time_var.calendar
-            else: 
-                print('calendar not in time info')
-                nctime_calendar_type = None
-                #pdb.set_trace()
-        except:
-            print('Except: extract_time_from_xarr, couldn''t to access nctime attr, using nctime_calendar_type = None')
-            pdb.set_trace()
-            nctime_calendar_type = None
-        
-
-    try:
-        #if nctime.shape is not ():
-        if nctime.shape != ():
-            if nctime_calendar_type is None:
-                if type(np.array(nctime)[0]) is type(cftime._cftime.Datetime360Day(1980,1,1)):
-                    nctime_calendar_type = '360'
-                else:
-                    nctime_calendar_type = 'greg'
-        else:
-            nctime_calendar_type = 'greg'
-    except:
-        print('Except: extract_time_from_xarr, couldn''t to guess calendar from xarray, using netCDF4')
-        pdb.set_trace()
-        nctime_calendar_type = 'greg'
-    '''
-    try:
-
-
-        #different treatment for 360 days and gregorian calendars... needs time_datetime for plotting, and time_datetime_since_1970 for index selection
-        if  nctime_calendar_type in ['360','360_day']:
-            # if 360 days
-
-            time_datetime_since_1970 = np.array([ss.year + (ss.month-1)/12 + (ss.day-1)/360 for ss in np.array(nctime)])
-            time_datetime = time_datetime_since_1970
-        else:
-            # if gregorian        
-            sec_since_origin = [float(ii.data - np.datetime64(nc_time_origin))/1e9 for ii in nctime]
-            time_datetime_cft = num2date(sec_since_origin,units = 'seconds since ' + nc_time_origin,calendar = 'gregorian') #nctime.calendar)
-
-            time_datetime = np.array([datetime(ss.year, ss.month,ss.day,ss.hour,ss.minute) for ss in time_datetime_cft])
-            time_datetime_since_1970 = np.array([(ss - datetime(1970,1,1,0,0)).total_seconds()/86400 for ss in time_datetime])
-
-
-        if date_in_ind is not None:
-            date_in_ind_datetime = datetime.strptime(date_in_ind,date_fmt)
-            date_in_ind_datetime_timedelta = np.array([(ss - date_in_ind_datetime).total_seconds() for ss in time_datetime])
-            ti = np.abs(date_in_ind_datetime_timedelta).argmin()
-            if verbose_debugging: print('Setting ti from date_in_ind (%s): ti = %i (%s). '%(date_in_ind,ti, time_datetime[ti]), datetime.now())
-
-    except:
-        print()
-        print()
-        print()
-        print(' Except: Not able to read time in second data set, using dummy time')
-        print()
-        print()
-        print()
-        pdb.set_trace()
-        #try:
-        time_datetime = np.array([datetime(datetime.now().year, datetime.now().month, datetime.now().day) + timedelta(days = i_i) for i_i in range( xarr_dict_in[0].dims[t_dim])])
-        print("xarr_dict_in[0].dims[t_dim]")
-        #except:
-        #    time_datetime = np.array([datetime(datetime.now().year, datetime.now().month, datetime.now().day) + timedelta(days = i_i) for i_i in range( xarr_dict_in[0][0].dims[t_dim])])
-        #    print("xarr_dict_in[0][0].dims[t_dim]")
-        time_datetime_since_1970 = np.array([(ss - datetime(1970,1,1,0,0)).total_seconds()/86400 for ss in time_datetime])
-
-        if date_in_ind is not None: ti = 0
-    ntime = time_datetime.size
-    print(nctime_calendar_type,nc_time_origin)
-
-    #pdb.set_trace()
-    return time_datetime,time_datetime_since_1970,ntime,ti, nctime_calendar_type
-
-"""
 
 
 def extract_time_from_xarr(xarr_dict_in,ex_fname_in,time_varname_in,t_dim,date_in_ind,date_fmt,ti,verbose_debugging):

@@ -52,32 +52,6 @@ from NEMO_nc_slevel_viewer_lib import pop_up_opt_window,pop_up_info_window,get_h
 
 
 
-'''
-### unsorted. Delete
-from NEMO_nc_slevel_viewer_lib import set_perc_clim_pcolor, get_clim_pcolor, set_clim_pcolor,set_perc_clim_pcolor_in_region,get_colorbar_values,scale_color_map,lon_lat_to_str
-from NEMO_nc_slevel_viewer_lib import interp1dmat_wgt, interp1dmat_create_weight, interp_UV_vel_to_Tgrid
-from NEMO_nc_slevel_viewer_lib import rotated_grid_from_amm15,rotated_grid_to_amm15, reduce_rotamm15_grid,regrid_2nd_thin_params,regrid_iijj_ew_ns
-from NEMO_nc_slevel_viewer_lib import nearbed_int_index_val
-from NEMO_nc_slevel_viewer_lib import pea_TS
-from NEMO_nc_slevel_viewer_lib import load_nc_dims,load_nc_var_name_list
-from NEMO_nc_slevel_viewer_lib import field_gradient_2d,weighted_depth_mean_masked_var
-from NEMO_nc_slevel_viewer_lib import vector_div, vector_curl,sw_dens,reload_data_instances
-
-
-from NEMO_nc_slevel_viewer_lib import reload_map_data_comb_zmeth_zindex,reload_map_data_comb_zmeth_ss_3d,reload_map_data_comb_zmeth_nb_df_zm_3d
-from NEMO_nc_slevel_viewer_lib import reload_map_data_comb_zmeth_zslice,reload_map_data_comb_2d,reload_map_data_comb,reload_ew_data_comb,reload_ns_data_comb
-from NEMO_nc_slevel_viewer_lib import reload_hov_data_comb,reload_ts_data_comb,reload_pf_data_comb
-from NEMO_nc_slevel_viewer_lib import regrid_2nd,grad_horiz_ns_data,grad_horiz_ew_data,grad_vert_ns_data,grad_vert_ew_data,grad_vert_hov_prof_data
-from NEMO_nc_slevel_viewer_lib import extract_time_from_xarr,load_nc_var_name_list_WW3,resample_xarray
-
-from NEMO_nc_slevel_viewer_lib import trim_file_dict,remove_extra_end_file_dict,create_col_lst,create_Dataset_lst,create_xarr_dict,connect_to_files_with_xarray,load_grid_dict
-from NEMO_nc_slevel_viewer_lib import create_config_fnames_dict,create_rootgrp_gdept_dict,create_gdept_ncvarnames,create_lon_lat_dict,create_ncvar_lon_lat_time,add_derived_vars
-
-'''
-
-
-
-
 
 
 
@@ -1900,13 +1874,6 @@ def nemo_slice_zlev(config = 'amm7',
     hov_y = np.array(0)
     hov_dat_dict, ts_dat_dict = {},{}
 
-
-    stage_timer = {}
-    stage_timer_name = {}
-    for i_i in range(12+1):
-        stage_timer[i_i] = datetime.now()
-        stage_timer_name[i_i] = None
-    
     timer_lst = []
     init_timer_lst = []
     if verbose_debugging:
@@ -1932,8 +1899,6 @@ def nemo_slice_zlev(config = 'amm7',
 
     while ii is not None:
         # try, exit on error
-        stage_timer[3] = datetime.now() # start while loop
-        stage_timer_name[3] = 'Start loop'
         if do_timer: timer_lst.append(('Start loop',datetime.now()))
 
         
@@ -2028,10 +1993,7 @@ def nemo_slice_zlev(config = 'amm7',
             #except:
             #    pdb.set_trace()
             ntime = len(time_datetime)
-            #pdb.set_trace()
             
-            stage_timer[4] = datetime.now() # start data instance load, finished converting data location from config to config2
-            stage_timer_name[4] = 'Load Instance'
             if do_timer: timer_lst.append(('Load Instance',datetime.now()))
 
 
@@ -2130,8 +2092,6 @@ def nemo_slice_zlev(config = 'amm7',
             ### Slice data for plotting 
             ###################################################################################################
 
-            stage_timer[5] = datetime.now() # start data dataload
-            stage_timer_name[5] = 'Slice data'
             if do_timer: timer_lst.append(('Slice data',datetime.now()))
             #pdb.set_trace()
             if reload_map:
@@ -2324,29 +2284,6 @@ def nemo_slice_zlev(config = 'amm7',
                                     Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = True)
                                 elif ob_var in ['SST_ins','SST_sat','SLA','ChlA']:
                                     Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = load_ops_2D_xarray(tmpObsfname,ob_var,excl_qc = False)   
-                                '''
-                                if  ob_var == 'ProfT':
-                                    Obs_dict[tmp_datstr]['ProfT']['Obs'][ob_ti] = load_ops_prof_TS(tmpObsfname,'T',excl_qc = True)
-                                elif  ob_var =='ProfS' :
-                                    Obs_dict[tmp_datstr]['ProfS']['Obs'][ob_ti] = load_ops_prof_TS(tmpObsfname,'S',excl_qc = True)
-                                
-                                elif  ob_var =='SST_ins' :
-                                    print(datetime.now(),tmpObsfname)
-                                    tmp_Obs = load_ops_2D_xarray(tmpObsfname,'SST_ins',excl_qc = False)
-                                    Obs_dict[tmp_datstr]['SST_ins']['Obs'][ob_ti] = tmp_Obs   
-                                elif  ob_var =='SST_sat' :
-                                    print(datetime.now(),tmpObsfname)
-                                    tmp_Obs = load_ops_2D_xarray(tmpObsfname,'SST_sat',excl_qc = False)
-                                    Obs_dict[tmp_datstr]['SST_sat']['Obs'][ob_ti] = tmp_Obs
-                                elif  ob_var =='SLA' :
-                                    print(datetime.now(),tmpObsfname)
-                                    tmp_Obs = load_ops_2D_xarray(tmpObsfname,'SLA',excl_qc = False)
-                                    Obs_dict[tmp_datstr]['SLA']['Obs'][ob_ti] = tmp_Obs
-                                elif  ob_var == 'ChlA':
-                                    print(datetime.now(),tmpObsfname)
-                                    tmp_Obs = load_ops_2D_xarray(tmpObsfname,'ChlA',excl_qc = False)
-                                    Obs_dict[tmp_datstr]['ChlA']['Obs'][ob_ti] = tmp_Obs
-                                '''
                             Obs_dat_dict[tmp_datstr][ob_var] = Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti]
                     #once reloaded, set to False
                     reload_Obs = False
@@ -2356,9 +2293,6 @@ def nemo_slice_zlev(config = 'amm7',
 
             print('Reloaded all data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now(),'; dt = %s'%(datetime.now()-datstarttime))
 
-
-            stage_timer[6] = datetime.now() #  dataload reloaded
-            stage_timer_name[6] = 'Data sliced'
             if do_timer: timer_lst.append(('Data sliced',datetime.now()))
 
 
@@ -2448,9 +2382,6 @@ def nemo_slice_zlev(config = 'amm7',
             ### Replot data 
             ###################################################################################################
 
-            
-            stage_timer[7] = datetime.now() #  Starting Plotting data
-            stage_timer_name[7] = 'Plot Data'
             if do_timer: timer_lst.append(('Plot Data',datetime.now()))
 
 
@@ -2468,8 +2399,9 @@ def nemo_slice_zlev(config = 'amm7',
                     pdy = int(np.ceil(map_dat.shape[0]/pxy))
                 else:
                     pdy = int(np.ceil(((ns_slice_dict['x']>cur_ylim[0]) &(ns_slice_dict['x']<cur_ylim[1]) ).sum()/pxy))
+                if pdx <1: pdx = 1
+                if pdy <1: pdy = 1
                 print('Subsampling pixels (for pxy=%i): pdx = %i; pdy - %i'%(pxy,pdx,pdy))
-
 
             if verbose_debugging: print("Do pcolormesh for ii = %i,jj = %i,ti = %i,zz = %i, var = '%s'"%(ii,jj, ti, zz,var), datetime.now())
 
@@ -2617,8 +2549,6 @@ def nemo_slice_zlev(config = 'amm7',
 
                                 #plot Obs profile
                                 if len(obs_obs_sel[secdataset_proc])==1:
-                                    #opax_lst.append([ax[5].axvline(obs_obs_sel[secdataset_proc],color = 'k', ls = '--', lw = 1)])
-                                    #opax_lst.append([ax[5].axvline(obs_mod_sel[secdataset_proc],color = 'm', ls = '--', lw = 1)])
                                     opax_lst.append([ax[5].axvline(obs_obs_sel[secdataset_proc],color = Obs_vis_d['Prof_obs_col'], ls = Obs_vis_d['Prof_obs_ls_2d'], lw = Obs_vis_d['Prof_obs_lw_2d'])])
                                     opax_lst.append([ax[5].axvline(obs_mod_sel[secdataset_proc],color = Obs_vis_d['Prof_mod_col'], ls = Obs_vis_d['Prof_mod_ls_2d'], lw = Obs_vis_d['Prof_mod_lw_2d'])])
                                     
@@ -2689,8 +2619,6 @@ def nemo_slice_zlev(config = 'amm7',
             ### Title String 
             ###################################################################################################
             
-            stage_timer[8] = datetime.now() #  Plotted data
-            stage_timer_name[8] = 'Data Plotted'
             if do_timer: timer_lst.append(('Data Plotted',datetime.now()))
 
             nice_lev = ''
@@ -2851,11 +2779,7 @@ def nemo_slice_zlev(config = 'amm7',
             ### add color lims
             ###################################################################################################
 
-
-            stage_timer[9] = datetime.now() #  starting clims
-            stage_timer_name[9] = 'Starting clim'
             if do_timer: timer_lst.append(('Starting clim',datetime.now()))
-
 
             tmpxlim = cur_xlim
             tmpylim = cur_ylim
@@ -2963,9 +2887,6 @@ def nemo_slice_zlev(config = 'amm7',
                 print("An exception occured - probably 'IndexError: cannot do a non-empty take from an empty axes.'")
                 pdb.set_trace()
 
-
-            stage_timer[10] = datetime.now() #  set clims
-            stage_timer_name[10] = 'Set clim'
             if do_timer: timer_lst.append(('Set clim',datetime.now()))
 
     
@@ -2973,8 +2894,6 @@ def nemo_slice_zlev(config = 'amm7',
             ### add current loc lines
             ###################################################################################################
 
-            stage_timer[11] = datetime.now() #  redraw
-            stage_timer_name[11] = 'Add current location lines'
             if do_timer: timer_lst.append(('Add current location lines',datetime.now()))
             if verbose_debugging: print('Plot location lines for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now())
             
@@ -3020,8 +2939,6 @@ def nemo_slice_zlev(config = 'amm7',
             ###################################################################################################
             ### add contours
             ###################################################################################################
-            stage_timer[12] = datetime.now() #  redraw
-            stage_timer_name[12] = 'Do Contours'
             if do_timer: timer_lst.append(('Do Contours',datetime.now()))
             conax = [] # define it outside if statement
             if do_cont:
@@ -3045,8 +2962,6 @@ def nemo_slice_zlev(config = 'amm7',
             ### add Observations to map as scatter plot to 
             ###################################################################################################
             
-            stage_timer[13] = datetime.now() #  redraw
-            stage_timer_name[13] = 'Do Observations'
             if do_timer: timer_lst.append(('Do Observations',datetime.now()))
             if do_Obs:
 
@@ -3120,8 +3035,6 @@ def nemo_slice_zlev(config = 'amm7',
             ###################################################################################################
             ### add vectors
             ###################################################################################################
-            stage_timer[14] = datetime.now() #  redraw
-            stage_timer_name[14] = 'Do Vectors'
             if do_timer: timer_lst.append(('Do Vectors',datetime.now()))
             visax = []
             if vis_curr > 0:  
@@ -3243,8 +3156,6 @@ def nemo_slice_zlev(config = 'amm7',
             func_but_text_han['waiting'].set_text('Waiting')
             if verbose_debugging: print('Canvas draw', datetime.now())
 
-            stage_timer[15] = datetime.now() #  redraw
-            stage_timer_name[15] = 'Redraw'
             if do_timer: timer_lst.append(('Redraw',datetime.now()))
 
             fig.canvas.draw_idle()
@@ -3260,19 +3171,7 @@ def nemo_slice_zlev(config = 'amm7',
             ### Runtime stats
             ###################################################################################################
 
-            stage_timer[16] = datetime.now() #  redrawn
-            stage_timer_name[16] = 'Redrawn'
             if do_timer: timer_lst.append(('Redrawn',datetime.now()))
-            '''
-            if stage_timer_name[1] is not None:
-                if verbose_debugging:
-                    print()
-                    for i_i in range(2,16+1):print('Stage time %02i - %02i: %s - %s - %s '%(i_i-1,i_i,stage_timer[i_i] - stage_timer[i_i-1], stage_timer_name[i_i-1], stage_timer_name[i_i]))
-                    print()
-            
-                print('Stage time 1 - End: %s'%(stage_timer[16] - stage_timer[1]))
-                if verbose_debugging: print()
-            '''
 
             if do_timer: 
                 
@@ -3344,8 +3243,6 @@ def nemo_slice_zlev(config = 'amm7',
             if verbose_debugging: print('')
             if verbose_debugging: print('')
             if verbose_debugging: print('Button pressed!', datetime.now())
-            stage_timer[1] = datetime.now() # after button pressed
-            stage_timer_name[1] = 'Button Pressed'
             if do_timer: timer_lst.append(('Button pressed',datetime.now()))
             
             ###################################################################################################
@@ -5029,8 +4926,6 @@ def nemo_slice_zlev(config = 'amm7',
             
             if verbose_debugging: print('Cycle', datetime.now())
 
-            stage_timer[2] = datetime.now() # after end of cycle
-            stage_timer_name[2] = 'Cycle ended'
             if do_timer: timer_lst.append(('Cycle ended',datetime.now()))
 
 
