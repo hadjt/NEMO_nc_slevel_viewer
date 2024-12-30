@@ -124,7 +124,7 @@ def nemo_slice_zlev(config = 'amm7',
     trim_extra_files = True,
     vis_curr = -1, vis_curr_meth = 'barb',
     resample_freq = None,
-    verbose_debugging = False,
+    verbose_debugging = False,do_timer = True,
     Obs_dict = None, Obs_reloadmeth = 2,
     do_MLD = True):
 
@@ -408,6 +408,8 @@ def nemo_slice_zlev(config = 'amm7',
     if hov_time is None: hov_time = True
 
     print('thin: %i; thin_files: %i; hov_time: %s; '%(thd[1]['dx'],thd[1]['df'],hov_time))
+    pxy = thd[1]['pxy']
+    print('maximum pixels plotted in x and y dir pxy:',pxy)
 
     nlon_amm7 = 297
     nlat_amm7 = 375
@@ -558,7 +560,7 @@ def nemo_slice_zlev(config = 'amm7',
    
 
 
-    print ('xarray open_mfdataset, Finish',datetime.now())
+    print ('xarray open_mfdataset Finish',datetime.now())
 
 
     # Create lon and lat dictionaries
@@ -1905,7 +1907,10 @@ def nemo_slice_zlev(config = 'amm7',
         stage_timer[i_i] = datetime.now()
         stage_timer_name[i_i] = None
     
-
+    timer_lst = []
+    init_timer_lst = []
+    if verbose_debugging:
+        do_timer = True
 
     init_timer.append((datetime.now(),'Starting While Loop'))
    
@@ -1919,11 +1924,17 @@ def nemo_slice_zlev(config = 'amm7',
 
     secondary_fig = None
 
+    # if using_set_array
+    # paxmap = ax[0].pcolormesh(lon_d[1],lat_d[1],lat_d[1].copy()*np.ma.masked)
+    # if using_set_array
+
+
 
     while ii is not None:
         # try, exit on error
         stage_timer[3] = datetime.now() # start while loop
         stage_timer_name[3] = 'Start loop'
+        if do_timer: timer_lst.append(('Start loop',datetime.now()))
 
         
         #try:
@@ -2021,6 +2032,7 @@ def nemo_slice_zlev(config = 'amm7',
             
             stage_timer[4] = datetime.now() # start data instance load, finished converting data location from config to config2
             stage_timer_name[4] = 'Load Instance'
+            if do_timer: timer_lst.append(('Load Instance',datetime.now()))
 
 
             #### Load data
@@ -2120,6 +2132,7 @@ def nemo_slice_zlev(config = 'amm7',
 
             stage_timer[5] = datetime.now() # start data dataload
             stage_timer_name[5] = 'Slice data'
+            if do_timer: timer_lst.append(('Slice data',datetime.now()))
             #pdb.set_trace()
             if reload_map:
                 map_dat_dict = reload_map_data_comb(var,z_meth,zz,zi, data_inst,var_dim, interp1d_ZwgtT,grid_dict,lon_d[1],lat_d[1],regrid_params,regrid_meth,thd,configd,Dataset_lst)
@@ -2346,6 +2359,7 @@ def nemo_slice_zlev(config = 'amm7',
 
             stage_timer[6] = datetime.now() #  dataload reloaded
             stage_timer_name[6] = 'Data sliced'
+            if do_timer: timer_lst.append(('Data sliced',datetime.now()))
 
 
 
@@ -2436,25 +2450,46 @@ def nemo_slice_zlev(config = 'amm7',
 
             
             stage_timer[7] = datetime.now() #  Starting Plotting data
-            stage_timer_name[7] = 'Plot Data '
+            stage_timer_name[7] = 'Plot Data'
+            if do_timer: timer_lst.append(('Plot Data',datetime.now()))
 
 
             mldax_lst = []
             pax2d = []
+            if pxy is None:
+                pdx, pdy = 1,1
+            else:
+                if cur_xlim is None:
+                    pdx = int(np.ceil(map_dat.shape[1]/pxy))
+                else:
+                    pdx = int(np.ceil(((ew_slice_dict['x']>cur_xlim[0]) &(ew_slice_dict['x']<cur_xlim[1]) ).sum()/pxy))
+
+                if cur_ylim is None:
+                    pdy = int(np.ceil(map_dat.shape[0]/pxy))
+                else:
+                    pdy = int(np.ceil(((ns_slice_dict['x']>cur_ylim[0]) &(ns_slice_dict['x']<cur_ylim[1]) ).sum()/pxy))
+                print('Subsampling pixels (for pxy=%i): pdx = %i; pdy - %i'%(pxy,pdx,pdy))
+
+
             if verbose_debugging: print("Do pcolormesh for ii = %i,jj = %i,ti = %i,zz = %i, var = '%s'"%(ii,jj, ti, zz,var), datetime.now())
-            pax.append(ax[0].pcolormesh(map_dat_dict['x'],map_dat_dict['y'],map_dat,cmap = curr_cmap,norm = climnorm))
+
+
+            # if using_set_array
+            #paxmap.set_cmap(curr_cmap)
+            #paxmap.set_norm(climnorm)
+            #paxmap.set_array(map_dat)  
+            ## comment out pax.append(ax[0].pcolormesh(map_dat_dict
+            # if using_set_array
+
+            pax.append(ax[0].pcolormesh(map_dat_dict['x'][::pdy,::pdx],map_dat_dict['y'][::pdy,::pdx],map_dat[::pdy,::pdx],cmap = curr_cmap,norm = climnorm, rasterized = True))
+
+
             if var_dim[var] == 4:
                 #pdb.set_trace()
-                pax.append(ax[1].pcolormesh(ew_slice_dict['x'],ew_slice_dict['y'],ew_slice_dat,cmap = curr_cmap,norm = climnorm))
-                pax.append(ax[2].pcolormesh(ns_slice_dict['x'],ns_slice_dict['y'],ns_slice_dat,cmap = curr_cmap,norm = climnorm))
-                pax.append(ax[3].pcolormesh(hov_dat_dict['x'],hov_dat_dict['y'],hov_dat,cmap = curr_cmap,norm = climnorm))
+                pax.append(ax[1].pcolormesh(ew_slice_dict['x'][::pdx],ew_slice_dict['y'][:,::pdx],ew_slice_dat[:,::pdx],cmap = curr_cmap,norm = climnorm, rasterized = True))
+                pax.append(ax[2].pcolormesh(ns_slice_dict['x'][::pdy],ns_slice_dict['y'][:,::pdy],ns_slice_dat[:,::pdy],cmap = curr_cmap,norm = climnorm, rasterized = True))
+                pax.append(ax[3].pcolormesh(hov_dat_dict['x'],hov_dat_dict['y'],hov_dat,cmap = curr_cmap,norm = climnorm, rasterized = True))
             elif var_dim[var] == 3:
-                #pdb.set_trace()
-                #pax2d.append(ax[1].plot(ew_slice_dict['x'],ew_slice_dat,'r'))
-                #pax2d.append(ax[2].plot(ns_slice_dict['x'],ns_slice_dat,'r'))
-
-
-
 
                 if secdataset_proc in Dataset_lst:
                     
@@ -2471,8 +2506,6 @@ def nemo_slice_zlev(config = 'amm7',
                     tmpdataset_oper = secdataset_proc[4]
                     if tmpdataset_oper == '-': 
                         
-                        #tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ts_dat_dict[tmpdataset_1] - ts_dat_dict[tmpdataset_2],Dataset_col_diff_dict[secdataset_proc]))
-                        #tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ts_dat_dict['Dataset 1']*0, color = '0.5', ls = '--'))
 
                         pax2d.append(ax[1].plot(ew_slice_dict['x'],ew_slice_dict[tmpdataset_1] - ew_slice_dict[tmpdataset_2],Dataset_col_diff_dict[secdataset_proc]))
                         pax2d.append(ax[1].plot(ew_slice_dict['x'],ew_slice_dict['Dataset 1']*0, color = '0.5', ls = '--'))
@@ -2491,33 +2524,11 @@ def nemo_slice_zlev(config = 'amm7',
                                     tmplw = 0.5
                                     if secdataset_proc == tmp_diff_str_name:tmplw = 1
 
-                                    #tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ts_dat_dict[tmp_datstr1] - ts_dat_dict[tmp_datstr2],Dataset_col_diff_dict[tmp_diff_str_name], lw = tmplw))
                                     pax2d.append(ax[1].plot(ew_slice_dict['x'],ew_slice_dict[tmp_datstr1] - ew_slice_dict[tmp_datstr2],Dataset_col_diff_dict[tmp_diff_str_name], lw = tmplw))
                                     pax2d.append(ax[2].plot(ns_slice_dict['x'],ns_slice_dict[tmp_datstr1] - ns_slice_dict[tmp_datstr2],Dataset_col_diff_dict[tmp_diff_str_name], lw = tmplw))
                                                 
-                            #tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ts_dat_dict['Dataset 1']*0, color = '0.5', ls = '--'))
                             pax2d.append(ax[1].plot(ew_slice_dict['x'],ew_slice_dict['Dataset 1']*0, color = '0.5', ls = '--'))
                             pax2d.append(ax[2].plot(ns_slice_dict['x'],ns_slice_dict['Dataset 1']*0, color = '0.5', ls = '--'))
-
-
-                
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2680,6 +2691,7 @@ def nemo_slice_zlev(config = 'amm7',
             
             stage_timer[8] = datetime.now() #  Plotted data
             stage_timer_name[8] = 'Data Plotted'
+            if do_timer: timer_lst.append(('Data Plotted',datetime.now()))
 
             nice_lev = ''
                 
@@ -2715,6 +2727,10 @@ def nemo_slice_zlev(config = 'amm7',
 
             cax = []      
 
+            # if using_set_array
+            ## remove 0, so change for ai in [0,1,2,3]: cax.append(plt.colorbar to for ai in [1,2,3]: cax.append(plt.colorbar
+            ## add cax.append(plt.colorbar(paxmap, ax = ax[0], cax = cbarax[0]))
+            # if using_set_array
 
             if var_dim[var] == 4:  
                 for ai in [0,1,2,3]: cax.append(plt.colorbar(pax[ai], ax = ax[ai], cax = cbarax[ai]))
@@ -2838,6 +2854,7 @@ def nemo_slice_zlev(config = 'amm7',
 
             stage_timer[9] = datetime.now() #  starting clims
             stage_timer_name[9] = 'Starting clim'
+            if do_timer: timer_lst.append(('Starting clim',datetime.now()))
 
 
             tmpxlim = cur_xlim
@@ -2949,6 +2966,7 @@ def nemo_slice_zlev(config = 'amm7',
 
             stage_timer[10] = datetime.now() #  set clims
             stage_timer_name[10] = 'Set clim'
+            if do_timer: timer_lst.append(('Set clim',datetime.now()))
 
     
             ###################################################################################################
@@ -2957,6 +2975,7 @@ def nemo_slice_zlev(config = 'amm7',
 
             stage_timer[11] = datetime.now() #  redraw
             stage_timer_name[11] = 'Add current location lines'
+            if do_timer: timer_lst.append(('Add current location lines',datetime.now()))
             if verbose_debugging: print('Plot location lines for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now())
             
             ## add lines to show current point. 
@@ -3003,6 +3022,7 @@ def nemo_slice_zlev(config = 'amm7',
             ###################################################################################################
             stage_timer[12] = datetime.now() #  redraw
             stage_timer_name[12] = 'Do Contours'
+            if do_timer: timer_lst.append(('Do Contours',datetime.now()))
             conax = [] # define it outside if statement
             if do_cont:
 
@@ -3027,6 +3047,7 @@ def nemo_slice_zlev(config = 'amm7',
             
             stage_timer[13] = datetime.now() #  redraw
             stage_timer_name[13] = 'Do Observations'
+            if do_timer: timer_lst.append(('Do Observations',datetime.now()))
             if do_Obs:
 
                 oax_lst = []
@@ -3101,6 +3122,7 @@ def nemo_slice_zlev(config = 'amm7',
             ###################################################################################################
             stage_timer[14] = datetime.now() #  redraw
             stage_timer_name[14] = 'Do Vectors'
+            if do_timer: timer_lst.append(('Do Vectors',datetime.now()))
             visax = []
             if vis_curr > 0:  
                 if vis_curr_meth == 'barb':
@@ -3221,8 +3243,9 @@ def nemo_slice_zlev(config = 'amm7',
             func_but_text_han['waiting'].set_text('Waiting')
             if verbose_debugging: print('Canvas draw', datetime.now())
 
-            stage_timer[14] = datetime.now() #  redraw
-            stage_timer_name[14] = 'Redraw'
+            stage_timer[15] = datetime.now() #  redraw
+            stage_timer_name[15] = 'Redraw'
+            if do_timer: timer_lst.append(('Redraw',datetime.now()))
 
             fig.canvas.draw_idle()
             if verbose_debugging: print('Canvas flush', datetime.now())
@@ -3239,16 +3262,35 @@ def nemo_slice_zlev(config = 'amm7',
 
             stage_timer[16] = datetime.now() #  redrawn
             stage_timer_name[16] = 'Redrawn'
-
+            if do_timer: timer_lst.append(('Redrawn',datetime.now()))
+            '''
             if stage_timer_name[1] is not None:
                 if verbose_debugging:
                     print()
-                    for i_i in range(2,12+1):print('Stage time %02i - %02i: %s - %s - %s '%(i_i-1,i_i,stage_timer[i_i] - stage_timer[i_i-1], stage_timer_name[i_i-1], stage_timer_name[i_i]))
+                    for i_i in range(2,16+1):print('Stage time %02i - %02i: %s - %s - %s '%(i_i-1,i_i,stage_timer[i_i] - stage_timer[i_i-1], stage_timer_name[i_i-1], stage_timer_name[i_i]))
                     print()
             
                 print('Stage time 1 - End: %s'%(stage_timer[16] - stage_timer[1]))
                 if verbose_debugging: print()
+            '''
 
+            if do_timer: 
+                
+                print()
+                #pdb.set_trace()
+                for i_i in range(1,len(timer_lst)):print('Stage time %02i - %02i: %s - %s - %s '%(i_i-1,i_i,timer_lst[i_i][1] - timer_lst[i_i-1][1], timer_lst[i_i-1][0],timer_lst[i_i][0]))
+                print()
+            
+                print('Stage time 1 - End: %s'%(timer_lst[-1][1] - timer_lst[0][1]))
+                if verbose_debugging: print()
+
+                print('Button Press - End: %s'%(timer_lst[-1][1] - timer_lst[1][1]))
+                if verbose_debugging: print()
+
+
+            if do_timer: timer_lst = []
+
+            if do_timer: timer_lst.append(('Timer reset',datetime.now()))
             
             #await click with ginput
             if verbose_debugging: print('Waiting for button press', datetime.now())
@@ -3302,15 +3344,20 @@ def nemo_slice_zlev(config = 'amm7',
             if verbose_debugging: print('')
             if verbose_debugging: print('')
             if verbose_debugging: print('Button pressed!', datetime.now())
+            stage_timer[1] = datetime.now() # after button pressed
+            stage_timer_name[1] = 'Button Pressed'
+            if do_timer: timer_lst.append(('Button pressed',datetime.now()))
             
+            ###################################################################################################
+            ### Waiting Label
+            ###################################################################################################
+
+            if do_timer: timer_lst.append(('Waiting draw_idle',datetime.now()))
             func_but_text_han['waiting'].set_color('r')
-            fig.canvas.draw_idle()
+            fig.canvas.draw()
             if verbose_debugging: print('Canvas flush wait label', datetime.now())
             fig.canvas.flush_events()
             if verbose_debugging: print('Canvas drawn and flushed wait label', datetime.now())
-
-            stage_timer[1] = datetime.now() # after button pressed
-            stage_timer_name[1] = 'Button Pressed'
 
             ###################################################################################################
             ### Find where clicked
@@ -3322,6 +3369,8 @@ def nemo_slice_zlev(config = 'amm7',
             ###################################################################################################
             ### If justplot, hijack code
             ###################################################################################################
+
+            if do_timer: timer_lst.append(('Just Plot',datetime.now()))
 
             if justplot:
                 
@@ -3373,6 +3422,8 @@ def nemo_slice_zlev(config = 'amm7',
 
 
 
+            if do_timer: timer_lst.append(('set current xylims',datetime.now()))
+
             if verbose_debugging: print("selected clii = %f,cljj = %f"%(clii,cljj))
 
             #get click location, and current axis limits for ax[0], and set them
@@ -3390,6 +3441,8 @@ def nemo_slice_zlev(config = 'amm7',
             ###################################################################################################
             ### Get click coords
             ###################################################################################################
+            if do_timer: timer_lst.append(('Get click coords',datetime.now()))
+
             #find clicked axes:
             is_in_axes = False
             
@@ -3410,6 +3463,7 @@ def nemo_slice_zlev(config = 'amm7',
             ###################################################################################################
             ### If axes clicked, change ind, decide what data to reload
             ###################################################################################################
+            if do_timer: timer_lst.append(('If axes, change ind',datetime.now()))
             if verbose_debugging: print('Interpret Mouse click: figure axes, location change', datetime.now())
 
             if sel_ax == 0:               
@@ -3489,8 +3543,11 @@ def nemo_slice_zlev(config = 'amm7',
             ### If var clicked, change var
             ###################################################################################################
 
-            if not is_in_axes:  
-            
+            if do_timer: timer_lst.append(('If not in axes',datetime.now()))
+           
+            if not is_in_axes: 
+                if do_timer: timer_lst.append(('Check Var',datetime.now()))
+           
                 for but_name in but_extent.keys():
                     
                     but_pos_x0,but_pos_x1,but_pos_y0,but_pos_y1 = but_extent[but_name]
@@ -3538,7 +3595,8 @@ def nemo_slice_zlev(config = 'amm7',
                 ###################################################################################################
                 ### If function clicked, call function
                 ###################################################################################################
-
+                if do_timer: timer_lst.append(('Check func',datetime.now()))
+            
                 if verbose_debugging: print('Interpret Mouse click: Functions', datetime.now())
                 for but_name in func_but_extent.keys():
                     
@@ -4871,13 +4929,16 @@ def nemo_slice_zlev(config = 'amm7',
                             
                             
 
+            if do_timer: timer_lst.append(('Finished var func',datetime.now()))
+            
             plt.sca(ax[0])
                     
             
             ###################################################################################################
             ### remove contours, colorbars, images, lines, text, ready for next cycle
             ###################################################################################################
-
+            if do_timer: timer_lst.append(('Remove contours, images, lines text',datetime.now()))
+            
             
             if verbose_debugging: print('Interpret Mouse click: remove lines and axes', datetime.now())
             #pdb.set_trace()
@@ -4970,6 +5031,7 @@ def nemo_slice_zlev(config = 'amm7',
 
             stage_timer[2] = datetime.now() # after end of cycle
             stage_timer_name[2] = 'Cycle ended'
+            if do_timer: timer_lst.append(('Cycle ended',datetime.now()))
 
 
 def main():
@@ -5789,6 +5851,8 @@ def main():
         thd[1]['x1'] = None
         thd[1]['y0'] = 0
         thd[1]['y1'] = None
+
+        thd[1]['pxy'] = None
 
         for ii in range(len(dataset_lst)-1):
             thd[ii+2] = thd[1]

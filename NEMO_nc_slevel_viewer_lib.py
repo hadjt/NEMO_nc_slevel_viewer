@@ -488,6 +488,7 @@ def get_colorbar_values(cb, verbose = False):
 
     #print ('Think this is simpler with Python3')
     return cb.ax.get_yticks()
+    '''
     # cb = plt.colorbar()
 
     #cbtickes = [float(ss.get_text()) for ss in cb.ax.get_yticklabels()]
@@ -517,7 +518,7 @@ def get_colorbar_values(cb, verbose = False):
     if verbose: print(cbtickes)
 
     return cbtickes
-
+    '''
 
 
 
@@ -3325,7 +3326,7 @@ def create_col_lst(nDataset):
         import matplotlib.colors as mcolors
         XKCD_COLORS = np.array([ss for ss in mcolors.XKCD_COLORS.keys()])
         for ii in range((nDataset**2)-len(Dataset_col_diff)):Dataset_col_diff.append(XKCD_COLORS[ii])
-    print (nDataset,len(Dataset_col),len(Dataset_col_diff),len(linestyle_str))
+    #print (nDataset,len(Dataset_col),len(Dataset_col_diff),len(linestyle_str))
     return Dataset_col,Dataset_col_diff,linestyle_str
 
 def create_xarr_dict(fname_dict):
