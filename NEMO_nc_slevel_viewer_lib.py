@@ -4228,12 +4228,12 @@ def pop_up_opt_window(opt_but_names,opt_but_sw = None):
         tmpobsbutloc = plt.ginput(1, timeout = 3) #[(0.3078781362007169, 0.19398809523809524)]
 
         if len(tmpobsbutloc)!=1:
-            print('tmpobsbutloc len != 1',tmpobsbutloc )
+            #print('tmpobsbutloc len != 1',tmpobsbutloc )
             continue
             pdb.set_trace()
         else:
             if len(tmpobsbutloc[0])!=2:
-                print('tmpobsbutloc[0] len != 2',tmpobsbutloc )
+                #print('tmpobsbutloc[0] len != 2',tmpobsbutloc )
                 continue
                 pdb.set_trace()
         # was a button clicked?

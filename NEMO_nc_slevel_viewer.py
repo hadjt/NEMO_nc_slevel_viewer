@@ -969,10 +969,8 @@ def nemo_slice_zlev(config = 'amm7',
     #   create boxes with variable names as buttons to change variables. 
     climnorm = None # matplotlib.colors.LogNorm(0.005,0.1)
     
-    print('Creating Figure', datetime.now())
 
-    ax = []
-    #pax = []
+    print('Preparing Obs', datetime.now())
     #Set up Obs if in use
     if do_Obs:
         ob_ti = ti
@@ -1062,6 +1060,9 @@ def nemo_slice_zlev(config = 'amm7',
         # set reload Obs to true
         reload_Obs = True
 
+    print('Creating Figure', datetime.now())
+    ax = []
+
     fig_tit_str = 'Interactive figure, Select lat/lon in a); lon in b); lat  in c); depth in d) and time in e).\n'
     #if fig_lab_d['Dataset 1'] is not None: fig_tit_str = fig_tit_str + ' Dataset 1 = %s;'%fig_lab_d['Dataset 1']
     #if fig_lab_d['Dataset 2'] is not None: fig_tit_str = fig_tit_str + ' Dataset 2 = %s;'%fig_lab_d['Dataset 2']
@@ -1088,6 +1089,8 @@ def nemo_slice_zlev(config = 'amm7',
     if justplot:
         nvarbutcol = 1000
 
+    #import locale
+    #locale.setlocale(locale.LC_ALL, 'en_GB.utf8')
 
     fig = plt.figure()
     fig.suptitle(fig_tit_str_int + '\n' + fig_tit_str_lab, fontsize=14)
@@ -1145,6 +1148,7 @@ def nemo_slice_zlev(config = 'amm7',
     #ax.append(fig.add_axes([leftgap + (axwid - cbwid - cbgap) + wgap, 0.10, axwid - cbwid - cbgap,  0.17]))
 
 
+    print('Creating Figure', datetime.now())
 
 
     labi,labj = 0.05, 0.95
@@ -4393,14 +4397,14 @@ def nemo_slice_zlev(config = 'amm7',
                                             
                                     #pdb.set_trace()
                                     if len(tmpxsbutloc)!=1:
-                                        print('tmpxsbutloc len != 1',tmpxsbutloc )
+                                        #print('tmpxsbutloc len != 1',tmpxsbutloc )
                                         #close_xsax = True
                                         continue
                                         #pdb.set_trace()
                                     else:
                                         if len(tmpxsbutloc[0])!=2:
                                             close_xsax = True
-                                            print('tmpxsbutloc[0] len != 2',tmpxsbutloc )
+                                            #print('tmpxsbutloc[0] len != 2',tmpxsbutloc )
                                             continue
                                             #pdb.set_trace()
                                         # was a button clicked?
