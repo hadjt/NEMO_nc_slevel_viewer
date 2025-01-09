@@ -14,7 +14,7 @@ import matplotlib
 import time
 import argparse
 import textwrap
-
+import psutil
 
 ### set-up modules
 from NEMO_nc_slevel_viewer_lib import create_config_fnames_dict,create_rootgrp_gdept_dict,create_gdept_ncvarnames
@@ -98,7 +98,7 @@ def nemo_slice_zlev(config = 'amm7',
     trim_extra_files = True,
     vis_curr = -1, vis_curr_meth = 'barb',
     resample_freq = None,
-    verbose_debugging = False,do_timer = True,
+    verbose_debugging = False,do_timer = True,do_memory = True,
     Obs_dict = None, Obs_reloadmeth = 2,
     do_MLD = True):
 
@@ -240,7 +240,8 @@ def nemo_slice_zlev(config = 'amm7',
 
             #pdb.set_trace()
 
-
+    if do_memory:
+        do_timer = True
     '''
 
     ######################
@@ -1896,12 +1897,19 @@ def nemo_slice_zlev(config = 'amm7',
     # if using_set_array
 
 
+    
 
     while ii is not None:
         # try, exit on error
         if do_timer: timer_lst.append(('Start loop',datetime.now()))
+        #pdb.set_trace()
+        #if do_memory & do_timer: timer_lst[-1]= timer_lst[-1] + (psutil.Process(os.getpid()).memory_info().rss/1024/1024,)
+        if do_memory & do_timer: timer_lst[-1]= timer_lst[-1] + (psutil.Process(os.getpid()).memory_info().rss/1024/1024,)
 
-        
+        #process = psutil.Process(os.getpid())
+        #print('')
+        #print('Memory_use: %f MB'%process.memory_info().rss/1024/1024)  # in bytes 
+        #print('')
         #try:
         if True: 
             # extract plotting data (when needed), and subtract off difference files if necessary.
@@ -1995,6 +2003,7 @@ def nemo_slice_zlev(config = 'amm7',
             ntime = len(time_datetime)
             
             if do_timer: timer_lst.append(('Load Instance',datetime.now()))
+            if do_memory & do_timer: timer_lst[-1]= timer_lst[-1] + (psutil.Process(os.getpid()).memory_info().rss/1024/1024,)
 
 
             #### Load data
@@ -2011,25 +2020,48 @@ def nemo_slice_zlev(config = 'amm7',
                 #       if the time has changed, or
                 #       if the variable has changed
                 if  (data_inst is None)|(preload_data_ti != ti)|(preload_data_var != var)|(preload_data_ldi != ldi):
+
+                    data_inst = None
+
+                    if do_memory & do_timer: timer_lst.append(('Deleted data_inst',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
+
                     data_inst,preload_data_ti,preload_data_var,preload_data_ldi= reload_data_instances(var,thd,ldi,ti,var_d,var_grid['Dataset 1'], xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
+
+                    if do_memory & do_timer: timer_lst.append(('Reloaded data_inst',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
 
                     # For T Diff
                     if do_Tdiff:
                         #data_inst_Tm1['Dataset 1'],data_inst_Tm1['Dataset 2'] = None,None
-                        for tmp_datstr in Dataset_lst:data_inst_Tm1[tmp_datstr] = None
+                        #for tmp_datstr in Dataset_lst:data_inst_Tm1[tmp_datstr] = None
+                        data_inst_Tm1 = None
+                        data_inst_Tm1 = {}
+                        for tmp_datstr in Dataset_lst:data_inst_Tm1[tmp_datstr] = None          
                         preload_data_ti_Tm1,preload_data_var_Tm1,preload_data_ldi_Tm1 = 0.5,'None',0.5
                         Time_Diff_cnt = 0
+                        if do_memory & do_timer: timer_lst.append(('Deleted data_inst_Tm1',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
 
                 if vis_curr > 0:
+
+
+                    data_inst_U = None
+                    if do_memory & do_timer: timer_lst.append(('Deleted data_inst_U',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                     data_inst_U,preload_data_ti_U,preload_data_var_U,preload_data_ldi_U = reload_data_instances(tmp_var_U,thd,ldi,ti,var_d,var_grid['Dataset 1'], xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
+                    if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_U',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
+                    
+                    data_inst_V = None
+                    if do_memory & do_timer: timer_lst.append(('Deleted data_inst_V',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                     data_inst_V,preload_data_ti_V,preload_data_var_V,preload_data_ldi_V = reload_data_instances(tmp_var_V,thd,ldi,ti,var_d,var_grid['Dataset 1'], xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
+                    if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_V',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
 
 
 
                 if reload_MLD:
+                    data_inst_mld = None
+                    if do_memory & do_timer: timer_lst.append(('Deleted data_inst_mld',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                     data_inst_mld,preload_data_ti_mld,preload_data_var_mld,preload_data_ldi_mld= reload_data_instances(MLD_var,thd,ldi,ti,var_d,var_grid['Dataset 1'], xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
                     reload_MLD = False
-
+                    if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_mld',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
+                    
             ###################################################################################################
             ### Status of buttons
             ###################################################################################################
@@ -2080,6 +2112,11 @@ def nemo_slice_zlev(config = 'amm7',
                             reload_ew = True
                             reload_ns = True
 
+                            # clear the data_inst_Tm1 array if not in use
+                            for tmp_datstr in  Dataset_lst:data_inst_Tm1[tmp_datstr] = None
+
+                if do_memory & do_timer: timer_lst.append(('Applied T_diff',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
+                    
                             
 
 
@@ -2093,10 +2130,18 @@ def nemo_slice_zlev(config = 'amm7',
             ###################################################################################################
 
             if do_timer: timer_lst.append(('Slice data',datetime.now()))
+            if do_memory & do_timer: timer_lst[-1]= timer_lst[-1] + (psutil.Process(os.getpid()).memory_info().rss/1024/1024,)
             #pdb.set_trace()
             if reload_map:
+
+                map_dat_dict = None
+                
+                if do_memory & do_timer: timer_lst.append(('Deleted map_dat_dict',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
+                
                 map_dat_dict = reload_map_data_comb(var,z_meth,zz,zi, data_inst,var_dim, interp1d_ZwgtT,grid_dict,lon_d[1],lat_d[1],regrid_params,regrid_meth,thd,configd,Dataset_lst)
                 reload_map = False
+                
+                if do_memory & do_timer: timer_lst.append(('Reloaded map_dat_dict',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
 
                 if vis_curr > 0:
                     reload_UV_map = True
@@ -2107,6 +2152,9 @@ def nemo_slice_zlev(config = 'amm7',
                     for tmp_datstr in  Dataset_lst:
                         
                         map_dat_dict[tmp_datstr] = field_gradient_2d(map_dat_dict[tmp_datstr], thd[1]['dx']*grid_dict['Dataset 1']['e1t'],thd[1]['dx']*grid_dict['Dataset 1']['e2t']) # scale up widths between grid boxes
+                    
+                    if do_memory & do_timer: timer_lst.append(('Calculated Grad of map_dat_dict',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
+
                     #map_dat_dict['Dataset 1'] = field_gradient_2d(map_dat_dict['Dataset 1'], thd[1]['dx']*grid_dict['Dataset 1']['e1t'],thd[1]['dx']*grid_dict['Dataset 1']['e2t']) # scale up widths between grid boxes
                     #map_dat_dict['Dataset 2'] = field_gradient_2d(map_dat_dict['Dataset 2'], thd[1]['dx']*grid_dict['Dataset 1']['e1t'],thd[1]['dx']*grid_dict['Dataset 1']['e2t']) # map 2 aleady on map1 grid, so use grid_dict['Dataset 1']['e1t'] not grid_dict['Dataset 2']['e1t']
                 #pdb.set_trace()
@@ -2119,9 +2167,15 @@ def nemo_slice_zlev(config = 'amm7',
             if reload_UV_map:
                 reload_UV_map = False
                 if vis_curr > 0:
+                    map_dat_dict_U,map_dat_dict_V = None,None
+
+                    if do_memory & do_timer: timer_lst.append(('Deleted map_dat_dict_U&V',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
+                    
                     map_dat_dict_U = reload_map_data_comb(tmp_var_U,z_meth,zz,zi, data_inst_U,var_dim, interp1d_ZwgtT,grid_dict,lon_d[1],lat_d[1],regrid_params,regrid_meth,thd,configd,Dataset_lst)
                     map_dat_dict_V = reload_map_data_comb(tmp_var_V,z_meth,zz,zi, data_inst_V,var_dim, interp1d_ZwgtT,grid_dict,lon_d[1],lat_d[1],regrid_params,regrid_meth,thd,configd,Dataset_lst)
               
+                    if do_memory & do_timer: timer_lst.append(('Reloaded map_dat_dict_U&V',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
+                    
 
 
             if verbose_debugging: print('Reloaded vis current map data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now(),'; dt = %s'%(datetime.now()-prevtime))
@@ -2129,12 +2183,17 @@ def nemo_slice_zlev(config = 'amm7',
 
             if do_MLD:
                 #pdb.set_trace()
+                
+
                 if reload_ns:
+                    mld_ns_slice_dict = None
                     mld_ns_slice_dict = reload_ns_data_comb(ii,jj, data_inst_mld, lon_d[1], lat_d[1], grid_dict, var_dim[MLD_var],regrid_meth, iijj_ind,Dataset_lst,configd)
                 if reload_ew:
+                    mld_ew_slice_dict = None
                     mld_ew_slice_dict = reload_ew_data_comb(ii,jj, data_inst_mld, lon_d[1], lat_d[1], grid_dict, var_dim[MLD_var],regrid_meth, iijj_ind,Dataset_lst,configd)
  
-
+                if do_memory & do_timer: timer_lst.append(('Reloaded MLD ns&ew slices',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
+                    
             if reload_ew:
                 if var_dim[var] == 4:
                     ew_slice_dict = reload_ew_data_comb(ii,jj, data_inst, lon_d[1], lat_d[1], grid_dict, var_dim[var], regrid_meth,iijj_ind,Dataset_lst,configd)
@@ -2146,14 +2205,12 @@ def nemo_slice_zlev(config = 'amm7',
                         #ew_slice_dict['Dataset 1'], ew_slice_dict['Dataset 2'] = grad_vert_ew_data(ew_slice_dict['Dataset 1'],ew_slice_dict['Dataset 2'],ew_slice_dict['y'])
                         ew_slice_dict = grad_vert_ew_data(ew_slice_dict)
                 else:
-                    '''
-                    ew_slice_dict = {}
-                    ew_slice_dict['x'] = lon_d[1][jj,:]
-                    ew_slice_dict['y'] = grid_dict['Dataset 1']['gdept'][:,jj,:]
-                    '''
                     ew_slice_dict = reload_ew_data_comb(ii,jj, data_inst, lon_d[1], lat_d[1], grid_dict, var_dim[var], regrid_meth,iijj_ind,Dataset_lst,configd)
 
                 reload_ew = False
+
+                if do_memory & do_timer: timer_lst.append(('Reloaded reload_ew_data_comb',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
+            
 
             if verbose_debugging: print('Reloaded  ew data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now(),'; dt = %s'%(datetime.now()-prevtime))
             prevtime = datetime.now()
@@ -2169,16 +2226,14 @@ def nemo_slice_zlev(config = 'amm7',
                         #ns_slice_dict['Dataset 1'], ns_slice_dict['Dataset 2'] = grad_vert_ns_data(ns_slice_dict['Dataset 1'],ns_slice_dict['Dataset 2'],ns_slice_dict['y'])
                         ns_slice_dict = grad_vert_ns_data(ns_slice_dict)
                 else:
-                    '''
-                    ns_slice_dict = {}
-                    ns_slice_dict['x'] = lat_d[1][:,ii]
-                    ns_slice_dict['y'] = grid_dict['Dataset 1']['gdept'][:,:,ii]
-                    '''
 
                     ns_slice_dict = reload_ns_data_comb(ii,jj, data_inst, lon_d[1], lat_d[1], grid_dict, var_dim[var],regrid_meth, iijj_ind,Dataset_lst,configd)
  
                   
                 reload_ns = False
+                
+                if do_memory & do_timer: timer_lst.append(('Reloaded reload_ns_data_comb',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
+            
 
 
             if verbose_debugging: print('Reloaded  ns data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now(),'; dt = %s'%(datetime.now()-prevtime))
@@ -2189,6 +2244,11 @@ def nemo_slice_zlev(config = 'amm7',
 
                 if do_grad == 2:
                     pf_dat_dict = grad_vert_hov_prof_data(pf_dat_dict)
+
+
+                
+                if do_memory & do_timer: timer_lst.append(('Reloaded reload_pf_data_comb',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
+            
             if reload_hov:
                 if hov_time:
                     if var_dim[var] == 4:
@@ -2211,6 +2271,9 @@ def nemo_slice_zlev(config = 'amm7',
                     #hov_dat_dict['Dataset 2'] = np.ma.zeros((hov_dat_dict['y'].shape+hov_dat_dict['x'].shape))*np.ma.masked
                     for tmp_datstr in Dataset_lst:hov_dat_dict[tmp_datstr] = np.ma.zeros((hov_dat_dict['y'].shape+hov_dat_dict['x'].shape))*np.ma.masked
                 reload_hov = False
+                
+                if do_memory & do_timer: timer_lst.append(('Reloaded reload_hov_data_comb',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
+            
 
             if verbose_debugging: print('Reloaded hov data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now(),'; dt = %s'%(datetime.now()-prevtime))
             prevtime = datetime.now()
@@ -2223,6 +2286,9 @@ def nemo_slice_zlev(config = 'amm7',
                     #ts_dat_dict['Dataset 2'] = np.ma.ones(ntime)*np.ma.masked
                     for tmp_datstr in Dataset_lst:ts_dat_dict[tmp_datstr] = np.ma.ones(ntime)*np.ma.masked
                 reload_ts = False
+
+                if do_memory & do_timer: timer_lst.append(('Reloaded reload_ts_data_comb',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
+            
             #if Obs and reloading,  
             if do_Obs:
                 if reload_Obs:
@@ -2287,6 +2353,9 @@ def nemo_slice_zlev(config = 'amm7',
                             Obs_dat_dict[tmp_datstr][ob_var] = Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti]
                     #once reloaded, set to False
                     reload_Obs = False
+
+                    if do_memory & do_timer: timer_lst.append(('Reloaded Obs',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
+            
             
             if verbose_debugging: print('Reloaded  ts data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now(),'; dt = %s'%(datetime.now()-prevtime))
             prevtime = datetime.now()
@@ -2294,6 +2363,7 @@ def nemo_slice_zlev(config = 'amm7',
             print('Reloaded all data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now(),'; dt = %s'%(datetime.now()-datstarttime))
 
             if do_timer: timer_lst.append(('Data sliced',datetime.now()))
+            if do_memory & do_timer: timer_lst[-1]= timer_lst[-1] + (psutil.Process(os.getpid()).memory_info().rss/1024/1024,)
 
 
 
@@ -2383,6 +2453,7 @@ def nemo_slice_zlev(config = 'amm7',
             ###################################################################################################
 
             if do_timer: timer_lst.append(('Plot Data',datetime.now()))
+            if do_memory & do_timer: timer_lst[-1]= timer_lst[-1] + (psutil.Process(os.getpid()).memory_info().rss/1024/1024,)
 
 
             mldax_lst = []
@@ -2620,6 +2691,7 @@ def nemo_slice_zlev(config = 'amm7',
             ###################################################################################################
             
             if do_timer: timer_lst.append(('Data Plotted',datetime.now()))
+            if do_memory & do_timer: timer_lst[-1]= timer_lst[-1] + (psutil.Process(os.getpid()).memory_info().rss/1024/1024,)
 
             nice_lev = ''
                 
@@ -2780,6 +2852,7 @@ def nemo_slice_zlev(config = 'amm7',
             ###################################################################################################
 
             if do_timer: timer_lst.append(('Starting clim',datetime.now()))
+            if do_memory & do_timer: timer_lst[-1]= timer_lst[-1] + (psutil.Process(os.getpid()).memory_info().rss/1024/1024,)
 
             tmpxlim = cur_xlim
             tmpylim = cur_ylim
@@ -2888,6 +2961,7 @@ def nemo_slice_zlev(config = 'amm7',
                 pdb.set_trace()
 
             if do_timer: timer_lst.append(('Set clim',datetime.now()))
+            if do_memory & do_timer: timer_lst[-1]= timer_lst[-1] + (psutil.Process(os.getpid()).memory_info().rss/1024/1024,)
 
     
             ###################################################################################################
@@ -2895,6 +2969,7 @@ def nemo_slice_zlev(config = 'amm7',
             ###################################################################################################
 
             if do_timer: timer_lst.append(('Add current location lines',datetime.now()))
+            if do_memory & do_timer: timer_lst[-1]= timer_lst[-1] + (psutil.Process(os.getpid()).memory_info().rss/1024/1024,)
             if verbose_debugging: print('Plot location lines for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now())
             
             ## add lines to show current point. 
@@ -2940,6 +3015,7 @@ def nemo_slice_zlev(config = 'amm7',
             ### add contours
             ###################################################################################################
             if do_timer: timer_lst.append(('Do Contours',datetime.now()))
+            if do_memory & do_timer: timer_lst[-1]= timer_lst[-1] + (psutil.Process(os.getpid()).memory_info().rss/1024/1024,)
             conax = [] # define it outside if statement
             if do_cont:
 
@@ -2963,6 +3039,7 @@ def nemo_slice_zlev(config = 'amm7',
             ###################################################################################################
             
             if do_timer: timer_lst.append(('Do Observations',datetime.now()))
+            if do_memory & do_timer: timer_lst[-1]= timer_lst[-1] + (psutil.Process(os.getpid()).memory_info().rss/1024/1024,)
             if do_Obs:
 
                 oax_lst = []
@@ -3036,6 +3113,7 @@ def nemo_slice_zlev(config = 'amm7',
             ### add vectors
             ###################################################################################################
             if do_timer: timer_lst.append(('Do Vectors',datetime.now()))
+            if do_memory & do_timer: timer_lst[-1]= timer_lst[-1] + (psutil.Process(os.getpid()).memory_info().rss/1024/1024,)
             visax = []
             if vis_curr > 0:  
                 if vis_curr_meth == 'barb':
@@ -3157,6 +3235,7 @@ def nemo_slice_zlev(config = 'amm7',
             if verbose_debugging: print('Canvas draw', datetime.now())
 
             if do_timer: timer_lst.append(('Redraw',datetime.now()))
+            if do_memory & do_timer: timer_lst[-1]= timer_lst[-1] + (psutil.Process(os.getpid()).memory_info().rss/1024/1024,)
 
             fig.canvas.draw_idle()
             if verbose_debugging: print('Canvas flush', datetime.now())
@@ -3172,14 +3251,16 @@ def nemo_slice_zlev(config = 'amm7',
             ###################################################################################################
 
             if do_timer: timer_lst.append(('Redrawn',datetime.now()))
+            if do_memory & do_timer: timer_lst[-1]= timer_lst[-1] + (psutil.Process(os.getpid()).memory_info().rss/1024/1024,)
 
             if do_timer: 
+                print()
+                if do_memory:
+                    for i_i in range(1,len(timer_lst)):print('Stage time %02i - %02i: %s (%i dMB, %i MB) - %s - %s '%(i_i-1,i_i,timer_lst[i_i][1] - timer_lst[i_i-1][1],timer_lst[i_i][2] - timer_lst[i_i-1][2],timer_lst[i_i][2], timer_lst[i_i-1][0],timer_lst[i_i][0]))
+                else:
+                    for i_i in range(1,len(timer_lst)):print('Stage time %02i - %02i: %s - %s - %s '%(i_i-1,i_i,timer_lst[i_i][1] - timer_lst[i_i-1][1], timer_lst[i_i-1][0],timer_lst[i_i][0]))
+                print()
                 
-                print()
-                #pdb.set_trace()
-                for i_i in range(1,len(timer_lst)):print('Stage time %02i - %02i: %s - %s - %s '%(i_i-1,i_i,timer_lst[i_i][1] - timer_lst[i_i-1][1], timer_lst[i_i-1][0],timer_lst[i_i][0]))
-                print()
-            
                 print('Stage time 1 - End: %s'%(timer_lst[-1][1] - timer_lst[0][1]))
                 if verbose_debugging: print()
 
@@ -3190,6 +3271,7 @@ def nemo_slice_zlev(config = 'amm7',
             if do_timer: timer_lst = []
 
             if do_timer: timer_lst.append(('Timer reset',datetime.now()))
+            if do_memory & do_timer: timer_lst[-1]= timer_lst[-1] + (psutil.Process(os.getpid()).memory_info().rss/1024/1024,)
             
             #await click with ginput
             if verbose_debugging: print('Waiting for button press', datetime.now())
@@ -3244,12 +3326,14 @@ def nemo_slice_zlev(config = 'amm7',
             if verbose_debugging: print('')
             if verbose_debugging: print('Button pressed!', datetime.now())
             if do_timer: timer_lst.append(('Button pressed',datetime.now()))
+            if do_memory & do_timer: timer_lst[-1]= timer_lst[-1] + (psutil.Process(os.getpid()).memory_info().rss/1024/1024,)
             
             ###################################################################################################
             ### Waiting Label
             ###################################################################################################
 
             if do_timer: timer_lst.append(('Waiting draw_idle',datetime.now()))
+            if do_memory & do_timer: timer_lst[-1]= timer_lst[-1] + (psutil.Process(os.getpid()).memory_info().rss/1024/1024,)
             func_but_text_han['waiting'].set_color('r')
             fig.canvas.draw()
             if verbose_debugging: print('Canvas flush wait label', datetime.now())
@@ -3268,6 +3352,7 @@ def nemo_slice_zlev(config = 'amm7',
             ###################################################################################################
 
             if do_timer: timer_lst.append(('Just Plot',datetime.now()))
+            if do_memory & do_timer: timer_lst[-1]= timer_lst[-1] + (psutil.Process(os.getpid()).memory_info().rss/1024/1024,)
 
             if justplot:
                 
@@ -3320,6 +3405,7 @@ def nemo_slice_zlev(config = 'amm7',
 
 
             if do_timer: timer_lst.append(('set current xylims',datetime.now()))
+            if do_memory & do_timer: timer_lst[-1]= timer_lst[-1] + (psutil.Process(os.getpid()).memory_info().rss/1024/1024,)
 
             if verbose_debugging: print("selected clii = %f,cljj = %f"%(clii,cljj))
 
@@ -3339,6 +3425,7 @@ def nemo_slice_zlev(config = 'amm7',
             ### Get click coords
             ###################################################################################################
             if do_timer: timer_lst.append(('Get click coords',datetime.now()))
+            if do_memory & do_timer: timer_lst[-1]= timer_lst[-1] + (psutil.Process(os.getpid()).memory_info().rss/1024/1024,)
 
             #find clicked axes:
             is_in_axes = False
@@ -3361,6 +3448,7 @@ def nemo_slice_zlev(config = 'amm7',
             ### If axes clicked, change ind, decide what data to reload
             ###################################################################################################
             if do_timer: timer_lst.append(('If axes, change ind',datetime.now()))
+            if do_memory & do_timer: timer_lst[-1]= timer_lst[-1] + (psutil.Process(os.getpid()).memory_info().rss/1024/1024,)
             if verbose_debugging: print('Interpret Mouse click: figure axes, location change', datetime.now())
 
             if sel_ax == 0:               
@@ -3441,9 +3529,11 @@ def nemo_slice_zlev(config = 'amm7',
             ###################################################################################################
 
             if do_timer: timer_lst.append(('If not in axes',datetime.now()))
+            if do_memory & do_timer: timer_lst[-1]= timer_lst[-1] + (psutil.Process(os.getpid()).memory_info().rss/1024/1024,)
            
             if not is_in_axes: 
                 if do_timer: timer_lst.append(('Check Var',datetime.now()))
+                if do_memory & do_timer: timer_lst[-1]= timer_lst[-1] + (psutil.Process(os.getpid()).memory_info().rss/1024/1024,)
            
                 for but_name in but_extent.keys():
                     
@@ -3493,6 +3583,7 @@ def nemo_slice_zlev(config = 'amm7',
                 ### If function clicked, call function
                 ###################################################################################################
                 if do_timer: timer_lst.append(('Check func',datetime.now()))
+                if do_memory & do_timer: timer_lst[-1]= timer_lst[-1] + (psutil.Process(os.getpid()).memory_info().rss/1024/1024,)
             
                 if verbose_debugging: print('Interpret Mouse click: Functions', datetime.now())
                 for but_name in func_but_extent.keys():
@@ -4827,6 +4918,7 @@ def nemo_slice_zlev(config = 'amm7',
                             
 
             if do_timer: timer_lst.append(('Finished var func',datetime.now()))
+            if do_memory & do_timer: timer_lst[-1]= timer_lst[-1] + (psutil.Process(os.getpid()).memory_info().rss/1024/1024,)
             
             plt.sca(ax[0])
                     
@@ -4835,6 +4927,7 @@ def nemo_slice_zlev(config = 'amm7',
             ### remove contours, colorbars, images, lines, text, ready for next cycle
             ###################################################################################################
             if do_timer: timer_lst.append(('Remove contours, images, lines text',datetime.now()))
+            if do_memory & do_timer: timer_lst[-1]= timer_lst[-1] + (psutil.Process(os.getpid()).memory_info().rss/1024/1024,)
             
             
             if verbose_debugging: print('Interpret Mouse click: remove lines and axes', datetime.now())
@@ -4927,6 +5020,7 @@ def nemo_slice_zlev(config = 'amm7',
             if verbose_debugging: print('Cycle', datetime.now())
 
             if do_timer: timer_lst.append(('Cycle ended',datetime.now()))
+            if do_memory & do_timer: timer_lst[-1]= timer_lst[-1] + (psutil.Process(os.getpid()).memory_info().rss/1024/1024,)
 
 
 def main():
@@ -5282,6 +5376,8 @@ def main():
         parser.add_argument('--justplot_secdataset_proc', type=str, required=False, help = 'comma separated values')
 
         parser.add_argument('--verbose_debugging', type=str, required=False)
+        parser.add_argument('--do_timer', type=str, required=False)
+        parser.add_argument('--do_memory', type=str, required=False)
 
         parser.add_argument('--Obs_dict', action='append', nargs='+')
         parser.add_argument('--files', action='append', nargs='+')
@@ -5412,6 +5508,29 @@ def main():
                 verbose_debugging_in = bool(False)
             else:                
                 print(args.verbose_debugging)
+                pdb.set_trace()
+
+        if args.do_timer is None:
+            do_timer_in=False
+        elif args.do_timer is not None:
+            if args.do_timer.upper() in ['TRUE','T']:
+                do_timer_in = bool(True)
+            elif args.do_timer.upper() in ['FALSE','F']:
+                do_timer_in = bool(False)
+            else:                
+                print(args.do_timer)
+                pdb.set_trace()
+ 
+
+        if args.do_memory is None:
+            do_memory_in=False
+        elif args.do_memory is not None:
+            if args.do_memory.upper() in ['TRUE','T']:
+                do_memory_in = bool(True)
+            elif args.do_memory.upper() in ['FALSE','F']:
+                do_memory_in = bool(False)
+            else:                
+                print(args.do_timer)
                 pdb.set_trace()
  
         if args.do_grad is None:
@@ -5800,7 +5919,7 @@ def main():
             resample_freq = args.resample_freq,
             Obs_dict = Obs_dict_in,
             fig_dir = args.fig_dir, fig_lab = args.fig_lab,fig_cutout = fig_cutout_in,
-            verbose_debugging = verbose_debugging_in)
+            verbose_debugging = verbose_debugging_in,do_timer = do_timer_in,do_memory = do_memory_in)
 
 
 
