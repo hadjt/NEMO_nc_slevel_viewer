@@ -606,6 +606,9 @@ def nemo_slice_zlev(config = 'amm7',
     nice_varname_dict['mld25h_1'] = 'Mixed layer depth (version 1)'
     nice_varname_dict['mld25h_2'] = 'Mixed layer depth (version 2)'
     nice_varname_dict['karamld'] = 'Mixed layer depth (Kara)'
+    nice_varname_dict['somxl010'] = 'Mixed Layer Depth (dsigma = 0.01 wrt 10m)'
+    nice_varname_dict['somxzint'] = 'Mixed Layer Depth interpolated'
+    nice_varname_dict['sokaraml'] = 'Mixed Layer Depth interpolated'
 
     # ERSEM
     nice_varname_dict['pCO2'] = 'Carbonate pCO2'
@@ -1288,7 +1291,7 @@ def nemo_slice_zlev(config = 'amm7',
     else:
         reload_MLD = True
         MLD_show = True
-        poss_MLD_var_lst_lower = ['mld','karamld','mld25h_1','mld25h_2']
+        poss_MLD_var_lst_lower = ['mld','karamld','mld25h_1','mld25h_2','somxzint','somxl010','sokaraml']
         MLD_var_lst = [ss for ss in var_but_mat if ss.lower() in poss_MLD_var_lst_lower]
         if len(MLD_var_lst)>0:
             MLD_var = MLD_var_lst[0] # 'mld25h_1'
