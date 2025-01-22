@@ -58,8 +58,8 @@ def load_nc_dims(tmp_data):
 
     poss_zdims = ['depth','deptht','depthu','depthv','depthw','z', 'nc']
     poss_tdims = ['time_counter','time','t']
-    poss_xdims = ['x','X','lon']
-    poss_ydims = ['y','Y','lat']
+    poss_xdims = ['x','X','lon','ni']
+    poss_ydims = ['y','Y','lat','nj']
     #pdb.set_trace()
     if x_dim not in nc_dims: 
         x_dim_lst = [i for i in nc_dims if i in poss_xdims]
@@ -1599,7 +1599,11 @@ def pycnocline_params(rho_4d,gdept_3d,e3t_3d):
     return N2,Pync_Z,Pync_Th,N2_max,N2_maxZ
           
 def stream_from_vocetr_eff(v_tr):
-    psi = (v_tr[:,::-1].cumsum(axis = 1)[:,::-1])
+    ndim_v_tr = len(v_tr.shape)
+    if ndim_v_tr == 2:
+        psi = (v_tr[:,::-1].cumsum(axis = 1)[:,::-1])
+    elif ndim_v_tr == 3:
+        psi = (v_tr[:,:,::-1].cumsum(axis = 2)[:,:,::-1])
     return psi
 
             
@@ -2735,12 +2739,13 @@ def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_m
     time_d = {}
     WW3_ld_nctvar = 'time'
     init_timer = []
- # open file list with xarray
+    # open file list with xarray
     #xarr_dict = {}
 
     
     init_timer.append((datetime.now(),'xarray open_mfdataset connecting'))
     print ('xarray open_mfdataset connecting',datetime.now())
+
     for tmp_datstr in Dataset_lst: # xarr_dict.keys():
         th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
         
@@ -2752,16 +2757,17 @@ def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_m
         time_d[tmp_datstr] = {}
         #xarr_dict[tmp_datstr] = {}
         for tmpgrid in xarr_dict[tmp_datstr].keys():
+            #pdb.set_trace()
             time_d[tmp_datstr][tmpgrid] = {}
             #pdb.set_trace()
             # Increments don't have muliple lead times like other grids.
             #if tmpgrid != 'I':
-            if tmpgrid not in  ['I','In','Ic']:
+            if tmpgrid not in  ['I','In','Ic']: # 
                 #pdb.set_trace()
-                if (nldi == 0) :   
-                    xarr_dict[tmp_datstr][tmpgrid].append(
-                        xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], 
-                        combine='by_coords',parallel = True))  
+                if (nldi == 0) : # If only loading one lead time:   
+                    #xarr_dict[tmp_datstr][tmpgrid].append(
+                    #    xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], 
+                    #    combine='by_coords',parallel = True))  
                     '''
                     '''
                     ###WW3 time ncvar name
@@ -2775,7 +2781,7 @@ def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_m
                         xarr_dict[tmp_datstr][tmpgrid].append(
                             xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], 
                             combine='by_coords',parallel = True))  
-                else:
+                else: # if loading different lead times. 
                     #pdb.set_trace()
                     '''
                     fc_nday_ldtime = 2

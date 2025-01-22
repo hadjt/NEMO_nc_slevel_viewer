@@ -1,4 +1,4 @@
-mesh_file,/data/cr1/hadjt/data/reffiles/ORCA/ICE/mesh_mask_GO6_ORCA12_compressed_nc_5.nc 
+mesh_file,/data/cr1/hadjt/data/reffiles/ORCA/ICE/mesh_mask_GO6_ORCA12_compressed_nc_5.nc
 ncgdept,gdept_0
 nce1t,e1t
 nce2t,e2t

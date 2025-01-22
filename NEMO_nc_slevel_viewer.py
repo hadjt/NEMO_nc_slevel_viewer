@@ -99,7 +99,7 @@ def nemo_slice_zlev(config = 'amm7',
     vis_curr = -1, vis_curr_meth = 'barb',
     resample_freq = None,
     verbose_debugging = False,do_timer = True,do_memory = True,
-    Obs_dict = None, Obs_reloadmeth = 2,
+    Obs_dict = None, Obs_reloadmeth = 2,Obs_hide = False,
     do_MLD = True):
 
     print('Initialise at ',datetime.now())
@@ -978,7 +978,7 @@ def nemo_slice_zlev(config = 'amm7',
     if do_Obs:
         ob_ti = ti
 
-        Obs_hide = False
+        #Obs_hide = False
         Obs_hide_edges = False
         Obs_pair_loc = True
         
@@ -4248,6 +4248,7 @@ def nemo_slice_zlev(config = 'amm7',
                                         for xi in xsect_pnt_ind_dict[tmp_datstr]: axxs[axi].axvline(xi,color = 'k', alpha = 0.5, ls = '--') 
                                         for xi in xsect_pnt_ind_dict[tmp_datstr]: axxs[axi].text(xi,xs_ylim[0] - xs_ylim.ptp()*0.9   ,lon_lat_to_str(xsect_lon_dict[tmp_datstr][xi],xsect_lat_dict[tmp_datstr][xi])[0], rotation = 270, ha = 'left', va = 'top')
                                         plt.colorbar(paxxs[axi], ax = axxs[axi])
+                                    plt.colorbar(paxxs[2], ax = axxs[2])
                                     for xi,tmp_datstr in enumerate(Dataset_lst): set_perc_clim_pcolor_in_region(5,95,ax = axxs[axi])
                                     set_perc_clim_pcolor_in_region(5,95,ax = axxs[2], sym = True)
 
@@ -5031,7 +5032,7 @@ def nemo_slice_zlev(config = 'amm7',
 
 
 def main():
-    legacy_mode = True
+    legacy_mode = False
 
     nemo_slice_zlev_helptext=textwrap.dedent('''\
     Interactive NEMO ncfile viewer.
@@ -5387,6 +5388,7 @@ def main():
         parser.add_argument('--do_memory', type=str, required=False)
 
         parser.add_argument('--Obs_dict', action='append', nargs='+')
+        parser.add_argument('--Obs_hide', type=str, required=False)
         parser.add_argument('--files', action='append', nargs='+')
         parser.add_argument('--configs', action='append', nargs='+')
         parser.add_argument('--th', action='append', nargs='+')
@@ -5569,6 +5571,20 @@ def main():
                 print(args.trim_extra_files)
                 pdb.set_trace()
  
+
+
+
+
+        if args.Obs_hide is None:
+            Obs_hide_in=False
+        elif args.Obs_hide is not None:
+            if args.Obs_hide.upper() in ['TRUE','T']:
+                Obs_hide_in = bool(True)
+            elif args.Obs_hide.upper() in ['FALSE','F']:
+                Obs_hide_in = bool(False)
+            else:                
+                print(args.Obs_hide)
+                pdb.set_trace()
 
 
         '''
@@ -5924,7 +5940,7 @@ def main():
             secdataset_proc = args.secdataset_proc,
             ld_lst = args.ld_lst, ld_lab_lst = args.ld_lab_lst, ld_nctvar = args.ld_nctvar,
             resample_freq = args.resample_freq,
-            Obs_dict = Obs_dict_in,
+            Obs_dict = Obs_dict_in,Obs_hide = Obs_hide_in,
             fig_dir = args.fig_dir, fig_lab = args.fig_lab,fig_cutout = fig_cutout_in,
             verbose_debugging = verbose_debugging_in,do_timer = do_timer_in,do_memory = do_memory_in)
 
