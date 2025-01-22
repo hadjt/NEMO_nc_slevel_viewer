@@ -2730,6 +2730,9 @@ def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_m
     
     import xarray
 
+    #from dask.distributed import Client
+    #client = Client(n_workers=20, threads_per_worker=2, memory_limit='7.5GB')
+
     var_d = {}
     var_d['d'] = []
     var_dim = {}
@@ -2780,7 +2783,8 @@ def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_m
                     else:
                         xarr_dict[tmp_datstr][tmpgrid].append(
                             xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], 
-                            combine='by_coords',parallel = True))  
+                            combine='by_coords',parallel = True)) 
+                        
                 else: # if loading different lead times. 
                     #pdb.set_trace()
                     '''
@@ -3110,10 +3114,14 @@ def create_rootgrp_gdept_dict(config_fnames_dict,Dataset_lst,configd):
     #rootgrp_gdept = None
     rootgrp_gdept_dict = {}
 
-        
+    use_xarray = True
     # depth grid file
-    rootgrp_gdept_dict['Dataset 1'] = Dataset(config_fnames_dict[configd[1]]['mesh_file'], 'r', format='NETCDF4')
-
+    if use_xarray:
+        rootgrp_gdept_dict['Dataset 1'] = xarray.open_dataset(config_fnames_dict[configd[1]]['mesh_file'])
+    else:
+        rootgrp_gdept_dict['Dataset 1'] = Dataset(config_fnames_dict[configd[1]]['mesh_file'], 'r', format='NETCDF4')
+    
+        
 
     for tmp_datstr in Dataset_lst[1:]:
         th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
@@ -3124,7 +3132,11 @@ def create_rootgrp_gdept_dict(config_fnames_dict,Dataset_lst,configd):
       
             if (configd[1].upper() in ['AMM7','AMM15']) & (configd[th_d_ind].upper() in ['AMM7','AMM15']):  
                 mesh_file_2nd = config_fnames_dict[configd[th_d_ind]]['mesh_file'] 
-                rootgrp_gdept_dict[tmp_datstr] = Dataset(mesh_file_2nd, 'r', format='NETCDF4')
+
+                if use_xarray:
+                    rootgrp_gdept_dict[tmp_datstr] = xarray.open_dataset(mesh_file_2nd)
+                else:
+                    rootgrp_gdept_dict[tmp_datstr] = Dataset(mesh_file_2nd, 'r', format='NETCDF4')
 
     return rootgrp_gdept_dict
 
