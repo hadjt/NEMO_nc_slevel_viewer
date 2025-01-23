@@ -570,7 +570,7 @@ def interp1dmat_wgt(indata, wgt_tuple):
         #pdb.set_trace()
     return outdata
 
-def interp1dmat_create_weight(gdept,z_lev):
+def interp1dmat_create_weight(gdept,z_lev,use_xarray_gdept = False):
 
 
     import socket
@@ -586,25 +586,43 @@ def interp1dmat_create_weight(gdept,z_lev):
 
 
     
+
+    
     if verbose_debugging: print('gdept_ma', datetime.now())
-    gdept_ma = gdept
+    if use_xarray_gdept:
+        gdept_ma = np.array(gdept)
+    else:
+        gdept_ma = gdept
     gdept_ma_min = gdept_ma.min(axis = 0)
     gdept_ma_max = gdept_ma.max(axis = 0)
     gdept_ma_ptp = gdept_ma.ptp(axis = 0)
 
     if verbose_debugging: print('x_mat, y_mat', datetime.now())
 
-    xind_mat = np.zeros(gdept.shape[1:], dtype = 'int')
-    yind_mat = np.zeros(gdept.shape[1:], dtype = 'int')
+    if use_xarray_gdept:
+        xind_mat = np.zeros(gdept.shape[1:], dtype = 'int')
+        yind_mat = np.zeros(gdept.shape[1:], dtype = 'int')
+    else:
+        xind_mat = np.zeros(gdept_ma.shape[1:], dtype = 'int')
+        yind_mat = np.zeros(gdept_ma.shape[1:], dtype = 'int')
     #for zi in range(nz): zind_mat[zi,:,:] = zi
     for xi in range(nlon): xind_mat[xi,:] = xi
     for yi in range(nlat): yind_mat[:,yi] = yi
 
-    if verbose_debugging: print('ind1', datetime.now())
-    ind1 = (gdept_ma<z_lev).sum(axis = 0).data.astype('int')
-    ind1[ind1 == nz] = 0
-    if verbose_debugging: print('ind2', datetime.now())
-    ind2 = (nz-1)-(gdept_ma>z_lev).sum(axis = 0).data.astype('int')
+
+    if use_xarray_gdept:
+        if verbose_debugging: print('ind1', datetime.now())
+        ind1 = (gdept_ma<z_lev).sum(axis = 0).astype('int')
+        ind1[ind1 == nz] = 0
+        if verbose_debugging: print('ind2', datetime.now())
+        ind2 = (nz-1)-(gdept_ma>z_lev).sum(axis = 0).astype('int')
+
+    else:
+        if verbose_debugging: print('ind1', datetime.now())
+        ind1 = (gdept_ma<z_lev).sum(axis = 0).data.astype('int')
+        ind1[ind1 == nz] = 0
+        if verbose_debugging: print('ind2', datetime.now())
+        ind2 = (nz-1)-(gdept_ma>z_lev).sum(axis = 0).data.astype('int')
     #tmpind2 = (gdept_ma>z_lev).sum(axis = 0).data.astype('int')
     #ind2 = (nz-1)-tmpind2
 
@@ -1791,14 +1809,14 @@ def reload_data_instances(var,thd,ldi,ti,var_d,var_grid, xarr_dict, grid_dict,va
 
 
   
-def reload_map_data_comb(var,z_meth,zz,zi, data_inst,var_dim,interp1d_ZwgtT,grid_dict,nav_lon,nav_lat,regrid_params,regrid_meth,thd,configd,Dataset_lst):
+def reload_map_data_comb(var,z_meth,zz,zi, data_inst,var_dim,interp1d_ZwgtT,grid_dict,nav_lon,nav_lat,regrid_params,regrid_meth,thd,configd,Dataset_lst,use_xarray_gdept = False):
 
     if var_dim[var] == 3:
         map_dat_dict = reload_map_data_comb_2d(data_inst,regrid_params,regrid_meth ,thd,configd,Dataset_lst)
 
     else:
         if z_meth == 'z_slice':
-            map_dat_dict = reload_map_data_comb_zmeth_zslice(zz, data_inst,interp1d_ZwgtT,grid_dict,regrid_params,regrid_meth ,thd,configd,Dataset_lst)
+            map_dat_dict = reload_map_data_comb_zmeth_zslice(zz, data_inst,interp1d_ZwgtT,grid_dict,regrid_params,regrid_meth ,thd,configd,Dataset_lst,use_xarray_gdept = use_xarray_gdept)
         elif z_meth in ['nb','df','zm']:
             map_dat_dict = reload_map_data_comb_zmeth_nb_df_zm_3d(z_meth, data_inst,grid_dict,regrid_params,regrid_meth ,thd,configd,Dataset_lst)
         elif z_meth in ['ss']:
@@ -1890,7 +1908,7 @@ def reload_map_data_comb_zmeth_nb_df_zm_3d(z_meth, data_inst,grid_dict,regrid_pa
     return map_dat_dict
 
 
-def reload_map_data_comb_zmeth_zslice(zz, data_inst,interp1d_ZwgtT,grid_dict,regrid_params,regrid_meth,thd,configd,Dataset_lst):
+def reload_map_data_comb_zmeth_zslice(zz, data_inst,interp1d_ZwgtT,grid_dict,regrid_params,regrid_meth,thd,configd,Dataset_lst,use_xarray_gdept = False):
     #Dataset_lst = [ss for ss in data_inst.keys()]
     Dataset_lst_secondary = Dataset_lst.copy()
     if 'Dataset 1' in Dataset_lst_secondary: Dataset_lst_secondary.remove('Dataset 1')  
@@ -1899,7 +1917,7 @@ def reload_map_data_comb_zmeth_zslice(zz, data_inst,interp1d_ZwgtT,grid_dict,reg
 
 
     if zz not in interp1d_ZwgtT['Dataset 1'].keys():
-        interp1d_ZwgtT['Dataset 1'][zz] = interp1dmat_create_weight(grid_dict['Dataset 1']['gdept'],zz)
+        interp1d_ZwgtT['Dataset 1'][zz] = interp1dmat_create_weight(grid_dict['Dataset 1']['gdept'],zz,use_xarray_gdept = use_xarray_gdept)
 
 
     map_dat_3d_1 = np.ma.masked_invalid(data_inst['Dataset 1'])
@@ -1919,7 +1937,7 @@ def reload_map_data_comb_zmeth_zslice(zz, data_inst,interp1d_ZwgtT,grid_dict,reg
         th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
     
         if zz not in interp1d_ZwgtT[tmp_datstr].keys(): 
-            interp1d_ZwgtT[tmp_datstr][zz] = interp1dmat_create_weight(grid_dict[tmp_datstr]['gdept'],zz)
+            interp1d_ZwgtT[tmp_datstr][zz] = interp1dmat_create_weight(grid_dict[tmp_datstr]['gdept'],zz,use_xarray_gdept = use_xarray_gdept)
         #pdb.set_trace()
         map_dat_dict[tmp_datstr] = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,interp1dmat_wgt(np.ma.masked_invalid(map_dat_3d_2),interp1d_ZwgtT[tmp_datstr][zz]))
        
@@ -3108,15 +3126,14 @@ def create_config_fnames_dict(configd,Dataset_lst,script_dir):
 
     return config_fnames_dict
 
-def create_rootgrp_gdept_dict(config_fnames_dict,Dataset_lst,configd):
+def create_rootgrp_gdept_dict(config_fnames_dict,Dataset_lst,configd,use_xarray_gdept = False):
     # create dictionary with mesh files handles
 
     #rootgrp_gdept = None
     rootgrp_gdept_dict = {}
 
-    use_xarray = True
     # depth grid file
-    if use_xarray:
+    if use_xarray_gdept:
         rootgrp_gdept_dict['Dataset 1'] = xarray.open_dataset(config_fnames_dict[configd[1]]['mesh_file'])
     else:
         rootgrp_gdept_dict['Dataset 1'] = Dataset(config_fnames_dict[configd[1]]['mesh_file'], 'r', format='NETCDF4')
@@ -3133,7 +3150,7 @@ def create_rootgrp_gdept_dict(config_fnames_dict,Dataset_lst,configd):
             if (configd[1].upper() in ['AMM7','AMM15']) & (configd[th_d_ind].upper() in ['AMM7','AMM15']):  
                 mesh_file_2nd = config_fnames_dict[configd[th_d_ind]]['mesh_file'] 
 
-                if use_xarray:
+                if use_xarray_gdept:
                     rootgrp_gdept_dict[tmp_datstr] = xarray.open_dataset(mesh_file_2nd)
                 else:
                     rootgrp_gdept_dict[tmp_datstr] = Dataset(mesh_file_2nd, 'r', format='NETCDF4')
