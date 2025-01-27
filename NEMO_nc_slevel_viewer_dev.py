@@ -515,12 +515,13 @@ def nemo_slice_zlev(config = 'amm7',
     
     # resample to give monthly means etc. 
 
-    init_timer.append((datetime.now(),'xarray open_mfdataset T connected'))
+    init_timer.append((datetime.now(),'xarray open_mfdataset connected'))
 
 
     # get lon, lat and time names from files
     nav_lon_varname,nav_lat_varname,time_varname,nav_lon_var_mat,nav_lat_var_mat,time_varname_mat = create_ncvar_lon_lat_time(ncvar_d)
     
+    init_timer.append((datetime.now(),'created ncvar lon lat time'))
 
     if resample_freq is not None:
         #pdb.set_trace()
@@ -542,6 +543,7 @@ def nemo_slice_zlev(config = 'amm7',
     # Create lon and lat dictionaries
     lon_d,lat_d = create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncglamt,ncgphit,nav_lon_varname,nav_lat_varname,ncdim_d,cutxind,cutyind,cutout_data)
     #pdb.set_trace()
+    init_timer.append((datetime.now(),'created lon lat dict'))
     # if use key words to set intial lon/lat,nvarbutcol convert to jj/ii
     if (lon_in is not None) & (lat_in is not None):
 
@@ -555,6 +557,11 @@ def nemo_slice_zlev(config = 'amm7',
     grid_dict,nz = load_grid_dict(Dataset_lst,rootgrp_gdept_dict, thd, nce1t,nce2t,nce3t,configd, config_fnames_dict,cutxind,cutyind,cutout_data)
     #pdb.set_trace()
     # if using WW3 grid, load regridding interpolation weights
+
+
+     
+    init_timer.append((datetime.now(),'grid_dict, nz loaded'))
+
     if 'WW3' in ncdim_d['Dataset 1']:
          
         grid_dict['WW3'] = {}
@@ -563,11 +570,9 @@ def nemo_slice_zlev(config = 'amm7',
         grid_dict['WW3']['NWS_WW3_nn_ind'] = rootgrp.variables['NWS_WW3_nn_ind'][:,:]
         grid_dict['WW3']['AMM15_mask'] = rootgrp.variables['AMM15_mask'][:,:].astype('bool')
         rootgrp.close()  
+        init_timer.append((datetime.now(),'WW3 added to grid_dict'))
      
-    init_timer.append((datetime.now(),'gdept, e1t, e2t, e3t loaded'))
 
-    init_timer.append((datetime.now(),'var dims and names loaded'))
-    init_timer.append((datetime.now(),'var dims and names loaded for UV'))
 
     if var is None: var = 'votemper'
     if var not in var_d[1]['mat']: var = var_d[1]['mat'][0]
@@ -945,6 +950,7 @@ def nemo_slice_zlev(config = 'amm7',
             nlon_rotamm15 = lon_rotamm15.size
             nlat_rotamm15 = lat_rotamm15.size
 
+    init_timer.append((datetime.now(),'AMM15 grid rotated'))
 
     # find variables common to both data sets, and use them for the buttons
     
@@ -964,7 +970,7 @@ def nemo_slice_zlev(config = 'amm7',
     #pdb.set_trace()
 
     
-    init_timer.append((datetime.now(),'AMM15 grid rotated'))
+    init_timer.append((datetime.now(),'Found common vars all Datasets'))
 
     # set up figure.
     #   set up default figure, and then and and delete plots when you change indices.
@@ -1064,6 +1070,8 @@ def nemo_slice_zlev(config = 'amm7',
         # set reload Obs to true
         reload_Obs = True
 
+        init_timer.append((datetime.now(),'Obs Loaded '))
+
     print('Creating Figure', datetime.now())
     ax = []
 
@@ -1093,6 +1101,9 @@ def nemo_slice_zlev(config = 'amm7',
     if justplot:
         nvarbutcol = 1000
 
+
+
+    init_timer.append((datetime.now(),'Fig str, n buttons'))
     #import locale
     #locale.setlocale(locale.LC_ALL, 'en_GB.utf8')
 
@@ -1158,6 +1169,7 @@ def nemo_slice_zlev(config = 'amm7',
     labi,labj = 0.05, 0.95
     for ai,tmpax in enumerate(ax): tmpax.text(labi,labj,'%s)'%letter_mat[ai], transform=tmpax.transAxes, ha = 'left', va = 'top', fontsize = 12,bbox=dict(facecolor='white', alpha=0.75, pad=1, edgecolor='none'))
            
+    init_timer.append((datetime.now(),'Created Figure and axes, fig letters'))
 
     tsaxtx_lst = []
     tsaxtxd_lst = []
@@ -1195,7 +1207,7 @@ def nemo_slice_zlev(config = 'amm7',
         fig_tit_str_lab = fig_tit_str_lab + ' %s = %s;'%(tmp_datstr,fig_lab_d[tmp_datstr])
 
 
-
+    init_timer.append((datetime.now(),'Figure, adding text'))
 
     #flip depth axes
     for tmpax in ax[1:]: tmpax.invert_yaxis()
@@ -1262,8 +1274,10 @@ def nemo_slice_zlev(config = 'amm7',
         but_text_han[var_dat] = clickax.text((but_x0+but_x1)/2,0.9 - ((but_dy/2) + vi_num*but_dysp),var_dat, ha = 'center', va = 'center')
 
 
+
     clickax.axis([0,1,0,1])
     
+
     if verbose_debugging: print('Added variable boxes', datetime.now())
 
     mode_name_lst = ['Click','Loop']
@@ -1890,7 +1904,7 @@ def nemo_slice_zlev(config = 'amm7',
 
     init_timer.append((datetime.now(),'Starting While Loop'))
    
-    if verbose_debugging:
+    if verbose_debugging|do_timer|do_memory:
         print()
         
         for i_i in range(1,len(init_timer)):print('Initialisation time %02i - %02i: %s - %s - %s '%(i_i-1,i_i,init_timer[i_i][0] - init_timer[i_i-1][0], init_timer[i_i-1][1], init_timer[i_i][1]))
@@ -4346,14 +4360,15 @@ def nemo_slice_zlev(config = 'amm7',
                                 xs_xlim = np.array(axxs[0].get_xlim())
                                 xs_ylim = np.array(axxs[0].get_ylim())
                                 
-                                xs_ylim[0] = tmp_xsect_z[xsect_secdataset_proc][~(tmp_xsect_x[xsect_secdataset_proc]*tmp_xsect_z[xsect_secdataset_proc]*tmp_xsect_dat[xsect_secdataset_proc]).mask].max()
-                                axxs[0].set_ylim(xs_ylim)
-                                #pdb.set_trace()
+                                if var_dim[var] == 4:
+                                    xs_ylim[0] = tmp_xsect_z[xsect_secdataset_proc][~(tmp_xsect_x[xsect_secdataset_proc]*tmp_xsect_z[xsect_secdataset_proc]*tmp_xsect_dat[xsect_secdataset_proc]).mask].max()
+                                    axxs[0].set_ylim(xs_ylim)
+                                    #pdb.set_trace()
 
                                 for xi in xsect_pnt_ind_dict[xsect_secdataset_proc]:                            axxs[0].axvline(xi,color = 'k', alpha = 0.5, ls = '--') 
 
                                 if var_dim[var] == 4:
-                                    for xi in xsect_pnt_ind_dict[secdatasexsect_secdataset_proct_proc]:         axxs[0].text(xi,xs_ylim[0] - xs_ylim.ptp()*0.9,lon_lat_to_str(xsect_lon_dict[tmp_datstr][xi],xsect_lat_dict[tmp_datstr][xi])[0], rotation = 270, ha = 'left', va = 'top')
+                                    for xi in xsect_pnt_ind_dict[xsect_secdataset_proc]:         axxs[0].text(xi,xs_ylim[0] - xs_ylim.ptp()*0.9,lon_lat_to_str(xsect_lon_dict[tmp_datstr][xi],xsect_lat_dict[tmp_datstr][xi])[0], rotation = 270, ha = 'left', va = 'top')
                                 elif var_dim[var] == 3:
                                     for xi in xsect_pnt_ind_dict[xsect_secdataset_proc]:         axxs[0].text(xi,xs_ylim[0] + xs_ylim.ptp()*0.9,lon_lat_to_str(xsect_lon_dict[tmp_datstr][xi],xsect_lat_dict[tmp_datstr][xi])[0], rotation = 270, ha = 'left', va = 'top')
                                 #axxs[0].set_xlim([0,xs_xlim[1]*1.01])

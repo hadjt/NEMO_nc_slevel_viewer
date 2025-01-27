@@ -3235,14 +3235,36 @@ def create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncg
             lat_d[th_d_ind] = np.ma.array(lat_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
             lon_d[th_d_ind] = np.ma.array(lon_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
 
-        elif tmp_configd.upper() in ['CO9P2']: 
+
+        elif tmp_configd.upper() in ['CO9P2','AMM15','AMM7']:
+            #elif tmp_configd.upper() in ['CO9P2']: 
+            # when loading a year of AMM15 3d Daily Mean files, 7/17mins initialisatoin time is to load lat lons!
+            # as was taking them from the data... instead, add amm15 and amm7 to CO9p2 and load from mesh file.
+
+            '''
+
+            before:
+            Initialisation time 07 - 08: 0:07:51.438504 - created ncvar lon lat time - created lon lat dict 
+            ...
+
+            after:
+            Initialisation: total: 0:17:43.025076
+            ======================================
+            Initialisation time 07 - 08: 0:00:00.269349 - created ncvar lon lat time - created lon lat dict 
+            ...
+            Initialisation: total: 0:10:48.254651
+
+            
+            '''
 
             #lon_d[th_d_ind] = np.ma.masked_invalid(rootgrp_gdept_dict[tmp_datstr].variables[ncglamt][0])
             #lat_d[th_d_ind] = np.ma.masked_invalid(rootgrp_gdept_dict[tmp_datstr].variables[ncgphit][0])
             lon_d[th_d_ind] = np.ma.masked_invalid(rootgrp_gdept_dict[tmp_datstr].variables[ncglamt][0,cutyind[0]:cutyind[1],cutxind[0]:cutxind[1]])
             lat_d[th_d_ind] = np.ma.masked_invalid(rootgrp_gdept_dict[tmp_datstr].variables[ncgphit][0,cutyind[0]:cutyind[1],cutxind[0]:cutxind[1]])
-            lat_d['amm15'] = np.ma.array(lat_d[th_d_ind].copy())
-            lon_d['amm15'] = np.ma.array(lon_d[th_d_ind].copy())
+
+            if tmp_configd.upper() in ['CO9P2','AMM15']: 
+                lat_d['amm15'] = np.ma.array(lat_d[th_d_ind].copy())
+                lon_d['amm15'] = np.ma.array(lon_d[th_d_ind].copy())
             
 
             lat_d[th_d_ind] = np.ma.array(lat_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
