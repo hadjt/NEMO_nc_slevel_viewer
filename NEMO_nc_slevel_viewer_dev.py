@@ -4246,111 +4246,110 @@ def nemo_slice_zlev(config = 'amm7',
                                 if plt.fignum_exists(figxs.number):
                                     plt.close(figxs)
 
-
-                            if (nDataset == 2):
-                                if(var_dim[var] == 4):
+                            # if 2 datasets, and 3d var do the if... otherwise if 1 dataset or if 2d dataset, do the else
+                            if (nDataset == 2)&(var_dim[var] == 4):
+                                if (configd[1] == configd[2]):
+                                
+                                    figxs = plt.figure()
+                                    figxs.set_figheight(10*1.2)
+                                    figxs.set_figwidth(8*1.5)
+                                    figxs.suptitle('Cross-section: %s'%nice_varname_dict[var], fontsize = 20)
+                                    plt.subplots_adjust(top=0.92,bottom=0.05,left=0.05,right=1,hspace=0.25,wspace=0.6)
+                                    axxs = [plt.subplot(311),plt.subplot(312),plt.subplot(313)]
+                                    paxxs = []
+                                    for xi,tmp_datstr in enumerate(Dataset_lst): paxxs.append(axxs[xi].pcolormesh(tmp_xsect_x[tmp_datstr],tmp_xsect_z[tmp_datstr],tmp_xsect_dat[tmp_datstr]))
+                                    paxxs.append(axxs[2].pcolormesh(tmp_xsect_x[xsect_secdataset_proc],tmp_xsect_z[xsect_secdataset_proc],tmp_xsect_dat[Dataset_lst[1]] - tmp_xsect_dat[Dataset_lst[0]], cmap = matplotlib.cm.seismic))
+                                    for tmpax  in axxs: tmpax.invert_yaxis()
+                                    for xi,tmp_datstr in enumerate(Dataset_lst): axxs[xi].set_title(tmp_datstr)
+                                    axxs[2].set_title('%s - %s'%(Dataset_lst[1],Dataset_lst[0]))
+                                    xs_ylim = np.array(axxs[0].get_ylim())
+                                    xs_xlim = np.array(axxs[0].get_xlim())
+                                    xs_ylim[0] = tmp_xsect_z[xsect_secdataset_proc][~(tmp_xsect_x[xsect_secdataset_proc]*tmp_xsect_z[xsect_secdataset_proc]*tmp_xsect_dat[xsect_secdataset_proc]).mask].max()
+                                    for xi,tmp_datstr in enumerate(Dataset_lst): axxs[xi].set_ylim(xs_ylim)
+                                    axxs[2].set_ylim(xs_ylim)
                                     
-                                    if (configd[1] == configd[2]):
+                                    for xi,tmp_datstr in enumerate(Dataset_lst):axxs[xi].plot(tmp_xsect_x[tmp_datstr],tmp_xsect_mld_dat[tmp_datstr],'k', lw = 0.5)
+                                
                                     
-                                        figxs = plt.figure()
-                                        figxs.set_figheight(10*1.2)
-                                        figxs.set_figwidth(8*1.5)
-                                        figxs.suptitle('Cross-section: %s'%nice_varname_dict[var], fontsize = 20)
-                                        plt.subplots_adjust(top=0.92,bottom=0.05,left=0.05,right=1,hspace=0.25,wspace=0.6)
-                                        axxs = [plt.subplot(311),plt.subplot(312),plt.subplot(313)]
-                                        paxxs = []
-                                        for xi,tmp_datstr in enumerate(Dataset_lst): paxxs.append(axxs[xi].pcolormesh(tmp_xsect_x[tmp_datstr],tmp_xsect_z[tmp_datstr],tmp_xsect_dat[tmp_datstr]))
-                                        paxxs.append(axxs[2].pcolormesh(tmp_xsect_x[xsect_secdataset_proc],tmp_xsect_z[xsect_secdataset_proc],tmp_xsect_dat[Dataset_lst[1]] - tmp_xsect_dat[Dataset_lst[0]], cmap = matplotlib.cm.seismic))
-                                        for tmpax  in axxs: tmpax.invert_yaxis()
-                                        for xi,tmp_datstr in enumerate(Dataset_lst): axxs[xi].set_title(tmp_datstr)
-                                        axxs[2].set_title('%s - %s'%(Dataset_lst[1],Dataset_lst[0]))
-                                        xs_ylim = np.array(axxs[0].get_ylim())
-                                        xs_xlim = np.array(axxs[0].get_xlim())
-                                        xs_ylim[0] = tmp_xsect_z[xsect_secdataset_proc][~(tmp_xsect_x[xsect_secdataset_proc]*tmp_xsect_z[xsect_secdataset_proc]*tmp_xsect_dat[xsect_secdataset_proc]).mask].max()
-                                        for xi,tmp_datstr in enumerate(Dataset_lst): axxs[xi].set_ylim(xs_ylim)
-                                        axxs[2].set_ylim(xs_ylim)
+                                    #for axi,tmpax  in enumerate(axxs): 
+                                    for axi,tmp_datstr in enumerate(Dataset_lst): 
                                         
-                                        for xi,tmp_datstr in enumerate(Dataset_lst):axxs[xi].plot(tmp_xsect_x[tmp_datstr],tmp_xsect_mld_dat[tmp_datstr],'k', lw = 0.5)
-                                    
-                                        
-                                        #for axi,tmpax  in enumerate(axxs): 
-                                        for axi,tmp_datstr in enumerate(Dataset_lst): 
-                                            
-                                            #tmpax = axxs[xi]
-                                            for xi in xsect_pnt_ind_dict[tmp_datstr]: axxs[axi].axvline(xi,color = 'k', alpha = 0.5, ls = '--') 
-                                            for xi in xsect_pnt_ind_dict[tmp_datstr]: axxs[axi].text(xi,xs_ylim[0] - xs_ylim.ptp()*0.9   ,lon_lat_to_str(xsect_lon_dict[tmp_datstr][xi],xsect_lat_dict[tmp_datstr][xi])[0], rotation = 270, ha = 'left', va = 'top')
-                                            plt.colorbar(paxxs[axi], ax = axxs[axi])
-                                        plt.colorbar(paxxs[2], ax = axxs[2])
-                                        for xi,tmp_datstr in enumerate(Dataset_lst): set_perc_clim_pcolor_in_region(5,95,ax = axxs[axi])
-                                        set_perc_clim_pcolor_in_region(5,95,ax = axxs[2], sym = True)
+                                        #tmpax = axxs[xi]
+                                        for xi in xsect_pnt_ind_dict[tmp_datstr]: axxs[axi].axvline(xi,color = 'k', alpha = 0.5, ls = '--') 
+                                        for xi in xsect_pnt_ind_dict[tmp_datstr]: axxs[axi].text(xi,xs_ylim[0] - xs_ylim.ptp()*0.9   ,lon_lat_to_str(xsect_lon_dict[tmp_datstr][xi],xsect_lat_dict[tmp_datstr][xi])[0], rotation = 270, ha = 'left', va = 'top')
+                                        plt.colorbar(paxxs[axi], ax = axxs[axi])
+                                    plt.colorbar(paxxs[2], ax = axxs[2])
+                                    for xi,tmp_datstr in enumerate(Dataset_lst): set_perc_clim_pcolor_in_region(5,95,ax = axxs[axi])
+                                    set_perc_clim_pcolor_in_region(5,95,ax = axxs[2], sym = True)
 
-                                        #xmapax = figxs.add_axes([0.075,0.15,0.2,0.5], frameon=False)
-                                        #xmapax = figxs.add_axes([0.075,0.15,0.175,0.4], frameon=False)
-                                        xmapax = figxs.add_axes([0.075,0.025,0.175,0.2], frameon=False)
-                                        #pdb.set_trace()
-                                        xs_pe = [pe.Stroke(linewidth=2, foreground='w'), pe.Normal()]
-                                        #pdb.set_trace()
-                                        if var_dim[var] == 3:
-                                            xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
-                                        elif var_dim[var] == 4:
-                                            xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][0][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
-                                        xmapax.plot(xsect_lon_dict[xsect_secdataset_proc],xsect_lat_dict[xsect_secdataset_proc],'r-', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                                        #xmapax.plot(xsect_lon_pnt_mat,xsect_lat_pnt_mat,'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                                        #xmapax.plot(xsect_lon_pnt_mat[0],xsect_lat_pnt_mat[0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                                        xmapax.plot(xsect_lon_pnt_dict[xsect_secdataset_proc],xsect_lat_pnt_dict[xsect_secdataset_proc],'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                                        xmapax.plot(xsect_lon_pnt_dict[xsect_secdataset_proc][0],xsect_lat_pnt_dict[xsect_secdataset_proc][0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                                        xmapax.axis('equal')
-                                        xmapax.set_xticks([])
-                                        xmapax.set_yticks([]) 
-                                    else:
-                                    
-                                        figxs = plt.figure()
-                                        figxs.set_figheight(8)
-                                        figxs.set_figwidth(8*1.5)
-                                        figxs.suptitle('Cross-section: %s'%nice_varname_dict[var], fontsize = 20)
-                                        plt.subplots_adjust(top=0.92,bottom=0.05,left=0.05,right=1,hspace=0.25,wspace=0.6)
-                                        axxs = [plt.subplot(211),plt.subplot(212)]
-                                        paxxs = []
-                                        for xi,tmp_datstr in enumerate(Dataset_lst): paxxs.append(axxs[xi].pcolormesh(tmp_xsect_x[tmp_datstr],tmp_xsect_z[tmp_datstr],tmp_xsect_dat[tmp_datstr]))
-                                        for tmpax  in axxs: tmpax.invert_yaxis()
-                                        for xi,tmp_datstr in enumerate(Dataset_lst): axxs[xi].set_title(tmp_datstr)
-                                        xs_ylim = np.array(axxs[0].get_ylim())
-                                        xs_xlim = np.array(axxs[0].get_xlim())
-                                        xs_ylim[0] = tmp_xsect_z[tmp_datstr][~(tmp_xsect_x[tmp_datstr]*tmp_xsect_z[tmp_datstr]*tmp_xsect_dat[tmp_datstr]).mask].max()
-                                        for xi,tmp_datstr in enumerate(Dataset_lst): axxs[xi].set_ylim(xs_ylim)
+                                    #xmapax = figxs.add_axes([0.075,0.15,0.2,0.5], frameon=False)
+                                    #xmapax = figxs.add_axes([0.075,0.15,0.175,0.4], frameon=False)
+                                    xmapax = figxs.add_axes([0.075,0.025,0.175,0.2], frameon=False)
+                                    #pdb.set_trace()
+                                    xs_pe = [pe.Stroke(linewidth=2, foreground='w'), pe.Normal()]
+                                    #pdb.set_trace()
+                                    if var_dim[var] == 3:
+                                        xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
+                                    elif var_dim[var] == 4:
+                                        xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][0][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
+                                    xmapax.plot(xsect_lon_dict[xsect_secdataset_proc],xsect_lat_dict[xsect_secdataset_proc],'r-', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                    #xmapax.plot(xsect_lon_pnt_mat,xsect_lat_pnt_mat,'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                    #xmapax.plot(xsect_lon_pnt_mat[0],xsect_lat_pnt_mat[0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                    xmapax.plot(xsect_lon_pnt_dict[xsect_secdataset_proc],xsect_lat_pnt_dict[xsect_secdataset_proc],'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                    xmapax.plot(xsect_lon_pnt_dict[xsect_secdataset_proc][0],xsect_lat_pnt_dict[xsect_secdataset_proc][0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                    xmapax.axis('equal')
+                                    xmapax.set_xticks([])
+                                    xmapax.set_yticks([]) 
+                                else:
+                                
+                                    figxs = plt.figure()
+                                    figxs.set_figheight(8)
+                                    figxs.set_figwidth(8*1.5)
+                                    figxs.suptitle('Cross-section: %s'%nice_varname_dict[var], fontsize = 20)
+                                    plt.subplots_adjust(top=0.92,bottom=0.05,left=0.05,right=1,hspace=0.25,wspace=0.6)
+                                    axxs = [plt.subplot(211),plt.subplot(212)]
+                                    paxxs = []
+                                    for xi,tmp_datstr in enumerate(Dataset_lst): paxxs.append(axxs[xi].pcolormesh(tmp_xsect_x[tmp_datstr],tmp_xsect_z[tmp_datstr],tmp_xsect_dat[tmp_datstr]))
+                                    for tmpax  in axxs: tmpax.invert_yaxis()
+                                    for xi,tmp_datstr in enumerate(Dataset_lst): axxs[xi].set_title(tmp_datstr)
+                                    xs_ylim = np.array(axxs[0].get_ylim())
+                                    xs_xlim = np.array(axxs[0].get_xlim())
+                                    xs_ylim[0] = tmp_xsect_z[tmp_datstr][~(tmp_xsect_x[tmp_datstr]*tmp_xsect_z[tmp_datstr]*tmp_xsect_dat[tmp_datstr]).mask].max()
+                                    for xi,tmp_datstr in enumerate(Dataset_lst): axxs[xi].set_ylim(xs_ylim)
 
-                                        for xi,tmp_datstr in enumerate(Dataset_lst):axxs[xi].plot(tmp_xsect_x[tmp_datstr],tmp_xsect_mld_dat[tmp_datstr],'k', lw = 0.5)
+                                    for xi,tmp_datstr in enumerate(Dataset_lst):axxs[xi].plot(tmp_xsect_x[tmp_datstr],tmp_xsect_mld_dat[tmp_datstr],'k', lw = 0.5)
+                                
+                                
+                                    #for axi,tmpax  in enumerate(axxs): 
+                                    for axi,tmp_datstr in enumerate(Dataset_lst): 
+                                        #tmpax = axxs[axi]
+                                        for xi in xsect_pnt_ind_dict[tmp_datstr]: axxs[axi].axvline(xi,color = 'k', alpha = 0.5, ls = '--') 
+                                        for xi in xsect_pnt_ind_dict[tmp_datstr]: axxs[axi].text(xi,xs_ylim[0] - xs_ylim.ptp()*0.9   ,lon_lat_to_str(xsect_lon_dict[tmp_datstr][xi],xsect_lat_dict[tmp_datstr][xi])[0], rotation = 270, ha = 'left', va = 'top')
+                                        plt.colorbar(paxxs[axi], ax = axxs[axi])
+                                    for xi,tmp_datstr in enumerate(Dataset_lst): set_perc_clim_pcolor_in_region(5,95,ax = axxs[axi])
                                     
-                                    
-                                        #for axi,tmpax  in enumerate(axxs): 
-                                        for axi,tmp_datstr in enumerate(Dataset_lst): 
-                                            #tmpax = axxs[axi]
-                                            for xi in xsect_pnt_ind_dict[tmp_datstr]: axxs[axi].axvline(xi,color = 'k', alpha = 0.5, ls = '--') 
-                                            for xi in xsect_pnt_ind_dict[tmp_datstr]: axxs[axi].text(xi,xs_ylim[0] - xs_ylim.ptp()*0.9   ,lon_lat_to_str(xsect_lon_dict[tmp_datstr][xi],xsect_lat_dict[tmp_datstr][xi])[0], rotation = 270, ha = 'left', va = 'top')
-                                            plt.colorbar(paxxs[axi], ax = axxs[axi])
-                                        for xi,tmp_datstr in enumerate(Dataset_lst): set_perc_clim_pcolor_in_region(5,95,ax = axxs[axi])
-                                        
-                                        #xmapax = figxs.add_axes([0.075,0.15,0.2,0.5], frameon=False)
-                                        #xmapax = figxs.add_axes([0.075,0.15,0.175,0.4], frameon=False)
-                                        xmapax = figxs.add_axes([0.075,0.025,0.175,0.2], frameon=False)
-                                        #pdb.set_trace()
-                                        xs_pe = [pe.Stroke(linewidth=2, foreground='w'), pe.Normal()]
-                                        #pdb.set_trace()
-                                        if var_dim[var] == 3:
-                                            xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
-                                        elif var_dim[var] == 4:
-                                            xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][0][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
-                                        xmapax.plot(xsect_lon_dict[xsect_secdataset_proc],xsect_lat_dict[xsect_secdataset_proc],'r-', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                                        #xmapax.plot(xsect_lon_pnt_mat,xsect_lat_pnt_mat,'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                                        #xmapax.plot(xsect_lon_pnt_mat[0],xsect_lat_pnt_mat[0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                                        xmapax.plot(xsect_lon_pnt_dict[xsect_secdataset_proc],xsect_lat_pnt_dict[xsect_secdataset_proc],'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                                        xmapax.plot(xsect_lon_pnt_dict[xsect_secdataset_proc][0],xsect_lat_pnt_dict[xsect_secdataset_proc][0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                                        xmapax.axis('equal')
-                                        xmapax.set_xticks([])
-                                        xmapax.set_yticks([]) 
+                                    #xmapax = figxs.add_axes([0.075,0.15,0.2,0.5], frameon=False)
+                                    #xmapax = figxs.add_axes([0.075,0.15,0.175,0.4], frameon=False)
+                                    xmapax = figxs.add_axes([0.075,0.025,0.175,0.2], frameon=False)
+                                    #pdb.set_trace()
+                                    xs_pe = [pe.Stroke(linewidth=2, foreground='w'), pe.Normal()]
+                                    #pdb.set_trace()
+                                    if var_dim[var] == 3:
+                                        xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
+                                    elif var_dim[var] == 4:
+                                        xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][0][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
+                                    xmapax.plot(xsect_lon_dict[xsect_secdataset_proc],xsect_lat_dict[xsect_secdataset_proc],'r-', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                    #xmapax.plot(xsect_lon_pnt_mat,xsect_lat_pnt_mat,'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                    #xmapax.plot(xsect_lon_pnt_mat[0],xsect_lat_pnt_mat[0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                    xmapax.plot(xsect_lon_pnt_dict[xsect_secdataset_proc],xsect_lat_pnt_dict[xsect_secdataset_proc],'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                    xmapax.plot(xsect_lon_pnt_dict[xsect_secdataset_proc][0],xsect_lat_pnt_dict[xsect_secdataset_proc][0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                    xmapax.axis('equal')
+                                    xmapax.set_xticks([])
+                                    xmapax.set_yticks([]) 
 
                             #else:if (nDataset == 2)&(var_dim[var] == 4):
-                            elif (nDataset == 1):
+                            #elif (nDataset == 1):
+                            else:
                                 figxs = plt.figure()
                                 figxs.set_figheight(4*1.2)
                                 figxs.set_figwidth(8*1.5)
