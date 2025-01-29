@@ -988,6 +988,7 @@ def nemo_slice_zlev(config = 'amm7',
         #Obs_hide = False
         Obs_hide_edges = False
         Obs_pair_loc = True
+        Obs_AbsAnom = True
         
 
         #Available Obs data types
@@ -2737,18 +2738,14 @@ def nemo_slice_zlev(config = 'amm7',
 
             if verbose_debugging: print('add colorbars', datetime.now(), 'len(ax):',len(ax))            
             cax = []      
-
-
             cbarax = []      
             cbarax.append(fig.add_axes([leftgap + (axwid - cbwid - cbgap) + cbgap, 0.1,cbwid,  0.8]))
             if var_dim[var] == 4:  
                 cbarax.append(fig.add_axes([leftgap + (axwid - cbwid - cbgap) + wgap + axwid - cbwid - cbgap + cbgap,0.73, cbwid,  0.17]))
                 cbarax.append(fig.add_axes([leftgap + (axwid - cbwid - cbgap) + wgap + axwid - cbwid - cbgap + cbgap,0.52, cbwid,  0.17]))
                 cbarax.append(fig.add_axes([leftgap + (axwid - cbwid - cbgap) + wgap + axwid - cbwid - cbgap + cbgap,0.31, cbwid,  0.17]))
-
-
-            cax = []      
-
+            
+            
             # if using_set_array
             ## remove 0, so change for ai in [0,1,2,3]: cax.append(plt.colorbar to for ai in [1,2,3]: cax.append(plt.colorbar
             ## add cax.append(plt.colorbar(paxmap, ax = ax[0], cax = cbarax[0]))
@@ -3065,6 +3062,7 @@ def nemo_slice_zlev(config = 'amm7',
             if do_Obs:
 
                 oax_lst = []
+                tmp_obs_lst,tmp_obs_llind_lst = [],[]
                 # if selected a dataset, rather than the difference between datasets
                 if secdataset_proc in Dataset_lst:
                     # get current colorlimits
@@ -3072,13 +3070,16 @@ def nemo_slice_zlev(config = 'amm7',
 
                     
                     # for each Obs obs type, 
-                    for ob_var in Obs_var_lst_sub:
+                    for obvi,ob_var in enumerate(Obs_var_lst_sub):
                         #extract the lon, lat, z and OBS
                         #pdb.set_trace()
                         tmpobsx = Obs_dat_dict[secdataset_proc][ob_var]['LONGITUDE']
                         tmpobsy = Obs_dat_dict[secdataset_proc][ob_var]['LATITUDE']
                         tmpobsz = Obs_dat_dict[secdataset_proc][ob_var]['DEPTH']
-                        tmpobsdat_mat = Obs_dat_dict[secdataset_proc][ob_var]['OBS']
+                        if Obs_AbsAnom:
+                            tmpobsdat_mat = Obs_dat_dict[secdataset_proc][ob_var]['OBS']
+                        else:
+                            tmpobsdat_mat = Obs_dat_dict[secdataset_proc][ob_var]['MOD_HX'] - Obs_dat_dict[secdataset_proc][ob_var]['OBS']
 
                         Obs_scatSS = Obs_vis_d['Scat_symsize'][ob_var] 
                         if Obs_hide_edges:
@@ -3116,11 +3117,56 @@ def nemo_slice_zlev(config = 'amm7',
                         else:
 
                             pdb.set_trace()
-
+                        #pdb.set_trace()
+                        tmpobslatlonind = (tmpobsx>tmpxlim[0]) & (tmpobsx<tmpxlim[1]) & (tmpobsy>tmpylim[0]) & (tmpobsy<tmpylim[1]) 
+                        tmp_obs_lst.append(tmpobsdat)
+                        tmp_obs_llind_lst.append(tmpobslatlonind)
                         #scatter plot them
                         if Obs_hide == False:
-                            oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS, edgecolors = Obs_scatEC ))
+                            if Obs_AbsAnom:
+                                oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS, edgecolors = Obs_scatEC ))
+                            else:
 
+                                oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat, s = Obs_scatSS, edgecolors = Obs_scatEC, cmap = matplotlib.cm.seismic ))
+                                
+
+                                '''
+                                if obvi == 0:
+                                    obs_OmB_clim = np.percentile(np.abs(tmpobsdat[tmpobsdat.mask == False]),95)*np.array([-1,1])    
+                                oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat, vmin = obs_OmB_clim[0],vmax = obs_OmB_clim[1], s = Obs_scatSS, edgecolors = Obs_scatEC, cmap = matplotlib.cm.seismic ))
+
+                                if obvi == 0:
+                                    #cbarax.append(fig.add_axes([0.3,0.13, 0.15,cbwid]))
+                                    #cax.append(plt.colorbar(oax_lst[0], ax = ax[0], cax = cbarax[-1], orientation = 'horizontal'))
+                                    cbarobsax = [fig.add_axes([0.305,0.11, 0.15,0.02])]
+                                    #cbarobsax[0].tick_params(top=True, labeltop=True, bottom=False, labelbottom=False)
+                                    cax.append(plt.colorbar(oax_lst[0], ax = ax[0], cax = cbarobsax[0], orientation = 'horizontal'))
+                                    cax[-1].ax.xaxis.set_ticks_position('top')
+                                    cax[-1].ax.xaxis.set_label_position('top')
+                                '''
+
+                    if (len(tmp_obs_lst)>0)& (Obs_AbsAnom==False) & (Obs_hide ==  False):
+                        #try:
+
+                        tmp_obs_mat=np.ma.concatenate(tmp_obs_lst)
+                        tmp_obs_llind_mat=np.ma.concatenate(tmp_obs_llind_lst)
+                        if tmp_obs_llind_mat.sum()>3:
+                            obs_OmB_clim = np.percentile(np.abs(tmp_obs_mat[(tmp_obs_mat.mask == False) & tmp_obs_llind_mat]),95)*np.array([-1,1])    
+                        else:
+                            obs_OmB_clim = np.percentile(np.abs(tmp_obs_mat[tmp_obs_mat.mask == False]),95)*np.array([-1,1])    
+                        for tmp_oax_lst in oax_lst: tmp_oax_lst.set_clim(obs_OmB_clim)          
+                        cbarobsax = [fig.add_axes([0.305,0.11, 0.15,0.02])]
+                        #cbarobsax[0].tick_params(top=True, labeltop=True, bottom=False, labelbottom=False)
+                        cax.append(plt.colorbar(oax_lst[0], ax = ax[0], cax = cbarobsax[0], orientation = 'horizontal'))
+                        cax[-1].ax.xaxis.set_ticks_position('top')
+                        cax[-1].ax.xaxis.set_label_position('top')
+                        del(tmp_obs_lst)
+                        del(tmp_obs_mat)
+                        del(tmp_obs_llind_mat)
+                        del(tmp_obs_llind_lst)
+                        #except:
+                         #   pdb.set_trace()
+                                
                     
                     # plt selected obs marker
                             
@@ -3993,14 +4039,17 @@ def nemo_slice_zlev(config = 'amm7',
                                 # Bring up a options window for Obs
                                 
                                 # button names                            
-                                obs_but_names = ['ProfT','SST_ins','SST_sat','ProfS','SLA','ChlA','Hide_Obs','Edges','Loc','Close']
+                                obs_but_names = ['ProfT','SST_ins','SST_sat','ProfS','SLA','ChlA','Hide_Obs','Edges','Loc','AbsAnom','Close']
                                 
                                 
                                 # button switches  
                                 obs_but_sw = {}
                                 obs_but_sw['Hide_Obs'] = {'v':Obs_hide, 'T':'Show Obs','F': 'Hide Obs'}
-                                obs_but_sw['Edges'] = {'v':Obs_hide, 'T':'Show Edges','F': 'Hide Edges'}
-                                obs_but_sw['Loc'] = {'v':Obs_hide, 'T':"Don't Selected point",'F': 'Move Selected point'}
+                                #obs_but_sw['Edges'] = {'v':Obs_hide, 'T':'Show Edges','F': 'Hide Edges'}
+                                #obs_but_sw['Loc'] = {'v':Obs_hide, 'T':"Don't Selected point",'F': 'Move Selected point'}
+                                obs_but_sw['Edges'] = {'v':Obs_hide_edges, 'T':'Show Edges','F': 'Hide Edges'}
+                                obs_but_sw['Loc'] = {'v':Obs_pair_loc, 'T':"Don't Selected point",'F': 'Move Selected point'}
+                                obs_but_sw['AbsAnom'] = {'v':Obs_AbsAnom, 'T':"Observed Values",'F': 'Model - Obs'}
                                 #for ob_var in Obs_var_lst_sub:  obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var + ' hidden'}
                                 #for ob_var in Obs_varlst:  obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var + ' hidden'}
                                 for ob_var in Obs_var_lst_sub:  obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var,'T_col':'k','F_col':'0.5'}
@@ -4024,6 +4073,7 @@ def nemo_slice_zlev(config = 'amm7',
                                 if obbut_sel == 'Hide_Obs': Obs_hide = not Obs_hide
                                 if obbut_sel == 'Edges':    Obs_hide_edges = not Obs_hide_edges
                                 if obbut_sel == 'Loc':      Obs_pair_loc = not Obs_pair_loc
+                                if obbut_sel == 'AbsAnom':      Obs_AbsAnom = not Obs_AbsAnom
 
 
 
@@ -4987,8 +5037,19 @@ def nemo_slice_zlev(config = 'amm7',
             #print(ii,jj, ti, zz,var)
             print("selected ii = %i,jj = %i,ti = %i,zz = %i, var = '%s'"%(ii,jj, ti, zz,var))
             # after selected indices and vareiabels, delete plots, ready for next cycle
+            #pdb.set_trace()
             for tmp_cax in cax:tmp_cax.remove()
-
+            '''
+            print(len(cax))
+            for tmp_cax in cax:
+                print(tmp_cax)
+                type(tmp_cax)
+                try:
+                    tmp_cax.remove()
+                except:
+                    pdb.set_trace()
+            '''
+            del(cax)
 
             for tmp_pax in pax:tmp_pax.remove()
             for tmp_cs_line in cs_line:tmp_cs_line.remove()
