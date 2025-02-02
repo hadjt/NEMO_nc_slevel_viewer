@@ -5050,6 +5050,7 @@ def nemo_slice_zlev(config = 'amm7',
                     pdb.set_trace()
             '''
             del(cax)
+            
 
             for tmp_pax in pax:tmp_pax.remove()
             for tmp_cs_line in cs_line:tmp_cs_line.remove()

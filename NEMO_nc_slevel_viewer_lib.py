@@ -1675,123 +1675,127 @@ def reload_data_instances(var,thd,ldi,ti,var_d,var_grid, xarr_dict, grid_dict,va
     #pdb.set_trace()
     for tmp_datstr in Dataset_lst:
         th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
-        if var == 'N:P':
-            
-            map_dat_N_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables['N3n'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
-            map_dat_P_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables['N1p'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
-            data_inst[tmp_datstr] = map_dat_N_1/map_dat_P_1
-            del(map_dat_N_1)
-            del(map_dat_P_1)
-
-        elif var in ['baroc_mag','baroc_div','baroc_curl','baroc_phi']:
-            
-            map_dat_3d_U_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr]['U'][ldi].variables[tmp_var_U][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
-            map_dat_3d_V_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr]['V'][ldi].variables[tmp_var_V][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
-            if   var == 'baroc_mag': data_inst[tmp_datstr] = np.sqrt(map_dat_3d_U_1**2 + map_dat_3d_V_1**2)
-            elif var == 'baroc_phi': data_inst[tmp_datstr] = 180.*np.arctan2(map_dat_3d_V_1,map_dat_3d_U_1)/np.pi
-            elif var == 'baroc_div': data_inst[tmp_datstr] = vector_div(map_dat_3d_U_1, map_dat_3d_V_1,grid_dict[tmp_datstr]['e1t']*thd[th_d_ind]['dx'],grid_dict[tmp_datstr]['e2t']*thd[th_d_ind]['dx'])
-            elif var == 'baroc_curl': data_inst[tmp_datstr] = vector_curl(map_dat_3d_U_1, map_dat_3d_V_1,grid_dict[tmp_datstr]['e1t']*thd[th_d_ind]['dx'],grid_dict[tmp_datstr]['e2t']*thd[th_d_ind]['dx'])
-            del(map_dat_3d_U_1)
-            del(map_dat_3d_V_1)
-
-
-        elif var in ['VolTran_e3_mag','VolTran_e3_phi','VolTran_e3_div','VolTran_e3_curl']:
-            tmp_var_Ubar = 'uocetr_eff_e3u'
-            tmp_var_Vbar = 'vocetr_eff_e3v'
-            
-            map_dat_2d_U_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr]['U'][ldi].variables[tmp_var_Ubar][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
-            map_dat_2d_V_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr]['V'][ldi].variables[tmp_var_Vbar][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
-            if   var == 'VolTran_e3_mag': data_inst[tmp_datstr] = np.sqrt(map_dat_2d_U_1**2 + map_dat_2d_V_1**2)
-            elif var == 'VolTran_e3_phi': data_inst[tmp_datstr] = 180.*np.arctan2(map_dat_2d_V_1,map_dat_2d_U_1)/np.pi
-            elif var == 'VolTran_e3_div': data_inst[tmp_datstr] = vector_div(map_dat_2d_U_1, map_dat_2d_V_1,grid_dict[tmp_datstr]['e1t'],grid_dict[tmp_datstr]['e2t'])
-            elif var == 'VolTran_e3_curl': data_inst[tmp_datstr] = vector_curl(map_dat_2d_U_1, map_dat_2d_V_1,grid_dict[tmp_datstr]['e1t'],grid_dict[tmp_datstr]['e2t'])
-            del(map_dat_2d_U_1)
-            del(map_dat_2d_V_1)
-
-
-        elif var in ['VolTran_mag','VolTran_phi','VolTran_div','VolTran_curl']:
-            tmp_var_Ubar = 'uocetr_eff'
-            tmp_var_Vbar = 'vocetr_eff'
-            
-            map_dat_2d_U_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr]['U'][ldi].variables[tmp_var_Ubar][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
-            map_dat_2d_V_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr]['V'][ldi].variables[tmp_var_Vbar][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
-            if   var == 'VolTran_mag': data_inst[tmp_datstr] = np.sqrt(map_dat_2d_U_1**2 + map_dat_2d_V_1**2)
-            elif var == 'VolTran_phi': data_inst[tmp_datstr] = 180.*np.arctan2(map_dat_2d_V_1,map_dat_2d_U_1)/np.pi
-            elif var == 'VolTran_div': data_inst[tmp_datstr] = vector_div(map_dat_2d_U_1, map_dat_2d_V_1,grid_dict[tmp_datstr]['e1t'],grid_dict[tmp_datstr]['e2t'])
-            elif var == 'VolTran_curl': data_inst[tmp_datstr] = vector_curl(map_dat_2d_U_1, map_dat_2d_V_1,grid_dict[tmp_datstr]['e1t'],grid_dict[tmp_datstr]['e2t'])
-            del(map_dat_2d_U_1)
-            del(map_dat_2d_V_1)
-
-
-        elif var in ['barot_mag','barot_phi','barot_div','barot_curl']:
-
-            if 'ubar' in var_d[1]['mat']:
-                tmp_var_Ubar = 'ubar'
-            elif 'vobtcrtx' in var_d[1]['mat']:
-                tmp_var_Ubar = 'vobtcrtx'
-
-            if 'vbar' in var_d[1]['mat']:
-                tmp_var_Vbar = 'vbar'
-            elif 'vobtcrty' in var_d[1]['mat']:
-                tmp_var_Vbar = 'vobtcrty'
-
-
-            map_dat_2d_U_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr]['U'][ldi].variables[tmp_var_Ubar][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
-            map_dat_2d_V_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr]['V'][ldi].variables[tmp_var_Vbar][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
-            if   var == 'barot_mag': data_inst[tmp_datstr] = np.sqrt(map_dat_2d_U_1**2 + map_dat_2d_V_1**2)
-            elif var == 'barot_phi': data_inst[tmp_datstr] = 180.*np.arctan2(map_dat_2d_V_1,map_dat_2d_U_1)/np.pi
-            elif var == 'barot_div': data_inst[tmp_datstr] = vector_div(map_dat_2d_U_1, map_dat_2d_V_1,grid_dict[tmp_datstr]['e1t'],grid_dict[tmp_datstr]['e2t'])
-            elif var == 'barot_curl': data_inst[tmp_datstr] = vector_curl(map_dat_2d_U_1, map_dat_2d_V_1,grid_dict[tmp_datstr]['e1t'],grid_dict[tmp_datstr]['e2t'])
-            del(map_dat_2d_U_1)
-            del(map_dat_2d_V_1)
-
-    
-        elif var in ['StreamFunction']:
-            tmp_var_Vbar = 'vocetr_eff'
-            map_dat_2d_V_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr]['V'][ldi].variables[tmp_var_Vbar][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
-         
-            data_inst[tmp_datstr] = np.ma.array(stream_from_vocetr_eff(map_dat_2d_V_1),mask = map_dat_2d_V_1==0)
-       
-        elif var in ['StreamFunction_e3']:
-            tmp_var_Vbar = 'vocetr_eff_e3v'
-            map_dat_2d_V_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr]['V'][ldi].variables[tmp_var_Vbar][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
-         
-            data_inst[tmp_datstr] = np.ma.array(stream_from_vocetr_eff(map_dat_2d_V_1),mask = map_dat_2d_V_1==0)
-       
-        elif var.upper() in ['PEA', 'PEAT','PEAS']:
-
-            gdept_mat = grid_dict[tmp_datstr]['gdept'][np.newaxis]
-            dz_mat = grid_dict[tmp_datstr]['e3t'][np.newaxis]
-
-            tmp_T_data_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables['votemper'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
-            tmp_S_data_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables['vosaline'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
-            tmppea_1, tmppeat_1, tmppeas_1 = pea_TS(tmp_T_data_1[np.newaxis],tmp_S_data_1[np.newaxis],gdept_mat,dz_mat,calc_TS_comp = True ) 
-            if var.upper() == 'PEA':
-                data_inst[tmp_datstr]= tmppea_1[0]
-            elif var.upper() == 'PEAT':
-                data_inst[tmp_datstr] = tmppeat_1[0]
-            elif var.upper() == 'PEAS':
-                data_inst[tmp_datstr] = tmppeas_1[0]
-
-
-        elif var.upper() in ['RHO','N2'.upper(),'Pync_Z'.upper(),'Pync_Th'.upper(),'N2max'.upper()]:
-            #tmp_rho = {}
-            tmp_T_data_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables['votemper'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
-            tmp_S_data_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables['vosaline'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
-            tmp_rho = sw_dens(tmp_T_data_1,tmp_S_data_1) 
-            
-
-            if var.upper() =='RHO'.upper():
-                data_inst[tmp_datstr]=tmp_rho# - 1000.
-
-            elif var.upper() in ['N2'.upper(),'Pync_Z'.upper(),'Pync_Th'.upper(),'N2max'.upper()]:
+        if var in var_d['d']:
+            if var == 'N:P':
                 
-                N2,Pync_Z,Pync_Th,N2_max,N2_maxz = pycnocline_params(tmp_rho[np.newaxis],grid_dict[tmp_datstr]['gdept'],grid_dict[tmp_datstr]['e3t'])
+                map_dat_N_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables['N3n'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+                map_dat_P_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables['N1p'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+                data_inst[tmp_datstr] = map_dat_N_1/map_dat_P_1
+                del(map_dat_N_1)
+                del(map_dat_P_1)
+
+            elif var in ['baroc_mag','baroc_div','baroc_curl','baroc_phi']:
                 
-                if var.upper() =='N2'.upper():data_inst[tmp_datstr]=N2[0]
-                elif var.upper() =='Pync_Z'.upper():data_inst[tmp_datstr]=Pync_Z[0]
-                elif var.upper() =='Pync_Th'.upper():data_inst[tmp_datstr]=Pync_Th[0]
-                elif var.upper() =='N2max'.upper():data_inst[tmp_datstr]=N2_max[0]
+                map_dat_3d_U_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr]['U'][ldi].variables[tmp_var_U][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+                map_dat_3d_V_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr]['V'][ldi].variables[tmp_var_V][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+                if   var == 'baroc_mag': data_inst[tmp_datstr] = np.sqrt(map_dat_3d_U_1**2 + map_dat_3d_V_1**2)
+                elif var == 'baroc_phi': data_inst[tmp_datstr] = 180.*np.arctan2(map_dat_3d_V_1,map_dat_3d_U_1)/np.pi
+                elif var == 'baroc_div': data_inst[tmp_datstr] = vector_div(map_dat_3d_U_1, map_dat_3d_V_1,grid_dict[tmp_datstr]['e1t']*thd[th_d_ind]['dx'],grid_dict[tmp_datstr]['e2t']*thd[th_d_ind]['dx'])
+                elif var == 'baroc_curl': data_inst[tmp_datstr] = vector_curl(map_dat_3d_U_1, map_dat_3d_V_1,grid_dict[tmp_datstr]['e1t']*thd[th_d_ind]['dx'],grid_dict[tmp_datstr]['e2t']*thd[th_d_ind]['dx'])
+                del(map_dat_3d_U_1)
+                del(map_dat_3d_V_1)
+
+
+            elif var in ['VolTran_e3_mag','VolTran_e3_phi','VolTran_e3_div','VolTran_e3_curl']:
+                tmp_var_Ubar = 'uocetr_eff_e3u'
+                tmp_var_Vbar = 'vocetr_eff_e3v'
+                
+                map_dat_2d_U_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr]['U'][ldi].variables[tmp_var_Ubar][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+                map_dat_2d_V_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr]['V'][ldi].variables[tmp_var_Vbar][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+                if   var == 'VolTran_e3_mag': data_inst[tmp_datstr] = np.sqrt(map_dat_2d_U_1**2 + map_dat_2d_V_1**2)
+                elif var == 'VolTran_e3_phi': data_inst[tmp_datstr] = 180.*np.arctan2(map_dat_2d_V_1,map_dat_2d_U_1)/np.pi
+                elif var == 'VolTran_e3_div': data_inst[tmp_datstr] = vector_div(map_dat_2d_U_1, map_dat_2d_V_1,grid_dict[tmp_datstr]['e1t'],grid_dict[tmp_datstr]['e2t'])
+                elif var == 'VolTran_e3_curl': data_inst[tmp_datstr] = vector_curl(map_dat_2d_U_1, map_dat_2d_V_1,grid_dict[tmp_datstr]['e1t'],grid_dict[tmp_datstr]['e2t'])
+                del(map_dat_2d_U_1)
+                del(map_dat_2d_V_1)
+
+
+            elif var in ['VolTran_mag','VolTran_phi','VolTran_div','VolTran_curl']:
+                tmp_var_Ubar = 'uocetr_eff'
+                tmp_var_Vbar = 'vocetr_eff'
+                
+                map_dat_2d_U_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr]['U'][ldi].variables[tmp_var_Ubar][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+                map_dat_2d_V_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr]['V'][ldi].variables[tmp_var_Vbar][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+                if   var == 'VolTran_mag': data_inst[tmp_datstr] = np.sqrt(map_dat_2d_U_1**2 + map_dat_2d_V_1**2)
+                elif var == 'VolTran_phi': data_inst[tmp_datstr] = 180.*np.arctan2(map_dat_2d_V_1,map_dat_2d_U_1)/np.pi
+                elif var == 'VolTran_div': data_inst[tmp_datstr] = vector_div(map_dat_2d_U_1, map_dat_2d_V_1,grid_dict[tmp_datstr]['e1t'],grid_dict[tmp_datstr]['e2t'])
+                elif var == 'VolTran_curl': data_inst[tmp_datstr] = vector_curl(map_dat_2d_U_1, map_dat_2d_V_1,grid_dict[tmp_datstr]['e1t'],grid_dict[tmp_datstr]['e2t'])
+                del(map_dat_2d_U_1)
+                del(map_dat_2d_V_1)
+
+
+            elif var in ['barot_mag','barot_phi','barot_div','barot_curl']:
+
+                if 'ubar' in var_d[1]['mat']:
+                    tmp_var_Ubar = 'ubar'
+                elif 'vobtcrtx' in var_d[1]['mat']:
+                    tmp_var_Ubar = 'vobtcrtx'
+
+                if 'vbar' in var_d[1]['mat']:
+                    tmp_var_Vbar = 'vbar'
+                elif 'vobtcrty' in var_d[1]['mat']:
+                    tmp_var_Vbar = 'vobtcrty'
+
+
+                map_dat_2d_U_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr]['U'][ldi].variables[tmp_var_Ubar][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+                map_dat_2d_V_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr]['V'][ldi].variables[tmp_var_Vbar][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+                if   var == 'barot_mag': data_inst[tmp_datstr] = np.sqrt(map_dat_2d_U_1**2 + map_dat_2d_V_1**2)
+                elif var == 'barot_phi': data_inst[tmp_datstr] = 180.*np.arctan2(map_dat_2d_V_1,map_dat_2d_U_1)/np.pi
+                elif var == 'barot_div': data_inst[tmp_datstr] = vector_div(map_dat_2d_U_1, map_dat_2d_V_1,grid_dict[tmp_datstr]['e1t'],grid_dict[tmp_datstr]['e2t'])
+                elif var == 'barot_curl': data_inst[tmp_datstr] = vector_curl(map_dat_2d_U_1, map_dat_2d_V_1,grid_dict[tmp_datstr]['e1t'],grid_dict[tmp_datstr]['e2t'])
+                del(map_dat_2d_U_1)
+                del(map_dat_2d_V_1)
+
+        
+            elif var in ['StreamFunction']:
+                tmp_var_Vbar = 'vocetr_eff'
+                map_dat_2d_V_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr]['V'][ldi].variables[tmp_var_Vbar][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+            
+                data_inst[tmp_datstr] = np.ma.array(stream_from_vocetr_eff(map_dat_2d_V_1),mask = map_dat_2d_V_1==0)
+        
+            elif var in ['StreamFunction_e3']:
+                tmp_var_Vbar = 'vocetr_eff_e3v'
+                map_dat_2d_V_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr]['V'][ldi].variables[tmp_var_Vbar][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+            
+                data_inst[tmp_datstr] = np.ma.array(stream_from_vocetr_eff(map_dat_2d_V_1),mask = map_dat_2d_V_1==0)
+        
+            elif var.upper() in ['PEA', 'PEAT','PEAS']:
+
+                gdept_mat = grid_dict[tmp_datstr]['gdept'][np.newaxis]
+                dz_mat = grid_dict[tmp_datstr]['e3t'][np.newaxis]
+
+                tmp_T_data_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables['votemper'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+                tmp_S_data_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables['vosaline'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+                tmppea_1, tmppeat_1, tmppeas_1 = pea_TS(tmp_T_data_1[np.newaxis],tmp_S_data_1[np.newaxis],gdept_mat,dz_mat,calc_TS_comp = True ) 
+                if var.upper() == 'PEA':
+                    data_inst[tmp_datstr]= tmppea_1[0]
+                elif var.upper() == 'PEAT':
+                    data_inst[tmp_datstr] = tmppeat_1[0]
+                elif var.upper() == 'PEAS':
+                    data_inst[tmp_datstr] = tmppeas_1[0]
+
+
+            elif var.upper() in ['RHO','N2'.upper(),'Pync_Z'.upper(),'Pync_Th'.upper(),'N2max'.upper()]:
+                #tmp_rho = {}
+                tmp_T_data_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables['votemper'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+                tmp_S_data_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables['vosaline'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+                tmp_rho = sw_dens(tmp_T_data_1,tmp_S_data_1) 
+                
+
+                if var.upper() =='RHO'.upper():
+                    data_inst[tmp_datstr]=tmp_rho# - 1000.
+
+                elif var.upper() in ['N2'.upper(),'Pync_Z'.upper(),'Pync_Th'.upper(),'N2max'.upper()]:
+                    
+                    N2,Pync_Z,Pync_Th,N2_max,N2_maxz = pycnocline_params(tmp_rho[np.newaxis],grid_dict[tmp_datstr]['gdept'],grid_dict[tmp_datstr]['e3t'])
+                    
+                    if var.upper() =='N2'.upper():data_inst[tmp_datstr]=N2[0]
+                    elif var.upper() =='Pync_Z'.upper():data_inst[tmp_datstr]=Pync_Z[0]
+                    elif var.upper() =='Pync_Th'.upper():data_inst[tmp_datstr]=Pync_Th[0]
+                    elif var.upper() =='N2max'.upper():data_inst[tmp_datstr]=N2_max[0]
+            else:
+                print("var in var_d['d'], but not encoded")
+                pdb.set_trace()
 
         else:
             if var_dim[var] == 3:
@@ -2430,157 +2434,171 @@ def add_derived_vars(var_d,var_dim, var_grid,load_second_files):
     
     if ('votemper' in var_d[1]['mat']) & ('vosaline' in var_d[1]['mat']):
         for ss in ['pea','peat','peas']:
-            var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
-            if load_second_files:
-                var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
-            var_dim[ss] = 3
-            var_grid['Dataset 1'][ss] = 'T'
-            var_d['d'].append(ss)
+            if ss not in var_d[1]['mat']:
+                var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
+                if load_second_files:
+                    var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
+                var_dim[ss] = 3
+                var_grid['Dataset 1'][ss] = 'T'
+                var_d['d'].append(ss)
 
 
         for ss in ['rho']:
-            var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
-            if load_second_files:
-                var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
-            var_dim[ss] = 4
-            var_grid['Dataset 1'][ss] = 'T'
-            var_d['d'].append(ss)
+            if ss not in var_d[1]['mat']:
+                var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
+                if load_second_files:
+                    var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
+                var_dim[ss] = 4
+                var_grid['Dataset 1'][ss] = 'T'
+                var_d['d'].append(ss)
 
 
         for ss in ['N2']:
-            var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
-            if load_second_files:
-                var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
-            var_dim[ss] = 4
-            var_grid['Dataset 1'][ss] = 'T'
-            var_d['d'].append(ss)
+            if ss not in var_d[1]['mat']:
+                var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
+                if load_second_files:
+                    var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
+                var_dim[ss] = 4
+                var_grid['Dataset 1'][ss] = 'T'
+                var_d['d'].append(ss)
 
 
         for ss in ['N2max']:
-            var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
-            if load_second_files:
-                var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
-            var_dim[ss] = 3
-            var_grid['Dataset 1'][ss] = 'T'
-            var_d['d'].append(ss)
+            if ss not in var_d[1]['mat']:
+                var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
+                if load_second_files:
+                    var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
+                var_dim[ss] = 3
+                var_grid['Dataset 1'][ss] = 'T'
+                var_d['d'].append(ss)
 
 
         for ss in ['Pync_Z']:
-            var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
-            if load_second_files:
-                var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
-            var_dim[ss] = 3
-            var_grid['Dataset 1'][ss] = 'T'
-            var_d['d'].append(ss)
+            if ss not in var_d[1]['mat']:
+                var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
+                if load_second_files:
+                    var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
+                var_dim[ss] = 3
+                var_grid['Dataset 1'][ss] = 'T'
+                var_d['d'].append(ss)
 
 
         for ss in ['Pync_Th']:
-            var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
-            if load_second_files:
-                var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
-            var_dim[ss] = 3
-            var_grid['Dataset 1'][ss] = 'T'
-            var_d['d'].append(ss)
+            if ss not in var_d[1]['mat']:
+                var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
+                if load_second_files:
+                    var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
+                var_dim[ss] = 3
+                var_grid['Dataset 1'][ss] = 'T'
+                var_d['d'].append(ss)
 
 
 
     if ('vozocrtx' in var_d[1]['mat']) & ('vomecrty' in var_d[1]['mat']):
         for ss in ['baroc_mag','baroc_phi', 'baroc_div', 'baroc_curl']: 
-            var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
-            if load_second_files:
-                if ('vozocrtx' in var_d[2]['mat']) & ('vomecrty' in var_d[2]['mat']):
-                    var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
-            var_dim[ss] = 4
-            var_grid['Dataset 1'][ss] = 'UV'
-            var_grid['Dataset 1'][ss] = 'U'
-            var_d['d'].append(ss)
+            if ss not in var_d[1]['mat']:
+                var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
+                if load_second_files:
+                    if ('vozocrtx' in var_d[2]['mat']) & ('vomecrty' in var_d[2]['mat']):
+                        var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
+                var_dim[ss] = 4
+                var_grid['Dataset 1'][ss] = 'UV'
+                var_grid['Dataset 1'][ss] = 'U'
+                var_d['d'].append(ss)
 
     if (('ubar' in var_d[1]['mat']) & ('vbar' in var_d[1]['mat'])) | (('vobtcrtx' in var_d[1]['mat']) & ('vobtcrty' in var_d[1]['mat'])) :
         for ss in ['barot_mag', 'barot_phi', 'barot_div', 'barot_curl']: 
-            var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
-            if load_second_files:
-                if (('ubar' in var_d[2]['mat']) & ('vbar' in var_d[2]['mat'])) | (('vobtcrtx' in var_d[2]['mat']) & ('vobtcrty' in var_d[2]['mat'])):
-                    var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
-            var_dim[ss] = 3
-            #var_grid['Dataset 1'][ss] = 'UV'
-            var_grid['Dataset 1'][ss] = 'U'
-            var_d['d'].append(ss)
+            if ss not in var_d[1]['mat']:
+                var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
+                if load_second_files:
+                    if (('ubar' in var_d[2]['mat']) & ('vbar' in var_d[2]['mat'])) | (('vobtcrtx' in var_d[2]['mat']) & ('vobtcrty' in var_d[2]['mat'])):
+                        var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
+                var_dim[ss] = 3
+                #var_grid['Dataset 1'][ss] = 'UV'
+                var_grid['Dataset 1'][ss] = 'U'
+                var_d['d'].append(ss)
 
 
 
     if ('vocetr_eff_e3v' in var_d[1]['mat']) :
         for ss in ['StreamFunction_e3']: 
-            var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
-            if load_second_files:
-                if ('vocetr_eff_e3v' in var_d[2]['mat']) :
-                    var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
-            var_dim[ss] = 3
-            #var_grid['Dataset 1'][ss] = 'UV'
-            var_grid['Dataset 1'][ss] = 'U'
-            var_d['d'].append(ss)
+            if ss not in var_d[1]['mat']:
+                var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
+                if load_second_files:
+                    if ('vocetr_eff_e3v' in var_d[2]['mat']) :
+                        var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
+                var_dim[ss] = 3
+                #var_grid['Dataset 1'][ss] = 'UV'
+                var_grid['Dataset 1'][ss] = 'U'
+                var_d['d'].append(ss)
 
 
     if ('vocetr_eff' in var_d[1]['mat']) :
         for ss in ['StreamFunction']: 
-            var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
-            if load_second_files:
-                if ('vocetr_eff' in var_d[2]['mat']) :
-                    var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
-            var_dim[ss] = 3
-            #var_grid['Dataset 1'][ss] = 'UV'
-            var_grid['Dataset 1'][ss] = 'U'
-            var_d['d'].append(ss)
+            if ss not in var_d[1]['mat']:
+                var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
+                if load_second_files:
+                    if ('vocetr_eff' in var_d[2]['mat']) :
+                        var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
+                var_dim[ss] = 3
+                #var_grid['Dataset 1'][ss] = 'UV'
+                var_grid['Dataset 1'][ss] = 'U'
+                var_d['d'].append(ss)
 
 
     if ('uocetr_eff_e3u' in var_d[1]['mat']) & ('vocetr_eff_e3v' in var_d[1]['mat']):
         for ss in ['VolTran_e3_mag', 'VolTran_e3_phi', 'VolTran_e3_div', 'VolTran_e3_curl']: 
-            var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
-            if load_second_files:
-                if ('uocetr_eff_e3u' in var_d[2]['mat']) & ('vocetr_eff_e3v' in var_d[2]['mat']):
-                    var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
-            var_dim[ss] = 3
-            #var_grid['Dataset 1'][ss] = 'UV'
-            var_grid['Dataset 1'][ss] = 'U'
-            var_d['d'].append(ss)
+            if ss not in var_d[1]['mat']:
+                var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
+                if load_second_files:
+                    if ('uocetr_eff_e3u' in var_d[2]['mat']) & ('vocetr_eff_e3v' in var_d[2]['mat']):
+                        var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
+                var_dim[ss] = 3
+                #var_grid['Dataset 1'][ss] = 'UV'
+                var_grid['Dataset 1'][ss] = 'U'
+                var_d['d'].append(ss)
 
 
 
     if ('vocetr_eff' in var_d[1]['mat']) & ('uocetr_eff' in var_d[1]['mat']):
         for ss in ['VolTran_mag', 'VolTran_phi', 'VolTran_div', 'VolTran_curl']: 
-            #ss = 'barot_mag'
-            var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
-            if load_second_files:
-                if ('vocetr_eff' in var_d[2]['uocetr_eff']) & ('vbar' in var_d[2]['mat']):
-                    var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
-            var_dim[ss] = 3
-            #var_grid['Dataset 1'][ss] = 'UV'
-            var_grid['Dataset 1'][ss] = 'U'
-            var_d['d'].append(ss)
+            if ss not in var_d[1]['mat']:
+                #ss = 'barot_mag'
+                var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
+                if load_second_files:
+                    if ('vocetr_eff' in var_d[2]['uocetr_eff']) & ('vbar' in var_d[2]['mat']):
+                        var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
+                var_dim[ss] = 3
+                #var_grid['Dataset 1'][ss] = 'UV'
+                var_grid['Dataset 1'][ss] = 'U'
+                var_d['d'].append(ss)
 
 
 
 
     if ('uwnd' in var_d[1]['mat']) & ('vwnd' in var_d[1]['mat']):
         for ss in ['wnd_mag']:#, 'barot_div', 'barot_curl']: 
-            #ss = 'barot_mag'
-            var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
-            if load_second_files:
-                if ('uwnd' in var_d[2]['mat']) & ('vwnd' in var_d[2]['mat']):
-                    var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
-            var_dim[ss] = 3
-            var_grid['Dataset 1'][ss] = 'WW3'
-            var_d['d'].append(ss)
+            if ss not in var_d[1]['mat']:
+                #ss = 'barot_mag'
+                var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
+                if load_second_files:
+                    if ('uwnd' in var_d[2]['mat']) & ('vwnd' in var_d[2]['mat']):
+                        var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
+                var_dim[ss] = 3
+                var_grid['Dataset 1'][ss] = 'WW3'
+                var_d['d'].append(ss)
 
 
     if ('N3n' in var_d[1]['mat']) & ('N1p' in var_d[1]['mat']):
         ss = 'N:P'
-        var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
-        if load_second_files:
-            if ('N3n' in var_d[2]['mat']) & ('N1p' in var_d[2]['mat']):
-                var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
-        var_dim[ss] = 4
-        var_grid['Dataset 1'][ss] = 'T'
-        var_d['d'].append(ss)
+        if ss not in var_d[1]['mat']:
+            var_d[1]['mat'] = np.append(var_d[1]['mat'],ss)
+            if load_second_files:
+                if ('N3n' in var_d[2]['mat']) & ('N1p' in var_d[2]['mat']):
+                    var_d[2]['mat'] = np.append(var_d[2]['mat'],ss)
+            var_dim[ss] = 4
+            var_grid['Dataset 1'][ss] = 'T'
+            var_d['d'].append(ss)
 
 
     return var_d,var_dim, var_grid
@@ -3186,6 +3204,7 @@ def create_ncvar_lon_lat_time(ncvar_d):
     time_varname_mat = ['time_counter'.upper(),'time'.upper()]
         # match def resample_xarray() to time_varname_mat, until generalised. 
 
+    nav_lon_varname,nav_lat_varname,time_varname = None, None, None
     # check name of lon and lat ncvar in data.
     # cycle through variables and if it is a possibnle varibable name, use it
     for ncvar in ncvar_d['Dataset 1']['T']: 
@@ -3194,8 +3213,12 @@ def create_ncvar_lon_lat_time(ncvar_d):
         if ncvar.upper() in time_varname_mat: time_varname = ncvar
 
     
-    if nav_lon_varname not in ncvar_d['Dataset 1']['T']:
-        pdb.set_trace()
+    #if nav_lon_varname not in ncvar_d['Dataset 1']['T']:
+    #    pdb.set_trace()
+
+    if nav_lon_varname is None:pdb.set_trace()
+    if nav_lat_varname is None:pdb.set_trace()
+    if time_varname is None:pdb.set_trace()
     
 
     return nav_lon_varname,nav_lat_varname,time_varname,nav_lon_var_mat,nav_lat_var_mat,time_varname_mat
