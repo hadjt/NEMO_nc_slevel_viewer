@@ -4870,6 +4870,37 @@ def nemo_slice_zlev(config = 'amm7',
 
 
                         elif but_name == 'Grad':
+                            if mouse_info['button'].name == 'LEFT':
+                                if do_grad == 0:
+                                    do_grad = 1
+                                elif do_grad == 1:
+                                    do_grad = 2
+                                elif do_grad == 2:
+                                    do_grad = 0
+                            if mouse_info['button'].name == 'RIGHT':
+                                if do_grad == 0:
+                                    do_grad = 2
+                                elif do_grad == 1:
+                                    do_grad = 0
+                                elif do_grad == 2:
+                                    do_grad = 1
+
+                            if do_grad == 0:
+                                func_but_text_han['Grad'].set_color('0.5')
+                                func_but_text_han['Grad'].set_text('Grad')
+                            elif do_grad == 1:
+                                func_but_text_han['Grad'].set_color('darkgreen')
+                                func_but_text_han['Grad'].set_text('Horiz Grad')
+                            elif do_grad == 2:
+                                func_but_text_han['Grad'].set_color('gold')
+                                func_but_text_han['Grad'].set_text('Vert Grad')
+
+                            reload_map = True
+                            reload_ew = True
+                            reload_ns = True
+                            reload_hov = True
+                            reload_ts = True
+                            '''
                             if do_grad == 0:
                                 func_but_text_han['Grad'].set_color('darkgreen')
                                 func_but_text_han['Grad'].set_text('Horiz Grad')
@@ -4899,6 +4930,7 @@ def nemo_slice_zlev(config = 'amm7',
                                 reload_ns = True
                                 reload_hov = True
                                 reload_ts = True
+                            '''
     
 
                         elif but_name == 'Vis curr':
@@ -5521,6 +5553,9 @@ def main():
                 #Add sub dictionary if not present 
                 if tmp_datstr not in Obs_dict_in.keys():Obs_dict_in[tmp_datstr] = {}
 
+                if len(tmparr)!=3:
+                    print('arg error: (Obs_dict):', tmparr)
+
                 tmp_datset = tmparr[1]
                 tmp_files = tmparr[2]
                 Obs_dict_in[tmp_datstr][tmp_datset] = tmp_files
@@ -5888,6 +5923,8 @@ def main():
                 tmp_datstr = 'Dataset ' + tmparr[0]
                 #Add sub dictionary if not present 
                 if tmp_datstr not in fname_dict.keys():fname_dict[tmp_datstr] = {}
+                if len(tmparr)!=3:
+                    print('arg error: (files):', tmparr)
 
                 tmp_grid = tmparr[1]
                 tmp_files = tmparr[2]
@@ -5909,6 +5946,8 @@ def main():
 
         if args.configs is not None:
             
+            if len(tmparr)!=2:
+                print('arg error: (configs):', tmparr)
             for tmparr in args.configs:
                 #pdb.set_trace()
                 configd[int(tmparr[0])] = tmparr[1]
@@ -5935,6 +5974,9 @@ def main():
         if args.figlabs is not None:
             fig_lab_d = {}
             fig_lab_d['Dataset 1'] = None
+
+            if len(tmparr)!=2:
+                print('arg error: (figlabs):', tmparr)
             for tmparr in args.figlabs:
                 tmp_datstr = 'Dataset ' + tmparr[0]
                 #pdb.set_trace()
@@ -6016,6 +6058,8 @@ def main():
 
             for tmparr in args.th:
 
+                if len(tmparr)!=3:
+                    print('arg error: (th):', tmparr)
                 #take the dataset name
                 tmp_datstr = int(tmparr[0])
                 tmp_thvar = tmparr[1]
