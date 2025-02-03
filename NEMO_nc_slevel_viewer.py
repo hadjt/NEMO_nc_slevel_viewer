@@ -3703,7 +3703,7 @@ def nemo_slice_zlev(config = 'amm7',
                                 
                                 #flush canvas
                                 fig.canvas.flush_events()
-                                zoom0_ax,zoom0_ii,zoom0_jj,zoom0_ti,zoom0_zz,sel_xlocval,sel_ylocval = indices_from_ginput_ax(ax,tmpzoom0[0][0],tmpzoom0[0][1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
+                                zoom0_ax,zoom0_ii,zoom0_jj,zoom0_ti,zoom0_zz,zoom0_sel_xlocval,zoom0_sel_ylocval = indices_from_ginput_ax(ax,tmpzoom0[0][0],tmpzoom0[0][1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
                                 if zoom0_ax in [1,2,3]:
                                     zlim_max = zoom0_zz
                                 elif zoom0_ax in [0]:
@@ -3713,7 +3713,7 @@ def nemo_slice_zlev(config = 'amm7',
                                     tmpzoom1 = [[mouse_info['xdata'],mouse_info['ydata']]]
                                     del(buttonpress)
 
-                                    zoom1_ax,zoom1_ii,zoom1_jj,zoom1_ti,zoom1_zz, sel_xlocval,sel_ylocval = indices_from_ginput_ax(ax,tmpzoom1[0][0],tmpzoom1[0][1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
+                                    zoom1_ax,zoom1_ii,zoom1_jj,zoom1_ti,zoom1_zz, zoom1_sel_xlocval,zoom1_sel_ylocval = indices_from_ginput_ax(ax,tmpzoom1[0][0],tmpzoom1[0][1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
                                         
                                     if verbose_debugging: print(zoom0_ax,zoom0_ii,zoom0_jj,zoom0_ti,zoom0_zz)
                                     if verbose_debugging: print(zoom1_ax,zoom1_ii,zoom1_jj,zoom1_ti,zoom1_zz)
@@ -3721,11 +3721,14 @@ def nemo_slice_zlev(config = 'amm7',
                                     if verbose_debugging: print(cur_ylim)
 
                                     # if both clicks in main axes, use clicks for the new x and ylims
-                                    if (zoom0_ax is not None) & (zoom0_ax is not None):
+                                    if (zoom0_ax is not None) & (zoom1_ax is not None):
                                         if zoom0_ax == zoom1_ax:
                                             if zoom0_ax == 0:
-                                                cl_cur_xlim = np.array([lon_d[1][zoom0_jj,zoom0_ii],lon_d[1][zoom1_jj,zoom1_ii]])
-                                                cl_cur_ylim = np.array([lat_d[1][zoom0_jj,zoom0_ii],lat_d[1][zoom1_jj,zoom1_ii]])
+                                                #cl_cur_xlim = np.array([lon_d[1][zoom0_jj,zoom0_ii],lon_d[1][zoom1_jj,zoom1_ii]])
+                                                #cl_cur_ylim = np.array([lat_d[1][zoom0_jj,zoom0_ii],lat_d[1][zoom1_jj,zoom1_ii]])
+
+                                                cl_cur_xlim = np.array([zoom0_sel_xlocval,zoom1_sel_xlocval])
+                                                cl_cur_ylim = np.array([zoom0_sel_ylocval,zoom1_sel_ylocval])
                                                 cl_cur_xlim.sort()
                                                 cl_cur_ylim.sort()
                                                 if tmp_zoom_in:
