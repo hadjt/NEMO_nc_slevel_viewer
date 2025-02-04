@@ -3096,7 +3096,8 @@ def create_Dataset_lst(fname_dict):
 
 
 
-def load_grid_dict(Dataset_lst,rootgrp_gdept_dict, thd, nce1t,nce2t,nce3t,configd, config_fnames_dict,cutxind,cutyind,cutout_data):
+def load_grid_dict(Dataset_lst,
+rootgrp_gdept_dict, thd, nce1t,nce2t,nce3t,configd, config_fnames_dict,cutxind,cutyind,cutout_data, do_mask):
     grid_dict = {}
     for tmp_datstr in Dataset_lst:
         th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
@@ -3109,6 +3110,9 @@ def load_grid_dict(Dataset_lst,rootgrp_gdept_dict, thd, nce1t,nce2t,nce3t,config
             tmp_configd = configd[th_d_ind]
             if tmp_configd is None:tmp_configd = configd[1]
             grid_dict[tmp_datstr]['gdept'] = rootgrp_gdept_dict[tmp_datstr].variables[config_fnames_dict[tmp_configd]['ncgdept']][0,:,cutyind[0]:cutyind[1],cutxind[0]:cutxind[1]][:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
+            if do_mask:
+                grid_dict[tmp_datstr]['tmask'] = rootgrp_gdept_dict[tmp_datstr].variables['tmask'][0,:,cutyind[0]:cutyind[1],cutxind[0]:cutxind[1]][:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
+                
         else:
             grid_dict[tmp_datstr]['e1t'] = rootgrp_gdept_dict[tmp_datstr].variables[nce1t][0,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
             grid_dict[tmp_datstr]['e2t'] = rootgrp_gdept_dict[tmp_datstr].variables[nce2t][0,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
@@ -3116,7 +3120,9 @@ def load_grid_dict(Dataset_lst,rootgrp_gdept_dict, thd, nce1t,nce2t,nce3t,config
             tmp_configd = configd[th_d_ind]
             if tmp_configd is None:tmp_configd = configd[1]
             grid_dict[tmp_datstr]['gdept'] = rootgrp_gdept_dict[tmp_datstr].variables[config_fnames_dict[tmp_configd]['ncgdept']][0,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
-        
+            if do_mask:
+                grid_dict[tmp_datstr]['tmask'] = rootgrp_gdept_dict[tmp_datstr].variables['tmask'][0,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
+            
     nz = grid_dict[Dataset_lst[0]]['gdept'].shape[0]
 
 

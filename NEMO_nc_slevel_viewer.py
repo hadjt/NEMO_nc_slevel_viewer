@@ -100,7 +100,7 @@ def nemo_slice_zlev(config = 'amm7',
     resample_freq = None,
     verbose_debugging = False,do_timer = True,do_memory = True,
     Obs_dict = None, Obs_reloadmeth = 2,Obs_hide = False,
-    do_MLD = True,
+    do_MLD = True,do_mask = False,
     use_xarray_gdept = True):
 
     print('Initialise at ',datetime.now())
@@ -117,6 +117,7 @@ def nemo_slice_zlev(config = 'amm7',
     else:
         cutout_data = True
     
+
     
 
     # if arguement Obs_dict is not None, set do_Obs to true
@@ -553,8 +554,12 @@ def nemo_slice_zlev(config = 'amm7',
 
     init_timer.append((datetime.now(),'Lon/Lats loaded'))
 
+    if do_mask:
+        if 'tmask' not in rootgrp_gdept_dict[tmp_datstr].variables.keys():
+            do_mask = False
+            
     #create depth (gdept) dictionary
-    grid_dict,nz = load_grid_dict(Dataset_lst,rootgrp_gdept_dict, thd, nce1t,nce2t,nce3t,configd, config_fnames_dict,cutxind,cutyind,cutout_data)
+    grid_dict,nz = load_grid_dict(Dataset_lst,rootgrp_gdept_dict, thd, nce1t,nce2t,nce3t,configd, config_fnames_dict,cutxind,cutyind,cutout_data, do_mask)
     #pdb.set_trace()
     # if using WW3 grid, load regridding interpolation weights
 
@@ -2143,8 +2148,12 @@ def nemo_slice_zlev(config = 'amm7',
                             
 
 
-
-
+            if do_mask:
+                for tmp_datstr in  Dataset_lst:
+                    if var_dim[var] == 3:
+                        data_inst[tmp_datstr] = np.ma.array(data_inst[tmp_datstr], mask = (grid_dict[tmp_datstr]['tmask'][0,:,:] == False))
+                    elif var_dim[var] == 4:
+                        data_inst[tmp_datstr] = np.ma.array(data_inst[tmp_datstr], mask = (grid_dict[tmp_datstr]['tmask'] == False))
 
 
             
@@ -2353,7 +2362,7 @@ def nemo_slice_zlev(config = 'amm7',
                         for ob_var in Obs_var_lst_sub:
 
                             # If Obs Method is to replace, set the old OPS to zero. 
-                            if Obs_reloadmeth ==2:
+                            if Obs_reloadmeth == 2:
                                 Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = {}
 
                             # for a give model data time (ti) find nearest Obs data time (ob_ti)
@@ -5527,6 +5536,7 @@ def main():
         parser.add_argument('--verbose_debugging', type=str, required=False)
         parser.add_argument('--do_timer', type=str, required=False)
         parser.add_argument('--do_memory', type=str, required=False)
+        parser.add_argument('--do_mask', type=str, required=False)
         parser.add_argument('--use_xarray_gdept', type=str, required=False)
 
         parser.add_argument('--Obs_dict', action='append', nargs='+')
@@ -5687,6 +5697,16 @@ def main():
                 print(args.do_timer)
                 pdb.set_trace()
  
+        if args.do_mask is None:
+            do_mask_in=False
+        elif args.do_mask is not None:
+            if args.do_mask.upper() in ['TRUE','T']:
+                do_mask_in = bool(True)
+            elif args.do_mask.upper() in ['FALSE','F']:
+                do_mask_in = bool(False)
+            else:                
+                print(args.do_timer)
+                pdb.set_trace()
         if args.do_grad is None:
             do_grad_in=0
         else:
@@ -6107,7 +6127,7 @@ def main():
             resample_freq = args.resample_freq,
             Obs_dict = Obs_dict_in,Obs_hide = Obs_hide_in,
             fig_dir = args.fig_dir, fig_lab = args.fig_lab,fig_cutout = fig_cutout_in,
-            verbose_debugging = verbose_debugging_in,do_timer = do_timer_in,do_memory = do_memory_in,
+            verbose_debugging = verbose_debugging_in,do_timer = do_timer_in,do_memory = do_memory_in,do_mask = do_mask_in,
             use_xarray_gdept = use_xarray_gdept_in)
 
 
