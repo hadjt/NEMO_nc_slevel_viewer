@@ -368,6 +368,7 @@ def nemo_slice_zlev(config = 'amm7',
                 #th_d_ind2 = int(tmp_datstr2[-1])
                 th_d_ind2 = int(tmp_datstr2[8:])
                 if tmp_datstr1!=tmp_datstr2:
+                #if ((nDataset<6)&(th_d_ind1 != th_d_ind2))|((nDataset>=6)&(th_d_ind1 > th_d_ind2)):
                     tmp_diff_str_name = 'Dat%i-Dat%i'%(th_d_ind1,th_d_ind2)
                     secdataset_proc_list.append(tmp_diff_str_name)
                     
@@ -1406,17 +1407,116 @@ def nemo_slice_zlev(config = 'amm7',
         #func_but_extent[funcname] = [func_but_x0,func_but_x1,0.95 - (but_dy + vi*0.05),0.95 - (0 + vi*0.05)]
         func_but_extent[funcname] = [func_but_x0,func_but_x1,0.90 - (but_dy + vi*but_dysp),0.90 - (0 + vi*but_dysp)]
 
-
+    '''
     for vi, tmp_funcname in enumerate(mode_name_secdataset_proc_list):
         func_but_extent[tmp_funcname] = [0.15 + vi*(func_but_dx1+0.01), 0.15 + vi*(func_but_dx1+0.01) + func_but_dx1, 0.025,  0.025 + but_dy]
+    '''
+
+    # to allow Dataset and Dat-Dat buttons size to vary depending on the number of data sets
+    # button width and gap vary, with a default value of tmpfunc_but_dx1,tmp_dx_gap = 0.05, 0.01 
+    # iterate through buttons
+    # start with a left position of if vi == 0:tmp_lhs = 0.15, 
+    #       let tmp_rhs = tmp_lhs + tmpfunc_but_dx1, and then tmp_lhs = tmp_rhs + gap.
+    # gap and button size depend on the number of datasets (nDataset), and whether dataset of dat-dat
+
+    tmp_bot = 0.025
+    tmp_top = 0.05
+    if nDataset > 8:
+        tmp_bot = 0.035
+        tmp_top = 0.06
+
+    for vi, tmp_funcname in enumerate(mode_name_secdataset_proc_list):
+
+        tmpfunc_but_dx1 = 0.05# func_but_dx1
+        tmp_dx_gap = 0.01
+        if (tmp_funcname in secdataset_proc_list):
+            if (tmp_funcname not in Dataset_lst):
+                
+                if (nDataset>6):
+                    tmp_datmdat_str_lst = tmp_funcname.split('-')     #['Dat1', 'Dat3']
+                    if int(tmp_datmdat_str_lst[0][3:])>int(tmp_datmdat_str_lst[1][3:]): continue
+                    
+            
+                if nDataset in [3,4]:
+                    tmpfunc_but_dx1 = 0.025# 0.05/2
+                elif nDataset in [5,6]:
+                    tmpfunc_but_dx1 = 0.0125# 0.05/4
+                    '''
+                if nDataset>6:
+                    tmpfunc_but_dx1 = 0.015
+                    tmp_dx_gap = 0.0025
+            else:
+                if nDataset>6:
+                    tmpfunc_but_dx1 = 0.015
+                    tmp_dx_gap = 0.0025
+                    '''
+
+            if nDataset>4:
+                tmpfunc_but_dx1 = np.minimum(tmpfunc_but_dx1,0.04)
+                tmp_dx_gap = 0.0025
+            if nDataset>6:
+                tmpfunc_but_dx1 = 0.015
+                tmp_dx_gap = 0.0025
+
+
+        if tmp_funcname == 'Dataset 1': tmp_dx_gap = 0.01
+
+        if vi == 0: 
+            tmp_lhs = 0.15
+        else:
+            tmp_lhs = tmp_rhs + tmp_dx_gap
+        tmp_rhs = tmp_lhs + tmpfunc_but_dx1
+
+        if tmp_rhs>0.99:
+
+            tmp_lhs = 0.15
+            tmp_rhs = tmp_lhs + tmpfunc_but_dx1
+
+            tmp_bot = 0.002
+            tmp_top = 0.027
+            tmp_bot = 0.005
+            tmp_top = 0.03
+
+
+        func_but_extent[tmp_funcname] = [tmp_lhs, tmp_rhs, tmp_bot,  tmp_top]
+
+
+
+    #pdb.set_trace()
+
+    del(tmp_lhs)
+    del(tmp_rhs)
+    del(tmp_top)
+    del(tmp_bot)
 
     for vi,funcname in enumerate(func_names_lst): 
+        if funcname not in func_but_extent.keys(): continue
         #add button outlines
         func_but_line_han[funcname] = clickax.plot([func_but_extent[funcname][0],func_but_extent[funcname][1],func_but_extent[funcname][1],func_but_extent[funcname][0],func_but_extent[funcname][0]], [func_but_extent[funcname][2],func_but_extent[funcname][2],func_but_extent[funcname][3],func_but_extent[funcname][3],func_but_extent[funcname][2]],'k')
         #add button names
         func_but_text_han[funcname] = clickax.text((func_but_extent[funcname][0]+func_but_extent[funcname][1])/2,(func_but_extent[funcname][2]+func_but_extent[funcname][3])/2,funcname, ha = 'center', va = 'center')
     
-    
+    if nDataset>2:
+        for tmp_funcname in secdataset_proc_list: # [...'Dataset 3', 'Dataset 4', 'Dat1-Dat2', 'Dat1-Dat3', 'Dat1-Dat4', ...]
+
+            tmp_datmdat_str = func_but_text_han[tmp_funcname].get_text() #'Dat1-Dat2'
+            new_tmp_datmdat_str = tmp_datmdat_str
+            if (tmp_funcname not in Dataset_lst): #[...'Dataset 2', 'Dataset 3', 'Dataset 4', ...]
+                
+                tmp_datmdat_str_lst = tmp_datmdat_str.split('-')     #['Dat1', 'Dat3']
+
+                if nDataset in [3,4]:
+                    new_tmp_datmdat_str = 'D%i-D%i'%(int(tmp_datmdat_str_lst[0][3:]),int(tmp_datmdat_str_lst[1][3:])) # 'D%i-D%i'%(1,3)
+                elif nDataset >4:
+                    new_tmp_datmdat_str = '%i-%i'%(int(tmp_datmdat_str_lst[0][3:]),int(tmp_datmdat_str_lst[1][3:])) # 'D%i-D%i'%(1,3)
+                
+            else:
+                if nDataset>6:
+                    new_tmp_datmdat_str = 'D%i'%int(tmp_datmdat_str[8:])
+
+            func_but_text_han[tmp_funcname].set_text(new_tmp_datmdat_str)
+
+             
 
     # if a secondary data set, det default behaviour. 
     if load_second_files: func_but_text_han[secdataset_proc].set_color('darkgreen')
@@ -3631,10 +3731,6 @@ def nemo_slice_zlev(config = 'amm7',
                 for but_name in but_extent.keys():
                     
                     but_pos_x0,but_pos_x1,but_pos_y0,but_pos_y1 = but_extent[but_name]
-                    print(' ')
-                    print ('var but, box:',var,clii,cljj,but_pos_x0,but_pos_x1,but_pos_y0,but_pos_y1)
-                    print(' ')
-                    print(' ')
                     if (clii >= but_pos_x0) & (clii <= but_pos_x1) & (cljj >= but_pos_y0) & (cljj <= but_pos_y1):
                         is_in_axes = True
                         if but_name in var_but_mat:
