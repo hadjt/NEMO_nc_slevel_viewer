@@ -50,7 +50,7 @@ from NEMO_nc_slevel_viewer_lib import profile_line
 from NEMO_nc_slevel_viewer_lib import load_ops_prof_TS, load_ops_2D_xarray, obs_reset_sel
 from NEMO_nc_slevel_viewer_lib import pop_up_opt_window,pop_up_info_window,get_help_text,jjii_from_lon_lat
 
-
+from NEMO_nc_slevel_viewer_lib import calc_ens_stat_2d_spat, calc_ens_stat_3d,calc_ens_stat_2d_temp,calc_ens_stat_map
 
 
 
@@ -98,7 +98,7 @@ def nemo_slice_zlev(config = 'amm7',
     trim_extra_files = True,
     vis_curr = -1, vis_curr_meth = 'barb',
     resample_freq = None,
-    verbose_debugging = False,do_timer = True,do_memory = True,
+    verbose_debugging = False,do_timer = True,do_memory = True,do_ensemble = False,
     Obs_dict = None, Obs_reloadmeth = 2,Obs_hide = False,
     do_MLD = True,do_mask = False,
     use_xarray_gdept = True):
@@ -119,6 +119,9 @@ def nemo_slice_zlev(config = 'amm7',
     
 
     
+    if do_ensemble:
+        Ens_stat = None
+        ens_stat_lst = ['EnsMean','EnsStd','EnsVar'] 
 
     # if arguement Obs_dict is not None, set do_Obs to true
     #Obs_dict = Obs_fname
@@ -1390,6 +1393,7 @@ def nemo_slice_zlev(config = 'amm7',
     # if a secondary data set, give ability to change data sets. 
     if load_second_files:
         func_names_lst = func_names_lst + secdataset_proc_list + ['regrid_meth']
+        if do_ensemble: func_names_lst = func_names_lst + ens_stat_lst 
 
     func_but_line_han,func_but_text_han = {},{}
     func_but_extent = {}
@@ -1398,9 +1402,15 @@ def nemo_slice_zlev(config = 'amm7',
     mode_name_secdataset_proc_list = mode_name_lst
 
     if load_second_files: 
-        mode_name_secdataset_proc_list = mode_name_secdataset_proc_list + secdataset_proc_list + ['regrid_meth']
+        mode_name_secdataset_proc_list = mode_name_secdataset_proc_list + secdataset_proc_list 
+        if do_ensemble: mode_name_secdataset_proc_list = mode_name_secdataset_proc_list + ens_stat_lst        
+        mode_name_secdataset_proc_list = mode_name_secdataset_proc_list + ['regrid_meth']
 
-    #add button box
+
+
+
+    #add default button box
+    #   overwritten for mode_name_secdataset_proc_list
     for vi,funcname in enumerate(func_names_lst): 
 
         #note button extends (as in position.x0,x1, y0, y1)
@@ -1431,6 +1441,8 @@ def nemo_slice_zlev(config = 'amm7',
         tmp_dx_gap = 0.01
         if (tmp_funcname in secdataset_proc_list):
             if (tmp_funcname not in Dataset_lst):
+
+                if do_ensemble: continue
                 
                 if (nDataset>6):
                     tmp_datmdat_str_lst = tmp_funcname.split('-')     #['Dat1', 'Dat3']
@@ -2548,7 +2560,6 @@ def nemo_slice_zlev(config = 'amm7',
             ###################################################################################################
 
             pax = []        
-
             if secdataset_proc in Dataset_lst:
                 map_dat = map_dat_dict[secdataset_proc]
                 if var_dim[var] == 4:
@@ -2594,6 +2605,59 @@ def nemo_slice_zlev(config = 'amm7',
                 if do_MLD:  
                     mld_ns_slice_dat = mld_ns_slice_dict['Dataset 1'].copy()*0.
                     mld_ew_slice_dat = mld_ew_slice_dict['Dataset 1'].copy()*0.
+                    
+            # if in ensemble mode, and an ensmble stat is selected
+            # Calculate the stat, and copy into map_dat for the map ax.
+            # other vars not encoded. 
+            if do_ensemble:
+
+                if var_dim[var] == 4:
+                    ns_slice_dat, ew_slice_dat,hov_dat, ens_tsdat = calc_ens_stat_3d(ns_slice_dict,ew_slice_dict,hov_dat_dict,ts_dat_dict, Ens_stat,Dataset_lst)
+                elif var_dim[var] == 3:
+                    ens_ns_slice_dat, ens_ew_slice_dat, ens_ts_dat = calc_ens_stat_2d_spat(ns_slice_dict,ew_slice_dict,ts_dat_dict, Ens_stat,Dataset_lst)
+
+                if (Ens_stat is not None):
+                    map_dat = calc_ens_stat_map(map_dat_dict, Ens_stat,Dataset_lst)
+
+
+                '''
+                if Ens_stat in ['EnsMean', 'EnsStd', 'EnsVar']:
+
+                    map_dat_mean = map_dat.copy()*0.
+                    
+                    for tmp_datstr in Dataset_lst:
+                        map_dat_mean+=map_dat_dict[tmp_datstr]
+
+                    map_dat_mean/=nDataset
+
+                    if Ens_stat in ['EnsStd', 'EnsVar']:
+
+                        map_dat_var = map_dat.copy()*0.
+                        
+                        for tmp_datstr in Dataset_lst:
+                            map_dat_var+=map_dat_dict[tmp_datstr]**2
+
+                        map_dat_var = map_dat_var/nDataset - map_dat_mean**2
+
+                        if Ens_stat in ['EnsStd']:
+                            map_dat_std = np.sqrt(map_dat_var)
+
+                
+                    if Ens_stat == 'EnsMean':
+                        map_dat = map_dat_mean.copy()
+                        del(map_dat_mean)
+                    elif Ens_stat == 'EnsVar':
+                        map_dat = map_dat_var.copy()
+                        del(map_dat_mean)
+                        del(map_dat_var)
+                    elif Ens_stat == 'EnsStd':
+                        map_dat = map_dat_std.copy()
+                        del(map_dat_mean)
+                        del(map_dat_var)
+                        del(map_dat_std)
+
+
+                ''' 
                     
 
             ###################################################################################################
@@ -2649,7 +2713,15 @@ def nemo_slice_zlev(config = 'amm7',
                         if secdataset_proc == tmp_datstr:tmplw = 1
                         pax2d.append(ax[1].plot(ew_slice_dict['x'],ew_slice_dict[tmp_datstr],Dataset_col[dsi], lw = tmplw))
                         pax2d.append(ax[2].plot(ns_slice_dict['x'],ns_slice_dict[tmp_datstr],Dataset_col[dsi], lw = tmplw))
-                
+
+                        if do_ensemble:
+                            pax2d.append(ax[1].plot(ew_slice_dict['x'],ens_ew_slice_dat[0],'k', lw = 1))
+                            pax2d.append(ax[1].plot(ew_slice_dict['x'],ens_ew_slice_dat[1],'k', lw = 2))
+                            pax2d.append(ax[1].plot(ew_slice_dict['x'],ens_ew_slice_dat[2],'k', lw = 1))
+                            pax2d.append(ax[2].plot(ns_slice_dict['x'],ens_ns_slice_dat[0],'k', lw = 1))
+                            pax2d.append(ax[2].plot(ns_slice_dict['x'],ens_ns_slice_dat[1],'k', lw = 2))
+                            pax2d.append(ax[2].plot(ns_slice_dict['x'],ens_ns_slice_dat[2],'k', lw = 1))
+                                
                 else:
                     # only plot the current dataset difference
                     tmpdataset_1 = 'Dataset ' + secdataset_proc[3]
@@ -2701,6 +2773,11 @@ def nemo_slice_zlev(config = 'amm7',
                     tmplw = 0.5
                     if secdataset_proc == tmp_datstr:tmplw = 1
                     tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ts_dat_dict[tmp_datstr],Dataset_col[dsi], lw = tmplw))
+                    if do_ensemble:
+                        tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ens_ts_dat[0],'k', lw = 1))
+                        tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ens_ts_dat[1],'k', lw = 1))
+                        tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ens_ts_dat[2],'k', lw = 1))
+
                     
             else:
                 # only plot the current dataset difference
@@ -5115,6 +5192,16 @@ def nemo_slice_zlev(config = 'amm7',
 
                             func_but_text_han[but_name].set_color('darkgreen')
 
+                            if do_ensemble:
+                                Ens_stat = None
+                                for ens_stat in ens_stat_lst: func_but_text_han[ens_stat].set_color('k')
+                                
+
+                        elif but_name in ens_stat_lst:
+                                Ens_stat = but_name
+                                for tmpsecdataset_proc in secdataset_proc_list + ens_stat_lst: func_but_text_han[tmpsecdataset_proc].set_color('k')
+                                func_but_text_han[but_name].set_color('darkgreen')
+
 
                         elif but_name in ['Surface','Near-Bed','Surface-Bed','Depth-Mean']:
                             if var_dim[var] == 4:
@@ -5652,6 +5739,7 @@ def main():
         parser.add_argument('--verbose_debugging', type=str, required=False)
         parser.add_argument('--do_timer', type=str, required=False)
         parser.add_argument('--do_memory', type=str, required=False)
+        parser.add_argument('--do_ensemble', type=str, required=False)
         parser.add_argument('--do_mask', type=str, required=False)
         parser.add_argument('--use_xarray_gdept', type=str, required=False)
 
@@ -5812,6 +5900,18 @@ def main():
             else:                
                 print(args.do_timer)
                 pdb.set_trace()
+
+        if args.do_ensemble is None:
+            do_ensemble_in=False
+        elif args.do_ensemble is not None:
+            if args.do_ensemble.upper() in ['TRUE','T']:
+                do_ensemble_in = bool(True)
+            elif args.do_ensemble.upper() in ['FALSE','F']:
+                do_ensemble_in = bool(False)
+            else:                
+                print(args.do_timer)
+                pdb.set_trace()
+ 
  
         if args.do_mask is None:
             do_mask_in=False
@@ -6243,7 +6343,7 @@ def main():
             resample_freq = args.resample_freq,
             Obs_dict = Obs_dict_in,Obs_hide = Obs_hide_in,
             fig_dir = args.fig_dir, fig_lab = args.fig_lab,fig_cutout = fig_cutout_in,
-            verbose_debugging = verbose_debugging_in,do_timer = do_timer_in,do_memory = do_memory_in,do_mask = do_mask_in,
+            verbose_debugging = verbose_debugging_in,do_timer = do_timer_in,do_memory = do_memory_in,do_ensemble = do_ensemble_in,do_mask = do_mask_in,
             use_xarray_gdept = use_xarray_gdept_in)
 
 
