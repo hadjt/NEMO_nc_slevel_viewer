@@ -1119,19 +1119,29 @@ def nemo_slice_zlev(config = 'amm7',
     fig.set_figwidth(18)
     if nbutvar <nvarbutcol:
         plt.subplots_adjust(top=0.88,bottom=0.1,left=0.09,right=0.91,hspace=0.2,wspace=0.065)
-    else:
+    #elif nbutvar >(nvarbutcol):
+    elif (nbutvar >=(nvarbutcol))&(nbutvar <(2*nvarbutcol)):
         plt.subplots_adjust(top=0.88,bottom=0.1,left=0.15,right=0.91,hspace=0.2,wspace=0.065)
+    elif nbutvar >=2*(nvarbutcol):
+        plt.subplots_adjust(top=0.88,bottom=0.1,left=0.21,right=0.91,hspace=0.2,wspace=0.065)
+
+    #width = leftgap + axwid + wgap + axwid = right (0.91)
+
     cbwid,cbgap = 0.01,0.01
     wgap = 0.06
     hgap = 0.04
     dyhig = 0.17
     axwid = 0.4
-    if nbutvar <nvarbutcol:
-        axwid = 0.39
+    if nbutvar <nvarbutcol: # 9 + 39 + 6 + 39
+        axwid = 0.38 #0.39
         leftgap = 0.09
-    else:
+    #else:
+    elif (nbutvar >=(nvarbutcol))&(nbutvar <(2*nvarbutcol)): # 15 + 35 + 6 + 35
         axwid = 0.35
         leftgap = 0.15
+    elif nbutvar >=(2*nvarbutcol): # 15 + 35 + 6 + 35
+        axwid = 0.32
+        leftgap = 0.21
 
     profwid = 0.1
     profgap = 0.04
@@ -1265,15 +1275,21 @@ def nemo_slice_zlev(config = 'amm7',
             if var_grid['Dataset 1'][var_dat] == 'I': tmpcol = 'darkgreen'
         if var_dat in var_d['d']: tmpcol = '0.5'
         vi_num = vi
-        if vi>=nvarbutcol:
+        if (vi>=nvarbutcol)&( vi<2*nvarbutcol):
             vi_num = vi-nvarbutcol
 
             but_x0 = 0.01 + 0.06
             but_x1 = 0.06 + 0.06
+        elif (vi>=2*nvarbutcol):
+            vi_num = vi-nvarbutcol-nvarbutcol
+
+            but_x0 = 0.01 + 0.06 + 0.06
+            but_x1 = 0.06 + 0.06 + 0.06
       
 
         #note button extends (as in position.x0,x1, y0, y1)
-        but_extent[var_dat] = np.array([but_x0,but_x1,0.9 - (but_dy + vi*but_dysp),0.9 - (0 + vi_num*but_dysp)])
+        #but_extent[var_dat] = np.array([but_x0,but_x1,0.9 - (but_dy + vi*but_dysp),0.9 - (0 + vi_num*but_dysp)])
+        but_extent[var_dat] = np.array([but_x0,but_x1,0.9 - (but_dy + (vi_num*but_dysp)), 0.9 - (vi_num*but_dysp)])
         #add button box
         but_line_han[var_dat] = clickax.plot([but_x0,but_x1,but_x1,but_x0,but_x0],0.9 - (np.array([0,0,but_dy,but_dy,0]) + vi_num*but_dysp),color = tmpcol)
         #add button names
@@ -3615,6 +3631,10 @@ def nemo_slice_zlev(config = 'amm7',
                 for but_name in but_extent.keys():
                     
                     but_pos_x0,but_pos_x1,but_pos_y0,but_pos_y1 = but_extent[but_name]
+                    print(' ')
+                    print ('var but, box:',var,clii,cljj,but_pos_x0,but_pos_x1,but_pos_y0,but_pos_y1)
+                    print(' ')
+                    print(' ')
                     if (clii >= but_pos_x0) & (clii <= but_pos_x1) & (cljj >= but_pos_y0) & (cljj <= but_pos_y1):
                         is_in_axes = True
                         if but_name in var_but_mat:
