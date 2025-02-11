@@ -50,7 +50,7 @@ from NEMO_nc_slevel_viewer_lib import profile_line
 from NEMO_nc_slevel_viewer_lib import load_ops_prof_TS, load_ops_2D_xarray, obs_reset_sel
 from NEMO_nc_slevel_viewer_lib import pop_up_opt_window,pop_up_info_window,get_help_text,jjii_from_lon_lat
 
-from NEMO_nc_slevel_viewer_lib import calc_ens_stat_2d_spat, calc_ens_stat_3d,calc_ens_stat_2d_temp,calc_ens_stat_map
+from NEMO_nc_slevel_viewer_lib import calc_ens_stat_2d, calc_ens_stat_3d,calc_ens_stat_map
 
 
 
@@ -121,7 +121,7 @@ def nemo_slice_zlev(config = 'amm7',
     
     if do_ensemble:
         Ens_stat = None
-        ens_stat_lst = ['EnsMean','EnsStd','EnsVar'] 
+        ens_stat_lst = ['EnsMean','EnsStd','EnsVar','EnsCnt'] 
 
     # if arguement Obs_dict is not None, set do_Obs to true
     #Obs_dict = Obs_fname
@@ -2612,53 +2612,13 @@ def nemo_slice_zlev(config = 'amm7',
             if do_ensemble:
 
                 if var_dim[var] == 4:
-                    ns_slice_dat, ew_slice_dat,hov_dat, ens_tsdat = calc_ens_stat_3d(ns_slice_dict,ew_slice_dict,hov_dat_dict,ts_dat_dict, Ens_stat,Dataset_lst)
+                    ns_slice_dat, ew_slice_dat,hov_dat, ens_ts_dat = calc_ens_stat_3d(ns_slice_dat, ew_slice_dat,hov_dat,ns_slice_dict,ew_slice_dict,hov_dat_dict,ts_dat_dict, Ens_stat,Dataset_lst)
                 elif var_dim[var] == 3:
-                    ens_ns_slice_dat, ens_ew_slice_dat, ens_ts_dat = calc_ens_stat_2d_spat(ns_slice_dict,ew_slice_dict,ts_dat_dict, Ens_stat,Dataset_lst)
+                    ens_ns_slice_dat, ens_ew_slice_dat, ens_ts_dat = calc_ens_stat_2d(ns_slice_dict,ew_slice_dict,ts_dat_dict, Ens_stat,Dataset_lst)
 
                 if (Ens_stat is not None):
                     map_dat = calc_ens_stat_map(map_dat_dict, Ens_stat,Dataset_lst)
 
-
-                '''
-                if Ens_stat in ['EnsMean', 'EnsStd', 'EnsVar']:
-
-                    map_dat_mean = map_dat.copy()*0.
-                    
-                    for tmp_datstr in Dataset_lst:
-                        map_dat_mean+=map_dat_dict[tmp_datstr]
-
-                    map_dat_mean/=nDataset
-
-                    if Ens_stat in ['EnsStd', 'EnsVar']:
-
-                        map_dat_var = map_dat.copy()*0.
-                        
-                        for tmp_datstr in Dataset_lst:
-                            map_dat_var+=map_dat_dict[tmp_datstr]**2
-
-                        map_dat_var = map_dat_var/nDataset - map_dat_mean**2
-
-                        if Ens_stat in ['EnsStd']:
-                            map_dat_std = np.sqrt(map_dat_var)
-
-                
-                    if Ens_stat == 'EnsMean':
-                        map_dat = map_dat_mean.copy()
-                        del(map_dat_mean)
-                    elif Ens_stat == 'EnsVar':
-                        map_dat = map_dat_var.copy()
-                        del(map_dat_mean)
-                        del(map_dat_var)
-                    elif Ens_stat == 'EnsStd':
-                        map_dat = map_dat_std.copy()
-                        del(map_dat_mean)
-                        del(map_dat_var)
-                        del(map_dat_std)
-
-
-                ''' 
-                    
 
             ###################################################################################################
             ### Replot data 
@@ -5197,10 +5157,16 @@ def nemo_slice_zlev(config = 'amm7',
                                 for ens_stat in ens_stat_lst: func_but_text_han[ens_stat].set_color('k')
                                 
 
-                        elif but_name in ens_stat_lst:
+                        elif do_ensemble:
+                            if but_name in ens_stat_lst:
                                 Ens_stat = but_name
                                 for tmpsecdataset_proc in secdataset_proc_list + ens_stat_lst: func_but_text_han[tmpsecdataset_proc].set_color('k')
                                 func_but_text_han[but_name].set_color('darkgreen')
+
+                                if Ens_stat not in ['EnsMean']:
+                                    clim_pair = False
+                                    func_but_text_han['Clim: pair'].set_color('k')
+                                
 
 
                         elif but_name in ['Surface','Near-Bed','Surface-Bed','Depth-Mean']:
@@ -6214,9 +6180,9 @@ def main():
             fig_lab_d = {}
             fig_lab_d['Dataset 1'] = None
 
-            if len(tmparr)!=2:
-                print('arg error: (figlabs):', tmparr)
             for tmparr in args.figlabs:
+                if len(tmparr)!=2:
+                    print('arg error: (figlabs):', tmparr)
                 tmp_datstr = 'Dataset ' + tmparr[0]
                 #pdb.set_trace()
                 fig_lab_d[tmp_datstr] = tmparr[1]

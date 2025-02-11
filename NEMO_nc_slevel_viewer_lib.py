@@ -4589,34 +4589,44 @@ def jjii_from_lon_lat(lon_in, lat_in, lon_d_in,lat_d_in,config = 'orca12'):
     sel_jj,sel_ii = tmp_distmat.argmin()//tmp_distmat.shape[1], tmp_distmat.argmin()%tmp_distmat.shape[1]
 
     return sel_jj,sel_ii
+               
+def calc_ens_stat_3d(ns_slice_dat, ew_slice_dat,hov_dat,ns_slice_dict,ew_slice_dict,hov_dat_dict,ts_dat_dict, Ens_stat,Dataset_lst):
 
-def calc_ens_stat_3d(map_dat_dict,ns_slice_dict,ew_slice_dict,hov_dat_dict,ts_dat_dict, Ens_stat,Dataset_lst):
-
-
-    pdb.set_trace()
-    if Ens_stat == 'EnsMean':
+    #pdb.set_trace()
+    if Ens_stat is None:
+        ens_ns_slice_dat, ens_ew_slice_dat,ens_hov_dat = ns_slice_dat, ew_slice_dat,hov_dat
+    elif Ens_stat == 'EnsMean':
         ens_ns_slice_dat = np.ma.array([ns_slice_dict[tmpdatstr] for tmpdatstr in Dataset_lst ]).mean(axis = 0)
         ens_ew_slice_dat = np.ma.array([ew_slice_dict[tmpdatstr] for tmpdatstr in Dataset_lst ]).mean(axis = 0)
         ens_hov_dat = np.ma.array([hov_dat_dict[tmpdatstr] for tmpdatstr in Dataset_lst ]).mean(axis = 0)
-        ens_tsdat = np.ma.array([ts_dat_dict[tmpdatstr] for tmpdatstr in Dataset_lst ]).mean(axis = 0)
     elif Ens_stat == 'EnsVar':
         ens_ns_slice_dat = np.ma.array([ns_slice_dict[tmpdatstr] for tmpdatstr in Dataset_lst ]).var(axis = 0)
         ens_ew_slice_dat = np.ma.array([ew_slice_dict[tmpdatstr] for tmpdatstr in Dataset_lst ]).var(axis = 0)
         ens_hov_dat = np.ma.array([hov_dat_dict[tmpdatstr] for tmpdatstr in Dataset_lst ]).var(axis = 0)
-        ens_tsdat = np.ma.array([ts_dat_dict[tmpdatstr] for tmpdatstr in Dataset_lst ]).var(axis = 0)
     elif Ens_stat == 'EnsStd':
         ens_ns_slice_dat = np.ma.array([ns_slice_dict[tmpdatstr] for tmpdatstr in Dataset_lst ]).std(axis = 0)
         ens_ew_slice_dat = np.ma.array([ew_slice_dict[tmpdatstr] for tmpdatstr in Dataset_lst ]).std(axis = 0)
         ens_hov_dat = np.ma.array([hov_dat_dict[tmpdatstr] for tmpdatstr in Dataset_lst ]).std(axis = 0)
-        ens_tsdat = np.ma.array([ts_dat_dict[tmpdatstr] for tmpdatstr in Dataset_lst ]).std(axis = 0)
+    elif Ens_stat == 'EnsCnt':
+        ens_ns_slice_dat = (np.ma.array([ns_slice_dict[tmpdatstr] for tmpdatstr in Dataset_lst ]).mask==False).sum(axis = 0)
+        ens_ew_slice_dat = (np.ma.array([ew_slice_dict[tmpdatstr] for tmpdatstr in Dataset_lst ]).mask==False).sum(axis = 0)
+        ens_hov_dat = (np.ma.array([hov_dat_dict[tmpdatstr] for tmpdatstr in Dataset_lst ]).mask==False).sum(axis = 0)
+    else:
+        pdb.set_trace()
 
 
-    return  ens_ns_slice_dat, ens_ew_slice_dat,ens_hov_dat, ens_tsdat
+    ts_dat_dat = np.ma.array([ts_dat_dict[tmpdatstr] for tmpdatstr in Dataset_lst ])
 
-def calc_ens_stat_2d_temp(ns_slice_dict,ew_slice_dict,hov_dat_dict,ts_dat_dict, Ens_stat,Dataset_lst):
-    pdb.set_trace()
+    ens_ts_dat = np.ma.array((ts_dat_dat.mean(axis = 0)-2*ts_dat_dat.std(axis = 0),
+                                    ts_dat_dat.mean(axis = 0),
+                                    ts_dat_dat.mean(axis = 0)+2*ts_dat_dat.std(axis = 0)))
+    
+    return  ens_ns_slice_dat, ens_ew_slice_dat,ens_hov_dat, ens_ts_dat
 
-def calc_ens_stat_2d_spat(ns_slice_dict,ew_slice_dict,ts_dat_dict, Ens_stat,Dataset_lst):
+#def calc_ens_stat_2d_temp(ns_slice_dict,ew_slice_dict,hov_dat_dict,ts_dat_dict, Ens_stat,Dataset_lst):
+#    pdb.set_trace()
+
+def calc_ens_stat_2d(ns_slice_dict,ew_slice_dict,ts_dat_dict, Ens_stat,Dataset_lst):
 
 
 
@@ -4637,9 +4647,6 @@ def calc_ens_stat_2d_spat(ns_slice_dict,ew_slice_dict,ts_dat_dict, Ens_stat,Data
                                     ts_dat_dat.mean(axis = 0),
                                     ts_dat_dat.mean(axis = 0)+2*ts_dat_dat.std(axis = 0)))
     
-
-
-
         
     return  ens_ns_slice_dat, ens_ew_slice_dat, ens_ts_dat
 
@@ -4651,6 +4658,8 @@ def calc_ens_stat_map(map_dat_dict, Ens_stat,Dataset_lst):
         map_dat = np.ma.array([map_dat_dict[tmpdatstr] for tmpdatstr in Dataset_lst ]).var(axis = 0)
     elif Ens_stat == 'EnsStd':
         map_dat = np.ma.array([map_dat_dict[tmpdatstr] for tmpdatstr in Dataset_lst ]).std(axis = 0)
+    elif Ens_stat == 'EnsCnt':
+        map_dat = (np.ma.array([map_dat_dict[tmpdatstr] for tmpdatstr in Dataset_lst ]).mask==False).sum(axis = 0)
 
     return map_dat
 if __name__ == "__main__":
