@@ -3,3 +3,4 @@ ncgdept,gdept_0
 z_meth_default,z_slice
 regrid_amm15_amm7,/data/cr1/hadjt/data/reffiles/SSF/regrid_amm15_amm7_bilin_nn.nc
 regrid_amm7_amm15,/data/cr1/hadjt/data/reffiles/SSF/regrid_amm7_amm15_bilin_nn.nc
+xypos_file,/data/cr1/hadjt/data/reffiles/SSF/xypos_amm7.nc

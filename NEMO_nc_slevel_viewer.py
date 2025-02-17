@@ -16,6 +16,8 @@ import argparse
 import textwrap
 import psutil
 
+from scipy.interpolate import griddata
+
 ### set-up modules
 from NEMO_nc_slevel_viewer_lib import create_config_fnames_dict,create_rootgrp_gdept_dict,create_gdept_ncvarnames
 from NEMO_nc_slevel_viewer_lib import create_col_lst,create_Dataset_lst,create_xarr_dict
@@ -52,7 +54,7 @@ from NEMO_nc_slevel_viewer_lib import pop_up_opt_window,pop_up_info_window,get_h
 
 from NEMO_nc_slevel_viewer_lib import calc_ens_stat_2d, calc_ens_stat_3d,calc_ens_stat_map
 
-
+from NEMO_nc_slevel_viewer_lib import int_ind_wgt_from_xypos, ind_from_lon_lat
 
 
 letter_mat = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
@@ -247,15 +249,13 @@ def nemo_slice_zlev(config = 'amm7',
 
     if do_memory:
         do_timer = True
-    '''
+ 
 
-    ######################
-    ### test 3 datasets
-    ######################
-    fname_dict['Dataset 3'] = fname_dict['Dataset 2'].copy()
-    configd[3] = configd[2].lower()
-    ######################
-    '''
+    configlst = np.array([configd[ss] for ss in (configd)])
+    uniqconfig = np.unique(configlst)
+
+
+
     # File name dictionary
     #==========================================
     # remove extra file names at the end of the list
@@ -415,7 +415,9 @@ def nemo_slice_zlev(config = 'amm7',
     
     init_timer.append((datetime.now(),'Gdept opened'))
 
+    #pdb.set_trace()
 
+    """
     #config version specific info - mainly grid, and lat/lon info
     if configd[1].upper() == 'AMM7':
         #grid lat lon
@@ -427,15 +429,16 @@ def nemo_slice_zlev(config = 'amm7',
         #grid lat lon
         lon = rootgrp_gdept_dict['Dataset 1'].variables[ncglamt][:,0,:].ravel()
         lat = rootgrp_gdept_dict['Dataset 1'].variables[ncgphit][:,:,0].ravel()
-
+    """
     if z_meth is None:
         z_meth = z_meth_default
-
+    '''
 
     #default regirdding settings
-    regrid_meth = 1
+    regrid_meth = 1 # NN
     regrid_params = None
     regrid_params = {}  
+    regrid_params['do_regrid'] = 0
 
 
     # regridding indices.
@@ -451,6 +454,8 @@ def nemo_slice_zlev(config = 'amm7',
             if (configd[1].upper() in ['AMM7','AMM15']) & (configd[th_d_ind].upper() in ['AMM7','AMM15']):  
                 #mesh_file_2nd = config_fnames_dict[configd[th_d_ind]]['mesh_file'] 
                 #rootgrp_gdept_dict[tmp_datstr] = Dataset(mesh_file_2nd, 'r', format='NETCDF4')
+
+                regrid_params['do_regrid'] = 2
 
                 if (configd[1].upper() == 'AMM15') & (configd[th_d_ind].upper() == 'AMM7'):  
 
@@ -484,7 +489,12 @@ def nemo_slice_zlev(config = 'amm7',
 
                 regrid_params[tmp_datstr] = regrid_2nd_thin_params(amm_conv_dict,nlon_amm,nlat_amm, nlon_amm_2nd,nlat_amm_2nd,thd)
                 #pdb.set_trace()
+            else:
 
+                #NWS_amm_bl_jj_ind_out, NWS_amm_bl_ii_ind_out, NWS_amm_wgt_out, NWS_amm_nn_jj_ind_out, NWS_amm_nn_ii_ind_out
+                print('Differing configs not only amm15 and amm7')
+                pdb.set_trace()
+    '''
     init_timer.append((datetime.now(),'config 2 params'))
 
 
@@ -542,18 +552,101 @@ def nemo_slice_zlev(config = 'amm7',
    
 
 
+            
+
     print ('xarray open_mfdataset Finish',datetime.now())
 
 
     # Create lon and lat dictionaries
     lon_d,lat_d = create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncglamt,ncgphit,nav_lon_varname,nav_lat_varname,ncdim_d,cutxind,cutyind,cutout_data)
+    
+
+    domsize = {}
+    for tmp_datstr in Dataset_lst:
+        th_d_ind = int(tmp_datstr[8:])
+        domsize[th_d_ind] = np.array(lat_d[th_d_ind].shape)
     #pdb.set_trace()
+
+    #pdb.set_trace()
+    xypos_dict = {}
+    
+    for tmp_datstr in Dataset_lst:
+        th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
+        tmpconfig = configd[th_d_ind]
+        xypos_dict[tmp_datstr] = {}
+        xypos_dict[tmp_datstr]['do_xypos'] = False
+
+        if 'xypos_file' in config_fnames_dict[tmpconfig].keys():
+
+            xypos_dict[tmp_datstr]['do_xypos'] = True
+            rootgrp = Dataset(config_fnames_dict[tmpconfig]['xypos_file'], 'r')
+            for xy_var in rootgrp.variables.keys(): xypos_dict[tmp_datstr][xy_var] = rootgrp.variables[xy_var][:]
+            xypos_dict[tmp_datstr]['lon_min'] = xypos_dict[tmp_datstr]['LON'].min()
+            xypos_dict[tmp_datstr]['lat_min'] = xypos_dict[tmp_datstr]['LAT'].min()
+            xypos_dict[tmp_datstr]['dlon'] =  (np.diff(xypos_dict[tmp_datstr]['LON'][0,:])).mean()
+            xypos_dict[tmp_datstr]['dlat'] =  (np.diff(xypos_dict[tmp_datstr]['LAT'][:,0])).mean()
+            
+            rootgrp.close()
+
+
+
+            nxylat, nxylon = xypos_dict[tmp_datstr]['LAT'].shape
+            xypos_mask =  np.ma.getmaskarray(xypos_dict[tmp_datstr]['XPOS'])
+
+            xypos_xmat, xypos_ymat = np.meshgrid(np.arange(nxylon), np.arange(nxylat))
+
+            points = (xypos_xmat[~xypos_mask], xypos_ymat[~xypos_mask])
+            values_X = xypos_dict[tmp_datstr]['XPOS'][~xypos_mask]
+            values_Y = xypos_dict[tmp_datstr]['YPOS'][~xypos_mask]
+
+            #plt.plot(points[0],points[1],'x')
+            #plt.show()
+            #pdb.set_trace()
+            
+            xypos_dict[tmp_datstr]['XPOS_NN'] = griddata(points, values_X, (xypos_xmat, xypos_ymat), method='nearest')
+            xypos_dict[tmp_datstr]['YPOS_NN'] = griddata(points, values_Y, (xypos_xmat, xypos_ymat), method='nearest')
+
+            
+            '''
+            
+            ntest_i, ntest_j = lon_d[th_d_ind].shape
+            test_xpos_ii, test_xpos_jj = np.arange(0,ntest_i-1,10),np.arange(0,ntest_j-1,10)
+            res_xpos_ii_mat, res_xpos_jj_mat = ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,{},lon_d[th_d_ind][0:ntest_i-1:10,0:ntest_j-1:10], lat_d[th_d_ind][0:ntest_i-1:10,0:ntest_j-1:10])
+            res_xpos_ii = res_xpos_ii_mat.mean(axis = 1)
+            res_xpos_jj = res_xpos_jj_mat.mean(axis = 0)
+
+            test_xpos_ii_rmse = np.sqrt(((test_xpos_ii-res_xpos_ii)**2).mean())
+            test_xpos_jj_rmse = np.sqrt(((test_xpos_jj-res_xpos_jj)**2).mean())
+
+            if (test_xpos_ii_rmse>2)| (test_xpos_jj_rmse>2):
+
+                print('check correct xypos file. test rmse >2',test_xpos_ii_rmse, test_xpos_jj_rmse)
+
+                pdb.set_trace()
+                plt.subplot(2,2,1)
+                plt.plot(test_xpos_ii,res_xpos_ii)
+                plt.subplot(2,2,2)
+                plt.plot(test_xpos_jj,res_xpos_jj)
+                plt.subplot(2,2,3)
+                plt.plot(test_xpos_ii-res_xpos_ii)
+                plt.subplot(2,2,4)
+                plt.plot(test_xpos_jj-res_xpos_jj)
+                plt.show()
+
+
+                pdb.set_trace()
+
+
+            '''
+
+
     init_timer.append((datetime.now(),'created lon lat dict'))
     # if use key words to set intial lon/lat,nvarbutcol convert to jj/ii
     if (lon_in is not None) & (lat_in is not None):
 
         lonlatin_dist_mat = np.sqrt((lon_d[1] - lon_in)**2 + (lat_d[1] - lat_in)**2)
-        jj,ii = lonlatin_dist_mat.argmin()//lon_d[1].shape[1], lonlatin_dist_mat.argmin()%lon_d[1].shape[1]
+        #jj,ii = lonlatin_dist_mat.argmin()//lon_d[1].shape[1], lonlatin_dist_mat.argmin()%lon_d[1].shape[1]
+        jj,ii = lonlatin_dist_mat.argmin()//domsize[1][1], lonlatin_dist_mat.argmin()%domsize[1][1]
 
 
     init_timer.append((datetime.now(),'Lon/Lats loaded'))
@@ -860,13 +953,13 @@ def nemo_slice_zlev(config = 'amm7',
 
         
         # check both datasets have the same times
-        if ntime_2nd != ntime:     
-            print()
-            print('Diff Times have different number of files. To Continue press c')
-            print()
-            pdb.set_trace() 
-        else:
-            if allow_diff_time == False:
+        if allow_diff_time == False:
+            if ntime_2nd != ntime:     
+                print()
+                print('Diff Times have different number of files. To Continue press c')
+                print()
+                pdb.set_trace() 
+            else:
                 if (time_datetime_since_1970_2nd != time_datetime_since_1970).any():   
                     print()
                     print("Times don't match between Dataset 1 and Dataset 2. To Continue press c")
@@ -880,13 +973,22 @@ def nemo_slice_zlev(config = 'amm7',
         # check both datasets have the same lons and lats (if same config)
         #if configd[2] is None:
         #if configd[2] != configd[1]:
+        #for tmp_datstr in Dataset_lst[1:]:
+        #    th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
+
         if configd[2] == configd[1]:
-            if (lat_d[1] != lat_d[2]).any():
-                print('Diff nav_lat_2nd dont match')
-                pdb.set_trace()
-            if (lon_d[1] != lon_d[2]).any():
-                print('Diff nav_lon_2nd dont match')
-                pdb.set_trace()
+            #pdb.set_trace()
+            #if (np.array(lat_d[1].shape)==np.array(lat_d[2].shape)).all():
+            if (np.array(domsize[1])==np.array(domsize[2])).all():
+                if (lat_d[1] != lat_d[2]).any():
+                    print('Diff nav_lat_2nd dont match')
+                    pdb.set_trace()
+                if (lon_d[1] != lon_d[2]).any():
+                    print('Diff nav_lon_2nd dont match')
+                    pdb.set_trace()
+            else:
+                print('Diff nav_lat_2nd shape doesnt match')
+                #pdb.set_trace()
 
         # use a difference colormap if comparing files
         curr_cmap = scnd_cmap
@@ -911,7 +1013,7 @@ def nemo_slice_zlev(config = 'amm7',
             time_d[tmp_datstr][tmpgrid]['datetime'],time_d[tmp_datstr][tmpgrid]['datetime_since_1970'],tmp_ntime,tmp_ti, nctime_calendar_type = extract_time_from_xarr(xarr_dict[tmp_datstr][tmpgrid],fname_dict[tmp_datstr][tmpgrid][0], tmp_time_varname,ncdim_d[tmp_datstr][tmpgrid]['t'],date_in_ind,date_fmt,ti,verbose_debugging)
 
     # add derived variables
-    var_d,var_dim, var_grid = add_derived_vars(var_d,var_dim, var_grid,load_second_files)
+    var_d,var_dim, var_grid = add_derived_vars(var_d,var_dim, var_grid, Dataset_lst)
 
     # add derived variales to nice names if mising. 
 
@@ -934,13 +1036,23 @@ def nemo_slice_zlev(config = 'amm7',
     ldi = 0 
 
     data_inst = None
+    data_inst_mld = None
+    data_inst_U = None
     if preload_data:
         preload_data_ti = ti
+        preload_data_ti_mld = ti
+        preload_data_ti_U = ti
+
         preload_data_var = var
+
         preload_data_ldi = ldi
+        preload_data_ldi_mld = ldi
+        preload_data_ldi_U = ldi
     
     init_timer.append((datetime.now(),'Derived var defined'))
-    
+
+    rot_dict = {}
+    """
     if (configd[1].upper() in ['AMM15','CO9P2']): 
         lon_rotamm15,lat_rotamm15 = reduce_rotamm15_grid(lon_d['amm15'], lat_d['amm15'])
 
@@ -948,6 +1060,24 @@ def nemo_slice_zlev(config = 'amm7',
         dlat_rotamm15 = (np.diff(lat_rotamm15)).mean()
         nlon_rotamm15 = lon_rotamm15.size
         nlat_rotamm15 = lat_rotamm15.size
+
+        
+        rot_dict[configd[1]] = {}
+        rot_dict[configd[1]]['dlon'] = dlon_rotamm15
+        rot_dict[configd[1]]['dlat'] = dlat_rotamm15
+        rot_dict[configd[1]]['nlon'] = nlon_rotamm15
+        rot_dict[configd[1]]['nlat'] = nlat_rotamm15
+        rot_dict[configd[1]]['lon_rot'] = lon_rotamm15
+        rot_dict[configd[1]]['lat_rot'] = lat_rotamm15   
+        
+        del(dlon_rotamm15)
+        del(dlat_rotamm15)
+
+        del(nlon_rotamm15)
+        del(nlat_rotamm15)
+        del(lon_rotamm15)
+        del(lat_rotamm15)
+
 
     if load_second_files:
         #if configd[2] is not None:
@@ -959,14 +1089,123 @@ def nemo_slice_zlev(config = 'amm7',
             nlon_rotamm15 = lon_rotamm15.size
             nlat_rotamm15 = lat_rotamm15.size
 
+            rot_dict[configd[2]] = {}
+            rot_dict[configd[2]]['dlon'] = dlon_rotamm15
+            rot_dict[configd[2]]['dlat'] = dlat_rotamm15
+            rot_dict[configd[2]]['nlon'] = nlon_rotamm15
+            rot_dict[configd[2]]['nlat'] = nlat_rotamm15
+            rot_dict[configd[2]]['lon_rot'] = lon_rotamm15
+            rot_dict[configd[2]]['lat_rot'] = lat_rotamm15 
+            del(dlon_rotamm15)
+            del(dlat_rotamm15)
+
+            del(nlon_rotamm15)
+            del(nlat_rotamm15)
+            del(lon_rotamm15)
+            del(lat_rotamm15)
+
+    """
+    #pdb.set_trace()
+
+    '''
+    NWS_amm_nn_jj_ind_out, NWS_amm_nn_ii_ind_out = ind_from_lon_lat('Dataset 2',configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lon_d[1],lat_d[1])
+    #NWS_amm_nn_jj_ind_out, NWS_amm_nn_ii_ind_out = ind_from_lon_lat('Dataset 1',configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lon_d[2],lat_d[2])
+    regrid_params[tmp_datstr] = None,None, None, NWS_amm_nn_jj_ind_out, NWS_amm_nn_ii_ind_out
+    '''
+
+
+
+    #default regirdding settings
+    regrid_meth = 1 # NN
+    regrid_params = None
+    regrid_params = {}  
+    regrid_params['do_regrid'] = 0
+
+
+    # regridding indices.
+    for tmp_datstr in Dataset_lst[1:]:
+        th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
+        #rootgrp_gdept_dict[tmp_datstr] = rootgrp_gdept_dict['Dataset 1']
+        
+
+        regrid_params[tmp_datstr] = None#(None,None,None,None,None)
+
+        if (configd[th_d_ind] is not None) & (configd[th_d_ind]!=configd[1]):
+        #if (configd[th_d_ind] is not None) :   
+            """
+
+            if (configd[1].upper() in ['AMM7','AMM15']) & (configd[th_d_ind].upper() in ['AMM7','AMM15']):  
+                #mesh_file_2nd = config_fnames_dict[configd[th_d_ind]]['mesh_file'] 
+                #rootgrp_gdept_dict[tmp_datstr] = Dataset(mesh_file_2nd, 'r', format='NETCDF4')
+
+                regrid_params['do_regrid'] = 2
+
+                if (configd[1].upper() == 'AMM15') & (configd[th_d_ind].upper() == 'AMM7'):  
+
+
+                    lon = np.arange(-19.888889,12.99967+1/9.,1/9.)
+                    lat = np.arange(40.066669,65+1/15.,1/15.)
+
+
+                    amm_conv_dict = {}
+                    rootgrp = Dataset(config_fnames_dict[configd[1]]['regrid_amm7_amm15'], 'r')
+                    for var_conv in rootgrp.variables.keys(): amm_conv_dict[var_conv] = rootgrp.variables[var_conv][:]
+                    rootgrp.close()
+        
+                    nlon_amm        = nlon_amm15
+                    nlat_amm        = nlat_amm15
+                    nlon_amm_2nd    = nlon_amm7
+                    nlat_amm_2nd    = nlat_amm7
+
+
+
+                elif (configd[1].upper() == 'AMM7') & (configd[th_d_ind].upper() == 'AMM15'):
+
+                    amm_conv_dict = {}
+                    rootgrp = Dataset(config_fnames_dict[configd[th_d_ind]]['regrid_amm15_amm7'], 'r')
+                    for var_conv in rootgrp.variables.keys(): amm_conv_dict[var_conv] = rootgrp.variables[var_conv][:]
+                    rootgrp.close()
+        
+                    nlon_amm        = nlon_amm7
+                    nlat_amm        = nlat_amm7
+                    nlon_amm_2nd    = nlon_amm15
+                    nlat_amm_2nd    = nlat_amm15
+
+                regrid_params[tmp_datstr] = regrid_2nd_thin_params(amm_conv_dict,nlon_amm,nlat_amm, nlon_amm_2nd,nlat_amm_2nd,thd)
+                #pdb.set_trace()
+                #pdb.set_trace()
+            else:
+                NWS_amm_nn_jj_ind_out, NWS_amm_nn_ii_ind_out = ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lon_d[1],lat_d[1])
+
+
+
+
+            """
+
+
+
+            
+            (NWS_amm_bl_jj_ind_out, NWS_amm_bl_ii_ind_out, 
+            NWS_amm_wgt_out, NWS_amm_nn_jj_ind_out, NWS_amm_nn_ii_ind_out) = int_ind_wgt_from_xypos(tmp_datstr,
+                                                    configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lon_d[1],lat_d[1])
+        
+            regrid_params[tmp_datstr] = (NWS_amm_bl_jj_ind_out, NWS_amm_bl_ii_ind_out, NWS_amm_wgt_out, NWS_amm_nn_jj_ind_out, NWS_amm_nn_ii_ind_out)
+            #pdb.set_trace()
+            regrid_params['do_regrid'] = 2
     init_timer.append((datetime.now(),'AMM15 grid rotated'))
 
     # find variables common to both data sets, and use them for the buttons
-    
+    #pdb.set_trace()
     var_but_mat = var_d[1]['mat'].copy()
     # If two datasets, find variables in both datasets
     if load_second_files:   
-        var_but_mat = np.intersect1d(var_d[1]['mat'], var_d[2]['mat'])
+        #pdb.set_trace()
+        # (as Dataset 1 and 2 can be ORCA12 and 3 and 4 can be AMM15, need to expand:
+        #   var_but_mat = np.intersect1d(var_d[1]['mat'], var_d[2]['mat'])
+        var_but_mat = var_d[1]['mat'].copy()
+        for th_d_ind in range(2,nDataset+1):var_but_mat = np.intersect1d(var_but_mat, var_d[th_d_ind]['mat'])
+       
+        
         
         # sort them to match the order of the first dataset
         var_but_mat_order = []
@@ -1312,7 +1551,7 @@ def nemo_slice_zlev(config = 'amm7',
                       'Zoom',
                       'Axis', 'ColScl', 'Clim: Zoom','Clim: pair','Clim: sym',
                       'Surface', 'Near-Bed', 'Surface-Bed','Depth-Mean','Depth level',
-                      'Contours','Grad','T Diff','TS Diag','LD time','Fcst Diag','Vis curr','MLD','Obs','Xsect','Save Figure','Help','Quit'] 
+                      'Contours','Grad','Time Diff','TS Diag','LD time','Fcst Diag','Vis curr','MLD','Obs','Xsect','Save Figure','Help','Quit'] 
     #'Reset zoom','Obs: sel','Obs: opt','Clim: Reset','Clim: Expand',
 
 
@@ -1373,14 +1612,14 @@ def nemo_slice_zlev(config = 'amm7',
 
     # For T Diff
     if ntime < 2: # no point being able to change lead time database if only one 
-        func_names_lst.remove('T Diff')
+        func_names_lst.remove('Time Diff')
         do_Tdiff = False
     else:
         do_Tdiff = True
 
         Time_Diff = False
         data_inst_Tm1 = {}
-        data_inst_Tm1['Dataset 1'],data_inst_Tm1['Dataset 2'] = None,None
+        #data_inst_Tm1['Dataset 1'],data_inst_Tm1['Dataset 2'] = None,None
         preload_data_ti_Tm1,preload_data_var_Tm1,preload_data_ldi_Tm1 = 0.5,'None',0.5
 
         
@@ -1392,7 +1631,10 @@ def nemo_slice_zlev(config = 'amm7',
 
     # if a secondary data set, give ability to change data sets. 
     if load_second_files:
-        func_names_lst = func_names_lst + secdataset_proc_list + ['regrid_meth']
+        func_names_lst = func_names_lst + secdataset_proc_list
+        if regrid_params['do_regrid'] == 2:
+            func_names_lst = func_names_lst + ['regrid_meth']
+        
         if do_ensemble: func_names_lst = func_names_lst + ens_stat_lst 
 
     func_but_line_han,func_but_text_han = {},{}
@@ -1404,7 +1646,8 @@ def nemo_slice_zlev(config = 'amm7',
     if load_second_files: 
         mode_name_secdataset_proc_list = mode_name_secdataset_proc_list + secdataset_proc_list 
         if do_ensemble: mode_name_secdataset_proc_list = mode_name_secdataset_proc_list + ens_stat_lst        
-        mode_name_secdataset_proc_list = mode_name_secdataset_proc_list + ['regrid_meth']
+        if regrid_params['do_regrid'] == 2:
+            mode_name_secdataset_proc_list = mode_name_secdataset_proc_list + ['regrid_meth']
 
 
 
@@ -1553,7 +1796,8 @@ def nemo_slice_zlev(config = 'amm7',
 
     
     if load_second_files: 
-        func_but_text_han['regrid_meth'].set_text('Regrid: NN')
+        if regrid_params['do_regrid'] == 2:
+            func_but_text_han['regrid_meth'].set_text('Regrid: NN')
         if clim_pair:func_but_text_han['Clim: pair'].set_color('gold')
 
     if hov_time:
@@ -1712,7 +1956,7 @@ def nemo_slice_zlev(config = 'amm7',
         sel_ii,sel_jj,sel_ti ,sel_zz = None,None,None,None
         sel_ax = None
         xlocval, ylocval  = None, None
-        for ai,tmpax in enumerate(ax): 
+        for ai,tmpax in enumerate(ax): # ai = 0; tmpax = ax[ai]
             tmppos =  tmpax.get_position()
             # was click within extent
             if (clii >= tmppos.x0) & (clii <= tmppos.x1) & (cljj >= tmppos.y0) & (cljj <= tmppos.y1):
@@ -1725,12 +1969,12 @@ def nemo_slice_zlev(config = 'amm7',
                 normyloc = (cljj - tmppos.y0 ) / (tmppos.y1 - tmppos.y0)
                 xlocval = normxloc*clxlim.ptp() + clxlim.min()
                 ylocval = normyloc*clylim.ptp() + clylim.min()
-
+                """
                 if (thd[1]['dx'] != 1):
                     if configd[1].upper() not in ['AMM7','AMM15', 'CO9P2', 'ORCA025','ORCA025EXT','GULF18','ORCA12','ORCA025ICE','ORCA12ICE']:
                         print('Thinning lon lat selection not programmed for ', configd[1].upper())
                         pdb.set_trace()
-
+                """
 
                 # what do the local coordiantes of the click mean in terms of the data to plot.
                 # if on the map, or the slices, need to covert from lon and lat to ii and jj, which is complex for amm15.
@@ -1738,6 +1982,8 @@ def nemo_slice_zlev(config = 'amm7',
                 # if in map, covert lon lat to ii,jj
                 if ai == 0:
                     loni,latj= xlocval,ylocval
+                    '''
+
                     if configd[1].upper() in ['AMM7','GULF18']:
                         sel_ii = (np.abs(lon[thd[1]['x0']:thd[1]['x1']:thd[1]['dx']] - loni)).argmin()
                         sel_jj = (np.abs(lat[thd[1]['y0']:thd[1]['y1']:thd[1]['dy']] - latj)).argmin()
@@ -1753,9 +1999,29 @@ def nemo_slice_zlev(config = 'amm7',
                         print('config not supported:', configd[1])
                         pdb.set_trace()
 
+                    #pdb.set_trace()
+                    '''
+
+                    print(sel_ii,sel_jj)
+                    
+                    sel_jj,sel_ii = ind_from_lon_lat('Dataset 1',configd,xypos_dict, lon_d,lat_d, thd,rot_dict,loni,latj)
+
                     if (sel_ii<0)|(sel_jj<0):
                         pdb.set_trace()
-
+                    #domsize[th_d_ind]. domsize[1]
+                    if (sel_ii>=domsize[1][1]):
+                        #print('ii too big')
+                        #pdb.set_trace()
+                        sel_ii=domsize[1][1]-1
+                    if (sel_jj>=domsize[1][0]):
+                        #print('jj too big')
+                        #pdb.set_trace()
+                        sel_jj=domsize[1][0]-1
+                    if (sel_jj<0):sel_jj=0
+                    if (sel_ii<0):sel_ii=0
+                    if (sel_jj<0):sel_jj=0
+                        
+                    '''
                     if (sel_ii>=lon_d[1].shape[1]):
                         #print('ii too big')
                         #pdb.set_trace()
@@ -1767,39 +2033,50 @@ def nemo_slice_zlev(config = 'amm7',
                     if (sel_jj<0):sel_jj=0
                     if (sel_ii<0):sel_ii=0
                     if (sel_jj<0):sel_jj=0
+                    '''
                     # and reload slices, and hovmuller/time series
 
                 elif ai in [1]: 
                     # if in ew slice, change ns slice, and hov/time series
                     loni= xlocval
+                    sel_ii = (np.abs(ew_line_x - loni)).argmin()
+
+                    '''
                     if configd[1].upper() == 'AMM7':
                         sel_ii = (np.abs(lon[thd[1]['x0']:thd[1]['x1']:thd[1]['dx']] - loni)).argmin()
                     elif configd[1].upper() in ['AMM15','CO9P2']:
                         latj =  ew_line_y[(np.abs(ew_line_x - loni)).argmin()] 
                         lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(loni,latj)
-                        sel_ii = np.minimum(np.maximum(np.round((lon_mat_rot - lon_rotamm15[thd[1]['x0']:thd[1]['x1']:thd[1]['dx']].min())/(dlon_rotamm15*thd[1]['dx'])).astype('int'),0),nlon_rotamm15//thd[1]['dx']-1)
+                        #sel_ii = np.minimum(np.maximum(np.round((lon_mat_rot - lon_rotamm15[thd[1]['x0']:thd[1]['x1']:thd[1]['dx']].min())/(dlon_rotamm15*thd[1]['dx'])).astype('int'),0),nlon_rotamm15//thd[1]['dx']-1)
+                        sel_ii = np.minimum(np.maximum(np.round((lon_mat_rot - rot_dict[configd[1]]['lon_rot'][thd[1]['x0']:thd[1]['x1']:thd[1]['dx']].min())/(rot_dict[configd[1]]['dlon']*thd[1]['dx'])).astype('int'),0),rot_dict[configd[1]]['nlon']//thd[1]['dx']-1)
+
                     elif configd[1].upper() in ['ORCA025','ORCA025EXT','ORCA12','ORCA025ICE','ORCA12ICE']:
                         sel_ii = (np.abs(ew_line_x - loni)).argmin()
                     else:
                         print('config not supported:', configd[1])
                         pdb.set_trace()
+                    '''
                     sel_zz = int( (1-normyloc)*clylim.ptp() + clylim.min() )
                     
                     
                 elif ai in [2]:
                     # if in ns slice, change ew slice, and hov/time series
                     latj= xlocval
+                    sel_jj = (np.abs(ns_line_y - latj)).argmin()
+                    '''
                     if configd[1].upper() == 'AMM7':
                         sel_jj = (np.abs(lat[thd[1]['y0']:thd[1]['y1']:thd[1]['dy']] - latj)).argmin()
                     elif configd[1].upper() in ['AMM15','CO9P2']:                        
                         loni =  ns_line_x[(np.abs(ns_line_y - latj)).argmin()]
                         lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(loni,latj)
-                        sel_jj = np.minimum(np.maximum(np.round((lat_mat_rot - lat_rotamm15[thd[1]['y0']:thd[1]['y1']:thd[1]['dy']].min())/(dlat_rotamm15*thd[1]['dx'])).astype('int'),0),nlat_rotamm15//thd[1]['dx']-1)
+                        #sel_jj = np.minimum(np.maximum(np.round((lat_mat_rot - lat_rotamm15[thd[1]['y0']:thd[1]['y1']:thd[1]['dy']].min())/(dlat_rotamm15*thd[1]['dx'])).astype('int'),0),nlat_rotamm15//thd[1]['dx']-1)
+                        sel_jj = np.minimum(np.maximum(np.round((lat_mat_rot - rot_dict[configd[1]]['lat_rot'][thd[1]['y0']:thd[1]['y1']:thd[1]['dy']].min())/(rot_dict[configd[1]]['dlon']*thd[1]['dx'])).astype('int'),0),rot_dict[configd[1]]['nlat']//thd[1]['dx']-1)
                     elif configd[1].upper() in ['ORCA025','ORCA025EXT','ORCA12','ORCA025ICE','ORCA12ICE']:
                         sel_jj = (np.abs(ns_line_y - latj)).argmin()
                     else:
                         print('config not supported:', configd[1])
                         #pdb.set_trace()
+                        '''
                     sel_zz = int( (1-normyloc)*clylim.ptp() + clylim.min() )
 
                 elif ai in [3]:
@@ -2087,6 +2364,7 @@ def nemo_slice_zlev(config = 'amm7',
                 #iijj_ind[tmp_datstr] = None
                 #if configd[th_d_ind] is not None:
                 if configd[th_d_ind] !=  configd[1]:
+                    '''
                     if ((configd[1].upper() == 'AMM15') & (configd[th_d_ind].upper() == 'AMM7')) | ((configd[1].upper() == 'AMM7') & (configd[th_d_ind].upper() == 'AMM15')):
 
                         iijj_ind[tmp_datstr] = {}
@@ -2097,8 +2375,10 @@ def nemo_slice_zlev(config = 'amm7',
                             ew_lon_mat_rot, ew_lat_mat_rot  = rotated_grid_from_amm15(lon_d[1][jj,:],lat_d[1][jj,:])
                             ns_lon_mat_rot, ns_lat_mat_rot  = rotated_grid_from_amm15(lon_d[1][:,ii],lat_d[1][:,ii])
 
-                            tmp_lon_arr = lon_rotamm15
-                            tmp_lat_arr = lat_rotamm15
+                            #tmp_lon_arr = lon_rotamm15
+                            #tmp_lat_arr = lat_rotamm15
+                            tmp_lon_arr = rot_dict[configd[2]]['lon_rot']
+                            tmp_lat_arr = rot_dict[configd[2]]['lat_rot']
 
                             tmp_lon = lon_mat_rot
                             tmp_lat = lat_mat_rot
@@ -2134,6 +2414,140 @@ def nemo_slice_zlev(config = 'amm7',
                             ew_tmp_lon_arr,ew_tmp_lat_arr,
                             ns_tmp_lon_arr,ns_tmp_lat_arr,
                             thd[2]['dx'],thd[2]['y0'],thd[2]['y1'],regrid_meth)
+
+                    else:
+                        print('need to code up for differing configs')
+
+
+                    '''
+
+
+                    iijj_ind[tmp_datstr] = {}
+                    
+                    iijj_ind[tmp_datstr]['jj'], iijj_ind[tmp_datstr]['ii'] = regrid_params[tmp_datstr][3][jj,ii],regrid_params[tmp_datstr][4][jj,ii] # ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lon_d[1][jj,ii],lat_d[1][jj,ii])
+                    
+                    iijj_ind[tmp_datstr]['ew_jj'],iijj_ind[tmp_datstr]['ew_ii'] = regrid_params[tmp_datstr][3][jj,:],regrid_params[tmp_datstr][4][jj,:]
+                    iijj_ind[tmp_datstr]['ew_bl_jj'],iijj_ind[tmp_datstr]['ew_bl_ii'] = regrid_params[tmp_datstr][0][:,jj,:],regrid_params[tmp_datstr][1][:,jj,:]
+                    iijj_ind[tmp_datstr]['ew_wgt'] = regrid_params[tmp_datstr][2][:,jj,:]
+
+                    iijj_ind[tmp_datstr]['ns_jj'],iijj_ind[tmp_datstr]['ns_ii'] = regrid_params[tmp_datstr][3][:,ii],regrid_params[tmp_datstr][4][:,ii]
+                    iijj_ind[tmp_datstr]['ns_bl_jj'],iijj_ind[tmp_datstr]['ns_bl_ii'] = regrid_params[tmp_datstr][0][:,:,ii],regrid_params[tmp_datstr][1][:,:,ii]
+                    iijj_ind[tmp_datstr]['ns_wgt'] = regrid_params[tmp_datstr][2][:,:,ii]
+
+                    #pdb.set_trace()     
+                    '''
+                    for ss in iijj_ind[tmp_datstr].keys():ss, iijj_ind[tmp_datstr][ss].shape, type(iijj_ind[tmp_datstr][ss])
+
+                    ('ii', (), <class 'numpy.int64'>)
+                    ('jj', (), <class 'numpy.int64'>)
+                    ('ew_ii', (486,), <class 'numpy.ma.core.MaskedArray'>)
+                    ('ew_jj', (486,), <class 'numpy.ma.core.MaskedArray'>)
+                    ('ns_ii', (449,), <class 'numpy.ma.core.MaskedArray'>)
+                    ('ns_jj', (449,), <class 'numpy.ma.core.MaskedArray'>)
+                    ('ew_bl_ii', (4, 486), <class 'numpy.ndarray'>)
+                    ('ew_bl_jj', (4, 486), <class 'numpy.ndarray'>)
+                    ('ew_wgt', (4, 486), <class 'numpy.ma.core.MaskedArray'>)
+                    ('ns_bl_ii', (4, 449), <class 'numpy.ndarray'>)
+                    ('ns_bl_jj', (4, 449), <class 'numpy.ndarray'>)
+                    ('ns_wgt', (4, 449), <class 'numpy.ma.core.MaskedArray'>)
+
+
+                    ######################################
+
+                    iijj_ind[tmp_datstr]['jj'], iijj_ind[tmp_datstr]['ii'] = regrid_params[tmp_datstr][3][jj,ii],regrid_params[tmp_datstr][4][jj,ii] # ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lon_d[1][jj,ii],lat_d[1][jj,ii])
+                    
+                    iijj_ind[tmp_datstr]['ew_jj'],iijj_ind[tmp_datstr]['ew_ii'] = regrid_params[tmp_datstr][3][jj,:],regrid_params[tmp_datstr][4][jj,:]
+                    iijj_ind[tmp_datstr]['ew_bl_jj'],iijj_ind[tmp_datstr]['ew_bl_ii'] = regrid_params[tmp_datstr][0][:,jj,:],regrid_params[tmp_datstr][1][:,jj,:]
+                    iijj_ind[tmp_datstr]['ew_wgt'] = regrid_params[tmp_datstr][2][:,jj,:]
+
+                    iijj_ind[tmp_datstr]['ns_jj'],iijj_ind[tmp_datstr]['ns_ii'] = regrid_params[tmp_datstr][3][:,ii],regrid_params[tmp_datstr][4][:,ii]
+                    iijj_ind[tmp_datstr]['ns_bl_jj'],iijj_ind[tmp_datstr]['ns_bl_ii'] = regrid_params[tmp_datstr][0][:,:,ii],regrid_params[tmp_datstr][1][:,:,ii]
+                    iijj_ind[tmp_datstr]['ns_wgt'] = regrid_params[tmp_datstr][2][:,:,ii]
+
+
+                    ######################################
+
+
+                    '''
+
+
+
+                    '''
+                    iijj_ind[tmp_datstr]['ns_ii'],iijj_ind[tmp_datstr]['ns_jj'] = regrid_params[tmp_datstr][4][:,ii],regrid_params[tmp_datstr][3][:,ii]
+                    iijj_ind[tmp_datstr]['ns_ii'],iijj_ind[tmp_datstr]['ns_jj'] = regrid_params[tmp_datstr][4][:,ii],regrid_params[tmp_datstr][3][:,ii]
+
+
+                    iijj_ind[tmp_datstr]['ew_bl_ii'],iijj_ind[tmp_datstr]['ew_bl_jj'] = 0,0
+                    iijj_ind[tmp_datstr]['ew_wgt'] = np.ma.array(0)
+                    iijj_ind[tmp_datstr]['ns_bl_ii'],iijj_ind[tmp_datstr]['ns_bl_jj'] = 0,0
+                    iijj_ind[tmp_datstr]['ns_wgt'] = np.ma.array(0)
+
+
+
+                    #ns_tmp_lon_arr = ns_lon_mat_rot = lon_d[1][:,ii]
+                    #ns_tmp_lat_arr = ns_lat_mat_rot = lat_d[1][:,ii]
+                    #ew_tmp_lon_arr = ew_lon_mat_rot = lon_d[1][jj,:]
+                    #ew_tmp_lat_arr = ew_lat_mat_rot = lat_d[1][jj,:]
+                    ns_tmp_lon_arr  = lon_d[1][:,ii]
+                    ns_tmp_lat_arr  = lat_d[1][:,ii]
+                    ew_tmp_lon_arr  = lon_d[1][jj,:]
+                    ew_tmp_lat_arr  = lat_d[1][jj,:]
+                    pdb.set_trace()
+                    iijj_ind[tmp_datstr] = {}
+                    print('need to code up for differing configs')
+                    iijj_ind[tmp_datstr]['jj'], iijj_ind[tmp_datstr]['ii'] = ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lon_d[1][jj,ii],lat_d[1][jj,ii])
+                    iijj_ind[tmp_datstr]['ew_jj'], iijj_ind[tmp_datstr]['ew_ii'] = ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,ew_tmp_lon_arr,ew_tmp_lat_arr)
+                    iijj_ind[tmp_datstr]['ns_jj'], iijj_ind[tmp_datstr]['ns_ii'] = ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,ns_tmp_lon_arr,ns_tmp_lat_arr)
+                    pdb.set_trace()
+                    '''
+                    '''
+                    
+                            tmp_lon_arr = lon
+                            tmp_lat_arr = lat
+
+                            tmp_lon = lon_d[1][jj,ii]
+                            tmp_lat = lat_d[1][jj,ii]
+                            
+                            ns_tmp_lon_arr = ns_lon_mat_rot = lon_d[1][:,ii]
+                            ns_tmp_lat_arr = ns_lat_mat_rot = lat_d[1][:,ii]
+                            ew_tmp_lon_arr = ew_lon_mat_rot = lon_d[1][jj,:]
+                            ew_tmp_lat_arr = ew_lat_mat_rot = lat_d[1][jj,:]
+                        
+
+    (iijj_ind[tmp_datstr]['ii'],iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ew_ii'],iijj_ind[tmp_datstr]['ew_jj'],iijj_ind[tmp_datstr]['ns_ii'],iijj_ind[tmp_datstr]['ns_jj'], iijj_ind[tmp_datstr]['ew_bl_ii'],iijj_ind[tmp_datstr]['ew_bl_jj'],iijj_ind[tmp_datstr]['ew_wgt'], iijj_ind[tmp_datstr]['ns_bl_ii'],iijj_ind[tmp_datstr]['ns_bl_jj'],iijj_ind[tmp_datstr]['ns_wgt']) = regrid_iijj_ew_ns(tmp_lon,tmp_lat,tmp_lon_arr, tmp_lat_arr, ew_tmp_lon_arr,ew_tmp_lat_arr,ns_tmp_lon_arr,ns_tmp_lat_arr,thd[2]['dx'],thd[2]['y0'],thd[2]['y1'],regrid_meth)
+
+
+
+
+
+
+
+
+                    plt.plot(iijj_ind[tmp_datstr]['ew_ii'],iijj_ind[tmp_datstr]['ew_jj'],'+-')
+                    plt.plot(regrid_params[tmp_datstr][4][jj,:],regrid_params[tmp_datstr][3][jj,:],'x-')
+                    plt.show()
+
+                    plt.plot(regrid_params[tmp_datstr][3][iijj_ind[tmp_datstr]['ew_ii'], iijj_ind[tmp_datstr]['ew_jj']],regrid_params[tmp_datstr][4][iijj_ind[tmp_datstr]['ew_ii'], iijj_ind[tmp_datstr]['ew_jj']],'x-')
+                  
+
+
+
+
+
+                    plt.plot(iijj_ind[tmp_datstr]['ew_ii'],iijj_ind[tmp_datstr]['ew_jj'],'+-')
+                    plt.plot(regrid_params[tmp_datstr][3][jj,:],regrid_params[tmp_datstr][4][jj,:],'x-')
+                    plt.plot(regrid_params[tmp_datstr][3][iijj_ind[tmp_datstr]['ew_jj'], iijj_ind[tmp_datstr]['ew_ii']],regrid_params[tmp_datstr][4][iijj_ind[tmp_datstr]['ew_jj'], iijj_ind[tmp_datstr]['ew_ii']],'x-')
+                    plt.plot(regrid_params[tmp_datstr][4][iijj_ind[tmp_datstr]['ew_ii'], iijj_ind[tmp_datstr]['ew_jj']],regrid_params[tmp_datstr][3][iijj_ind[tmp_datstr]['ew_ii'], iijj_ind[tmp_datstr]['ew_jj']],'x-')
+                    plt.plot(regrid_params[tmp_datstr][4][iijj_ind[tmp_datstr]['ew_jj'], iijj_ind[tmp_datstr]['ew_ii']],regrid_params[tmp_datstr][3][iijj_ind[tmp_datstr]['ew_jj'], iijj_ind[tmp_datstr]['ew_ii']],'x-')
+                    plt.show()
+
+                    iijj_ind[tmp_datstr]['ew_bl_ii'],iijj_ind[tmp_datstr]['ew_bl_jj'] = 0,0
+                    iijj_ind[tmp_datstr]['ew_wgt'] = np.ma.array(0)
+                    iijj_ind[tmp_datstr]['ns_bl_ii'],iijj_ind[tmp_datstr]['ns_bl_jj'] = 0,0
+                    iijj_ind[tmp_datstr]['ns_wgt'] = np.ma.array(0)
+
+                    '''
+                        
                 
 
             if verbose_debugging: print('Reload data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now())
@@ -2180,7 +2594,7 @@ def nemo_slice_zlev(config = 'amm7',
                     data_inst = None
 
                     if do_memory & do_timer: timer_lst.append(('Deleted data_inst',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
-
+                    #pdb.set_trace()
                     data_inst,preload_data_ti,preload_data_var,preload_data_ldi= reload_data_instances(var,thd,ldi,ti,var_d,var_grid['Dataset 1'], xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
 
                     if do_memory & do_timer: timer_lst.append(('Reloaded data_inst',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
@@ -2196,27 +2610,29 @@ def nemo_slice_zlev(config = 'amm7',
                         Time_Diff_cnt = 0
                         if do_memory & do_timer: timer_lst.append(('Deleted data_inst_Tm1',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
 
-                if vis_curr > 0:
+                if  (data_inst_U is None)|(preload_data_ti_U != ti)|(preload_data_ldi_U != ldi):
+                    if vis_curr > 0:
 
 
-                    data_inst_U = None
-                    if do_memory & do_timer: timer_lst.append(('Deleted data_inst_U',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
-                    data_inst_U,preload_data_ti_U,preload_data_var_U,preload_data_ldi_U = reload_data_instances(tmp_var_U,thd,ldi,ti,var_d,var_grid['Dataset 1'], xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
-                    if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_U',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
-                    
-                    data_inst_V = None
-                    if do_memory & do_timer: timer_lst.append(('Deleted data_inst_V',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
-                    data_inst_V,preload_data_ti_V,preload_data_var_V,preload_data_ldi_V = reload_data_instances(tmp_var_V,thd,ldi,ti,var_d,var_grid['Dataset 1'], xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
-                    if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_V',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
+                        data_inst_U = None
+                        if do_memory & do_timer: timer_lst.append(('Deleted data_inst_U',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
+                        data_inst_U,preload_data_ti_U,preload_data_var_U,preload_data_ldi_U = reload_data_instances(tmp_var_U,thd,ldi,ti,var_d,var_grid['Dataset 1'], xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
+                        if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_U',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
+                        
+                        data_inst_V = None
+                        if do_memory & do_timer: timer_lst.append(('Deleted data_inst_V',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
+                        data_inst_V,preload_data_ti_V,preload_data_var_V,preload_data_ldi_V = reload_data_instances(tmp_var_V,thd,ldi,ti,var_d,var_grid['Dataset 1'], xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
+                        if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_V',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
 
 
 
-                if reload_MLD:
-                    data_inst_mld = None
-                    if do_memory & do_timer: timer_lst.append(('Deleted data_inst_mld',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
-                    data_inst_mld,preload_data_ti_mld,preload_data_var_mld,preload_data_ldi_mld= reload_data_instances(MLD_var,thd,ldi,ti,var_d,var_grid['Dataset 1'], xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
-                    reload_MLD = False
-                    if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_mld',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
+                if  (data_inst_mld is None)|(preload_data_ti_mld != ti)|(preload_data_ldi_mld != ldi):
+                    if reload_MLD:
+                        data_inst_mld = None
+                        if do_memory & do_timer: timer_lst.append(('Deleted data_inst_mld',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
+                        data_inst_mld,preload_data_ti_mld,preload_data_var_mld,preload_data_ldi_mld= reload_data_instances(MLD_var,thd,ldi,ti,var_d,var_grid['Dataset 1'], xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
+                        reload_MLD = False
+                        if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_mld',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                     
             ###################################################################################################
             ### Status of buttons
@@ -2224,16 +2640,17 @@ def nemo_slice_zlev(config = 'amm7',
             
             if do_Tdiff:
                 if ti == 0:
-                    func_but_text_han['T Diff'].set_color('0.5')
+                    func_but_text_han['Time Diff'].set_color('0.5')
                 else:
                     if Time_Diff:
-                        func_but_text_han['T Diff'].set_color('darkgreen')
+                        func_but_text_han['Time Diff'].set_color('darkgreen')
 
                         if (data_inst_Tm1['Dataset 1'] is None)|(preload_data_ti_Tm1 != (ti-1))|(preload_data_var_Tm1 != var)|(preload_data_ldi_Tm1 != ldi):
 
                             (data_inst_Tm1,preload_data_ti_Tm1,preload_data_var_Tm1,preload_data_ldi_Tm1) = reload_data_instances(var,thd,ldi,ti-1,
                                     var_d,var_grid['Dataset 1'], xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
-
+                            if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_Tm1',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
+                        
                         #pdb.set_trace()
                         if Time_Diff_cnt == 0:
                             #data_inst['Dataset 1'] = data_inst['Dataset 1'] - data_inst_Tm1['Dataset 1']
@@ -2251,7 +2668,7 @@ def nemo_slice_zlev(config = 'amm7',
                         reload_ns = True
 
                     else:
-                        func_but_text_han['T Diff'].set_color('k')
+                        func_but_text_han['Time Diff'].set_color('k')
                         if (data_inst_Tm1['Dataset 1'] is not None):
 
                             if Time_Diff_cnt == -1:
@@ -2400,6 +2817,7 @@ def nemo_slice_zlev(config = 'amm7',
             prevtime = datetime.now()
 
             if profvis:
+                #pdb.set_trace()
                 pf_dat_dict = reload_pf_data_comb(data_inst,var,var_dim,ii,jj,nz,grid_dict,Dataset_lst,configd,iijj_ind)
 
                 if do_grad == 2:
@@ -2452,9 +2870,7 @@ def nemo_slice_zlev(config = 'amm7',
             #if Obs and reloading,  
             if do_Obs:
                 if reload_Obs:
-
-
-
+                    
                     #for a given variable, what obs types to use
                     if var.lower() in ['votemper','votempis','votemper_bot','votempis_bot']:
                         #Obs_var_lst_sub	 = ['ProfT']#,'SST_ins']#,'SST_sat']
@@ -4326,7 +4742,7 @@ def nemo_slice_zlev(config = 'amm7',
 
 
 
-                                    tmpnlat, tmpnlon = lat_d[th_d_ind].shape
+                                    tmpnlat, tmpnlon = domsize[th_d_ind] # lat_d[th_d_ind].shape
                                     #th_d_ind1 = int(tmp_datstr1[-1])
                                     #t#h_d_ind1 = int(tmp_datstr1[8:])
 
@@ -4483,7 +4899,8 @@ def nemo_slice_zlev(config = 'amm7',
                                     for xi,tmp_datstr in enumerate(Dataset_lst): axxs[xi].set_ylim(xs_ylim)
                                     axxs[2].set_ylim(xs_ylim)
                                     
-                                    for xi,tmp_datstr in enumerate(Dataset_lst):axxs[xi].plot(tmp_xsect_x[tmp_datstr],tmp_xsect_mld_dat[tmp_datstr],'k', lw = 0.5)
+                                    if do_MLD:
+                                        for xi,tmp_datstr in enumerate(Dataset_lst):axxs[xi].plot(tmp_xsect_x[tmp_datstr],tmp_xsect_mld_dat[tmp_datstr],'k', lw = 0.5)
                                 
                                     
                                     #for axi,tmpax  in enumerate(axxs): 
@@ -4532,7 +4949,8 @@ def nemo_slice_zlev(config = 'amm7',
                                     xs_ylim[0] = tmp_xsect_z[tmp_datstr][~(tmp_xsect_x[tmp_datstr]*tmp_xsect_z[tmp_datstr]*tmp_xsect_dat[tmp_datstr]).mask].max()
                                     for xi,tmp_datstr in enumerate(Dataset_lst): axxs[xi].set_ylim(xs_ylim)
 
-                                    for xi,tmp_datstr in enumerate(Dataset_lst):axxs[xi].plot(tmp_xsect_x[tmp_datstr],tmp_xsect_mld_dat[tmp_datstr],'k', lw = 0.5)
+                                    if do_MLD:
+                                        for xi,tmp_datstr in enumerate(Dataset_lst):axxs[xi].plot(tmp_xsect_x[tmp_datstr],tmp_xsect_mld_dat[tmp_datstr],'k', lw = 0.5)
                                 
                                 
                                     #for axi,tmpax  in enumerate(axxs): 
@@ -4577,7 +4995,8 @@ def nemo_slice_zlev(config = 'amm7',
                                     axxs[0].invert_yaxis()
                                     plt.colorbar(paxxs[0], ax = axxs[0])
                                     set_perc_clim_pcolor_in_region(5,95,ax = axxs[0])
-                                    plt.plot(tmp_xsect_x[xsect_secdataset_proc],tmp_xsect_mld_dat[xsect_secdataset_proc],'k', lw = 0.5)
+                                    if do_MLD:
+                                        plt.plot(tmp_xsect_x[xsect_secdataset_proc],tmp_xsect_mld_dat[xsect_secdataset_proc],'k', lw = 0.5)
                                 
                                 elif var_dim[var] == 3:
                                     axxs[0].axhline(0,color = 'k', lw = 0.5) 
@@ -5111,17 +5530,17 @@ def nemo_slice_zlev(config = 'amm7',
                                 func_but_text_han['Vis curr'].set_color('darkgreen')
 
 
-                        elif but_name == 'T Diff':
+                        elif but_name == 'Time Diff':
 
                             if ti == 0:
-                                func_but_text_han['T Diff'].set_color('0.5')
+                                func_but_text_han['Time Diff'].set_color('0.5')
                             else:
                                 if Time_Diff:
                                     Time_Diff = False
-                                    func_but_text_han['T Diff'].set_color('k')
+                                    func_but_text_han['Time Diff'].set_color('k')
                                 else:
                                     Time_Diff = True
-                                    func_but_text_han['T Diff'].set_color('darkgreen')
+                                    func_but_text_han['Time Diff'].set_color('darkgreen')
 
 
                         elif but_name == 'ColScl':
@@ -6141,6 +6560,7 @@ def main():
 
 
         dataset_lst = [ ss for ss in fname_dict.keys() ] 
+        nDataset = len(dataset_lst)
 
         configd = {}
         fig_lab_d = {}
@@ -6151,12 +6571,16 @@ def main():
 
         if args.configs is not None:
             
-            if len(tmparr)!=2:
-                print('arg error: (configs):', tmparr)
             for tmparr in args.configs:
+                if len(tmparr)!=2:
+                    print('arg error: (configs):', tmparr)
                 #pdb.set_trace()
                 configd[int(tmparr[0])] = tmparr[1]
 
+        configlst = np.array([configd[ss] for ss in (configd)])
+        uniqconfig = np.unique(configlst)
+
+    
 
         if legacy_mode:
             fig_lab_d = {}
@@ -6237,10 +6661,7 @@ def main():
 
             #pdb.set_trace()
         
-
-
-
-    
+        # set up empty th dictionary
         thd = {}
         thd[1] = {}
         thd[1]['df'] = 1
@@ -6256,16 +6677,26 @@ def main():
 
         thd[1]['pxy'] = None
 
+
+        # Copy dummy values for all datasets
+
         for ii in range(len(dataset_lst)-1):
-            thd[ii+2] = thd[1]
+            thd[ii+2] = thd[1].copy()
 
+        # update with arguements.
+        # if argument entered for one dataset, copy to all subsequent datasets with the same config
         if args.th is not None:
+            th_args = (args.th)
+            th_args.sort()
 
-            for tmparr in args.th:
-
+            print('th arguments:',th_args)
+            #for tmparr in args.th:
+            for tmparr in th_args:
+                #pdb.set_trace()
                 if len(tmparr)!=3:
                     print('arg error: (th):', tmparr)
                 #take the dataset name
+                '''
                 tmp_datstr = int(tmparr[0])
                 tmp_thvar = tmparr[1]
                 tmp_thval = tmparr[2]
@@ -6279,16 +6710,51 @@ def main():
                     thd[tmp_datstr]['dy'] = tmp_thval
                 else:
                     thd[tmp_datstr][tmp_thvar] = tmp_thval
-
-
-
-
+                '''
+                tmp_datstr = int(tmparr[0])
+                tmpconfig = configd[tmp_datstr]
+                tmp_thvar = tmparr[1]
+                tmp_thval = tmparr[2]
+                if tmp_thval.lower() == 'none':
+                    tmp_thval = None
+                else:
+                    tmp_thval = int(tmp_thval)
+                for dsi in range(tmp_datstr,nDataset+1):
+                    if configd[dsi] == tmpconfig:
+                        #pdb.set_trace()
+                        if tmp_thvar in ['dxy','dx','dy']:
+                            thd[dsi]['dx'] = tmp_thval
+                            thd[dsi]['dy'] = tmp_thval
+                        else:
+                            thd[dsi][tmp_thvar] = tmp_thval
+        
+        # of orca model cut off upper values as non incrementing longitude
         for cfi in configd.keys():
             if configd[cfi] is None: continue
             if configd[cfi].upper() in ['ORCA025','ORCA025EXT','ORCA025ICE']: 
                 if thd[cfi]['y1'] is None: thd[cfi]['y1'] = -2
             if configd[cfi].upper() in ['ORCA12','ORCA12ICE']: 
                 if thd[cfi]['y1'] is None: thd[cfi]['y1'] = -200
+
+        #pdb.set_trace()
+        # print out thd
+        #for dsi in range(1,nDataset+1): print(thd[dsi])
+
+        # ensure all configs have same thinning, use lowest dataset value
+        if nDataset > 1:
+            for tmpconfig in uniqconfig:
+                tmpconfigind = np.where(configlst == tmpconfig)[0] + 1
+                for dsi in tmpconfigind[1:]:
+                    thd[dsi] = thd[tmpconfigind[0]]
+            
+        # print out thd
+        for dsi in range(1,nDataset+1): print(thd[dsi])
+
+
+        #configlst = np.array([configd[ss] for ss in (configd)])
+        #uniqconfig = np.unique(configlst)
+
+
 
 
         nemo_slice_zlev(zlim_max = args.zlim_max,
