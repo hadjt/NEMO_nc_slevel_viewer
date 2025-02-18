@@ -336,10 +336,12 @@ def nemo_slice_zlev(config = 'amm7',
     if zz == 0: zi = 0
     if zi is None: zi = 0
     #pdb.set_trace()
+
     if fig_dir is None:
 
         #fig_dir = os.getcwd() + '/tmpfigs'
-        fig_dir = script_dir + '/tmpfigs'
+        #fig_dir = script_dir + './tmpfigs'
+        fig_dir = './tmpfigs'
         print('fig_dir: ',fig_dir )
 
     #need to load lon_mat and lat_mat to implement lon_in and lat_in
@@ -1551,8 +1553,12 @@ def nemo_slice_zlev(config = 'amm7',
                       'Zoom',
                       'Axis', 'ColScl', 'Clim: Zoom','Clim: pair','Clim: sym',
                       'Surface', 'Near-Bed', 'Surface-Bed','Depth-Mean','Depth level',
-                      'Contours','Grad','Time Diff','TS Diag','LD time','Fcst Diag','Vis curr','MLD','Obs','Xsect','Save Figure','Help','Quit'] 
+                      'Contours','Grad','Time Diff','Sec Grid','TS Diag','LD time','Fcst Diag','Vis curr','MLD','Obs','Xsect','Save Figure','Help','Quit'] 
     #'Reset zoom','Obs: sel','Obs: opt','Clim: Reset','Clim: Expand',
+    
+    Sec_regrid = False
+    if uniqconfig.size==1:
+        func_names_lst.remove('Sec Grid')
 
 
     do_Xsect = True
@@ -2715,7 +2721,7 @@ def nemo_slice_zlev(config = 'amm7',
                 
                 if do_memory & do_timer: timer_lst.append(('Deleted map_dat_dict',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                 
-                map_dat_dict = reload_map_data_comb(var,z_meth,zz,zi, data_inst,var_dim, interp1d_ZwgtT,grid_dict,lon_d[1],lat_d[1],regrid_params,regrid_meth,thd,configd,Dataset_lst, use_xarray_gdept = use_xarray_gdept)
+                map_dat_dict = reload_map_data_comb(var,z_meth,zz,zi, data_inst,var_dim, interp1d_ZwgtT,grid_dict,lon_d[1],lat_d[1],regrid_params,regrid_meth,thd,configd,Dataset_lst, use_xarray_gdept = use_xarray_gdept,Sec_regrid = Sec_regrid)
                 reload_map = False
                 
                 if do_memory & do_timer: timer_lst.append(('Reloaded map_dat_dict',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
@@ -2727,8 +2733,22 @@ def nemo_slice_zlev(config = 'amm7',
                     #pdb.set_trace()
                     
                     for tmp_datstr in  Dataset_lst:
-                        
+
+                        ''' if Sec_regrid & (secdataset_proc in Dataset_lst):
+                                th_d_ind = int(secdataset_proc[8:])
+                                pax.append(ax[0].pcolormesh(lon_d[th_d_ind][::pdy,::pdx],lat_d[th_d_ind][::pdy,::pdx],map_dat[::pdy,::pdx],cmap = curr_cmap,norm = climnorm, rasterized = True))
+                            else:
+                                pax.append(ax[0].pcolormesh(map_dat_dict['x'][::pdy,::pdx],map_dat_dict['y'][::pdy,::pdx],map_dat[::pdy,::pdx],cmap = curr_cmap,norm = climnorm, rasterized = True))
+                            if var_dim[var] == 4:
+                        '''
                         map_dat_dict[tmp_datstr] = field_gradient_2d(map_dat_dict[tmp_datstr], thd[1]['dx']*grid_dict['Dataset 1']['e1t'],thd[1]['dx']*grid_dict['Dataset 1']['e2t']) # scale up widths between grid boxes
+                        
+                        # if Sec_regrid is true, do gradient on _Sec_regrid in well, not instead, as needed for clim calcs
+                        if Sec_regrid & (tmp_datstr!= 'Dataset 1'):
+                            th_d_ind = int(tmp_datstr[8:])
+                            #pdb.set_trace()
+                            map_dat_dict[tmp_datstr + '_Sec_regrid'] = field_gradient_2d(map_dat_dict[tmp_datstr + '_Sec_regrid'], thd[th_d_ind]['dx']*grid_dict[tmp_datstr]['e1t'],thd[th_d_ind]['dx']*grid_dict[tmp_datstr]['e2t']) # scale up widths between grid boxes
+
                     
                     if do_memory & do_timer: timer_lst.append(('Calculated Grad of map_dat_dict',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
 
@@ -2748,8 +2768,8 @@ def nemo_slice_zlev(config = 'amm7',
 
                     if do_memory & do_timer: timer_lst.append(('Deleted map_dat_dict_U&V',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                     
-                    map_dat_dict_U = reload_map_data_comb(tmp_var_U,z_meth,zz,zi, data_inst_U,var_dim, interp1d_ZwgtT,grid_dict,lon_d[1],lat_d[1],regrid_params,regrid_meth,thd,configd,Dataset_lst, use_xarray_gdept = use_xarray_gdept)
-                    map_dat_dict_V = reload_map_data_comb(tmp_var_V,z_meth,zz,zi, data_inst_V,var_dim, interp1d_ZwgtT,grid_dict,lon_d[1],lat_d[1],regrid_params,regrid_meth,thd,configd,Dataset_lst, use_xarray_gdept = use_xarray_gdept)
+                    map_dat_dict_U = reload_map_data_comb(tmp_var_U,z_meth,zz,zi, data_inst_U,var_dim, interp1d_ZwgtT,grid_dict,lon_d[1],lat_d[1],regrid_params,regrid_meth,thd,configd,Dataset_lst, use_xarray_gdept = use_xarray_gdept,Sec_regrid = Sec_regrid)
+                    map_dat_dict_V = reload_map_data_comb(tmp_var_V,z_meth,zz,zi, data_inst_V,var_dim, interp1d_ZwgtT,grid_dict,lon_d[1],lat_d[1],regrid_params,regrid_meth,thd,configd,Dataset_lst, use_xarray_gdept = use_xarray_gdept,Sec_regrid = Sec_regrid)
               
                     if do_memory & do_timer: timer_lst.append(('Reloaded map_dat_dict_U&V',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                     
@@ -2978,6 +2998,9 @@ def nemo_slice_zlev(config = 'amm7',
             pax = []        
             if secdataset_proc in Dataset_lst:
                 map_dat = map_dat_dict[secdataset_proc]
+                if Sec_regrid & (secdataset_proc!= 'Dataset 1'):
+                    map_dat = map_dat_dict[secdataset_proc + '_Sec_regrid']
+
                 if var_dim[var] == 4:
                     #ns_slice_dat = ns_slice_dict[secdataset_proc]
                     #ew_slice_dat = ew_slice_dict[secdataset_proc]
@@ -3071,10 +3094,11 @@ def nemo_slice_zlev(config = 'amm7',
             #paxmap.set_array(map_dat)  
             ## comment out pax.append(ax[0].pcolormesh(map_dat_dict
             # if using_set_array
-
-            pax.append(ax[0].pcolormesh(map_dat_dict['x'][::pdy,::pdx],map_dat_dict['y'][::pdy,::pdx],map_dat[::pdy,::pdx],cmap = curr_cmap,norm = climnorm, rasterized = True))
-
-
+            if Sec_regrid & (secdataset_proc in Dataset_lst):
+                th_d_ind = int(secdataset_proc[8:])
+                pax.append(ax[0].pcolormesh(lon_d[th_d_ind][::pdy,::pdx],lat_d[th_d_ind][::pdy,::pdx],map_dat[::pdy,::pdx],cmap = curr_cmap,norm = climnorm, rasterized = True))
+            else:
+                pax.append(ax[0].pcolormesh(map_dat_dict['x'][::pdy,::pdx],map_dat_dict['y'][::pdy,::pdx],map_dat[::pdy,::pdx],cmap = curr_cmap,norm = climnorm, rasterized = True))
             if var_dim[var] == 4:
                 #pdb.set_trace()
                 pax.append(ax[1].pcolormesh(ew_slice_dict['x'][::pdx],ew_slice_dict['y'][:,::pdx],ew_slice_dat[:,::pdx],cmap = curr_cmap,norm = climnorm, rasterized = True))
@@ -3622,7 +3646,16 @@ def nemo_slice_zlev(config = 'amm7',
                 
                 for tmpcax in cax:cont_val_lst.append(get_colorbar_values(tmpcax))
                 
-                conax.append(ax[0].contour(map_dat_dict['x'],map_dat_dict['y'],map_dat,cont_val_lst[0], colors = contcols, linewidths = contlws, alphas = contalphas))
+                #conax.append(ax[0].contour(map_dat_dict['x'],map_dat_dict['y'],map_dat,cont_val_lst[0], colors = contcols, linewidths = contlws, alphas = contalphas))
+                                
+                if Sec_regrid & (secdataset_proc in Dataset_lst):
+                    th_d_ind = int(secdataset_proc[8:])
+                    conax.append(ax[0].contour(lon_d[th_d_ind],lat_d[th_d_ind],map_dat,cont_val_lst[0], colors = contcols, linewidths = contlws, alphas = contalphas))
+                else:
+                    conax.append(ax[0].contour(map_dat_dict['x'],map_dat_dict['y'],map_dat,cont_val_lst[0], colors = contcols, linewidths = contlws, alphas = contalphas))
+                 
+                
+                
                 if var_dim[var] == 4: 
                     conax.append(ax[1].contour(np.tile(ew_slice_dict['x'],(nz,1)),ew_slice_dict['y'],ew_slice_dat,cont_val_lst[1], colors = contcols, linewidths = contlws, alphas = contalphas))
                     conax.append(ax[2].contour(np.tile(ns_slice_dict['x'],(nz,1)),ns_slice_dict['y'],ns_slice_dat,cont_val_lst[2], colors = contcols, linewidths = contlws, alphas = contalphas))
@@ -5529,7 +5562,16 @@ def nemo_slice_zlev(config = 'amm7',
                                 reload_UV_map = True
                                 func_but_text_han['Vis curr'].set_color('darkgreen')
 
-
+                        elif but_name == 'Sec Grid':
+                            if Sec_regrid:
+                                    Sec_regrid = False
+                                    func_but_text_han['Sec Grid'].set_color('k')
+                            else:
+                                Sec_regrid = True
+                                func_but_text_han['Sec Grid'].set_color('darkgreen')
+                                if 'Dataset 2_Sec_Grid' not in map_dat_dict.keys():
+                                    reload_map = True
+                                    reload_UV_map = True
                         elif but_name == 'Time Diff':
 
                             if ti == 0:
@@ -6408,7 +6450,8 @@ def main():
         #pdb.set_trace()
 
 
-        if (args.fig_dir) is None: args.fig_dir=script_dir + '/tmpfigs'
+        #if (args.fig_dir) is None: args.fig_dir=script_dir + '/tmpfigs'
+        if (args.fig_dir) is None: args.fig_dir='./tmpfigs'
         if (args.fig_lab) is None: args.fig_lab='figs'
         if (args.ld_nctvar) is None: args.ld_nctvar='time_counter'
 

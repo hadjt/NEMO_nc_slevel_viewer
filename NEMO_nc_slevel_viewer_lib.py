@@ -1813,20 +1813,20 @@ def reload_data_instances(var,thd,ldi,ti,var_d,var_grid, xarr_dict, grid_dict,va
 
 
   
-def reload_map_data_comb(var,z_meth,zz,zi, data_inst,var_dim,interp1d_ZwgtT,grid_dict,nav_lon,nav_lat,regrid_params,regrid_meth,thd,configd,Dataset_lst,use_xarray_gdept = False):
+def reload_map_data_comb(var,z_meth,zz,zi, data_inst,var_dim,interp1d_ZwgtT,grid_dict,nav_lon,nav_lat,regrid_params,regrid_meth,thd,configd,Dataset_lst,use_xarray_gdept = False,Sec_regrid = False):
 
     if var_dim[var] == 3:
-        map_dat_dict = reload_map_data_comb_2d(data_inst,regrid_params,regrid_meth ,thd,configd,Dataset_lst)
+        map_dat_dict = reload_map_data_comb_2d(data_inst,regrid_params,regrid_meth ,thd,configd,Dataset_lst,Sec_regrid = Sec_regrid)
 
     else:
         if z_meth == 'z_slice':
-            map_dat_dict = reload_map_data_comb_zmeth_zslice(zz, data_inst,interp1d_ZwgtT,grid_dict,regrid_params,regrid_meth ,thd,configd,Dataset_lst,use_xarray_gdept = use_xarray_gdept)
+            map_dat_dict = reload_map_data_comb_zmeth_zslice(zz, data_inst,interp1d_ZwgtT,grid_dict,regrid_params,regrid_meth ,thd,configd,Dataset_lst,use_xarray_gdept = use_xarray_gdept,Sec_regrid = Sec_regrid)
         elif z_meth in ['nb','df','zm']:
-            map_dat_dict = reload_map_data_comb_zmeth_nb_df_zm_3d(z_meth, data_inst,grid_dict,regrid_params,regrid_meth ,thd,configd,Dataset_lst)
+            map_dat_dict = reload_map_data_comb_zmeth_nb_df_zm_3d(z_meth, data_inst,grid_dict,regrid_params,regrid_meth ,thd,configd,Dataset_lst,Sec_regrid = Sec_regrid)
         elif z_meth in ['ss']:
-            map_dat_dict = reload_map_data_comb_zmeth_ss_3d(data_inst,regrid_params,regrid_meth,thd,configd,Dataset_lst)
+            map_dat_dict = reload_map_data_comb_zmeth_ss_3d(data_inst,regrid_params,regrid_meth,thd,configd,Dataset_lst,Sec_regrid = Sec_regrid)
         elif z_meth == 'z_index':
-            map_dat_dict = reload_map_data_comb_zmeth_zindex(data_inst,zi,regrid_params,regrid_meth,thd,configd,Dataset_lst)
+            map_dat_dict = reload_map_data_comb_zmeth_zindex(data_inst,zi,regrid_params,regrid_meth,thd,configd,Dataset_lst,Sec_regrid = Sec_regrid)
         else:
             print('z_meth not supported:',z_meth)
             pdb.set_trace()
@@ -1838,7 +1838,7 @@ def reload_map_data_comb(var,z_meth,zz,zi, data_inst,var_dim,interp1d_ZwgtT,grid
             
 
 
-def reload_map_data_comb_2d(data_inst,regrid_params,regrid_meth,thd,configd,Dataset_lst): # ,
+def reload_map_data_comb_2d(data_inst,regrid_params,regrid_meth,thd,configd,Dataset_lst,Sec_regrid = False): # ,
     #Dataset_lst = [ss for ss in data_inst.keys()]
     Dataset_lst_secondary = Dataset_lst.copy()
     if 'Dataset 1' in Dataset_lst_secondary: Dataset_lst_secondary.remove('Dataset 1')  
@@ -1847,7 +1847,9 @@ def reload_map_data_comb_2d(data_inst,regrid_params,regrid_meth,thd,configd,Data
     map_dat_dict['Dataset 1'] = data_inst['Dataset 1']
     for tmp_datstr in Dataset_lst_secondary:
         th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
-        map_dat_dict[tmp_datstr] = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,data_inst[tmp_datstr])
+        tmp_map_data = data_inst[tmp_datstr]
+        map_dat_dict[tmp_datstr] = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,tmp_map_data)
+        if Sec_regrid: map_dat_dict[tmp_datstr + '_Sec_regrid'] = tmp_map_data
 
 
     
@@ -1855,7 +1857,7 @@ def reload_map_data_comb_2d(data_inst,regrid_params,regrid_meth,thd,configd,Data
 
 
 
-def reload_map_data_comb_zmeth_ss_3d(data_inst,regrid_params,regrid_meth,thd,configd,Dataset_lst):
+def reload_map_data_comb_zmeth_ss_3d(data_inst,regrid_params,regrid_meth,thd,configd,Dataset_lst,Sec_regrid = False):
     #Dataset_lst = [ss for ss in data_inst.keys()]
     Dataset_lst_secondary = Dataset_lst.copy()
     if 'Dataset 1' in Dataset_lst_secondary: Dataset_lst_secondary.remove('Dataset 1')  
@@ -1864,13 +1866,15 @@ def reload_map_data_comb_zmeth_ss_3d(data_inst,regrid_params,regrid_meth,thd,con
     map_dat_dict['Dataset 1'] = data_inst['Dataset 1'][0]
     for tmp_datstr in Dataset_lst_secondary:
         th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
-        map_dat_dict[tmp_datstr] = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,data_inst[tmp_datstr][0])
+        tmp_map_data = data_inst[tmp_datstr][0]
+        map_dat_dict[tmp_datstr] = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,tmp_map_data)
+        if Sec_regrid: map_dat_dict[tmp_datstr + '_Sec_regrid'] = tmp_map_data
         #pdb.set_trace()
 
 
     return map_dat_dict
 
-def reload_map_data_comb_zmeth_nb_df_zm_3d(z_meth, data_inst,grid_dict,regrid_params,regrid_meth,thd,configd,Dataset_lst):
+def reload_map_data_comb_zmeth_nb_df_zm_3d(z_meth, data_inst,grid_dict,regrid_params,regrid_meth,thd,configd,Dataset_lst,Sec_regrid = False):
     #Dataset_lst = [ss for ss in data_inst.keys()]
     Dataset_lst_secondary = Dataset_lst.copy()
     if 'Dataset 1' in Dataset_lst_secondary: Dataset_lst_secondary.remove('Dataset 1')  
@@ -1898,6 +1902,7 @@ def reload_map_data_comb_zmeth_nb_df_zm_3d(z_meth, data_inst,grid_dict,regrid_pa
         th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
     
         map_dat_3d_2 = np.ma.masked_invalid(data_inst[tmp_datstr])
+        '''
 
         map_dat_ss_2 = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,map_dat_3d_2[0])
         map_dat_nb_2 = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,nearbed_int_index_val(map_dat_3d_2))
@@ -1907,12 +1912,28 @@ def reload_map_data_comb_zmeth_nb_df_zm_3d(z_meth, data_inst,grid_dict,regrid_pa
         if z_meth == 'nb': map_dat_dict[tmp_datstr] = map_dat_nb_2
         if z_meth == 'df': map_dat_dict[tmp_datstr] = map_dat_ss_2 - map_dat_nb_2
         if z_meth == 'zm': map_dat_dict[tmp_datstr] = map_dat_zm_2
+        '''
 
+
+
+        map_dat_ss_2 = map_dat_3d_2[0]
+        map_dat_nb_2 = nearbed_int_index_val(map_dat_3d_2)
+        map_dat_zm_2 = weighted_depth_mean_masked_var(map_dat_3d_2,grid_dict[tmp_datstr]['e3t'])
+        del(map_dat_3d_2)
+        map_dat_df_2 = map_dat_ss_2 - map_dat_nb_2
+        if z_meth == 'nb': map_dat_dict[tmp_datstr] = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,map_dat_nb_2)
+        if z_meth == 'df': map_dat_dict[tmp_datstr] = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,map_dat_df_2)
+        if z_meth == 'zm': map_dat_dict[tmp_datstr] = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,map_dat_zm_2)
+
+        if Sec_regrid:
+            if z_meth == 'nb': map_dat_dict[tmp_datstr + '_Sec_regrid'] = map_dat_nb_2
+            if z_meth == 'df': map_dat_dict[tmp_datstr + '_Sec_regrid'] = map_dat_df_2
+            if z_meth == 'zm': map_dat_dict[tmp_datstr + '_Sec_regrid'] = map_dat_zm_2
         
     return map_dat_dict
 
 
-def reload_map_data_comb_zmeth_zslice(zz, data_inst,interp1d_ZwgtT,grid_dict,regrid_params,regrid_meth,thd,configd,Dataset_lst,use_xarray_gdept = False):
+def reload_map_data_comb_zmeth_zslice(zz, data_inst,interp1d_ZwgtT,grid_dict,regrid_params,regrid_meth,thd,configd,Dataset_lst,use_xarray_gdept = False,Sec_regrid = False):
     #Dataset_lst = [ss for ss in data_inst.keys()]
     Dataset_lst_secondary = Dataset_lst.copy()
     if 'Dataset 1' in Dataset_lst_secondary: Dataset_lst_secondary.remove('Dataset 1')  
@@ -1943,13 +1964,15 @@ def reload_map_data_comb_zmeth_zslice(zz, data_inst,interp1d_ZwgtT,grid_dict,reg
         if zz not in interp1d_ZwgtT[tmp_datstr].keys(): 
             interp1d_ZwgtT[tmp_datstr][zz] = interp1dmat_create_weight(grid_dict[tmp_datstr]['gdept'],zz,use_xarray_gdept = use_xarray_gdept)
         #pdb.set_trace()
-        map_dat_dict[tmp_datstr] = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,interp1dmat_wgt(np.ma.masked_invalid(map_dat_3d_2),interp1d_ZwgtT[tmp_datstr][zz]))
+        tmp_map_data = interp1dmat_wgt(np.ma.masked_invalid(map_dat_3d_2),interp1d_ZwgtT[tmp_datstr][zz])
+        map_dat_dict[tmp_datstr] = np.ma.masked_invalid(regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,tmp_map_data))
+        if Sec_regrid: map_dat_dict[tmp_datstr + '_Sec_regrid'] = tmp_map_data
        
 
     return map_dat_dict
 
 
-def reload_map_data_comb_zmeth_zindex(data_inst,zi,regrid_params,regrid_meth,thd,configd,Dataset_lst):
+def reload_map_data_comb_zmeth_zindex(data_inst,zi,regrid_params,regrid_meth,thd,configd,Dataset_lst,Sec_regrid = False):
     #Dataset_lst = [ss for ss in data_inst.keys()]
     Dataset_lst_secondary = Dataset_lst.copy()
     if 'Dataset 1' in Dataset_lst_secondary: Dataset_lst_secondary.remove('Dataset 1')  
@@ -1960,8 +1983,9 @@ def reload_map_data_comb_zmeth_zindex(data_inst,zi,regrid_params,regrid_meth,thd
     map_dat_dict['Dataset 1'] = np.ma.masked_invalid(data_inst['Dataset 1'][zi])
     for tmp_datstr in Dataset_lst_secondary:
         th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
-    
-        map_dat_dict[tmp_datstr]  = np.ma.masked_invalid(regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,data_inst[tmp_datstr][zi]))
+        tmp_map_data = data_inst[tmp_datstr][zi]
+        map_dat_dict[tmp_datstr] = np.ma.masked_invalid(regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,tmp_map_data))
+        if Sec_regrid: map_dat_dict[tmp_datstr + '_Sec_regrid'] = tmp_map_data
 
 
     return map_dat_dict
