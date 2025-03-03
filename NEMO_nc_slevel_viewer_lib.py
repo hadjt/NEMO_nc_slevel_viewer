@@ -53,13 +53,26 @@ def load_nc_dims(tmp_data):
     z_dim = 'deptht'
     t_dim = 'time_counter'
     #pdb.set_trace()
+
+    '''	
+    x_grid_T = 1238 ;
+	y_grid_T = 1046 ;
+	x_grid_U = 1238 ;
+	y_grid_U = 1046 ;
+	x_grid_V = 1238 ;
+	y_grid_V = 1046 ;
+	x_grid_T_inner = 1238 ;
+	y_grid_T_inner = 1046 ;
+
+
+    '''
     
     nc_dims = [ss for ss in tmp_data._dims.keys()]
 
     poss_zdims = ['depth','deptht','depthu','depthv','depthw','z', 'nc']
     poss_tdims = ['time_counter','time','t']
-    poss_xdims = ['x','X','lon','ni']
-    poss_ydims = ['y','Y','lat','nj']
+    poss_xdims = ['x','X','lon','ni','x_grid_T','x_grid_U','x_grid_V']
+    poss_ydims = ['y','Y','lat','nj','y_grid_T','y_grid_U','y_grid_V']
     #pdb.set_trace()
     if x_dim not in nc_dims: 
         x_dim_lst = [i for i in nc_dims if i in poss_xdims]
@@ -1813,20 +1826,20 @@ def reload_data_instances(var,thd,ldi,ti,var_d,var_grid, xarr_dict, grid_dict,va
 
 
   
-def reload_map_data_comb(var,z_meth,zz,zi, data_inst,var_dim,interp1d_ZwgtT,grid_dict,nav_lon,nav_lat,regrid_params,regrid_meth,thd,configd,Dataset_lst,use_xarray_gdept = False):
+def reload_map_data_comb(var,z_meth,zz,zi, data_inst,var_dim,interp1d_ZwgtT,grid_dict,nav_lon,nav_lat,regrid_params,regrid_meth,thd,configd,Dataset_lst,use_xarray_gdept = False,Sec_regrid = False):
 
     if var_dim[var] == 3:
-        map_dat_dict = reload_map_data_comb_2d(data_inst,regrid_params,regrid_meth ,thd,configd,Dataset_lst)
+        map_dat_dict = reload_map_data_comb_2d(data_inst,regrid_params,regrid_meth ,thd,configd,Dataset_lst,Sec_regrid = Sec_regrid)
 
     else:
         if z_meth == 'z_slice':
-            map_dat_dict = reload_map_data_comb_zmeth_zslice(zz, data_inst,interp1d_ZwgtT,grid_dict,regrid_params,regrid_meth ,thd,configd,Dataset_lst,use_xarray_gdept = use_xarray_gdept)
+            map_dat_dict = reload_map_data_comb_zmeth_zslice(zz, data_inst,interp1d_ZwgtT,grid_dict,regrid_params,regrid_meth ,thd,configd,Dataset_lst,use_xarray_gdept = use_xarray_gdept,Sec_regrid = Sec_regrid)
         elif z_meth in ['nb','df','zm']:
-            map_dat_dict = reload_map_data_comb_zmeth_nb_df_zm_3d(z_meth, data_inst,grid_dict,regrid_params,regrid_meth ,thd,configd,Dataset_lst)
+            map_dat_dict = reload_map_data_comb_zmeth_nb_df_zm_3d(z_meth, data_inst,grid_dict,regrid_params,regrid_meth ,thd,configd,Dataset_lst,Sec_regrid = Sec_regrid)
         elif z_meth in ['ss']:
-            map_dat_dict = reload_map_data_comb_zmeth_ss_3d(data_inst,regrid_params,regrid_meth,thd,configd,Dataset_lst)
+            map_dat_dict = reload_map_data_comb_zmeth_ss_3d(data_inst,regrid_params,regrid_meth,thd,configd,Dataset_lst,Sec_regrid = Sec_regrid)
         elif z_meth == 'z_index':
-            map_dat_dict = reload_map_data_comb_zmeth_zindex(data_inst,zi,regrid_params,regrid_meth,thd,configd,Dataset_lst)
+            map_dat_dict = reload_map_data_comb_zmeth_zindex(data_inst,zi,regrid_params,regrid_meth,thd,configd,Dataset_lst,Sec_regrid = Sec_regrid)
         else:
             print('z_meth not supported:',z_meth)
             pdb.set_trace()
@@ -1838,7 +1851,7 @@ def reload_map_data_comb(var,z_meth,zz,zi, data_inst,var_dim,interp1d_ZwgtT,grid
             
 
 
-def reload_map_data_comb_2d(data_inst,regrid_params,regrid_meth,thd,configd,Dataset_lst): # ,
+def reload_map_data_comb_2d(data_inst,regrid_params,regrid_meth,thd,configd,Dataset_lst,Sec_regrid = False): # ,
     #Dataset_lst = [ss for ss in data_inst.keys()]
     Dataset_lst_secondary = Dataset_lst.copy()
     if 'Dataset 1' in Dataset_lst_secondary: Dataset_lst_secondary.remove('Dataset 1')  
@@ -1847,7 +1860,9 @@ def reload_map_data_comb_2d(data_inst,regrid_params,regrid_meth,thd,configd,Data
     map_dat_dict['Dataset 1'] = data_inst['Dataset 1']
     for tmp_datstr in Dataset_lst_secondary:
         th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
-        map_dat_dict[tmp_datstr] = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,data_inst[tmp_datstr])
+        tmp_map_data = data_inst[tmp_datstr]
+        map_dat_dict[tmp_datstr] = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,tmp_map_data)
+        if Sec_regrid: map_dat_dict[tmp_datstr + '_Sec_regrid'] = tmp_map_data
 
 
     
@@ -1855,7 +1870,7 @@ def reload_map_data_comb_2d(data_inst,regrid_params,regrid_meth,thd,configd,Data
 
 
 
-def reload_map_data_comb_zmeth_ss_3d(data_inst,regrid_params,regrid_meth,thd,configd,Dataset_lst):
+def reload_map_data_comb_zmeth_ss_3d(data_inst,regrid_params,regrid_meth,thd,configd,Dataset_lst,Sec_regrid = False):
     #Dataset_lst = [ss for ss in data_inst.keys()]
     Dataset_lst_secondary = Dataset_lst.copy()
     if 'Dataset 1' in Dataset_lst_secondary: Dataset_lst_secondary.remove('Dataset 1')  
@@ -1864,13 +1879,15 @@ def reload_map_data_comb_zmeth_ss_3d(data_inst,regrid_params,regrid_meth,thd,con
     map_dat_dict['Dataset 1'] = data_inst['Dataset 1'][0]
     for tmp_datstr in Dataset_lst_secondary:
         th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
-        map_dat_dict[tmp_datstr] = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,data_inst[tmp_datstr][0])
+        tmp_map_data = data_inst[tmp_datstr][0]
+        map_dat_dict[tmp_datstr] = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,tmp_map_data)
+        if Sec_regrid: map_dat_dict[tmp_datstr + '_Sec_regrid'] = tmp_map_data
         #pdb.set_trace()
 
 
     return map_dat_dict
 
-def reload_map_data_comb_zmeth_nb_df_zm_3d(z_meth, data_inst,grid_dict,regrid_params,regrid_meth,thd,configd,Dataset_lst):
+def reload_map_data_comb_zmeth_nb_df_zm_3d(z_meth, data_inst,grid_dict,regrid_params,regrid_meth,thd,configd,Dataset_lst,Sec_regrid = False):
     #Dataset_lst = [ss for ss in data_inst.keys()]
     Dataset_lst_secondary = Dataset_lst.copy()
     if 'Dataset 1' in Dataset_lst_secondary: Dataset_lst_secondary.remove('Dataset 1')  
@@ -1898,6 +1915,7 @@ def reload_map_data_comb_zmeth_nb_df_zm_3d(z_meth, data_inst,grid_dict,regrid_pa
         th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
     
         map_dat_3d_2 = np.ma.masked_invalid(data_inst[tmp_datstr])
+        '''
 
         map_dat_ss_2 = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,map_dat_3d_2[0])
         map_dat_nb_2 = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,nearbed_int_index_val(map_dat_3d_2))
@@ -1907,12 +1925,28 @@ def reload_map_data_comb_zmeth_nb_df_zm_3d(z_meth, data_inst,grid_dict,regrid_pa
         if z_meth == 'nb': map_dat_dict[tmp_datstr] = map_dat_nb_2
         if z_meth == 'df': map_dat_dict[tmp_datstr] = map_dat_ss_2 - map_dat_nb_2
         if z_meth == 'zm': map_dat_dict[tmp_datstr] = map_dat_zm_2
+        '''
 
+
+
+        map_dat_ss_2 = map_dat_3d_2[0]
+        map_dat_nb_2 = nearbed_int_index_val(map_dat_3d_2)
+        map_dat_zm_2 = weighted_depth_mean_masked_var(map_dat_3d_2,grid_dict[tmp_datstr]['e3t'])
+        del(map_dat_3d_2)
+        map_dat_df_2 = map_dat_ss_2 - map_dat_nb_2
+        if z_meth == 'nb': map_dat_dict[tmp_datstr] = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,map_dat_nb_2)
+        if z_meth == 'df': map_dat_dict[tmp_datstr] = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,map_dat_df_2)
+        if z_meth == 'zm': map_dat_dict[tmp_datstr] = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,map_dat_zm_2)
+
+        if Sec_regrid:
+            if z_meth == 'nb': map_dat_dict[tmp_datstr + '_Sec_regrid'] = map_dat_nb_2
+            if z_meth == 'df': map_dat_dict[tmp_datstr + '_Sec_regrid'] = map_dat_df_2
+            if z_meth == 'zm': map_dat_dict[tmp_datstr + '_Sec_regrid'] = map_dat_zm_2
         
     return map_dat_dict
 
 
-def reload_map_data_comb_zmeth_zslice(zz, data_inst,interp1d_ZwgtT,grid_dict,regrid_params,regrid_meth,thd,configd,Dataset_lst,use_xarray_gdept = False):
+def reload_map_data_comb_zmeth_zslice(zz, data_inst,interp1d_ZwgtT,grid_dict,regrid_params,regrid_meth,thd,configd,Dataset_lst,use_xarray_gdept = False,Sec_regrid = False):
     #Dataset_lst = [ss for ss in data_inst.keys()]
     Dataset_lst_secondary = Dataset_lst.copy()
     if 'Dataset 1' in Dataset_lst_secondary: Dataset_lst_secondary.remove('Dataset 1')  
@@ -1943,13 +1977,15 @@ def reload_map_data_comb_zmeth_zslice(zz, data_inst,interp1d_ZwgtT,grid_dict,reg
         if zz not in interp1d_ZwgtT[tmp_datstr].keys(): 
             interp1d_ZwgtT[tmp_datstr][zz] = interp1dmat_create_weight(grid_dict[tmp_datstr]['gdept'],zz,use_xarray_gdept = use_xarray_gdept)
         #pdb.set_trace()
-        map_dat_dict[tmp_datstr] = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,interp1dmat_wgt(np.ma.masked_invalid(map_dat_3d_2),interp1d_ZwgtT[tmp_datstr][zz]))
+        tmp_map_data = interp1dmat_wgt(np.ma.masked_invalid(map_dat_3d_2),interp1d_ZwgtT[tmp_datstr][zz])
+        map_dat_dict[tmp_datstr] = np.ma.masked_invalid(regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,tmp_map_data))
+        if Sec_regrid: map_dat_dict[tmp_datstr + '_Sec_regrid'] = tmp_map_data
        
 
     return map_dat_dict
 
 
-def reload_map_data_comb_zmeth_zindex(data_inst,zi,regrid_params,regrid_meth,thd,configd,Dataset_lst):
+def reload_map_data_comb_zmeth_zindex(data_inst,zi,regrid_params,regrid_meth,thd,configd,Dataset_lst,Sec_regrid = False):
     #Dataset_lst = [ss for ss in data_inst.keys()]
     Dataset_lst_secondary = Dataset_lst.copy()
     if 'Dataset 1' in Dataset_lst_secondary: Dataset_lst_secondary.remove('Dataset 1')  
@@ -1960,8 +1996,9 @@ def reload_map_data_comb_zmeth_zindex(data_inst,zi,regrid_params,regrid_meth,thd
     map_dat_dict['Dataset 1'] = np.ma.masked_invalid(data_inst['Dataset 1'][zi])
     for tmp_datstr in Dataset_lst_secondary:
         th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
-    
-        map_dat_dict[tmp_datstr]  = np.ma.masked_invalid(regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,data_inst[tmp_datstr][zi]))
+        tmp_map_data = data_inst[tmp_datstr][zi]
+        map_dat_dict[tmp_datstr] = np.ma.masked_invalid(regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,tmp_map_data))
+        if Sec_regrid: map_dat_dict[tmp_datstr + '_Sec_regrid'] = tmp_map_data
 
 
     return map_dat_dict
@@ -2911,7 +2948,8 @@ def grad_vert_hov_prof_data(hov_dat_dict):
     return hov_dat_dict
 
 
-def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_mat, ld_lab_mat,ld_nctvar):
+def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_mat, ld_lab_mat,ld_nctvar,
+    force_dim_d = None,xarr_rename_master_dict=None):
     # connect to files with xarray, and create dictionaries with vars, dims, grids, time etc. 
 
 
@@ -2974,6 +3012,7 @@ def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_m
                         xarr_dict[tmp_datstr][tmpgrid].append(
                             xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], 
                             combine='by_coords',parallel = True)) 
+                        #pdb.set_trace()
                         
                 else: # if loading different lead times. 
                     #pdb.set_trace()
@@ -2997,12 +3036,9 @@ def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_m
                         fc_len = ((fc_len_mat).mean()).astype('int')
                     
                     
-                    
                     bltc = tmptc[2::fc_len]
                     bltc_mat = np.array([ss  for ss in bltc for i_i in range(8)] )
                     ldtc_mat = np.array([ss.days for ss in (tmptc - bltc_mat)])
-
-
 
 
                     tmp_xarr_data = tmp_xarr_data.assign_coords(bull_time = bltc_mat)
@@ -3018,46 +3054,41 @@ def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_m
                     tmp_xarr_data.votemper[tmpgpby_bull.groups[np.datetime64('2024-05-11T12:00:00.000000000')],:,:,:]
 
 
-                    
+                    rootgrp_hpc_time = Dataset('/scratch/frwave/wave_rolling_archive/amm15/amm15_2024101200.nc', 'r', format='NETCDF4')
+                    fcper = rootgrp_hpc_time.variables['forecast_period'][:]
+                    rootgrp_hpc_time.close()
+
+                    pdb.set_trace()
 
 
 
 
-    rootgrp_hpc_time = Dataset('/scratch/frwave/wave_rolling_archive/amm15/amm15_2024101200.nc', 'r', format='NETCDF4')
-    fcper = rootgrp_hpc_time.variables['forecast_period'][:]
-    rootgrp_hpc_time.close()
 
-    pdb.set_trace()
-    
-  
-
-
-
-    -12,  fcper[:24]/86400
-    12, fcper[25:25+24]/86400
-    36, fcper[25+24:25+24+24]/86400
-    60, fcper[25+24+24:25+24+24+24]/86400
-    84, fcper[25+72+1:25+72+1+24]/86400
-    108, fcper[25+72+1+24:25+72+1+24+24]/86400
-    132, fcper[25+72+1+24+24:25+72+1+24+24+24]/86400
-    156, fcper[25+72+1+24+24+24:25+72+1+24+24+24+24]/86400
+                    -12,  fcper[:24]/86400
+                    12, fcper[25:25+24]/86400
+                    36, fcper[25+24:25+24+24]/86400
+                    60, fcper[25+24+24:25+24+24+24]/86400
+                    84, fcper[25+72+1:25+72+1+24]/86400
+                    108, fcper[25+72+1+24:25+72+1+24+24]/86400
+                    132, fcper[25+72+1+24+24:25+72+1+24+24+24]/86400
+                    156, fcper[25+72+1+24+24+24:25+72+1+24+24+24+24]/86400
 
 
-     -12,  fcper[1:24+1]/86400
-    12, fcper[25+1:25+24+1]/86400
-    36, fcper[25+1+24:25+24+24+1]/86400
-    60, fcper[25+1+24+24:25+24+24+24+1]/86400
-    84, fcper[25+1+72+1:25+72+1+24+1]/86400
-    108, fcper[25+1+72+1+24:25+72+1+24+24+1]/86400
-    132, fcper[25+1+72+1+24+24:25+72+1+24+24+24+1]/86400
+                    -12,  fcper[1:24+1]/86400
+                    12, fcper[25+1:25+24+1]/86400
+                    36, fcper[25+1+24:25+24+24+1]/86400
+                    60, fcper[25+1+24+24:25+24+24+24+1]/86400
+                    84, fcper[25+1+72+1:25+72+1+24+1]/86400
+                    108, fcper[25+1+72+1+24:25+72+1+24+24+1]/86400
+                    132, fcper[25+1+72+1+24+24:25+72+1+24+24+24+1]/86400
 
-    -12,1,24+1
-   12,25+1,25+24+1
- 36,25+1+24,25+24+24+1
-60, 25+1+24+24,25+24+24+24+1
- 84, 25+1+72+1,25+72+1+24+1
-  108,   25+1+72+1+24,25+72+1+24+24+1
-  132,   25+1+72+1+24+24,25+72+1+24+24+24+1
+                    -12,1,24+1
+                    12,25+1,25+24+1
+                    36,25+1+24,25+24+24+1
+                    60, 25+1+24+24,25+24+24+24+1
+                    84, 25+1+72+1,25+72+1+24+1
+                    108,   25+1+72+1+24,25+72+1+24+24+1
+                    132,   25+1+72+1+24+24,25+72+1+24+24+24+1
 
 
 
@@ -3123,21 +3154,65 @@ def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_m
                 xarr_dict[tmp_datstr][tmpgrid].append(tmp_xarr_data)
 
 
+            
+            # When comparing files/models, only variables that are common to both Datasets are shown. 
+            # If comparing models with different names for the same variables, they won't be shown, 
+            # as temperature and votemper will be considered different.
+            #
+            # We can use xarray to rename the variables as they are loaded to overcome this, using a rename_dictionary.
+            # i.e. rename any variables called tmperature or temp to votemper etc.
+            # to do this, we use the following command line arguments:
+            # --rename_var votemper temperature temp --rename_var vosaline salinity sal 
+            # where each variable has its own instance, and the first entry is what it will be renamed too, 
+            # and the remaining entries are renamed. 
 
+            #xarr_rename_master_dict = None
+            if xarr_rename_master_dict is not None:
+                
+                xarr_rename_dict = {}
+                tmp_cur_var = [ss for ss in xarr_dict[tmp_datstr][tmpgrid][-1].variables.keys() ]
+                for ss in tmp_cur_var: 
+                    if ss in xarr_rename_master_dict.keys():
+                        xarr_rename_dict[ss] = xarr_rename_master_dict[ss]
+                        #xarr_rename_dict[xarr_rename_master_dict[ss]] = ss
                 #pdb.set_trace()
+                if len(xarr_rename_dict)>0:
+                    xarr_dict[tmp_datstr][tmpgrid][-1] = xarr_dict[tmp_datstr][tmpgrid][-1].rename(xarr_rename_dict)
 
-
-
+            
             init_timer.append((datetime.now(),'xarray open_mfdataset %s %s connected'%(tmp_datstr,tmpgrid)))
             print ('xarray open_mfdataset %s %s, Loaded'%(tmp_datstr,tmpgrid),datetime.now())
-
+            #pdb.set_trace()
             ncvar_mat = [ss for ss in xarr_dict[tmp_datstr][tmpgrid][0].variables.keys()]
             
     
             ncvar_d[tmp_datstr][tmpgrid] = ncvar_mat
             tmp_x_dim, tmp_y_dim, tmp_z_dim, tmp_t_dim  = load_nc_dims(xarr_dict[tmp_datstr][tmpgrid][0]) #  find the names of the x, y, z and t dimensions.
+            #pdb.set_trace()
+
+
+            # If files have more than grid, with differing dimension for each, you can enforce the dimenson for each grid.
+            # For example, the SMHI BAL-MFC NRT system (BALMFCorig) hourly surface files hvae the T, U, V and T_inner grid in the same file. 
+            # Load the smae file in for each grid:
+            # Nslvdev BALMFCorig NS01_SURF_2025020912_1-24H.nc 
+            # --files 1 U NS01_SURF_2025020912_1-24H.nc --files 1 V NS01_SURF_2025020912_1-24H.nc --files 1 Ti NS01_SURF_2025020912_1-24H.nc 
+            # .....   --th 1 dxy 
+            # and enforce which dimensions are used for the T, U, V and T_inner grid (x,y,z and T)
+            #--forced_dim U x x_grid_U y y_grid_U --forced_dim V x x_grid_V y y_grid_V --forced_dim T x x_grid_T y y_grid_T --forced_dim Ti x x_grid_T_inner y y_grid_T_inner
+            #
+            #
+            # force_dim_d_in = 
+            # {'U': {'x': 'x_grid_U', 'y': 'y_grid_U'}, 'V': {'x': 'x_grid_V', 'y': 'y_grid_V'}, 'T': {'x': 'x_grid_T', 'y': 'y_grid_T'}, 'x': {'x_grid_T_inner': 'y'}}
+
+            if force_dim_d is not None:
+                if tmpgrid in force_dim_d.keys():
+                    if 'x' in force_dim_d[tmpgrid].keys(): tmp_x_dim = force_dim_d[tmpgrid]['x']
+                    if 'y' in force_dim_d[tmpgrid].keys(): tmp_y_dim = force_dim_d[tmpgrid]['y']
+                    if 'z' in force_dim_d[tmpgrid].keys(): tmp_z_dim = force_dim_d[tmpgrid]['z']
+                    if 't' in force_dim_d[tmpgrid].keys(): tmp_t_dim = force_dim_d[tmpgrid]['t']
+            
             tmp_var_names = load_nc_var_name_list(xarr_dict[tmp_datstr][tmpgrid][0], tmp_x_dim, tmp_y_dim, tmp_z_dim,tmp_t_dim)# find the variable names in the nc file # var_4d_mat, var_3d_mat, var_d[1]['T'], nvar4d, nvar3d, nvar, var_dim = 
-        
+            #pdb.set_trace()
             ncdim_d[tmp_datstr][tmpgrid]  = {}
             ncdim_d[tmp_datstr][tmpgrid]['t'] = tmp_t_dim
             ncdim_d[tmp_datstr][tmpgrid]['z'] = tmp_z_dim
@@ -3369,8 +3444,8 @@ def create_gdept_ncvarnames(config_fnames_dict,configd):
 
 def create_ncvar_lon_lat_time(ncvar_d):
 
-    nav_lon_var_mat = ['nav_lon'.upper(),'lon'.upper(),'longitude'.upper(),'TLON'.upper()]
-    nav_lat_var_mat = ['nav_lat'.upper(),'lat'.upper(),'latitude'.upper(),'TLAT'.upper()]
+    nav_lon_var_mat = ['nav_lon'.upper(),'lon'.upper(),'longitude'.upper(),'TLON'.upper(),'nav_lon_grid_T'.upper(),'nav_lon_grid_U'.upper(),'nav_lon_grid_V'.upper()]
+    nav_lat_var_mat = ['nav_lat'.upper(),'lat'.upper(),'latitude'.upper(),'TLAT'.upper(),'nav_lat_grid_T'.upper(),'nav_lat_grid_U'.upper(),'nav_lat_grid_V'.upper()]
     time_varname_mat = ['time_counter'.upper(),'time'.upper()]
         # match def resample_xarray() to time_varname_mat, until generalised. 
 
@@ -5091,8 +5166,11 @@ def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lo
             sel_jj_out,sel_ii_out = sel_dist_mat.argmin()//sel_dist_mat.shape[th_d_ind], sel_dist_mat.argmin()%sel_dist_mat.shape[th_d_ind]
 
         else:
-            print('config not supported:', configd[th_d_ind])
-            pdb.set_trace()
+            print('config not supported:', configd[th_d_ind], 'Using brute force')
+            sel_dist_mat = np.sqrt((lon_d[th_d_ind][:,:] - loni)**2 + (lat_d[th_d_ind][:,:] - latj)**2 )
+            sel_jj_out,sel_ii_out = sel_dist_mat.argmin()//sel_dist_mat.shape[th_d_ind], sel_dist_mat.argmin()%sel_dist_mat.shape[th_d_ind]
+
+            #pdb.set_trace()
 
     if np.ma.is_masked((sel_jj_out*sel_ii_out).any()):
         pdb.set_trace()

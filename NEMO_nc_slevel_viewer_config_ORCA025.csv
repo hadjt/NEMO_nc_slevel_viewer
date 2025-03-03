@@ -1,4 +1,4 @@
-mesh_file,/data/cr1/hadjt/data/reffiles/ORCA/ORCA025ext/mesh_mask_orca025ext.nc
+mesh_file,/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/ORCA025/mesh_mask_orca025ext.nc
 ncgdept,gdept_0
 z_meth_default,z_index
-xypos_file,/data/cr1/hadjt/data/reffiles/SSF/ORCA025/orca025ext_xypos_global.nc
+xypos_file,/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/ORCA025/orca025ext_xypos_global.nc
