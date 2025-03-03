@@ -6777,7 +6777,7 @@ def main():
                 nfdimlst=len(tmpfdimlst[1:])/2
                 for tfdi in range(int(nfdimlst)): force_dim_d_in[tmpdimgrid][tmpfdimlst[(tfdi*2)+1]] = tmpfdimlst[(tfdi*2)+2]
 
-        pdb.set_trace()
+        #pdb.set_trace()
 
         # Copy dummy values for all datasets
         for ii in range(len(dataset_lst)-1):
