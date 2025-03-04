@@ -677,7 +677,7 @@ def nemo_slice_zlev(config = 'amm7',
         init_timer.append((datetime.now(),'WW3 added to grid_dict'))
      
 
-    pdb.set_trace()
+    #pdb.set_trace()
     if var is None: var = 'votemper'
     if var not in var_d[1]['mat']: var = var_d[1]['mat'][0]
 
@@ -6726,90 +6726,6 @@ def main():
         thd[1]['pxy'] = None
 
             
-        # When comparing files/models, only variables that are common to both Datasets are shown. 
-        # If comparing models with different names for the same variables, they won't be shown, 
-        # as temperature and votemper will be considered different.
-        #
-        # We can use xarray to rename the variables as they are loaded to overcome this, using a rename_dictionary.
-        # i.e. rename any variables called tmperature or temp to votemper etc.
-        # to do this, we use the following command line arguments:
-        # --rename_var votemper temperature temp --rename_var vosaline salinity sal 
-        # where each variable has its own instance, and the first entry is what it will be renamed too, 
-        # and the remaining entries are renamed. 
-
-
-        ## xarr_rename_master_dict = {'votemper':'temperature','vosaline':'salinity'}
-
-        xarr_rename_master_dict_in = None
-        if args.rename_var is not None:
-            xarr_rename_master_dict_in = {}
-            for tmpvarrenlst in args.rename_var:
-                
-                if len(tmpvarrenlst)<2:
-                    print('arg error: (rename_var):', tmpvarrenlst) 
-                for tvr in tmpvarrenlst[1:]: xarr_rename_master_dict_in[tvr] = tmpvarrenlst[0]
-
-        
-
-        # If files have more than grid, with differing dimension for each, you can enforce the dimenson for each grid.
-        # For example, the SMHI BAL-MFC NRT system (BALMFCorig) hourly surface files hvae the T, U, V and T_inner grid in the same file. 
-        # Load the smae file in for each grid:
-        # Nslvdev BALMFCorig NS01_SURF_2025020912_1-24H.nc 
-        # --files 1 U NS01_SURF_2025020912_1-24H.nc --files 1 V NS01_SURF_2025020912_1-24H.nc --files 1 Ti NS01_SURF_2025020912_1-24H.nc 
-        # .....   --th 1 dxy 
-        # and enforce which dimensions are used for the T, U, V and T_inner grid (x,y,z and T)
-        #--forced_dim U x x_grid_U y y_grid_U --forced_dim V x x_grid_V y y_grid_V --forced_dim T x x_grid_T y y_grid_T --forced_dim Ti x x_grid_T_inner y y_grid_T_inner
-        #
-        #
-        # force_dim_d_in = 
-        # {'U': {'x': 'x_grid_U', 'y': 'y_grid_U'}, 'V': {'x': 'x_grid_V', 'y': 'y_grid_V'}, 'T': {'x': 'x_grid_T', 'y': 'y_grid_T'}, 'x': {'x_grid_T_inner': 'y'}}
-
-        '''
-        force_dim_d_in = None
-        if args.forced_dim is not None:
-            force_dim_d_in = {}
-            force_dim_d['all_grid'] = True
-            for tmpfdimlst in args.forced_dim:
-                
-                if (len(tmpfdimlst)%2 != 1) | len(tmpfdimlst)<2:
-                    print('arg error: (forced_dim):', tmpvarrenlst) 
-
-                tmpdimgrid = tmpfdimlst[0]
-                force_dim_d_in[tmpdimgrid] = {}
-                nfdimlst=len(tmpfdimlst[1:])/2
-                for tfdi in range(int(nfdimlst)): force_dim_d_in[tmpdimgrid][tmpfdimlst[(tfdi*2)+1]] = tmpfdimlst[(tfdi*2)+2]
-                
-        '''
-
-        #for ii, tmp_datstr in enumerate(dataset_lst):
-        #pdb.set_trace() 
-        force_dim_d_in = None
-        if args.forced_dim is not None:
-            force_dim_d_in = {}
-            #force_dim_d['all_grid'] = True
-            for tmpfdimlst in args.forced_dim:
-                
-                #if (len(tmpfdimlst)%2 != 1) | len(tmpfdimlst)<2:
-                #    print('arg error: (forced_dim):', tmpvarrenlst) 
-
-
-                if len(tmpfdimlst)<2:
-                    print('arg error: (forced_dim):', tmpvarrenlst) 
-
-                tmpdimgrid = tmpfdimlst[0]
-
-                if tmpfdimlst[1] not in np.arange(nDataset):#
-                    tmp_dsi_lst = np.arange(1,nDataset+1)
-                else:
-                    tmp_dsi_lst = [tmpfdimlst[1]]
-                    tmpdimgrid = tmpdimgrid[1:]
-
-                for dsi in tmp_dsi_lst: 
-                    force_dim_d_in[dsi] = {}
-                    force_dim_d_in[dsi][tmpdimgrid] = {}
-                    nfdimlst=len(tmpfdimlst[1:])/2
-                    for tfdi in range(int(nfdimlst)): force_dim_d_in[dsi][tmpdimgrid][tmpfdimlst[(tfdi*2)+1]] = tmpfdimlst[(tfdi*2)+2]
-                
 
         #pdb.set_trace()
 
@@ -6889,8 +6805,102 @@ def main():
         #uniqconfig = np.unique(configlst)
 
 
+        # When comparing files/models, only variables that are common to both Datasets are shown. 
+        # If comparing models with different names for the same variables, they won't be shown, 
+        # as temperature and votemper will be considered different.
+        #
+        # We can use xarray to rename the variables as they are loaded to overcome this, using a rename_dictionary.
+        # i.e. rename any variables called tmperature or temp to votemper etc.
+        # to do this, we use the following command line arguments:
+        # --rename_var votemper temperature temp --rename_var vosaline salinity sal 
+        # where each variable has its own instance, and the first entry is what it will be renamed too, 
+        # and the remaining entries are renamed. 
 
 
+        ## xarr_rename_master_dict = {'votemper':'temperature','vosaline':'salinity'}
+
+        xarr_rename_master_dict_in = None
+        if args.rename_var is not None:
+            xarr_rename_master_dict_in = {}
+            for tmpvarrenlst in args.rename_var:
+                
+                if len(tmpvarrenlst)<2:
+                    print('arg error: (rename_var):', tmpvarrenlst) 
+                for tvr in tmpvarrenlst[1:]: xarr_rename_master_dict_in[tvr] = tmpvarrenlst[0]
+
+        
+
+        # If files have more than grid, with differing dimension for each, you can enforce the dimenson for each grid.
+        # For example, the SMHI BAL-MFC NRT system (BALMFCorig) hourly surface files hvae the T, U, V and T_inner grid in the same file. 
+        # Load the smae file in for each grid:
+        # Nslvdev BALMFCorig NS01_SURF_2025020912_1-24H.nc 
+        # --files 1 U NS01_SURF_2025020912_1-24H.nc --files 1 V NS01_SURF_2025020912_1-24H.nc --files 1 Ti NS01_SURF_2025020912_1-24H.nc 
+        # .....   --th 1 dxy 
+        # and enforce which dimensions are used for the T, U, V and T_inner grid (x,y,z and T)
+        #--forced_dim U x x_grid_U y y_grid_U --forced_dim V x x_grid_V y y_grid_V --forced_dim T x x_grid_T y y_grid_T --forced_dim Ti x x_grid_T_inner y y_grid_T_inner
+        #
+        # force_dim_d_in = 
+        # {'U': {'x': 'x_grid_U', 'y': 'y_grid_U'}, 'V': {'x': 'x_grid_V', 'y': 'y_grid_V'}, 'T': {'x': 'x_grid_T', 'y': 'y_grid_T'}, 'x': {'x_grid_T_inner': 'y'}}
+        #
+        # If you are comparing different domains, and this only needs to be added to one dataset, add the dataset number before the grid:
+        #
+        # --forced_dim 1 U x x_grid_U y y_grid_U --forced_dim 1 V x x_grid_V y y_grid_V --forced_dim 1 T x x_grid_T y y_grid_T --forced_dim 1 Ti x x_grid_T_inner y y_grid_T_inner
+        # force_dim_d_in =
+        #   {1: {'1': {'Ti': 'x', 'x_grid_T_inner': 'y'}}, 2: {'1': {'Ti': 'x', 'x_grid_T_inner': 'y'}}}
+
+
+        '''
+        force_dim_d_in = None
+        if args.forced_dim is not None:
+            force_dim_d_in = {}
+            force_dim_d['all_grid'] = True
+            for tmpfdimlst in args.forced_dim:
+                
+                if (len(tmpfdimlst)%2 != 1) | len(tmpfdimlst)<2:
+                    print('arg error: (forced_dim):', tmpvarrenlst) 
+
+                tmpdimgrid = tmpfdimlst[0]
+                force_dim_d_in[tmpdimgrid] = {}
+                nfdimlst=len(tmpfdimlst[1:])/2
+                for tfdi in range(int(nfdimlst)): force_dim_d_in[tmpdimgrid][tmpfdimlst[(tfdi*2)+1]] = tmpfdimlst[(tfdi*2)+2]
+                
+        '''
+
+        #for ii, tmp_datstr in enumerate(dataset_lst):
+        #pdb.set_trace() 
+        force_dim_d_in = None
+        if args.forced_dim is not None:
+            force_dim_d_in = {}
+            for dsi in np.arange(1,nDataset+1): 
+                force_dim_d_in[dsi] = {}
+            #force_dim_d['all_grid'] = True
+            for tmpfdimlst in args.forced_dim:
+                
+                #if (len(tmpfdimlst)%2 != 1) | len(tmpfdimlst)<2:
+                #    print('arg error: (forced_dim):', tmpvarrenlst) 
+
+
+                if len(tmpfdimlst)<2:
+                    print('arg error: (forced_dim):', tmpvarrenlst) 
+                
+                
+                #if the first entry is not a dataset number
+                if tmpfdimlst[0] not in np.arange(nDataset):#
+                    tmpdimgrid = tmpfdimlst[0]
+                    tmp_dsi_lst = np.arange(1,nDataset+1)
+                # if the first entry is a datatset number:
+                else:
+                    tmpdimgrid = tmpfdimlst[1]
+                    tmp_dsi_lst = [tmpfdimlst[0]]
+                    tmpdimgrid = tmpdimgrid[1:]
+                
+                for dsi in tmp_dsi_lst: 
+                    force_dim_d_in[dsi][tmpdimgrid] = {}
+                    nfdimlst=len(tmpfdimlst[1:])/2
+                    for tfdi in range(int(nfdimlst)): force_dim_d_in[dsi][tmpdimgrid][tmpfdimlst[(tfdi*2)+1]] = tmpfdimlst[(tfdi*2)+2]
+                print(tmpfdimlst, force_dim_d_in)    
+
+        #pdb.set_trace()
         nemo_slice_zlev(zlim_max = args.zlim_max,
             fig_lab_d = fig_lab_d,configd = configd,thd = thd,fname_dict = fname_dict,load_second_files = load_second_files,
             clim_sym = clim_sym_in, clim = args.clim, clim_pair = clim_pair_in,hov_time = hov_time_in,

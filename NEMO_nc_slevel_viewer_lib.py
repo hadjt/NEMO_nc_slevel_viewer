@@ -2421,8 +2421,10 @@ def reload_ts_data_comb(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,tim
                     ts_dat_dict[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables[var][:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,jj,ii].load())
                 else:
                     ii_2nd_ind,jj_2nd_ind = iijj_ind[tmp_datstr]['ii'],iijj_ind[tmp_datstr]['jj']
-                    ts_dat_dict[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables[var][:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,jj_2nd_ind,ii_2nd_ind].load())
-
+                    if np.ma.is_masked(ii_2nd_ind*jj_2nd_ind):
+                        ts_dat_dict[tmp_datstr] = ts_dat_dict['Dataset 1'].copy()*0*np.ma.masked
+                    else:
+                        ts_dat_dict[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables[var][:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,jj_2nd_ind,ii_2nd_ind].load())
 
 
 
@@ -3205,23 +3207,16 @@ def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_m
             # {'U': {'x': 'x_grid_U', 'y': 'y_grid_U'}, 'V': {'x': 'x_grid_V', 'y': 'y_grid_V'}, 'T': {'x': 'x_grid_T', 'y': 'y_grid_T'}, 'x': {'x_grid_T_inner': 'y'}}
 
             if force_dim_d is not None:
-                    if tmpgrid in force_dim_d.keys():
-                        if 'x' in force_dim_d[tmpgrid].keys(): tmp_x_dim = force_dim_d[tmpgrid]['x']
-                        if 'y' in force_dim_d[tmpgrid].keys(): tmp_y_dim = force_dim_d[tmpgrid]['y']
-                        if 'z' in force_dim_d[tmpgrid].keys(): tmp_z_dim = force_dim_d[tmpgrid]['z']
-                        if 't' in force_dim_d[tmpgrid].keys(): tmp_t_dim = force_dim_d[tmpgrid]['t']
-                    '''
-                    else:
-                        if tmp_datstr in force_dim_d.keys():
-                            if tmpgrid in force_dim_d[tmp_datstr].keys():
-                                if 'x' in force_dim_d[tmpgrid].keys(): tmp_x_dim = force_dim_d[tmpgrid]['x']
-                                if 'y' in force_dim_d[tmpgrid].keys(): tmp_y_dim = force_dim_d[tmpgrid]['y']
-                                if 'z' in force_dim_d[tmpgrid].keys(): tmp_z_dim = force_dim_d[tmpgrid]['z']
-                                if 't' in force_dim_d[tmpgrid].keys(): tmp_t_dim = force_dim_d[tmpgrid]['t']
-                    '''
+                #pdb.set_trace()
+                th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
+                if th_d_ind in force_dim_d.keys():
+                    if tmpgrid in force_dim_d[th_d_ind].keys():
+                        if 'x' in force_dim_d[th_d_ind][tmpgrid].keys(): tmp_x_dim = force_dim_d[th_d_ind][tmpgrid]['x']
+                        if 'y' in force_dim_d[th_d_ind][tmpgrid].keys(): tmp_y_dim = force_dim_d[th_d_ind][tmpgrid]['y']
+                        if 'z' in force_dim_d[th_d_ind][tmpgrid].keys(): tmp_z_dim = force_dim_d[th_d_ind][tmpgrid]['z']
+                        if 't' in force_dim_d[th_d_ind][tmpgrid].keys(): tmp_t_dim = force_dim_d[th_d_ind][tmpgrid]['t']
             
             tmp_var_names = load_nc_var_name_list(xarr_dict[tmp_datstr][tmpgrid][0], tmp_x_dim, tmp_y_dim, tmp_z_dim,tmp_t_dim)# find the variable names in the nc file # var_4d_mat, var_3d_mat, var_d[1]['T'], nvar4d, nvar3d, nvar, var_dim = 
-            #pdb.set_trace()
             ncdim_d[tmp_datstr][tmpgrid]  = {}
             ncdim_d[tmp_datstr][tmpgrid]['t'] = tmp_t_dim
             ncdim_d[tmp_datstr][tmpgrid]['z'] = tmp_z_dim
