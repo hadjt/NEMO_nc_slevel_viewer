@@ -3205,11 +3205,20 @@ def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_m
             # {'U': {'x': 'x_grid_U', 'y': 'y_grid_U'}, 'V': {'x': 'x_grid_V', 'y': 'y_grid_V'}, 'T': {'x': 'x_grid_T', 'y': 'y_grid_T'}, 'x': {'x_grid_T_inner': 'y'}}
 
             if force_dim_d is not None:
-                if tmpgrid in force_dim_d.keys():
-                    if 'x' in force_dim_d[tmpgrid].keys(): tmp_x_dim = force_dim_d[tmpgrid]['x']
-                    if 'y' in force_dim_d[tmpgrid].keys(): tmp_y_dim = force_dim_d[tmpgrid]['y']
-                    if 'z' in force_dim_d[tmpgrid].keys(): tmp_z_dim = force_dim_d[tmpgrid]['z']
-                    if 't' in force_dim_d[tmpgrid].keys(): tmp_t_dim = force_dim_d[tmpgrid]['t']
+                    if tmpgrid in force_dim_d.keys():
+                        if 'x' in force_dim_d[tmpgrid].keys(): tmp_x_dim = force_dim_d[tmpgrid]['x']
+                        if 'y' in force_dim_d[tmpgrid].keys(): tmp_y_dim = force_dim_d[tmpgrid]['y']
+                        if 'z' in force_dim_d[tmpgrid].keys(): tmp_z_dim = force_dim_d[tmpgrid]['z']
+                        if 't' in force_dim_d[tmpgrid].keys(): tmp_t_dim = force_dim_d[tmpgrid]['t']
+                    '''
+                    else:
+                        if tmp_datstr in force_dim_d.keys():
+                            if tmpgrid in force_dim_d[tmp_datstr].keys():
+                                if 'x' in force_dim_d[tmpgrid].keys(): tmp_x_dim = force_dim_d[tmpgrid]['x']
+                                if 'y' in force_dim_d[tmpgrid].keys(): tmp_y_dim = force_dim_d[tmpgrid]['y']
+                                if 'z' in force_dim_d[tmpgrid].keys(): tmp_z_dim = force_dim_d[tmpgrid]['z']
+                                if 't' in force_dim_d[tmpgrid].keys(): tmp_t_dim = force_dim_d[tmpgrid]['t']
+                    '''
             
             tmp_var_names = load_nc_var_name_list(xarr_dict[tmp_datstr][tmpgrid][0], tmp_x_dim, tmp_y_dim, tmp_z_dim,tmp_t_dim)# find the variable names in the nc file # var_4d_mat, var_3d_mat, var_d[1]['T'], nvar4d, nvar3d, nvar, var_dim = 
             #pdb.set_trace()

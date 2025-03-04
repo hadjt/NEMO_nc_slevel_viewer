@@ -677,7 +677,7 @@ def nemo_slice_zlev(config = 'amm7',
         init_timer.append((datetime.now(),'WW3 added to grid_dict'))
      
 
-    #pdb.set_trace()
+    pdb.set_trace()
     if var is None: var = 'votemper'
     if var not in var_d[1]['mat']: var = var_d[1]['mat'][0]
 
@@ -6764,9 +6764,11 @@ def main():
         # force_dim_d_in = 
         # {'U': {'x': 'x_grid_U', 'y': 'y_grid_U'}, 'V': {'x': 'x_grid_V', 'y': 'y_grid_V'}, 'T': {'x': 'x_grid_T', 'y': 'y_grid_T'}, 'x': {'x_grid_T_inner': 'y'}}
 
+        '''
         force_dim_d_in = None
         if args.forced_dim is not None:
             force_dim_d_in = {}
+            force_dim_d['all_grid'] = True
             for tmpfdimlst in args.forced_dim:
                 
                 if (len(tmpfdimlst)%2 != 1) | len(tmpfdimlst)<2:
@@ -6776,6 +6778,38 @@ def main():
                 force_dim_d_in[tmpdimgrid] = {}
                 nfdimlst=len(tmpfdimlst[1:])/2
                 for tfdi in range(int(nfdimlst)): force_dim_d_in[tmpdimgrid][tmpfdimlst[(tfdi*2)+1]] = tmpfdimlst[(tfdi*2)+2]
+                
+        '''
+
+        #for ii, tmp_datstr in enumerate(dataset_lst):
+        #pdb.set_trace() 
+        force_dim_d_in = None
+        if args.forced_dim is not None:
+            force_dim_d_in = {}
+            #force_dim_d['all_grid'] = True
+            for tmpfdimlst in args.forced_dim:
+                
+                #if (len(tmpfdimlst)%2 != 1) | len(tmpfdimlst)<2:
+                #    print('arg error: (forced_dim):', tmpvarrenlst) 
+
+
+                if len(tmpfdimlst)<2:
+                    print('arg error: (forced_dim):', tmpvarrenlst) 
+
+                tmpdimgrid = tmpfdimlst[0]
+
+                if tmpfdimlst[1] not in np.arange(nDataset):#
+                    tmp_dsi_lst = np.arange(1,nDataset+1)
+                else:
+                    tmp_dsi_lst = [tmpfdimlst[1]]
+                    tmpdimgrid = tmpdimgrid[1:]
+
+                for dsi in tmp_dsi_lst: 
+                    force_dim_d_in[dsi] = {}
+                    force_dim_d_in[dsi][tmpdimgrid] = {}
+                    nfdimlst=len(tmpfdimlst[1:])/2
+                    for tfdi in range(int(nfdimlst)): force_dim_d_in[dsi][tmpdimgrid][tmpfdimlst[(tfdi*2)+1]] = tmpfdimlst[(tfdi*2)+2]
+                
 
         #pdb.set_trace()
 
