@@ -110,6 +110,26 @@ def nemo_slice_zlev(config = 'amm7',
     init_timer = []
     init_timer.append((datetime.now(),'Starting Program'))
 
+
+    '''
+    pdb.set_trace()
+    screen = plt.get_current_fig_manager().window.screen()
+    print(screen.size())
+    >> PySide6.QtCore.QSize(1920, 969)  # size in pixels
+
+    # Rough calculation of size of screen in inches
+    print(screen.size() / screen.physicalDotsPerInch())
+
+    pdb.set_trace()
+    '''
+    ## Old VDI figheight = 12
+    ## Old VDI figwidth = 18
+    figheight = 7
+    figwidth = 15.3
+    
+    figsuptitfontsize = 14*0.8
+    matplotlib.rcParams['font.size'] = 10*0.8
+
     cutout_data = False
     if cutxind is None:
         cutxind = [0,None]
@@ -1358,10 +1378,11 @@ def nemo_slice_zlev(config = 'amm7',
     #import locale
     #locale.setlocale(locale.LC_ALL, 'en_GB.utf8')
 
+
     fig = plt.figure()
-    fig.suptitle(fig_tit_str_int + '\n' + fig_tit_str_lab, fontsize=14)
-    fig.set_figheight(12)
-    fig.set_figwidth(18)
+    fig.suptitle(fig_tit_str_int + '\n' + fig_tit_str_lab, fontsize=figsuptitfontsize)
+    fig.set_figheight(figheight)
+    fig.set_figwidth(figwidth)
     if nbutvar <nvarbutcol:
         plt.subplots_adjust(top=0.88,bottom=0.1,left=0.09,right=0.91,hspace=0.2,wspace=0.065)
     #elif nbutvar >(nvarbutcol):
@@ -3463,10 +3484,28 @@ def nemo_slice_zlev(config = 'amm7',
                 tmpns_xlim = ax[2].get_xlim()
                 tmpew_visible_ind = (ew_slice_dict['x']>=tmpew_xlim[0]) & (ew_slice_dict['x']<=tmpew_xlim[1]) 
                 tmpns_visible_ind = (ns_slice_dict['x']>=tmpns_xlim[0]) & (ns_slice_dict['x']<=tmpns_xlim[1]) 
-                tmp_ew_ylim = np.array([ew_slice_dat[tmpew_visible_ind].min(),ew_slice_dat[tmpew_visible_ind].max()])
-                tmp_ns_ylim = np.array([ns_slice_dat[tmpns_visible_ind].min(),ns_slice_dat[tmpns_visible_ind].max()])
-                ax[1].set_ylim(tmp_ew_ylim)
-                ax[2].set_ylim(tmp_ns_ylim)
+                # catch edgecase where cross hairs don't pass through any water
+                tmp_ew_slice_subset = ew_slice_dat[tmpew_visible_ind]
+                tmp_ns_slice_subset = ns_slice_dat[tmpns_visible_ind]
+                if (tmp_ew_slice_subset.size>0)&(not tmp_ew_slice_subset.mask.all()):
+                    #tmp_ew_ylim = np.array([ew_slice_dat[tmpew_visible_ind].min(),ew_slice_dat[tmpew_visible_ind].max()])
+                    tmp_ew_ylim = np.array([tmp_ew_slice_subset.min(),tmp_ew_slice_subset.max()])
+                    ax[1].set_ylim(tmp_ew_ylim)
+                    #try:
+                    #    ax[1].set_ylim(tmp_ew_ylim)
+                    #except:
+                    #    pdb.set_trace()
+                if (tmp_ns_slice_subset.size>0)&(not tmp_ns_slice_subset.mask.all()):
+                    #tmp_ns_ylim = np.array([ns_slice_dat[tmpns_visible_ind].min(),ns_slice_dat[tmpns_visible_ind].max()])
+                    tmp_ns_ylim = np.array([tmp_ns_slice_subset.min(),tmp_ns_slice_subset.max()])
+                    ax[2].set_ylim(tmp_ns_ylim)
+                    #try: 
+                    #    ax[2].set_ylim(tmp_ns_ylim)
+                    #except: 
+                    #    pdb.set_trace()
+                        
+                del(tmp_ew_slice_subset)
+                del(tmp_ns_slice_subset)
         
             ###################################################################################################
             ### add color lims
