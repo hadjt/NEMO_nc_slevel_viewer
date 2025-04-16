@@ -269,8 +269,8 @@ def subset_mats(pvi,pvj,nlon,nlat,nav_lon,nav_lat,xypos_ii_int_mat, xypos_jj_int
     return s_nav_lon,s_nav_lat,s_ii_mat, s_jj_mat 
                 
 
-def main():
 
+def create_test_amm15_xypos():
     mesh_file='/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/AMM15/amm15.mesh_mask.nc'
     xypos_file='/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/AMM15/xypos_amm15.nc'
     xypos_file_out='/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/AMM15/tmp_out_xypos_amm15.nc'
@@ -289,9 +289,29 @@ def main():
     
 
 
+
+def create_shmi_balmfc_xypos():
     mesh_file='/data/users/jonathan.tinker/shelf_seas/NEMO_nc_slevel_viewer_data/SMHI/mesh_mask.nc'
     xypos_file_out='/data/users/jonathan.tinker/shelf_seas/NEMO_nc_slevel_viewer_data/SMHI/tmp_out_xypos_BALMFCNRT.nc'
     create_xypos(mesh_file,xypos_file_out)
+
+
+def create_bsh_nwsmfc_my_xypos():
+ 
+
+
+    mesh_file='/data/users/jonathan.tinker/shelf_seas/NEMO_nc_slevel_viewer_data/BSH/domain_cfg.nc'
+    xypos_file_out='/data/users/jonathan.tinker/shelf_seas/NEMO_nc_slevel_viewer_data/BSH/tmp_out_xypos_BSH_NWSMFC_MY.nc'
+    create_xypos(mesh_file,xypos_file_out)
+
     
-main()
+    
+def main():
+    #create_test_amm15_xypos()
+    #create_shmi_balmfc_xypos()
+    create_bsh_nwsmfc_my_xypos()
+
+if __name__ == "__main__":
+    main()
+
 

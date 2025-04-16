@@ -698,12 +698,19 @@ def nemo_slice_zlev(config = 'amm7',
      
 
     #pdb.set_trace()
-    if var is None: var = 'votemper'
+    if var is None: 
+        if 'votemper' in var_d[1]['mat']:
+            var = 'votemper'
+        else:
+            var = var_d[1]['mat'][0]
+
     if var not in var_d[1]['mat']: var = var_d[1]['mat'][0]
 
     nice_varname_dict = {}
     for tmpvar in var_d[1]['mat']: nice_varname_dict[tmpvar] = tmpvar
 
+    nice_varname_dict['thetao'] = 'Temperature'
+    nice_varname_dict['thetao'] = 'Temperature'
     nice_varname_dict['votemper'] = 'Temperature'
     nice_varname_dict['vosaline'] = 'Salinity'
     nice_varname_dict['pea'] = 'Potential Energy Anomaly'
@@ -1803,7 +1810,7 @@ def nemo_slice_zlev(config = 'amm7',
     # if a secondary data set, det default behaviour. 
     if load_second_files: func_but_text_han[secdataset_proc].set_color('darkgreen')
 
-    func_but_text_han['waiting'] = clickax.text(0.01,0.975,'Working', color = 'r') # clwaithandles
+    func_but_text_han['waiting'] = clickax.text(0.01,0.995,'Working', color = 'r', va = 'top') # clwaithandles
     
     # Set intial mode to be Click
     func_but_text_han['Click'].set_color('gold')
@@ -2236,8 +2243,8 @@ def nemo_slice_zlev(config = 'amm7',
             arg_output_text = arg_output_text + ' --fig_fname_lab %s'%fig_lab_d['Dataset 1']
             arg_output_text = arg_output_text + ' --lon %f'%lon_d[1][jj,ii]
             arg_output_text = arg_output_text + ' --lat %f'%lat_d[1][jj,ii]
-            if xlim is not None: arg_output_text = arg_output_text + ' --xlim %f %f'%(xlim[0],xlim[1])
-            if ylim is not None: arg_output_text = arg_output_text + ' --ylim %f %f'%(ylim[0],ylim[1])
+            if cur_xlim is not None: arg_output_text = arg_output_text + ' --xlim %f %f'%(cur_xlim[0],cur_xlim[1])
+            if cur_ylim is not None: arg_output_text = arg_output_text + ' --ylim %f %f'%(cur_ylim[0],cur_ylim[1])
             arg_output_text = arg_output_text + ' --date_ind %s'%time_datetime[ti].strftime(date_fmt)
             arg_output_text = arg_output_text + ' --date_fmt %s'%date_fmt
             arg_output_text = arg_output_text + ' --var %s'%var
@@ -4149,10 +4156,14 @@ def nemo_slice_zlev(config = 'amm7',
             is_in_axes = False
             
             # convert the mouse click into data indices, and report which axes was clicked
+            '''
             try:
                 sel_ax,sel_ii,sel_jj,sel_ti,sel_zz, sel_xlocval,sel_ylocval = indices_from_ginput_ax(ax,clii,cljj, thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
             except:
+                print('indices_from_ginput_ax failed',clii,cljj )
                 pdb.set_trace()
+            '''
+            sel_ax,sel_ii,sel_jj,sel_ti,sel_zz, sel_xlocval,sel_ylocval = indices_from_ginput_ax(ax,clii,cljj, thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
             
                 
             if verbose_debugging: print("selected sel_ax = %s,sel_ii = %s,sel_jj = %s,sel_ti = %s,sel_zz = %s"%(sel_ax,sel_ii,sel_jj,sel_ti,sel_zz))
@@ -4261,7 +4272,7 @@ def nemo_slice_zlev(config = 'amm7',
                         if but_name in var_but_mat:
                             var = but_name
 
-                            func_but_text_han['waiting'].set_text('Waiting: ' + but_name)
+                            func_but_text_han['waiting'].set_text('Waiting:\n' + but_name)
 
                             # redraw canvas
                             fig.canvas.draw_idle()
@@ -4311,7 +4322,7 @@ def nemo_slice_zlev(config = 'amm7',
                         is_in_axes = True
                         print('but_name:',but_name)
 
-                        func_but_text_han['waiting'].set_text('Waiting: ' + but_name)
+                        func_but_text_han['waiting'].set_text('Waiting:\n' + but_name)
 
                         # redraw canvas
                         fig.canvas.draw_idle()
@@ -4402,7 +4413,9 @@ def nemo_slice_zlev(config = 'amm7',
                                                     cur_ylim = dcur_ylim*(dcur_ylim/dcur_cl_ylim)*np.array([-0.5,0.5])+mncur_ylim
 
 
-
+                                
+                                if verbose_debugging: print(cur_xlim)
+                                if verbose_debugging: print(cur_ylim)
                                 func_but_text_han['Zoom'].set_color('k')
                                 # redraw canvas
                                 fig.canvas.draw_idle()

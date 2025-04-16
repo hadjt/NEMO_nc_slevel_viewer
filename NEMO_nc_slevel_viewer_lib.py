@@ -71,8 +71,8 @@ def load_nc_dims(tmp_data):
 
     poss_zdims = ['depth','deptht','depthu','depthv','depthw','z', 'nc']
     poss_tdims = ['time_counter','time','t']
-    poss_xdims = ['x','X','lon','ni','x_grid_T','x_grid_U','x_grid_V']
-    poss_ydims = ['y','Y','lat','nj','y_grid_T','y_grid_U','y_grid_V']
+    poss_xdims = ['x','X','lon','ni','x_grid_T','x_grid_U','x_grid_V', 'lon','longitude']
+    poss_ydims = ['y','Y','lat','nj','y_grid_T','y_grid_U','y_grid_V', 'lat','latitude']
     #pdb.set_trace()
     if x_dim not in nc_dims: 
         x_dim_lst = [i for i in nc_dims if i in poss_xdims]
