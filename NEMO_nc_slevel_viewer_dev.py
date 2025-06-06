@@ -2007,8 +2007,10 @@ def nemo_slice_zlev(config = 'amm7',
                 clylim = np.array(tmpax.get_ylim())
                 normxloc = (clii - tmppos.x0 ) / (tmppos.x1 - tmppos.x0)
                 normyloc = (cljj - tmppos.y0 ) / (tmppos.y1 - tmppos.y0)
-                xlocval = normxloc*clxlim.ptp() + clxlim.min()
-                ylocval = normyloc*clylim.ptp() + clylim.min()
+                #xlocval = normxloc*clxlim.ptp() + clxlim.min()
+                #ylocval = normyloc*clylim.ptp() + clylim.min()
+                xlocval = normxloc*np.ptp(clxlim) + clxlim.min()
+                ylocval = normyloc*np.ptp(clylim) + clylim.min()
                 """
                 if (thd[1]['dx'] != 1):
                     if configd[1].upper() not in ['AMM7','AMM15', 'CO9P2', 'ORCA025','ORCA025EXT','GULF18','ORCA12','ORCA025ICE','ORCA12ICE']:
@@ -2096,7 +2098,8 @@ def nemo_slice_zlev(config = 'amm7',
                         print('config not supported:', configd[1])
                         pdb.set_trace()
                     '''
-                    sel_zz = int( (1-normyloc)*clylim.ptp() + clylim.min() )
+                    #sel_zz = int( (1-normyloc)*clylim.ptp() + clylim.min() )
+                    sel_zz = int( (1-normyloc)*np.ptp(clylim) + clylim.min() )
                     
                     
                 elif ai in [2]:
@@ -2117,13 +2120,15 @@ def nemo_slice_zlev(config = 'amm7',
                         print('config not supported:', configd[1])
                         #pdb.set_trace()
                         '''
-                    sel_zz = int( (1-normyloc)*clylim.ptp() + clylim.min() )
+                    #sel_zz = int( (1-normyloc)*clylim.ptp() + clylim.min() )
+                    sel_zz = int( (1-normyloc)*np.ptp(clylim) + clylim.min() )
 
                 elif ai in [3]:
                     # if in hov/time series, change map, and slices
 
                     # re calculate depth values, as y scale reversed, 
-                    sel_zz = int( (1-normyloc)*clylim.ptp() + clylim.min() )
+                    #sel_zz = int( (1-normyloc)*clylim.ptp() + clylim.min() )
+                    sel_zz = int( (1-normyloc)*np.ptp(clylim) + clylim.min() )
                     #pdb.set_trace()
 
 
@@ -3334,7 +3339,8 @@ def nemo_slice_zlev(config = 'amm7',
                 #pdb.set_trace()
                 pf_xvals_min = np.ma.array(pf_xvals).ravel().min()
                 pf_xvals_max = np.ma.array(pf_xvals).ravel().max()
-                pf_xvals_ptp = np.ma.array(pf_xvals).ravel().ptp()
+                #pf_xvals_ptp = np.ma.array(pf_xvals).ravel().ptp()
+                pf_xvals_ptp = np.ptp(np.ma.array(pf_xvals).ravel())
                 #pf_xlim = np.ma.array([np.ma.array(pf_xvals).ravel().min(), np.ma.array(pf_xvals).ravel().max()])
                 pf_xlim = np.ma.array([pf_xvals_min-(0.05*pf_xvals_ptp),pf_xvals_max+(0.05*pf_xvals_ptp)])
                 #try:
@@ -3858,7 +3864,8 @@ def nemo_slice_zlev(config = 'amm7',
                     vis_pnts_vis = np.sqrt(get_pnts_pcolor_in_region(ax = ax[0]))
 
                     # Sqrt of product of axes range (degrees lon * degrees lat) in the current map axis
-                    vis_xylim_vis=np.sqrt(tmpxlim.ptp()*tmpylim.ptp())
+                    #vis_xylim_vis=np.sqrt(tmpxlim.ptp()*tmpylim.ptp())
+                    vis_xylim_vis=np.sqrt(np.ptp(tmpxlim)*np.ptp(tmpylim))
 
                     # how many U/V points to skip to give ~vis_barb_per_side (50) current barbs per side.
                     vis_ev = int(   np.maximum(   vis_pnts_vis//vis_barb_per_side,   1)   )
@@ -4408,14 +4415,18 @@ def nemo_slice_zlev(config = 'amm7',
                                                     # If right click (initially, or last time), zoom out. 
                                                     #pdb.set_trace()
                                                     #current width of the x and y axis
-                                                    dcur_xlim = cur_xlim.ptp()
-                                                    dcur_ylim = cur_ylim.ptp()
+                                                    #dcur_xlim = cur_xlim.ptp()
+                                                    #dcur_ylim = cur_ylim.ptp()
+                                                    dcur_xlim = np.ptp(cur_xlim)
+                                                    dcur_ylim = np.ptp(cur_ylim)
                                                     #middle of current the x and y axis
                                                     mncur_xlim = cur_xlim.mean()
                                                     mncur_ylim = cur_ylim.mean()
                                                     #width of the clicked x and y points
-                                                    dcur_cl_xlim = cl_cur_xlim.ptp()
-                                                    dcur_cl_ylim = cl_cur_ylim.ptp()
+                                                    #dcur_cl_xlim = cl_cur_xlim.ptp()
+                                                    #dcur_cl_ylim = cl_cur_ylim.ptp()
+                                                    dcur_cl_xlim = np.ptp(cl_cur_xlim)
+                                                    dcur_cl_ylim = np.ptp(cl_cur_ylim)
                                                     
                                                     # scale up axis width with dcur_xlim/dcur_cl_xlim, and centre.
                                                     cur_xlim = dcur_xlim*(dcur_xlim/dcur_cl_xlim)*np.array([-0.5,0.5])+mncur_xlim
@@ -5002,7 +5013,8 @@ def nemo_slice_zlev(config = 'amm7',
                                         
                                         #tmpax = axxs[xi]
                                         for xi in xsect_pnt_ind_dict[tmp_datstr]: axxs[axi].axvline(xi,color = 'k', alpha = 0.5, ls = '--') 
-                                        for xi in xsect_pnt_ind_dict[tmp_datstr]: axxs[axi].text(xi,xs_ylim[0] - xs_ylim.ptp()*0.9   ,lon_lat_to_str(xsect_lon_dict[tmp_datstr][xi],xsect_lat_dict[tmp_datstr][xi])[0], rotation = 270, ha = 'left', va = 'top')
+                                        #for xi in xsect_pnt_ind_dict[tmp_datstr]: axxs[axi].text(xi,xs_ylim[0] - xs_ylim.ptp()*0.9   ,lon_lat_to_str(xsect_lon_dict[tmp_datstr][xi],xsect_lat_dict[tmp_datstr][xi])[0], rotation = 270, ha = 'left', va = 'top')
+                                        for xi in xsect_pnt_ind_dict[tmp_datstr]: axxs[axi].text(xi,xs_ylim[0] - np.ptp(xs_ylim)*0.9   ,lon_lat_to_str(xsect_lon_dict[tmp_datstr][xi],xsect_lat_dict[tmp_datstr][xi])[0], rotation = 270, ha = 'left', va = 'top')
                                         plt.colorbar(paxxs[axi], ax = axxs[axi])
                                     plt.colorbar(paxxs[2], ax = axxs[2])
                                     for xi,tmp_datstr in enumerate(Dataset_lst): set_perc_clim_pcolor_in_region(5,95,ax = axxs[axi])
@@ -5051,7 +5063,8 @@ def nemo_slice_zlev(config = 'amm7',
                                     for axi,tmp_datstr in enumerate(Dataset_lst): 
                                         #tmpax = axxs[axi]
                                         for xi in xsect_pnt_ind_dict[tmp_datstr]: axxs[axi].axvline(xi,color = 'k', alpha = 0.5, ls = '--') 
-                                        for xi in xsect_pnt_ind_dict[tmp_datstr]: axxs[axi].text(xi,xs_ylim[0] - xs_ylim.ptp()*0.9   ,lon_lat_to_str(xsect_lon_dict[tmp_datstr][xi],xsect_lat_dict[tmp_datstr][xi])[0], rotation = 270, ha = 'left', va = 'top')
+                                        #for xi in xsect_pnt_ind_dict[tmp_datstr]: axxs[axi].text(xi,xs_ylim[0] - xs_ylim.ptp()*0.9   ,lon_lat_to_str(xsect_lon_dict[tmp_datstr][xi],xsect_lat_dict[tmp_datstr][xi])[0], rotation = 270, ha = 'left', va = 'top')
+                                        for xi in xsect_pnt_ind_dict[tmp_datstr]: axxs[axi].text(xi,xs_ylim[0] - np.ptp(xs_ylim)*0.9   ,lon_lat_to_str(xsect_lon_dict[tmp_datstr][xi],xsect_lat_dict[tmp_datstr][xi])[0], rotation = 270, ha = 'left', va = 'top')
                                         plt.colorbar(paxxs[axi], ax = axxs[axi])
                                     for xi,tmp_datstr in enumerate(Dataset_lst): set_perc_clim_pcolor_in_region(5,95,ax = axxs[axi])
                                     
@@ -5109,9 +5122,11 @@ def nemo_slice_zlev(config = 'amm7',
                                 for xi in xsect_pnt_ind_dict[xsect_secdataset_proc]:                            axxs[0].axvline(xi,color = 'k', alpha = 0.5, ls = '--') 
 
                                 if var_dim[var] == 4:
-                                    for xi in xsect_pnt_ind_dict[xsect_secdataset_proc]:         axxs[0].text(xi,xs_ylim[0] - xs_ylim.ptp()*0.9,lon_lat_to_str(xsect_lon_dict[tmp_datstr][xi],xsect_lat_dict[tmp_datstr][xi])[0], rotation = 270, ha = 'left', va = 'top')
+                                    #for xi in xsect_pnt_ind_dict[xsect_secdataset_proc]:         axxs[0].text(xi,xs_ylim[0] - xs_ylim.ptp()*0.9,lon_lat_to_str(xsect_lon_dict[tmp_datstr][xi],xsect_lat_dict[tmp_datstr][xi])[0], rotation = 270, ha = 'left', va = 'top')
+                                    for xi in xsect_pnt_ind_dict[xsect_secdataset_proc]:         axxs[0].text(xi,xs_ylim[0] - np.ptp(xs_ylim)*0.9,lon_lat_to_str(xsect_lon_dict[tmp_datstr][xi],xsect_lat_dict[tmp_datstr][xi])[0], rotation = 270, ha = 'left', va = 'top')
                                 elif var_dim[var] == 3:
-                                    for xi in xsect_pnt_ind_dict[xsect_secdataset_proc]:         axxs[0].text(xi,xs_ylim[0] + xs_ylim.ptp()*0.9,lon_lat_to_str(xsect_lon_dict[tmp_datstr][xi],xsect_lat_dict[tmp_datstr][xi])[0], rotation = 270, ha = 'left', va = 'top')
+                                    #for xi in xsect_pnt_ind_dict[xsect_secdataset_proc]:         axxs[0].text(xi,xs_ylim[0] + xs_ylim.ptp()*0.9,lon_lat_to_str(xsect_lon_dict[tmp_datstr][xi],xsect_lat_dict[tmp_datstr][xi])[0], rotation = 270, ha = 'left', va = 'top')
+                                    for xi in xsect_pnt_ind_dict[xsect_secdataset_proc]:         axxs[0].text(xi,xs_ylim[0] + np.ptp(xs_ylim)*0.9,lon_lat_to_str(xsect_lon_dict[tmp_datstr][xi],xsect_lat_dict[tmp_datstr][xi])[0], rotation = 270, ha = 'left', va = 'top')
                                 #axxs[0].set_xlim([0,xs_xlim[1]*1.01])
                                 #pdb.set_trace()
 
@@ -5364,9 +5379,11 @@ def nemo_slice_zlev(config = 'amm7',
                             elif mouse_info['button'].name == 'RIGHT':
                                 clim = np.array(get_clim_pcolor(ax = ax[0]))
                                 if climnorm is None:
-                                    clim = np.array([clim.mean() - clim.ptp(),clim.mean() + clim.ptp()])
+                                    #clim = np.array([clim.mean() - clim.ptp(),clim.mean() + clim.ptp()])
+                                    clim = np.array([clim.mean() - np.ptp(clim),clim.mean() + np.ptp(clim)])
                                 else:
-                                    clim = np.log10(np.array([(10**clim).mean() - (10**clim).ptp(),(10**clim).mean() + (10**clim).ptp()]))
+                                    #clim = np.log10(np.array([(10**clim).mean() - (10**clim).ptp(),(10**clim).mean() + (10**clim).ptp()]))
+                                    clim = np.log10(np.array([(10**clim).mean() - np.ptp((10**clim)),(10**clim).mean() + np.ptp((10**clim))]))
                         
                             '''
 

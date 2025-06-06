@@ -639,7 +639,8 @@ def interp1dmat_create_weight(gdept,z_lev,use_xarray_gdept = False):
         gdept_ma = gdept
     gdept_ma_min = gdept_ma.min(axis = 0)
     gdept_ma_max = gdept_ma.max(axis = 0)
-    gdept_ma_ptp = gdept_ma.ptp(axis = 0)
+    #gdept_ma_ptp = gdept_ma.ptp(axis = 0)
+    gdept_ma_ptp = np.ptp(gdept_ma.ptp,axis = 0)
 
     if verbose_debugging: print('x_mat, y_mat', datetime.now())
 
@@ -3352,7 +3353,8 @@ def remove_extra_end_file_dict(fname_dict):
             nfliles_per_grid_lst.append(len(fname_dict[tmp_datstr][tmpgrid]))
         nfliles_per_grid_mat = np.array(nfliles_per_grid_lst)
 
-        if nfliles_per_grid_mat.ptp()>0:
+        #if nfliles_per_grid_mat.ptp()>0:
+        if np.ptp(nfliles_per_grid_mat)>0:
             print('\n\nDiffering number of files between dataset, for grid %s.\nRemoving extra end files.\n\nPress c to continue'%tmpgrid)
             pdb.set_trace()
             first_nfiles = nfliles_per_grid_mat.min()
