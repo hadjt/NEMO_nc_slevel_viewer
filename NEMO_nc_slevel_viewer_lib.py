@@ -536,10 +536,34 @@ def get_pnts_pcolor_in_region(illtype = 'pcolor', ax = None):
 
 
 
-def field_gradient_2d(tmpdat,e1t,e2t,dir_grad = False):
+def field_gradient_2d(tmpdat_in,e1t_in,e2t_in,dir_grad = False,  do_mask = False,curr_griddict= None):
+
+    # Copy inputs, so can't affect originals.
+    e1t = e1t_in.copy()
+    e2t = e2t_in.copy()
+    tmpdat = tmpdat_in.copy()
+
+    # Where land suppression is used, can have bad values in land processors (i.e. 1e308).
+    # if negative cell width/height, set to zero. if greater then 1000km, set to zero
+    e1t[e1t<0] = 0
+    e1t[e1t>1e6] = 0
+    e2t[e2t<0] = 0
+    e2t[e2t>1e6] = 0
+
+    # if masking land points, set land cell width/height to zero, and land data points to np.ma.masked
+    if do_mask:
+        tmpmask = curr_griddict['tmask'][0] == False
+
+        e1t[tmpmask] = 0
+        e1t[tmpmask] = 0
+        e2t[tmpmask] = 0
+        e2t[tmpmask] = 0
+        tmpdat = np.ma.array(tmpdat, mask  = tmpmask )
+
 
 
     nlat,nlon = e1t.shape
+
 
     xs = e1t.cumsum(axis = 1)
     ys = e2t.cumsum(axis = 0)
@@ -551,15 +575,15 @@ def field_gradient_2d(tmpdat,e1t,e2t,dir_grad = False):
 
 
     dtmpdat_dkm_out = np.ma.zeros((nlat,nlon))
-    dtmpdat_dx_c_out = np.ma.zeros((nlat,nlon))
-    dtmpdat_dy_c_out = np.ma.zeros((nlat,nlon))
     dtmpdat_dkm_out[:] = np.ma.masked
-    dtmpdat_dx_c_out[:] = np.ma.masked
-    dtmpdat_dy_c_out[:] = np.ma.masked
     dtmpdat_dkm_out[1:-1,1:-1] = dtmpdat_dkm
-    dtmpdat_dx_c_out[1:-1,1:-1] = dtmpdat_dx_c
-    dtmpdat_dy_c_out[1:-1,1:-1] = dtmpdat_dy_c
     if dir_grad:
+        dtmpdat_dx_c_out = np.ma.zeros((nlat,nlon))
+        dtmpdat_dy_c_out = np.ma.zeros((nlat,nlon))
+        dtmpdat_dx_c_out[:] = np.ma.masked
+        dtmpdat_dy_c_out[:] = np.ma.masked
+        dtmpdat_dx_c_out[1:-1,1:-1] = dtmpdat_dx_c
+        dtmpdat_dy_c_out[1:-1,1:-1] = dtmpdat_dy_c
         return dtmpdat_dkm_out, dtmpdat_dx_c_out, dtmpdat_dy_c_out
     else:
         return dtmpdat_dkm_out

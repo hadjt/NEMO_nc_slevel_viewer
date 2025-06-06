@@ -2776,13 +2776,14 @@ def nemo_slice_zlev(config = 'amm7',
                                 pax.append(ax[0].pcolormesh(map_dat_dict['x'][::pdy,::pdx],map_dat_dict['y'][::pdy,::pdx],map_dat[::pdy,::pdx],cmap = curr_cmap,norm = climnorm, rasterized = True))
                             if var_dim[var] == 4:
                         '''
-                        map_dat_dict[tmp_datstr] = field_gradient_2d(map_dat_dict[tmp_datstr], thd[1]['dx']*grid_dict['Dataset 1']['e1t'],thd[1]['dx']*grid_dict['Dataset 1']['e2t']) # scale up widths between grid boxes
+                        #pdb.set_trace()
+                        map_dat_dict[tmp_datstr] = field_gradient_2d(map_dat_dict[tmp_datstr], thd[1]['dx']*grid_dict['Dataset 1']['e1t'],thd[1]['dx']*grid_dict['Dataset 1']['e2t'], do_mask = do_mask, curr_griddict = grid_dict[tmp_datstr]) # scale up widths between grid boxes
                         
                         # if Sec_regrid is true, do gradient on _Sec_regrid in well, not instead, as needed for clim calcs
                         if Sec_regrid & (tmp_datstr!= 'Dataset 1'):
                             th_d_ind = int(tmp_datstr[8:])
                             #pdb.set_trace()
-                            map_dat_dict[tmp_datstr + '_Sec_regrid'] = field_gradient_2d(map_dat_dict[tmp_datstr + '_Sec_regrid'], thd[th_d_ind]['dx']*grid_dict[tmp_datstr]['e1t'],thd[th_d_ind]['dx']*grid_dict[tmp_datstr]['e2t']) # scale up widths between grid boxes
+                            map_dat_dict[tmp_datstr + '_Sec_regrid'] = field_gradient_2d(map_dat_dict[tmp_datstr + '_Sec_regrid'], thd[th_d_ind]['dx']*grid_dict[tmp_datstr]['e1t'],thd[th_d_ind]['dx']*grid_dict[tmp_datstr]['e2t'], do_mask = do_mask, curr_griddict = grid_dict[tmp_datstr]) # scale up widths between grid boxes
 
                     
                     if do_memory & do_timer: timer_lst.append(('Calculated Grad of map_dat_dict',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
@@ -6287,7 +6288,7 @@ def main():
             elif args.preload_data.upper() in ['FALSE','F']:
                 preload_data_in = bool(False)
             else:                
-                print(args.preload_data)
+                print('preload_data',args.preload_data)
                 pdb.set_trace()
 
         if args.allow_diff_time is None:
@@ -6298,7 +6299,7 @@ def main():
             elif args.allow_diff_time.upper() in ['FALSE','F']:
                 allow_diff_time_in = bool(False)
             else:                
-                print(args.allow_diff_time)
+                print('allow_diff_time',args.allow_diff_time)
                 pdb.set_trace()
 
         if args.clim_sym is None:
@@ -6309,7 +6310,7 @@ def main():
             elif args.clim_sym.upper() in ['FALSE','F']:
                 clim_sym_in = bool(False)
             else:                
-                print(args.clim_sym)
+                print('clim_sym',args.clim_sym)
                 pdb.set_trace()
 
         if args.clim_pair is None:
@@ -6320,7 +6321,7 @@ def main():
             elif args.clim_pair.upper() in ['FALSE','F']:
                 clim_pair_in = bool(False)
             else:                
-                print(args.clim_pair)
+                print('clim_pair',args.clim_pair)
                 pdb.set_trace()
 
         if args.hov_time is None:
@@ -6331,7 +6332,7 @@ def main():
             elif args.hov_time.upper() in ['FALSE','F']:
                 hov_time_in = bool(False)
             else:                
-                print(args.hov_time)
+                print('hov_time',args.hov_time)
                 pdb.set_trace()
 
         if args.fig_cutout is None:
@@ -6342,7 +6343,7 @@ def main():
             elif args.fig_cutout.upper() in ['FALSE','F']:
                 fig_cutout_in = bool(False)
             else:                
-                print(args.fig_cutout)
+                print('fig_cutout',args.fig_cutout)
                 pdb.set_trace()
 
         if args.justplot is None:
@@ -6353,7 +6354,7 @@ def main():
             elif args.justplot.upper() in ['FALSE','F']:
                 justplot_in = bool(False)
             else:                
-                print(args.justplot)
+                print('justplot',args.justplot)
                 pdb.set_trace()
 
         if args.use_cmocean is None:
@@ -6364,7 +6365,7 @@ def main():
             elif args.use_cmocean.upper() in ['FALSE','F']:
                 use_cmocean_in = bool(False)
             else:                
-                print(args.use_cmocean)
+                print('use_cmocean',args.use_cmocean)
                 pdb.set_trace()
 
         if args.verbose_debugging is None:
@@ -6398,7 +6399,7 @@ def main():
             elif args.do_memory.upper() in ['FALSE','F']:
                 do_memory_in = bool(False)
             else:                
-                print(args.do_timer)
+                print('do_timer',args.do_memory)
                 pdb.set_trace()
 
         if args.do_ensemble is None:
@@ -6409,7 +6410,7 @@ def main():
             elif args.do_ensemble.upper() in ['FALSE','F']:
                 do_ensemble_in = bool(False)
             else:                
-                print(args.do_timer)
+                print('do_timer',args.do_timer)
                 pdb.set_trace()
  
  
@@ -6421,7 +6422,7 @@ def main():
             elif args.do_mask.upper() in ['FALSE','F']:
                 do_mask_in = bool(False)
             else:                
-                print(args.do_timer)
+                print('do_mask',args.do_mask)
                 pdb.set_trace()
         if args.do_grad is None:
             do_grad_in=0
@@ -6436,7 +6437,7 @@ def main():
             elif args.do_cont.upper() in ['FALSE','F']:
                 do_cont_in = bool(False)
             else:                
-                print(args.do_cont)
+                print('do_cont',args.do_cont)
                 pdb.set_trace()
 
 
@@ -6449,7 +6450,7 @@ def main():
             elif args.trim_extra_files.upper() in ['FALSE','F']:
                 trim_extra_files = bool(False)
             else:                
-                print(args.trim_extra_files)
+                print('trim_extra_files',args.trim_extra_files)
                 pdb.set_trace()
  
 
@@ -6462,7 +6463,7 @@ def main():
             elif args.trim_files.upper() in ['FALSE','F']:
                 trim_files = bool(False)
             else:                
-                print(args.trim_files)
+                print('trim_files',args.trim_files)
                 pdb.set_trace()
  
 
@@ -6476,7 +6477,7 @@ def main():
             elif args.Obs_hide.upper() in ['FALSE','F']:
                 Obs_hide_in = bool(False)
             else:                
-                print(args.Obs_hide)
+                print('Obs_hide',args.Obs_hide)
                 pdb.set_trace()
 
         if args.use_xarray_gdept is None:
@@ -6487,7 +6488,7 @@ def main():
             elif args.use_xarray_gdept.upper() in ['FALSE','F']:
                 use_xarray_gdept_in = bool(False)
             else:                
-                print(args.use_xarray_gdept)
+                print('use_xarray_gdept',args.use_xarray_gdept)
                 pdb.set_trace()
 
 
