@@ -143,9 +143,12 @@ def nemo_slice_zlev(config = 'amm7',
     
 
     
+    ens_stat_lst = ['EnsMean','EnsStd','EnsVar','EnsCnt']
     if do_ensemble:
         Ens_stat = None
-        ens_stat_lst = ['EnsMean','EnsStd','EnsVar','EnsCnt'] 
+    #    ens_stat_lst = ['EnsMean','EnsStd','EnsVar','EnsCnt']
+    #else:
+    #    ens_stat_lst = []
 
     # if arguement Obs_dict is not None, set do_Obs to true
     #Obs_dict = Obs_fname
@@ -5677,15 +5680,15 @@ def nemo_slice_zlev(config = 'amm7',
                         #elif do_ensemble:
                         #    if but_name in ens_stat_lst:
                         elif but_name in ens_stat_lst:
-                            if do_ensemble:
+                            #if do_ensemble:
                         
-                                Ens_stat = but_name
-                                for tmpsecdataset_proc in secdataset_proc_list + ens_stat_lst: func_but_text_han[tmpsecdataset_proc].set_color('k')
-                                func_but_text_han[but_name].set_color('darkgreen')
+                            Ens_stat = but_name
+                            for tmpsecdataset_proc in secdataset_proc_list + ens_stat_lst: func_but_text_han[tmpsecdataset_proc].set_color('k')
+                            func_but_text_han[but_name].set_color('darkgreen')
 
-                                if Ens_stat not in ['EnsMean']:
-                                    clim_pair = False
-                                    func_but_text_han['Clim: pair'].set_color('k')
+                            if Ens_stat not in ['EnsMean']:
+                                clim_pair = False
+                                func_but_text_han['Clim: pair'].set_color('k')
                                 
 
 
@@ -6372,7 +6375,7 @@ def main():
             elif args.verbose_debugging.upper() in ['FALSE','F']:
                 verbose_debugging_in = bool(False)
             else:                
-                print(args.verbose_debugging)
+                print('verbose_debugging: ',args.verbose_debugging)
                 pdb.set_trace()
 
         if args.do_timer is None:
@@ -6383,7 +6386,7 @@ def main():
             elif args.do_timer.upper() in ['FALSE','F']:
                 do_timer_in = bool(False)
             else:                
-                print(args.do_timer)
+                print('do_timer',args.do_timer)
                 pdb.set_trace()
  
 
