@@ -17,6 +17,9 @@ import os.path
 
 
 
+
+from NEMO_nc_slevel_viewer_lib import int_ind_wgt_from_xypos, ind_from_lon_lat,int_ind_wgt_from_xypos,int_ind_wgt_from_xypos_func,load_xypos,cut_down_xypos
+
 def create_xypos(mesh_file,xypos_file_out, xypos_file = None, DLONLAT = 0.1,
     LAT_min = None,
     LAT_max = None, 
@@ -24,14 +27,16 @@ def create_xypos(mesh_file,xypos_file_out, xypos_file = None, DLONLAT = 0.1,
     LON_max = None,
     DLAT = None,
     DLON = None,
+    nav_lon = None,
+    nav_lat = None,
     n_cutout_size = 15):
 
-
+    if (nav_lon is None) & (nav_lat is None):
     # Read lon and lat data from mesh file
-    rootgrp = Dataset(mesh_file, 'r')
-    nav_lon = rootgrp.variables['glamt'][0,:,:]
-    nav_lat = rootgrp.variables['gphit'][0,:,:]
-    rootgrp.close()
+        rootgrp = Dataset(mesh_file, 'r')
+        nav_lon = rootgrp.variables['glamt'][0,:,:]
+        nav_lat = rootgrp.variables['gphit'][0,:,:]
+        rootgrp.close()
 
     # extract shape, and min and max values
     n_nav_lat, n_nav_lon = nav_lon.shape
@@ -248,6 +253,7 @@ variables:
     rootgrp_out.close()
 
 
+    print ('Finished creating %s at %s'%(xypos_file_out, datetime.now()))
     pdb.set_trace()
 
 
@@ -269,7 +275,29 @@ def subset_mats(pvi,pvj,nlon,nlat,nav_lon,nav_lat,xypos_ii_int_mat, xypos_jj_int
     return s_nav_lon,s_nav_lat,s_ii_mat, s_jj_mat 
                 
 
+def create_OSTIA_xypos():
+    xypos_file_out='/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/OSTIA/xypos_OSTIA.nc'
+    eg_ostia_file = '/data/users/ofrd-mopa/ostia/data/netcdf/2022/01/20220131120000-UKMO-L4_GHRSST-SSTfnd-OSTIA-GLOB-v02.0-fv02.0.nc'
+    
+    rootgrp = Dataset(eg_ostia_file, 'r')
+    ostia_lon = rootgrp.variables['lon'][:]
+    ostia_lat = rootgrp.variables['lat'][:]
+    rootgrp.close()
+    DLAT = 0.1
+    DLON = 0.1
+    
+    LAT_min = ostia_lat.min()#40
+    LAT_max = ostia_lat.max()#70  
+    LON_min = ostia_lon.min()#-30
+    LON_max = ostia_lon.max()#20
+    nav_lon, nav_lat = np.meshgrid(ostia_lon,ostia_lat)
 
+    pdb.set_trace()
+
+    #create_xypos(mesh_file,xypos_file_out,LAT_min = LAT_min,LAT_max = LAT_max,LON_min = LON_min,LON_max = LON_max,DLAT = DLAT,DLON = DLON)
+    create_xypos('',xypos_file_out,LAT_min = LAT_min,LAT_max = LAT_max,LON_min = LON_min,LON_max = LON_max,DLAT = DLAT,DLON = DLON,nav_lon = nav_lon,nav_lat = nav_lat)
+    
+  
 def create_test_amm15_xypos():
     mesh_file='/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/AMM15/amm15.mesh_mask.nc'
     xypos_file='/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/AMM15/xypos_amm15.nc'
@@ -304,9 +332,79 @@ def create_bsh_nwsmfc_my_xypos():
     xypos_file_out='/data/users/jonathan.tinker/shelf_seas/NEMO_nc_slevel_viewer_data/BSH/tmp_out_xypos_BSH_NWSMFC_MY.nc'
     create_xypos(mesh_file,xypos_file_out)
 
+
+
+def test_xypos_interp():
+    print('t1','%s'%datetime.now())
+
+    xypos_fname='/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/OSTIA/xypos_OSTIA.nc'
+    eg_ostia_file = '/data/users/ofrd-mopa/ostia/data/netcdf/2022/01/20220131120000-UKMO-L4_GHRSST-SSTfnd-OSTIA-GLOB-v02.0-fv02.0.nc'
+    mesh_file = '/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/AMM15/amm15.mesh_mask.nc'
+    mesh_file = '/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/AMM7/amm7.mesh_mask.nc'
+
+    rootgrp = Dataset(eg_ostia_file, 'r')
+    ostia_lon = rootgrp.variables['lon'][:]
+    ostia_lat = rootgrp.variables['lat'][:]
+    ostia_sst = rootgrp.variables['analysed_sst'][0,:]-273.15
+    ostia_mask = rootgrp.variables['mask'][0,:]
+    rootgrp.close()
+    ostia_nav_lon, ostia_nav_lat = np.meshgrid(ostia_lon,ostia_lat)
+
+
+
+
+    rootgrp = Dataset(mesh_file, 'r')
+    nav_lon = rootgrp.variables['glamt'][0,:,:]
+    nav_lat = rootgrp.variables['gphit'][0,:,:]
+    rootgrp.close() 
+
+    print('t2','%s'%datetime.now())
+
+    xypos_dict = load_xypos(xypos_fname)
+    print('t3','%s'%datetime.now())
+
+    xypos_dict = cut_down_xypos(xypos_dict, nav_lon.min(), nav_lat.min(),nav_lon.max(), nav_lat.max())
     
+    print('t4','%s'%datetime.now())
+
+    sel_bl_jj_out, sel_bl_ii_out, NWS_wgt, sel_jj_out, sel_ii_out = int_ind_wgt_from_xypos_func(xypos_dict, nav_lon,nav_lat, ostia_nav_lon, ostia_nav_lat)
     
+    print('t5','%s'%datetime.now())
+
+    pdb.set_trace()
+    ostia_nav_lon[sel_jj_out, sel_ii_out]
+
+    plt.subplot(2,2,1)
+    plt.pcolormesh(ostia_nav_lon[sel_jj_out, sel_ii_out] - nav_lon)#, vmin = -0.1, vmax = 0.1)
+    plt.colorbar()
+    plt.subplot(2,2,2)
+    plt.pcolormesh((ostia_nav_lon[sel_bl_jj_out, sel_bl_ii_out]*NWS_wgt).sum(axis = 0) - nav_lon)#, vmin = -0.1, vmax = 0.1)
+    plt.colorbar()
+    plt.subplot(2,2,3)
+    plt.pcolormesh(ostia_nav_lat[sel_jj_out, sel_ii_out] - nav_lat)#, vmin = -0.1, vmax = 0.1)
+    plt.colorbar()
+    plt.subplot(2,2,4)
+    plt.pcolormesh((ostia_nav_lat[sel_bl_jj_out, sel_bl_ii_out]*NWS_wgt).sum(axis = 0) - nav_lat)#, vmin = -0.1, vmax = 0.1)
+    plt.colorbar()
+    plt.show()
+
+        
+    interp_SST = (ostia_sst[sel_bl_jj_out, sel_bl_ii_out]*NWS_wgt).sum(axis = 0)
+    interp_mask = ((ostia_mask==1).astype('int')[sel_bl_jj_out,sel_bl_ii_out]*NWS_wgt).sum(axis = 0)      
+    interp_SST[interp_mask!=1] = np.ma.masked
+    plt.pcolormesh(interp_SST)
+    plt.colorbar()
+    plt.show()
+
+
+    pdb.set_trace()
+
 def main():
+
+    test_xypos_interp()
+
+    pdb.set_trace()
+    create_OSTIA_xypos()
     #create_test_amm15_xypos()
     #create_shmi_balmfc_xypos()
     create_bsh_nwsmfc_my_xypos()

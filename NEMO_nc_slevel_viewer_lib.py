@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap, ListedColormap
 
 
+
 computername = socket.gethostname()
 comp = 'linux'
 if computername in ['xcel00','xcfl00']: comp = 'hpc'
@@ -571,6 +572,12 @@ def field_gradient_2d(tmpdat,e1t,e2t,dir_grad = False):
 
 
 def interp1dmat_wgt(indata, wgt_tuple):
+    # ind1, ind2, wgt1, wgt2, xind_mat,yind_mat, wgt_mask = interp1dmat_create_weight(gdept,z_lev,use_xarray_gdept = False)
+    # outdata = interp1dmat_wgt(indata, ind1, ind2, wgt1, wgt2, xind_mat,yind_mat, wgt_mask)
+    # wgt_tuple = interp1dmat_create_weight(gdept,z_lev,use_xarray_gdept = False)
+    # outdata = interp1dmat_wgt(indata, wgt_tuple)
+    
+    
     ind1, ind2, wgt1, wgt2, xind_mat,yind_mat, wgt_mask = wgt_tuple
     if len(indata.shape) == 3:
         outdata = np.ma.array(wgt1*indata[ind1,xind_mat,yind_mat] + wgt2*indata[ind2,xind_mat,yind_mat])
@@ -584,7 +591,7 @@ def interp1dmat_wgt(indata, wgt_tuple):
     return outdata
 
 def interp1dmat_create_weight(gdept,z_lev,use_xarray_gdept = False):
-
+    # ind1, ind2, wgt1, wgt2, xind_mat,yind_mat, wgt_mask = interp1dmat_create_weight(gdept,z_lev,use_xarray_gdept = False)
 
     import socket
     computername = socket.gethostname()
@@ -1811,13 +1818,40 @@ def reload_data_instances(var,thd,ldi,ti,var_d,var_grid, xarr_dict, grid_dict,va
                 pdb.set_trace()
 
         else:
+            # for a given var, what grid should it be in
+            tmp_cur_var_grid = var_grid[var]
+
+            # sometime we take T, S and SSH from different files (grid), and compare to a config where they are all in the same file
+            # so check that it is?
+            if tmp_cur_var_grid not in xarr_dict[tmp_datstr].keys():
+                #pdb.set_trace()
+                for tmp_var_grid in xarr_dict[tmp_datstr].keys():
+                    if var in xarr_dict[tmp_datstr][tmp_var_grid][ldi].variables.keys():
+                        tmp_cur_var_grid = tmp_var_grid
+
+
+
+            if var not in xarr_dict[tmp_datstr][tmp_cur_var_grid][ldi].variables.keys():
+                pdb.set_trace()
+
+                
+            if var_dim[var] == 3:
+                data_inst[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][tmp_cur_var_grid][ldi].variables[var][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+                
+            if var_dim[var] == 4:
+                #pdb.set_trace()
+                data_inst[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][tmp_cur_var_grid][ldi].variables[var][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+            '''    
             if var_dim[var] == 3:
                 data_inst[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables[var][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
                 
             if var_dim[var] == 4:
                 #pdb.set_trace()
                 data_inst[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables[var][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
-               
+            '''
+
+
+
     print('======================================')
     print('Reloaded data instances for ti = %i, var = %s %s = %s'%(ti,var,datetime.now(),datetime.now() - start_time_load_inst))
 
@@ -2417,6 +2451,41 @@ def reload_ts_data_comb(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,tim
             
             for tmp_datstr in Dataset_lst_secondary:
                 th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
+
+
+
+                # for a given var, what grid should it be in
+                tmp_cur_var_grid = var_grid[var]
+
+                # sometime we take T, S and SSH from different files (grid), and compare to a config where they are all in the same file
+                # so check that it is?
+                if tmp_cur_var_grid not in xarr_dict[tmp_datstr].keys():
+                    #pdb.set_trace()
+                    for tmp_var_grid in xarr_dict[tmp_datstr].keys():
+                        if var in xarr_dict[tmp_datstr][tmp_var_grid][ldi].variables.keys():
+                            tmp_cur_var_grid = tmp_var_grid
+
+
+
+                if var not in xarr_dict[tmp_datstr][tmp_cur_var_grid][ldi].variables.keys():
+                    pdb.set_trace()
+
+
+
+
+
+
+                if configd[th_d_ind] == configd[1]: #if configd[th_d_ind] is None:
+                    ts_dat_dict[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][tmp_cur_var_grid][ldi].variables[var][:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,jj,ii].load())
+                else:
+                    ii_2nd_ind,jj_2nd_ind = iijj_ind[tmp_datstr]['ii'],iijj_ind[tmp_datstr]['jj']
+                    if np.ma.is_masked(ii_2nd_ind*jj_2nd_ind):
+                        ts_dat_dict[tmp_datstr] = ts_dat_dict['Dataset 1'].copy()*0*np.ma.masked
+                    else:
+                        ts_dat_dict[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][tmp_cur_var_grid][ldi].variables[var][:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,jj_2nd_ind,ii_2nd_ind].load())
+
+
+                ''' 
                 if configd[th_d_ind] == configd[1]: #if configd[th_d_ind] is None:
                     ts_dat_dict[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables[var][:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,jj,ii].load())
                 else:
@@ -2425,7 +2494,7 @@ def reload_ts_data_comb(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,tim
                         ts_dat_dict[tmp_datstr] = ts_dat_dict['Dataset 1'].copy()*0*np.ma.masked
                     else:
                         ts_dat_dict[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables[var][:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,jj_2nd_ind,ii_2nd_ind].load())
-
+                '''
 
 
     elif var_dim[var] == 4:
@@ -4907,7 +4976,308 @@ def calc_ens_stat_map(map_dat_dict, Ens_stat,Dataset_lst):
     return map_dat
 
 
+def load_xypos(xypos_fname):
+    #xypos_dict = {}
+    #xypos_dict[tmp_datstr] =  load_xypos(config_fnames_dict[tmpconfig]['xypos_file'])
+    #xypos_dict = load_xypos(xypos_fname)
+            
 
+
+    from scipy.interpolate import griddata
+
+
+    xypos_dict = {}
+
+    xypos_dict['do_xypos'] = True
+    rootgrp = Dataset(xypos_fname, 'r')
+    for xy_var in rootgrp.variables.keys(): xypos_dict[xy_var] = rootgrp.variables[xy_var][:]
+    xypos_dict['lon_min'] = xypos_dict['LON'].min()
+    xypos_dict['lat_min'] = xypos_dict['LAT'].min()
+    xypos_dict['dlon'] =  (np.diff(xypos_dict['LON'][0,:])).mean()
+    xypos_dict['dlat'] =  (np.diff(xypos_dict['LAT'][:,0])).mean()
+    
+    rootgrp.close()
+
+
+
+    nxylat, nxylon = xypos_dict['LAT'].shape
+    xypos_mask =  np.ma.getmaskarray(xypos_dict['XPOS'])
+
+    xypos_xmat, xypos_ymat = np.meshgrid(np.arange(nxylon), np.arange(nxylat))
+
+    points = (xypos_xmat[~xypos_mask], xypos_ymat[~xypos_mask])
+    values_X = xypos_dict['XPOS'][~xypos_mask]
+    values_Y = xypos_dict['YPOS'][~xypos_mask]
+
+    #plt.plot(points[0],points[1],'x')
+    #plt.show()
+    #pdb.set_trace()
+    
+    xypos_dict['XPOS_NN'] = griddata(points, values_X, (xypos_xmat, xypos_ymat), method='nearest')
+    xypos_dict['YPOS_NN'] = griddata(points, values_Y, (xypos_xmat, xypos_ymat), method='nearest')
+
+    return xypos_dict
+    
+
+def cut_down_xypos(xypos_dict, lonmin, latmin,lonmax, latmax):
+    
+
+
+    '''
+    (Pdb) for ss in ['LON', 'LAT', 'XPOS', 'YPOS', 'lon_min', 'lat_min', 'dlon', 'dlat', 'XPOS_NN', 'YPOS_NN']:ss,xypos_dict[ss].shape
+    ('LON', (1801, 3601))
+    ('LAT', (1801, 3601))
+    ('XPOS', (1801, 3601))
+    ('YPOS', (1801, 3601))
+    ('lon_min', ())
+    ('lat_min', ())
+    ('dlon', ())
+    ('dlat', ())
+    ('XPOS_NN', (1801, 3601))
+    ('YPOS_NN', (1801, 3601))
+
+    
+    '''
+
+    x0 = np.abs(xypos_dict['LON'][0,:]  - lonmin).argmin()-1
+    y0 = np.abs(xypos_dict['LAT'][:,0] - latmin).argmin()-1
+    x1 = np.abs(xypos_dict['LON'][0,:] - lonmax).argmin()+1
+    y1 = np.abs(xypos_dict['LAT'][:,0]  - latmax).argmin()+1
+
+    #pdb.set_trace()
+
+    reduced_xypos_dict = {}
+    
+    reduced_xypos_dict['LON'] = xypos_dict['LON'][y0:y1+1,x0:x1+1]
+    reduced_xypos_dict['LAT'] = xypos_dict['LAT'][y0:y1+1,x0:x1+1]
+    reduced_xypos_dict['XPOS'] = xypos_dict['XPOS'][y0:y1+1,x0:x1+1]
+    reduced_xypos_dict['YPOS'] = xypos_dict['YPOS'][y0:y1+1,x0:x1+1]
+    reduced_xypos_dict['XPOS_NN'] = xypos_dict['XPOS_NN'][y0:y1+1,x0:x1+1]
+    reduced_xypos_dict['dlon'] = xypos_dict['dlon']
+    reduced_xypos_dict['dlat'] = xypos_dict['dlat']
+    reduced_xypos_dict['lon_min'] = reduced_xypos_dict['LON'].min()
+    reduced_xypos_dict['lat_min'] = reduced_xypos_dict ['LAT'].min()
+    reduced_xypos_dict['do_xypos'] = xypos_dict['do_xypos']
+
+
+    #pdb.set_trace()
+
+    return reduced_xypos_dict
+
+def int_ind_wgt_from_xypos(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,loni,latj):
+
+
+    #Numeric code of the dataset
+    th_d_ind = int(tmp_datstr[8:])
+    tmp_xypos_dict = xypos_dict[tmp_datstr]
+    tmp_thd = thd[th_d_ind]
+    tmp_thd_x0 = tmp_thd['x0']
+    tmp_thd_y0 = tmp_thd['y0']
+    tmp_thd_dx = tmp_thd['dx']
+    tmp_thd_dy = tmp_thd['dy']
+    tmp_lat_d_2 = lat_d[2]
+    tmp_lon_d_2 = lon_d[2]
+
+    sel_bl_jj_out, sel_bl_ii_out, NWS_wgt, sel_jj_out, sel_ii_out = int_ind_wgt_from_xypos_func(tmp_xypos_dict,
+        loni,latj, tmp_lon_d_2,tmp_lat_d_2, tmp_thd_x0 = tmp_thd_x0,tmp_thd_y0 = tmp_thd_y0,tmp_thd_dx = tmp_thd_dx,tmp_thd_dy = tmp_thd_dy)
+
+    return sel_bl_jj_out, sel_bl_ii_out, NWS_wgt, sel_jj_out, sel_ii_out
+
+    
+def int_ind_wgt_from_xypos_func(tmp_xypos_dict, loni,latj, tmp_lon_d_2,tmp_lat_d_2, tmp_thd_x0 = 0,tmp_thd_y0 = 0,tmp_thd_dx = 1,tmp_thd_dy = 1):
+    '''
+
+    #sel_bl_jj_out, sel_bl_ii_out, NWS_wgt, sel_jj_out, sel_ii_out = int_ind_wgt_from_xypos_func(tmp_xypos_dict, loni,latj, tmp_lon_d_2,tmp_lat_d_2, tmp_thd_x0 = 0,tmp_thd_y0 = 0,tmp_thd_dx = 1,tmp_thd_dy = 1):
+  
+    
+    For a given lon and lat (loni, latj), find the ii,jj index of a given dataset.
+
+    If the xypos files are available, use them, otherwise, the method depends on the config.                   
+        
+    '''
+
+    
+
+
+
+
+    # if using xypos files:
+    
+    #Find size of xypos and config lat arrays. 
+    nxylat, nxylon = tmp_xypos_dict['LAT'].shape
+    #ncurlat, ncurlon = lat_d[th_d_ind].shape
+    ncurlat, ncurlon = tmp_lat_d_2.shape
+    ndatlat, ndatlon = loni.shape
+
+    # find nearest grid box in the xypos arrays using a y = mx + c method
+
+
+    xy_i_ind = ((loni-tmp_xypos_dict['lon_min'])/tmp_xypos_dict['dlon']).astype('int')
+    xy_j_ind = ((latj-tmp_xypos_dict['lat_min'])/tmp_xypos_dict['dlat']).astype('int')
+    xy_i_ind = np.ma.minimum(np.ma.maximum(xy_i_ind,0),nxylon-1)
+    xy_j_ind = np.ma.minimum(np.ma.maximum(xy_j_ind,0),nxylat-1)
+    sel_ii_out = np.floor((tmp_xypos_dict['XPOS'][xy_j_ind,xy_i_ind] - tmp_thd_x0)/tmp_thd_dx).astype('int')
+    sel_jj_out = np.floor((tmp_xypos_dict['YPOS'][xy_j_ind,xy_i_ind] - tmp_thd_y0)/tmp_thd_dy).astype('int')
+    sel_ii_out = np.ma.minimum(np.ma.maximum(sel_ii_out,0),ncurlon-1)
+    sel_jj_out = np.ma.minimum(np.ma.maximum(sel_jj_out,0),ncurlat-1)
+
+    test_sel_ii_out = sel_ii_out.copy()
+    test_sel_jj_out = sel_jj_out.copy()
+    
+
+
+
+    
+    NWS_flt_ii_ind = ((loni-tmp_xypos_dict['lon_min'])/tmp_xypos_dict['dlon'])#.astype('int')
+    NWS_flt_jj_ind = ((latj-tmp_xypos_dict['lat_min'])/tmp_xypos_dict['dlat'])#.astype('int')
+
+    NWS_nn_ii_ind = NWS_flt_ii_ind.astype('int')
+    NWS_nn_jj_ind = NWS_flt_jj_ind.astype('int')
+
+
+
+
+
+
+
+
+
+    NWS_lrbt_dist = np.zeros((4,ndatlat, ndatlon), dtype = 'float')
+    NWS_wgt = np.ma.zeros((4,ndatlat, ndatlon), dtype = 'float')
+
+    NWS_bl_ii_ind = np.zeros((4,ndatlat, ndatlon), dtype = 'int')
+    NWS_bl_jj_ind = np.zeros((4,ndatlat, ndatlon), dtype = 'int')
+
+
+    
+
+    NWS_bl_ii_ind[0,:,:] = np.floor(NWS_flt_ii_ind[:,:]).astype('int') # BL, BR, TL, TR
+    NWS_bl_jj_ind[0,:,:] = np.floor(NWS_flt_jj_ind[:,:]).astype('int') # BL, BR, TL, TR
+    NWS_bl_ii_ind[1,:,:] = np.ceil( NWS_flt_ii_ind[:,:]).astype('int') # BL, BR, TL, TR
+    NWS_bl_jj_ind[1,:,:] = np.floor(NWS_flt_jj_ind[:,:]).astype('int') # BL, BR, TL, TR
+    NWS_bl_ii_ind[2,:,:] = np.floor(NWS_flt_ii_ind[:,:]).astype('int') # BL, BR, TL, TR
+    NWS_bl_jj_ind[2,:,:] = np.ceil( NWS_flt_jj_ind[:,:]).astype('int') # BL, BR, TL, TR
+    NWS_bl_ii_ind[3,:,:] = np.ceil( NWS_flt_ii_ind[:,:]).astype('int') # BL, BR, TL, TR
+    NWS_bl_jj_ind[3,:,:] = np.ceil( NWS_flt_jj_ind[:,:]).astype('int') # BL, BR, TL, TR
+
+            
+    NWS_lrbt_dist[0,:,:] = (NWS_flt_ii_ind[:,:] - NWS_bl_ii_ind[0,:,:])/(NWS_bl_ii_ind[1,:,:] - NWS_bl_ii_ind[0,:,:]) # distance from left handside
+    NWS_lrbt_dist[1,:,:] = (NWS_bl_ii_ind[1,:,:] - NWS_flt_ii_ind[:,:])/(NWS_bl_ii_ind[1,:,:] - NWS_bl_ii_ind[0,:,:]) # distance from right handside
+    NWS_lrbt_dist[2,:,:] = (NWS_flt_jj_ind[:,:] - NWS_bl_jj_ind[0,:,:])/(NWS_bl_jj_ind[2,:,:] - NWS_bl_jj_ind[0,:,:]) # distance from bottom handside
+    NWS_lrbt_dist[3,:,:] = (NWS_bl_jj_ind[2,:,:] - NWS_flt_jj_ind[:,:])/(NWS_bl_jj_ind[2,:,:] - NWS_bl_jj_ind[0,:,:]) # distance from top handside
+    
+    #################################################################################
+    # to catch when NWS_flt_ii_ind%1 == 0
+    #################################################################################
+    NWS_lrbt_dist[0,:,:][NWS_bl_ii_ind[1,:,:] == NWS_bl_ii_ind[0,:,:]] = 0.5
+    NWS_lrbt_dist[1,:,:][NWS_bl_ii_ind[1,:,:] == NWS_bl_ii_ind[0,:,:]] = 0.5
+    NWS_lrbt_dist[2,:,:][NWS_bl_jj_ind[2,:,:] == NWS_bl_jj_ind[0,:,:]] = 0.5
+    NWS_lrbt_dist[3,:,:][NWS_bl_jj_ind[2,:,:] == NWS_bl_jj_ind[0,:,:]] = 0.5
+    #################################################################################
+    
+    NWS_wgt[0,:,:] = (NWS_lrbt_dist[1,:,:]*NWS_lrbt_dist[3,:,:]) # BL: dist to TR
+    NWS_wgt[1,:,:] = (NWS_lrbt_dist[0,:,:]*NWS_lrbt_dist[3,:,:]) # BR: dist to TL
+    NWS_wgt[2,:,:] = (NWS_lrbt_dist[1,:,:]*NWS_lrbt_dist[2,:,:]) # TL: dist to BR
+    NWS_wgt[3,:,:] = (NWS_lrbt_dist[0,:,:]*NWS_lrbt_dist[2,:,:]) # TR: dist to BR
+ 
+
+    '''
+    if (np.floor(NWS_flt_ii_ind[:,:]) == np.ceil(NWS_flt_ii_ind[:,:])).any():
+        print('NWS_flt_ii_ind%0 == 0')
+        pdb.set_trace()
+    if (np.floor(NWS_flt_jj_ind[:,:]) == np.ceil(NWS_flt_jj_ind[:,:])).any():
+        print('NWS_flt_ii_ind%0 == 0')
+        pdb.set_trace()
+    '''
+
+    #mask weighgins
+    NWS_bl_jj_ind_final,NWS_bl_ii_ind_final = np.ma.array(NWS_bl_jj_ind.copy()),np.ma.array(NWS_bl_ii_ind.copy())
+    NWS_wgt[:,(NWS_bl_jj_ind_final<0).any(axis = 0)] = np.ma.masked
+    NWS_wgt[:,(NWS_bl_ii_ind_final<0).any(axis = 0)] = np.ma.masked
+    #NWS_wgt[:,(NWS_bl_jj_ind_final>=ndatlat).any(axis = 0)] = np.ma.masked
+    #NWS_wgt[:,(NWS_bl_ii_ind_final>=ndatlon).any(axis = 0)] = np.ma.masked
+    #NWS_wgt[:,(NWS_bl_jj_ind_final>=ncurlat).any(axis = 0)] = np.ma.masked
+    #NWS_wgt[:,(NWS_bl_ii_ind_final>=ncurlon).any(axis = 0)] = np.ma.masked
+    NWS_wgt[:,(NWS_bl_jj_ind_final>=nxylat).any(axis = 0)] = np.ma.masked
+    NWS_wgt[:,(NWS_bl_ii_ind_final>=nxylon).any(axis = 0)] = np.ma.masked
+
+    NWS_bl_jj_ind_final[NWS_wgt.mask == True] = 0
+    NWS_bl_ii_ind_final[NWS_wgt.mask == True] = 0
+
+
+
+
+    '''
+    NWS_nn_ii_ind = np.ma.minimum(np.ma.maximum(NWS_nn_ii_ind,0),ncurlon-1)
+    NWS_nn_jj_ind = np.ma.minimum(np.ma.maximum(NWS_nn_jj_ind,0),ncurlat-1)
+
+    NWS_bl_ii_ind_final = np.ma.minimum(np.ma.maximum(NWS_bl_ii_ind_final,0),ncurlon-1)
+    NWS_bl_jj_ind_final = np.ma.minimum(np.ma.maximum(NWS_bl_jj_ind_final,0),ncurlat-1)
+    '''
+
+    
+    NWS_nn_ii_ind = np.ma.minimum(np.ma.maximum(NWS_nn_ii_ind,0),nxylon-1)
+    NWS_nn_jj_ind = np.ma.minimum(np.ma.maximum(NWS_nn_jj_ind,0),nxylat-1)
+
+    NWS_bl_ii_ind = np.ma.minimum(np.ma.maximum(NWS_bl_ii_ind_final,0),nxylon-1)
+    NWS_bl_jj_ind = np.ma.minimum(np.ma.maximum(NWS_bl_jj_ind_final,0),nxylat-1)
+
+
+    #   ncurlat, ncurlon
+
+    #pdb.set_trace()
+
+    '''
+
+    NWS_bl_ii_ind_out = np.floor((NWS_bl_ii_ind_final - tmp_thd_x0)).astype('int')  #/tmp_thd_dx).astype('int')
+    NWS_bl_jj_ind_out = np.floor((NWS_bl_jj_ind_final - tmp_thd_y0)).astype('int')  #/tmp_thd_dy).astype('int')
+    NWS_nn_ii_ind_out = np.floor((NWS_nn_ii_ind - tmp_thd_x0)).astype('int')  #/tmp_thd_dx).astype('int')
+    NWS_nn_jj_ind_out = np.floor((NWS_nn_jj_ind - tmp_thd_y0)).astype('int')  #/tmp_thd_dy).astype('int')
+
+    '''
+    NWS_bl_jj_ind_out,NWS_bl_ii_ind_out = NWS_bl_jj_ind,NWS_bl_ii_ind
+    NWS_nn_jj_ind_out,NWS_nn_ii_ind_out = NWS_nn_jj_ind,NWS_nn_ii_ind
+
+    #return NWS_bl_jj_ind_out, NWS_bl_ii_ind_out, NWS_wgt, NWS_nn_jj_ind_out, NWS_nn_ii_ind_out
+
+
+
+
+
+    sel_ii_out = np.floor((tmp_xypos_dict['XPOS'][NWS_nn_jj_ind_out,NWS_nn_ii_ind_out] - tmp_thd_x0)/tmp_thd_dx).astype('int')
+    sel_jj_out = np.floor((tmp_xypos_dict['YPOS'][NWS_nn_jj_ind_out,NWS_nn_ii_ind_out] - tmp_thd_y0)/tmp_thd_dy).astype('int')
+    sel_ii_out = np.ma.minimum(np.ma.maximum(sel_ii_out,0),ncurlon-1)
+    sel_jj_out = np.ma.minimum(np.ma.maximum(sel_jj_out,0),ncurlat-1)
+    sel_bl_ii_out = np.floor((tmp_xypos_dict['XPOS'][NWS_bl_jj_ind_out,NWS_bl_ii_ind_out] - tmp_thd_x0)/tmp_thd_dx).astype('int')
+    sel_bl_jj_out = np.floor((tmp_xypos_dict['YPOS'][NWS_bl_jj_ind_out,NWS_bl_ii_ind_out] - tmp_thd_y0)/tmp_thd_dy).astype('int')
+    sel_bl_ii_out = np.ma.minimum(np.ma.maximum(sel_bl_ii_out,0),ncurlon-1)
+    sel_bl_jj_out = np.ma.minimum(np.ma.maximum(sel_bl_jj_out,0),ncurlat-1)
+
+
+    ##   check that all points are inside available data - otherwise skip
+    edge_ii = np.concatenate((tmp_lon_d_2[0,:], tmp_lon_d_2[:,-1], tmp_lon_d_2[-1,::-1], tmp_lon_d_2[::-1,0]))
+    edge_jj = np.concatenate((tmp_lat_d_2[0,:], tmp_lat_d_2[:,-1], tmp_lat_d_2[-1,::-1], tmp_lat_d_2[::-1,0]))
+    polygon = [[edii,edjj] for edii,edjj in zip(edge_ii,edge_jj)]
+    points = np.array(([loni.ravel(),latj.ravel()])).T
+
+    # https://stackoverflow.com/questions/36399381/whats-the-fastest-way-of-checking-if-a-point-is-inside-a-polygon-in-python
+
+    import matplotlib.path as mpltPath
+
+    path = mpltPath.Path(polygon)
+    inside2 = path.contains_points(points)
+    
+    mask_out_of_area =  inside2.reshape(latj.shape) == False
+    
+    NWS_wgt.mask = NWS_wgt.mask | np.repeat(mask_out_of_area[np.newaxis],4,axis = 0)
+
+    #pdb.set_trace()
+
+    return sel_bl_jj_out, sel_bl_ii_out, NWS_wgt, sel_jj_out, sel_ii_out
+
+
+
+"""
 def int_ind_wgt_from_xypos(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,loni,latj):
     '''
     For a given lon and lat (loni, latj), find the ii,jj index of a given dataset.
@@ -4916,6 +5286,8 @@ def int_ind_wgt_from_xypos(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_d
     
     
     '''
+
+
 
 
     #Numeric code of the dataset
@@ -5073,7 +5445,7 @@ def int_ind_wgt_from_xypos(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_d
 
     return sel_bl_jj_out, sel_bl_ii_out, NWS_wgt, sel_jj_out, sel_ii_out
 
-
+"""
 def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,loni,latj, nearest_gridbox = True):
     '''
     For a given lon and lat (loni, latj), find the ii,jj index of a given dataset.

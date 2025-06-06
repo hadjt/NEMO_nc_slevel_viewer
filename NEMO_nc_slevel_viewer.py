@@ -97,7 +97,8 @@ def nemo_slice_zlev(config = 'amm7',
     fig_dir = None,fig_lab = 'figs',fig_cutout = True, 
     justplot = False, justplot_date_ind = None,justplot_z_meth_zz = None,justplot_secdataset_proc = None,
     fig_fname_lab = None, fig_fname_lab_2nd = None,
-    trim_extra_files = True,
+    trim_files = True,
+    trim_extra_files = False,
     vis_curr = -1, vis_curr_meth = 'barb',
     resample_freq = None,
     verbose_debugging = False,do_timer = True,do_memory = True,do_ensemble = False,
@@ -280,10 +281,11 @@ def nemo_slice_zlev(config = 'amm7',
     # File name dictionary
     #==========================================
     # remove extra file names at the end of the list
-    fname_dict = remove_extra_end_file_dict(fname_dict)
+    if trim_extra_files:
+        fname_dict = remove_extra_end_file_dict(fname_dict)
     
     # Trim file list, using keywords [f0:f1:df] 
-    if trim_extra_files:
+    if trim_files:
         fname_dict = trim_file_dict(fname_dict,thd)
     # create filesname dictionary
     Dataset_lst,nDataset = create_Dataset_lst(fname_dict)
@@ -6192,6 +6194,7 @@ def main():
         parser.add_argument('--do_cont', type=str, required=False)
         parser.add_argument('--do_grad', type=int, required=False)
         parser.add_argument('--trim_extra_files', type=int, required=False)
+        parser.add_argument('--trim_files', type=int, required=False)
 
         parser.add_argument('--clim_sym', type=str, required=False)
         parser.add_argument('--clim_pair', type=str, required=False)
@@ -6426,7 +6429,7 @@ def main():
 
 
         if args.trim_extra_files is None:
-            trim_extra_files=True
+            trim_extra_files=False
         elif args.trim_extra_files is not None:
             if args.trim_extra_files.upper() in ['TRUE','T']:
                 trim_extra_files = bool(True)
@@ -6437,6 +6440,18 @@ def main():
                 pdb.set_trace()
  
 
+
+        if args.trim_files is None:
+            trim_files=True
+        elif args.trim_files is not None:
+            if args.trim_files.upper() in ['TRUE','T']:
+                trim_files = bool(True)
+            elif args.trim_files.upper() in ['FALSE','F']:
+                trim_files = bool(False)
+            else:                
+                print(args.trim_files)
+                pdb.set_trace()
+ 
 
 
 
@@ -6957,7 +6972,7 @@ def main():
             fig_lab_d = fig_lab_d,configd = configd,thd = thd,fname_dict = fname_dict,load_second_files = load_second_files,
             clim_sym = clim_sym_in, clim = args.clim, clim_pair = clim_pair_in,hov_time = hov_time_in,
             allow_diff_time = allow_diff_time_in,preload_data = preload_data_in,
-            do_grad = do_grad_in,do_cont = do_cont_in,trim_extra_files = trim_extra_files,
+            do_grad = do_grad_in,do_cont = do_cont_in,trim_extra_files = trim_extra_files,trim_files = trim_files,
             use_cmocean = use_cmocean_in, date_fmt = args.date_fmt,
             justplot = justplot_in,justplot_date_ind = args.justplot_date_ind,
             justplot_secdataset_proc = args.justplot_secdataset_proc,
