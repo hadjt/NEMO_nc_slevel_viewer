@@ -695,6 +695,7 @@ def nemo_slice_zlev(config = 'amm7',
          
         grid_dict['WW3'] = {}
         tmpfname_out_WW3_amm15_bilin = '/data/cr1/hadjt/data/reffiles/SSF/regrid_WW3_amm15_nn_mask.nc'
+        tmpfname_out_WW3_amm15_bilin = '/data/users/jonathan.tinker/reffiles/SSF/regrid_WW3_amm15_nn_mask.nc'
         rootgrp = Dataset(tmpfname_out_WW3_amm15_bilin, 'r', format='NETCDF4')
         grid_dict['WW3']['NWS_WW3_nn_ind'] = rootgrp.variables['NWS_WW3_nn_ind'][:,:]
         grid_dict['WW3']['AMM15_mask'] = rootgrp.variables['AMM15_mask'][:,:].astype('bool')

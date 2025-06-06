@@ -3842,39 +3842,103 @@ def extract_time_from_xarr(xarr_dict_in,ex_fname_in,time_varname_in,t_dim,date_i
     nctime = xarr_dict_in[0].variables[time_varname]
 
 
+    try:
+        #xarray nctime to datetime:
+        #xarray nctime to timestamp
+        if isinstance(nctime.to_numpy()[0],np.datetime64):
+            nctime_calendar_type = 'greg'
+            nctime_timestamp = ( nctime.to_numpy() - np.datetime64('1970-01-01T00:00:00'))/ np.timedelta64(1,'s')
+
+            time_datetime = np.array([datetime.utcfromtimestamp(ss) for ss in nctime_timestamp])
+            
+            #time_datetime_since_1970 = np.array([(ss - datetime(1970,1,1,0,0)).total_seconds()/86400 for ss in time_datetime])
+            time_datetime_since_1970 = nctime_timestamp/86400
+        elif isinstance(nctime.to_numpy()[0],cftime.Datetime360Day):
+            nctime_calendar_type = '360_day'
+
+            time_datetime_since_1970 = np.array([ss.year + (ss.month-1)/12 + (ss.day-1)/360 for ss in np.array(nctime)])
+            time_datetime = time_datetime_since_1970
+        else: 
+            nctime_calendar_type = 'greg'
+            print('Interpreted time info class:',type(nctime.to_numpy()[0]))
+            # create dummy time data, starting with today, and going forward one day for each time.
+
+            # today
+            tmpdatetime_now = datetime.now()
+            tmpdate_now = datetime(tmpdatetime_now.year, tmpdatetime_now.month, tmpdatetime_now.day)
+
+            #time values in array: if all are zero, increment, otherwise use. 
+            nctime_in_array = nctime.to_numpy()
+            if (nctime_in_array == 0).all():
+                nctime_in_array = np.arange( len(nctime))
+            
+            time_datetime = np.array([tmpdate_now + timedelta(days = int(i_i)) for i_i in nctime_in_array])
+            time_datetime_since_1970 = np.array([(ss - datetime(1970,1,1,0,0)).total_seconds()/86400 for ss in time_datetime])
+
+
+
+        ntime = time_datetime.size
+        #if ('calendar' in nctime.attrs.keys()):
+        #    nctime_calendar_type = nctime.attrs['calendar']
+        #else:
+        #    nctime_calendar_type = 'greg'
+
+
+        if date_in_ind is not None:
+            date_in_ind_datetime = datetime.strptime(date_in_ind,date_fmt)
+            date_in_ind_datetime_timedelta = np.array([(ss - date_in_ind_datetime).total_seconds() for ss in time_datetime])
+            ti = np.abs(date_in_ind_datetime_timedelta).argmin()
+            if verbose_debugging: print('Setting ti from date_in_ind (%s): ti = %i (%s). '%(date_in_ind,ti, time_datetime[ti]), datetime.now())
+
+        return time_datetime,time_datetime_since_1970,ntime,ti, nctime_calendar_type
+    
+
+
+
+
+    except:
+        print('\n\n\n\nTrying new time processing failed\n\n\n\n\n')
+        #pdb.set_trace()
 
     # if all times are 0, and no time_origin, suggests time is not set for these input files, so make dummy time data
 
     # if ((nctime.load()[:] == 0).all()) & ('time_origin' not in nctime.attrs.keys()):
 
-    #if time_origin not in time attributes
+    #if time_origin not in time attributesxarr_dict_in
+
+    use_time_units_for_origin = False
     if ('time_origin' not in nctime.attrs.keys()):
-        #if all time values are 0.
-        all_time_0 = (nctime.load()[:] == 0).all()
-
-        if all_time_0:
-            print('No time origin and all time values == 0')
+        pdb.set_trace()
+        if ('units' in nctime.attrs.keys()):
+            use_time_units_for_origin = True
         else:
-            print('No time origin but some time values != 0')
-            print('Setting all_time_0 = True')
-            all_time_0 = True
+            #if all time values are 0.
+            all_time_0 = (nctime.load()[:] == 0).all()
 
-        if all_time_0:
+            if all_time_0:
+                print('No time origin and all time values == 0')
+            else:
+                print('No time origin but some time values != 0')
+                print('Setting all_time_0 = True')
+                all_time_0 = True
 
-            # add time data as daily from the current day.
-            time_datetime = np.array([datetime(datetime.now().year, datetime.now().month, datetime.now().day) + timedelta(days = i_i) for i_i in range( xarr_dict_in[0].dims[t_dim])])
-            print("xarr_dict_in[0].dims[t_dim]")
-            #except:
-            #    time_datetime = np.array([datetime(datetime.now().year, datetime.now().month, datetime.now().day) + timedelta(days = i_i) for i_i in range( xarr_dict_in[0][0].dims[t_dim])])
-            #    print("xarr_dict_in[0][0].dims[t_dim]")
-            time_datetime_since_1970 = np.array([(ss - datetime(1970,1,1,0,0)).total_seconds()/86400 for ss in time_datetime])
+            if all_time_0:
 
-            if date_in_ind is not None: ti = 0
-            ntime = time_datetime.size
-            nctime_calendar_type = 'greg'
+                # add time data as daily from the current day.
+                time_datetime = np.array([datetime(datetime.now().year, datetime.now().month, datetime.now().day) + timedelta(days = i_i) for i_i in range( xarr_dict_in[0].dims[t_dim])])
+                print("xarr_dict_in[0].dims[t_dim]")
+                #except:
+                #    time_datetime = np.array([datetime(datetime.now().year, datetime.now().month, datetime.now().day) + timedelta(days = i_i) for i_i in range( xarr_dict_in[0][0].dims[t_dim])])
+                #    print("xarr_dict_in[0][0].dims[t_dim]")
+                time_datetime_since_1970 = np.array([(ss - datetime(1970,1,1,0,0)).total_seconds()/86400 for ss in time_datetime])
+
+                if date_in_ind is not None: ti = 0
+                ntime = time_datetime.size
+                nctime_calendar_type = 'greg'
 
 
-            return time_datetime,time_datetime_since_1970,ntime,ti, nctime_calendar_type
+                return time_datetime,time_datetime_since_1970,ntime,ti, nctime_calendar_type
+            
 
 
 
@@ -3897,8 +3961,13 @@ def extract_time_from_xarr(xarr_dict_in,ex_fname_in,time_varname_in,t_dim,date_i
     if 'time_origin' in nctime.attrs.keys():
         nc_time_origin = nctime.attrs['time_origin']
     else:
-        nc_time_origin = '1980-01-01 00:00:00'
-        print('No time origin set - set to 1/1/1980. Other Time parameters likely to be missing')
+        if use_time_units_for_origin:
+            nc_units = nctime.attrs['units']
+            pdb.set_trace()
+            #nc_time_origin = 
+        else:
+            nc_time_origin = '1980-01-01 00:00:00'
+            print('No time origin set - set to 1/1/1980. Other Time parameters likely to be missing')
    
 
 
