@@ -2180,7 +2180,6 @@ def nemo_slice_zlev(config = 'amm7',
             #if fig_lab_d[tmp_datstr] is not None: 
             fig_out_name = fig_out_name + '_d%s_%s'%(tmp_datstr[-1],fig_lab_d[tmp_datstr])
         
-        fig_out_name = fig_out_name
 
 
 
@@ -2201,6 +2200,9 @@ def nemo_slice_zlev(config = 'amm7',
         
 
         fig.suptitle( fig_tit_str_lab, fontsize=14)
+
+
+        fig_out_name = fig_out_name.replace(' ','_')
 
 
         if fig_cutout:
@@ -5672,8 +5674,11 @@ def nemo_slice_zlev(config = 'amm7',
                                 for ens_stat in ens_stat_lst: func_but_text_han[ens_stat].set_color('k')
                                 
 
-                        elif do_ensemble:
-                            if but_name in ens_stat_lst:
+                        #elif do_ensemble:
+                        #    if but_name in ens_stat_lst:
+                        elif but_name in ens_stat_lst:
+                            if do_ensemble:
+                        
                                 Ens_stat = but_name
                                 for tmpsecdataset_proc in secdataset_proc_list + ens_stat_lst: func_but_text_han[tmpsecdataset_proc].set_color('k')
                                 func_but_text_han[but_name].set_color('darkgreen')
@@ -5826,8 +5831,13 @@ def nemo_slice_zlev(config = 'amm7',
                 rem_loc.remove()
                 
             # remove contour before next iteration
+            '''
+            old method stopped working 6/6/2025
             for tmpconax in conax:
-                for tmpconaxcoll in tmpconax.collections:  tmpconaxcoll.remove()
+                for tmpconaxcoll in tmpconax.collections: tmpconaxcoll.remove()
+            '''            
+
+            for tmpconax in conax: tmpconax.remove()
                 
                 
             '''

@@ -3771,15 +3771,25 @@ def resample_xarray(xarr_dict,resample_freq,time_varname):
     #e.g. resample_freq = '1m', '5d', requires "DatetimeIndex, TimedeltaIndex or PeriodIndex," , doesn't work with dummy dates (i.e. increments)
     #xarr_dict['Dataset 1']['T'][0] = xarr_dict['Dataset 1']['T'][0].resample(time_counter = '1m').mean()
 
+    #check if resample_freq string:
+    # remove digits from resample_freq, so left with the letters - check if they are M, Y, D, Q etc.)
+    non_digit_resample_freq = ''.join([ss for ss in resample_freq if not  ss.isdigit() ])
+
+    if non_digit_resample_freq not in ['M', 'Y', 'D', 'Q']:
+        print('\n\n%s may not be a valid resampling string. Typically a number with a letter for the number of days, months, quarters or years - D, M, Q, Y'%resample_freq)
+        print('Will try proceeding\n\n\n')
+
+
     for tmp_datstr in xarr_dict.keys():
         for tmpgrid in xarr_dict[tmp_datstr].keys():
             for xarlii in range(len(xarr_dict[tmp_datstr][tmpgrid])):
                 if time_varname == 'time_counter':
                     xarr_dict[tmp_datstr][tmpgrid][xarlii] = xarr_dict[tmp_datstr][tmpgrid][xarlii].resample(time_counter = resample_freq).mean()
                 elif time_varname == 'time':
+                    #pdb.set_trace()
                     xarr_dict[tmp_datstr][tmpgrid][xarlii] = xarr_dict[tmp_datstr][tmpgrid][xarlii].resample(time = resample_freq).mean()
                 else:
-                    print('Resample only coded for time_counter and time, needs to be generalised. ')
+                    print('Resample only coded for time_counter and time, needs to be generalised.  Your time var is %s'%time_varname)
                     pdb.set_trace()
 
 
