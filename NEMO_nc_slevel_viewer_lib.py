@@ -640,7 +640,7 @@ def interp1dmat_create_weight(gdept,z_lev,use_xarray_gdept = False):
     gdept_ma_min = gdept_ma.min(axis = 0)
     gdept_ma_max = gdept_ma.max(axis = 0)
     #gdept_ma_ptp = gdept_ma.ptp(axis = 0)
-    gdept_ma_ptp = np.ptp(gdept_ma.ptp,axis = 0)
+    gdept_ma_ptp = np.ptp(gdept_ma,axis = 0)
 
     if verbose_debugging: print('x_mat, y_mat', datetime.now())
 
