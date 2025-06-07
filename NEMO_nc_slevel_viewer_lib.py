@@ -2383,7 +2383,7 @@ def reload_hov_data_comb(var,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii
 
    
 
-def reload_ts_data_comb(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,time_datetime,z_meth,zz,zi,xarr_dict,grid_dict,thd,var_mat,deriv_var,nz,ntime,configd,Dataset_lst,load_2nd_files):
+def reload_ts_data_comb(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,time_datetime,time_d,z_meth,zz,zi,xarr_dict,grid_dict,thd,var_mat,deriv_var,nz,ntime,configd,Dataset_lst,load_2nd_files):
         
     #Dataset_lst = [ss for ss in hov_dat_dict.keys()]      
     #Dataset_lst.remove('x')       
@@ -2393,15 +2393,15 @@ def reload_ts_data_comb(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,tim
     #        
     ts_dat_dict = {}
     ts_dat_dict['x'] = time_datetime
-    #for tmp_datstr in Dataset_lst:
+            
 
 
     if var_grid[var] == 'WW3':
         if var in ['wnd_mag']:
             #pdb.set_trace()
 
-            ts_dat_U_1 = reload_ts_data_comb('uwnd',var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,time_datetime,z_meth,zz,zi,xarr_dict,grid_dict,thd,var_mat,deriv_var,nz,ntime,configd,Dataset_lst,load_2nd_files)
-            ts_dat_V_1 = reload_ts_data_comb('vwnd',var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,time_datetime,z_meth,zz,zi,xarr_dict,grid_dict,thd,var_mat,deriv_var,nz,ntime,configd,Dataset_lst,load_2nd_files)
+            ts_dat_U_1 = reload_ts_data_comb('uwnd',var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,time_datetime,time_d,z_meth,zz,zi,xarr_dict,grid_dict,thd,var_mat,deriv_var,nz,ntime,configd,Dataset_lst,load_2nd_files)
+            ts_dat_V_1 = reload_ts_data_comb('vwnd',var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,time_datetime,time_d,z_meth,zz,zi,xarr_dict,grid_dict,thd,var_mat,deriv_var,nz,ntime,configd,Dataset_lst,load_2nd_files)
             
             if var == 'wnd_mag': 
                 for tmp_datstr in Dataset_lst: ts_dat_dict[tmp_datstr] = np.sqrt(ts_dat_U_1[tmp_datstr]**2 + ts_dat_V_1[tmp_datstr]**2)
@@ -2412,7 +2412,6 @@ def reload_ts_data_comb(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,tim
             for tmp_datstr in Dataset_lst: # _secondary:
                 tmp_jj,tmp_ii = jj,ii
                 th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
-
                 if tmp_datstr in Dataset_lst_secondary:
                     #th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
                     #pdb.set_trace()
@@ -2580,6 +2579,21 @@ def reload_ts_data_comb(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,tim
             for tmp_datstr in Dataset_lst:
 
                 ts_dat_dict[tmp_datstr] = hov_dat_dict[tmp_datstr][zi,:]
+
+    '''
+    
+    ts_dat_same_size = True
+    for tmp_datstr in Dataset_lst:  # ts_dat_dict['Dataset 1'].size != ts_dat_dict[tmp_datstr].size
+        if ts_dat_dict['Dataset 1'].size != ts_dat_dict[tmp_datstr].size:
+            ts_dat_same_size = False
+    pdb.set_trace()
+    if ts_dat_same_size == False:
+
+        tmp_time_datetime_dict = {}
+        #for tmp_datstr in Dataset_lst:
+        for tmp_datstr in Dataset_lst:    tmp_time_datetime_dict[tmp_datstr] = time_d[tmp_datstr][var_grid[var]]['datetime']
+        pdb.set_trace()
+    '''
 
     return ts_dat_dict 
 

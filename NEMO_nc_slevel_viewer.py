@@ -627,46 +627,11 @@ def nemo_slice_zlev(config = 'amm7',
             values_X = xypos_dict[tmp_datstr]['XPOS'][~xypos_mask]
             values_Y = xypos_dict[tmp_datstr]['YPOS'][~xypos_mask]
 
-            #plt.plot(points[0],points[1],'x')
-            #plt.show()
-            #pdb.set_trace()
             
             xypos_dict[tmp_datstr]['XPOS_NN'] = griddata(points, values_X, (xypos_xmat, xypos_ymat), method='nearest')
             xypos_dict[tmp_datstr]['YPOS_NN'] = griddata(points, values_Y, (xypos_xmat, xypos_ymat), method='nearest')
 
             
-            '''
-            
-            ntest_i, ntest_j = lon_d[th_d_ind].shape
-            test_xpos_ii, test_xpos_jj = np.arange(0,ntest_i-1,10),np.arange(0,ntest_j-1,10)
-            res_xpos_ii_mat, res_xpos_jj_mat = ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,{},lon_d[th_d_ind][0:ntest_i-1:10,0:ntest_j-1:10], lat_d[th_d_ind][0:ntest_i-1:10,0:ntest_j-1:10])
-            res_xpos_ii = res_xpos_ii_mat.mean(axis = 1)
-            res_xpos_jj = res_xpos_jj_mat.mean(axis = 0)
-
-            test_xpos_ii_rmse = np.sqrt(((test_xpos_ii-res_xpos_ii)**2).mean())
-            test_xpos_jj_rmse = np.sqrt(((test_xpos_jj-res_xpos_jj)**2).mean())
-
-            if (test_xpos_ii_rmse>2)| (test_xpos_jj_rmse>2):
-
-                print('check correct xypos file. test rmse >2',test_xpos_ii_rmse, test_xpos_jj_rmse)
-
-                pdb.set_trace()
-                plt.subplot(2,2,1)
-                plt.plot(test_xpos_ii,res_xpos_ii)
-                plt.subplot(2,2,2)
-                plt.plot(test_xpos_jj,res_xpos_jj)
-                plt.subplot(2,2,3)
-                plt.plot(test_xpos_ii-res_xpos_ii)
-                plt.subplot(2,2,4)
-                plt.plot(test_xpos_jj-res_xpos_jj)
-                plt.show()
-
-
-                pdb.set_trace()
-
-
-            '''
-
 
     init_timer.append((datetime.now(),'created lon lat dict'))
     # if use key words to set intial lon/lat,nvarbutcol convert to jj/ii
@@ -2387,28 +2352,16 @@ def nemo_slice_zlev(config = 'amm7',
     while ii is not None:
         # try, exit on error
         if do_timer: timer_lst.append(('Start loop',datetime.now()))
-        #pdb.set_trace()
-        #if do_memory & do_timer: timer_lst[-1]= timer_lst[-1] + (psutil.Process(os.getpid()).memory_info().rss/1024/1024,)
+        
         if do_memory & do_timer: timer_lst[-1]= timer_lst[-1] + (psutil.Process(os.getpid()).memory_info().rss/1024/1024,)
 
-        #process = psutil.Process(os.getpid())
-        #print('')
-        #print('Memory_use: %f MB'%process.memory_info().rss/1024/1024)  # in bytes 
-        #print('')
         #try:
         if True: 
             # extract plotting data (when needed), and subtract off difference files if necessary.
 
             if verbose_debugging: print('Set current data set (set of nc files) for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now())
             if verbose_debugging: print('Convert coordinates for config_2nd', datetime.now())
-            #global ii_2nd_ind, jj_2nd_ind, dd_2nd_ind, ew_ii_2nd_ind,ew_jj_2nd_ind,ns_ii_2nd_ind,ns_jj_2nd_ind
-
-            #ii_2nd_ind, jj_2nd_ind = ii,jj
-            #ew_ii_2nd_ind, ew_jj_2nd_ind = None, None
-            #ns_ii_2nd_ind, ns_jj_2nd_ind = None, None
-
-            ##ew_bl_ii_ind_final,ew_bl_jj_ind_final,ew_wgt = None, None, None
-            #ns_bl_ii_ind_final,ns_bl_jj_ind_final,ns_wgt = None, None, None
+            
 
             iijj_ind = {}
             for tmp_datstr in Dataset_lst:
@@ -2416,62 +2369,7 @@ def nemo_slice_zlev(config = 'amm7',
                 #iijj_ind[tmp_datstr] = None
                 #if configd[th_d_ind] is not None:
                 if configd[th_d_ind] !=  configd[1]:
-                    '''
-                    if ((configd[1].upper() == 'AMM15') & (configd[th_d_ind].upper() == 'AMM7')) | ((configd[1].upper() == 'AMM7') & (configd[th_d_ind].upper() == 'AMM15')):
-
-                        iijj_ind[tmp_datstr] = {}
-
-                        if ((configd[1].upper() == 'AMM7') & (configd[th_d_ind].upper() == 'AMM15')):
-
-                            lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(lon_d[1][jj,ii] ,lat_d[1][jj,ii])
-                            ew_lon_mat_rot, ew_lat_mat_rot  = rotated_grid_from_amm15(lon_d[1][jj,:],lat_d[1][jj,:])
-                            ns_lon_mat_rot, ns_lat_mat_rot  = rotated_grid_from_amm15(lon_d[1][:,ii],lat_d[1][:,ii])
-
-                            #tmp_lon_arr = lon_rotamm15
-                            #tmp_lat_arr = lat_rotamm15
-                            tmp_lon_arr = rot_dict[configd[2]]['lon_rot']
-                            tmp_lat_arr = rot_dict[configd[2]]['lat_rot']
-
-                            tmp_lon = lon_mat_rot
-                            tmp_lat = lat_mat_rot
-                            
-                            ns_tmp_lon_arr = ns_lon_mat_rot
-                            ns_tmp_lat_arr = ns_lat_mat_rot
-                            ew_tmp_lon_arr = ew_lon_mat_rot
-                            ew_tmp_lat_arr = ew_lat_mat_rot
-
-
-                        elif ((configd[1].upper() == 'AMM15') & (configd[th_d_ind].upper() == 'AMM7')):
-
-                            tmp_lon_arr = lon
-                            tmp_lat_arr = lat
-
-                            tmp_lon = lon_d[1][jj,ii]
-                            tmp_lat = lat_d[1][jj,ii]
-                            
-                            ns_tmp_lon_arr = ns_lon_mat_rot = lon_d[1][:,ii]
-                            ns_tmp_lat_arr = ns_lat_mat_rot = lat_d[1][:,ii]
-                            ew_tmp_lon_arr = ew_lon_mat_rot = lon_d[1][jj,:]
-                            ew_tmp_lat_arr = ew_lat_mat_rot = lat_d[1][jj,:]
-                        
-                        
-                        (iijj_ind[tmp_datstr]['ii'],iijj_ind[tmp_datstr]['jj'],
-                        iijj_ind[tmp_datstr]['ew_ii'],iijj_ind[tmp_datstr]['ew_jj'],
-                        iijj_ind[tmp_datstr]['ns_ii'],iijj_ind[tmp_datstr]['ns_jj'], 
-                        iijj_ind[tmp_datstr]['ew_bl_ii'],iijj_ind[tmp_datstr]['ew_bl_jj'],
-                        iijj_ind[tmp_datstr]['ew_wgt'], 
-                        iijj_ind[tmp_datstr]['ns_bl_ii'],iijj_ind[tmp_datstr]['ns_bl_jj'],
-                        iijj_ind[tmp_datstr]['ns_wgt']) = regrid_iijj_ew_ns(tmp_lon,tmp_lat,
-                            tmp_lon_arr, tmp_lat_arr, 
-                            ew_tmp_lon_arr,ew_tmp_lat_arr,
-                            ns_tmp_lon_arr,ns_tmp_lat_arr,
-                            thd[2]['dx'],thd[2]['y0'],thd[2]['y1'],regrid_meth)
-
-                    else:
-                        print('need to code up for differing configs')
-
-
-                    '''
+                    
 
 
                     iijj_ind[tmp_datstr] = {}
@@ -2486,119 +2384,6 @@ def nemo_slice_zlev(config = 'amm7',
                     iijj_ind[tmp_datstr]['ns_bl_jj'],iijj_ind[tmp_datstr]['ns_bl_ii'] = regrid_params[tmp_datstr][0][:,:,ii],regrid_params[tmp_datstr][1][:,:,ii]
                     iijj_ind[tmp_datstr]['ns_wgt'] = regrid_params[tmp_datstr][2][:,:,ii]
 
-                    #pdb.set_trace()     
-                    '''
-                    for ss in iijj_ind[tmp_datstr].keys():ss, iijj_ind[tmp_datstr][ss].shape, type(iijj_ind[tmp_datstr][ss])
-
-                    ('ii', (), <class 'numpy.int64'>)
-                    ('jj', (), <class 'numpy.int64'>)
-                    ('ew_ii', (486,), <class 'numpy.ma.core.MaskedArray'>)
-                    ('ew_jj', (486,), <class 'numpy.ma.core.MaskedArray'>)
-                    ('ns_ii', (449,), <class 'numpy.ma.core.MaskedArray'>)
-                    ('ns_jj', (449,), <class 'numpy.ma.core.MaskedArray'>)
-                    ('ew_bl_ii', (4, 486), <class 'numpy.ndarray'>)
-                    ('ew_bl_jj', (4, 486), <class 'numpy.ndarray'>)
-                    ('ew_wgt', (4, 486), <class 'numpy.ma.core.MaskedArray'>)
-                    ('ns_bl_ii', (4, 449), <class 'numpy.ndarray'>)
-                    ('ns_bl_jj', (4, 449), <class 'numpy.ndarray'>)
-                    ('ns_wgt', (4, 449), <class 'numpy.ma.core.MaskedArray'>)
-
-
-                    ######################################
-
-                    iijj_ind[tmp_datstr]['jj'], iijj_ind[tmp_datstr]['ii'] = regrid_params[tmp_datstr][3][jj,ii],regrid_params[tmp_datstr][4][jj,ii] # ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lon_d[1][jj,ii],lat_d[1][jj,ii])
-                    
-                    iijj_ind[tmp_datstr]['ew_jj'],iijj_ind[tmp_datstr]['ew_ii'] = regrid_params[tmp_datstr][3][jj,:],regrid_params[tmp_datstr][4][jj,:]
-                    iijj_ind[tmp_datstr]['ew_bl_jj'],iijj_ind[tmp_datstr]['ew_bl_ii'] = regrid_params[tmp_datstr][0][:,jj,:],regrid_params[tmp_datstr][1][:,jj,:]
-                    iijj_ind[tmp_datstr]['ew_wgt'] = regrid_params[tmp_datstr][2][:,jj,:]
-
-                    iijj_ind[tmp_datstr]['ns_jj'],iijj_ind[tmp_datstr]['ns_ii'] = regrid_params[tmp_datstr][3][:,ii],regrid_params[tmp_datstr][4][:,ii]
-                    iijj_ind[tmp_datstr]['ns_bl_jj'],iijj_ind[tmp_datstr]['ns_bl_ii'] = regrid_params[tmp_datstr][0][:,:,ii],regrid_params[tmp_datstr][1][:,:,ii]
-                    iijj_ind[tmp_datstr]['ns_wgt'] = regrid_params[tmp_datstr][2][:,:,ii]
-
-
-                    ######################################
-
-
-                    '''
-
-
-
-                    '''
-                    iijj_ind[tmp_datstr]['ns_ii'],iijj_ind[tmp_datstr]['ns_jj'] = regrid_params[tmp_datstr][4][:,ii],regrid_params[tmp_datstr][3][:,ii]
-                    iijj_ind[tmp_datstr]['ns_ii'],iijj_ind[tmp_datstr]['ns_jj'] = regrid_params[tmp_datstr][4][:,ii],regrid_params[tmp_datstr][3][:,ii]
-
-
-                    iijj_ind[tmp_datstr]['ew_bl_ii'],iijj_ind[tmp_datstr]['ew_bl_jj'] = 0,0
-                    iijj_ind[tmp_datstr]['ew_wgt'] = np.ma.array(0)
-                    iijj_ind[tmp_datstr]['ns_bl_ii'],iijj_ind[tmp_datstr]['ns_bl_jj'] = 0,0
-                    iijj_ind[tmp_datstr]['ns_wgt'] = np.ma.array(0)
-
-
-
-                    #ns_tmp_lon_arr = ns_lon_mat_rot = lon_d[1][:,ii]
-                    #ns_tmp_lat_arr = ns_lat_mat_rot = lat_d[1][:,ii]
-                    #ew_tmp_lon_arr = ew_lon_mat_rot = lon_d[1][jj,:]
-                    #ew_tmp_lat_arr = ew_lat_mat_rot = lat_d[1][jj,:]
-                    ns_tmp_lon_arr  = lon_d[1][:,ii]
-                    ns_tmp_lat_arr  = lat_d[1][:,ii]
-                    ew_tmp_lon_arr  = lon_d[1][jj,:]
-                    ew_tmp_lat_arr  = lat_d[1][jj,:]
-                    pdb.set_trace()
-                    iijj_ind[tmp_datstr] = {}
-                    print('need to code up for differing configs')
-                    iijj_ind[tmp_datstr]['jj'], iijj_ind[tmp_datstr]['ii'] = ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lon_d[1][jj,ii],lat_d[1][jj,ii])
-                    iijj_ind[tmp_datstr]['ew_jj'], iijj_ind[tmp_datstr]['ew_ii'] = ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,ew_tmp_lon_arr,ew_tmp_lat_arr)
-                    iijj_ind[tmp_datstr]['ns_jj'], iijj_ind[tmp_datstr]['ns_ii'] = ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,ns_tmp_lon_arr,ns_tmp_lat_arr)
-                    pdb.set_trace()
-                    '''
-                    '''
-                    
-                            tmp_lon_arr = lon
-                            tmp_lat_arr = lat
-
-                            tmp_lon = lon_d[1][jj,ii]
-                            tmp_lat = lat_d[1][jj,ii]
-                            
-                            ns_tmp_lon_arr = ns_lon_mat_rot = lon_d[1][:,ii]
-                            ns_tmp_lat_arr = ns_lat_mat_rot = lat_d[1][:,ii]
-                            ew_tmp_lon_arr = ew_lon_mat_rot = lon_d[1][jj,:]
-                            ew_tmp_lat_arr = ew_lat_mat_rot = lat_d[1][jj,:]
-                        
-
-    (iijj_ind[tmp_datstr]['ii'],iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ew_ii'],iijj_ind[tmp_datstr]['ew_jj'],iijj_ind[tmp_datstr]['ns_ii'],iijj_ind[tmp_datstr]['ns_jj'], iijj_ind[tmp_datstr]['ew_bl_ii'],iijj_ind[tmp_datstr]['ew_bl_jj'],iijj_ind[tmp_datstr]['ew_wgt'], iijj_ind[tmp_datstr]['ns_bl_ii'],iijj_ind[tmp_datstr]['ns_bl_jj'],iijj_ind[tmp_datstr]['ns_wgt']) = regrid_iijj_ew_ns(tmp_lon,tmp_lat,tmp_lon_arr, tmp_lat_arr, ew_tmp_lon_arr,ew_tmp_lat_arr,ns_tmp_lon_arr,ns_tmp_lat_arr,thd[2]['dx'],thd[2]['y0'],thd[2]['y1'],regrid_meth)
-
-
-
-
-
-
-
-
-                    plt.plot(iijj_ind[tmp_datstr]['ew_ii'],iijj_ind[tmp_datstr]['ew_jj'],'+-')
-                    plt.plot(regrid_params[tmp_datstr][4][jj,:],regrid_params[tmp_datstr][3][jj,:],'x-')
-                    plt.show()
-
-                    plt.plot(regrid_params[tmp_datstr][3][iijj_ind[tmp_datstr]['ew_ii'], iijj_ind[tmp_datstr]['ew_jj']],regrid_params[tmp_datstr][4][iijj_ind[tmp_datstr]['ew_ii'], iijj_ind[tmp_datstr]['ew_jj']],'x-')
-                  
-
-
-
-
-
-                    plt.plot(iijj_ind[tmp_datstr]['ew_ii'],iijj_ind[tmp_datstr]['ew_jj'],'+-')
-                    plt.plot(regrid_params[tmp_datstr][3][jj,:],regrid_params[tmp_datstr][4][jj,:],'x-')
-                    plt.plot(regrid_params[tmp_datstr][3][iijj_ind[tmp_datstr]['ew_jj'], iijj_ind[tmp_datstr]['ew_ii']],regrid_params[tmp_datstr][4][iijj_ind[tmp_datstr]['ew_jj'], iijj_ind[tmp_datstr]['ew_ii']],'x-')
-                    plt.plot(regrid_params[tmp_datstr][4][iijj_ind[tmp_datstr]['ew_ii'], iijj_ind[tmp_datstr]['ew_jj']],regrid_params[tmp_datstr][3][iijj_ind[tmp_datstr]['ew_ii'], iijj_ind[tmp_datstr]['ew_jj']],'x-')
-                    plt.plot(regrid_params[tmp_datstr][4][iijj_ind[tmp_datstr]['ew_jj'], iijj_ind[tmp_datstr]['ew_ii']],regrid_params[tmp_datstr][3][iijj_ind[tmp_datstr]['ew_jj'], iijj_ind[tmp_datstr]['ew_ii']],'x-')
-                    plt.show()
-
-                    iijj_ind[tmp_datstr]['ew_bl_ii'],iijj_ind[tmp_datstr]['ew_bl_jj'] = 0,0
-                    iijj_ind[tmp_datstr]['ew_wgt'] = np.ma.array(0)
-                    iijj_ind[tmp_datstr]['ns_bl_ii'],iijj_ind[tmp_datstr]['ns_bl_jj'] = 0,0
-                    iijj_ind[tmp_datstr]['ns_wgt'] = np.ma.array(0)
-
-                    '''
                         
                 
 
@@ -2611,7 +2396,12 @@ def nemo_slice_zlev(config = 'amm7',
             #to allow the time conversion between file sets with different times
             #if var == 'hs': pdb.set_trace()
             tmp_current_time = time_datetime[ti]
+            #cur_time_datetime_dict = {}
+            #pdb.set_trace()
+            #for tmp_datstr in Dataset_lst:cur_time_datetime_dict[tmp_datstr] =  time_d[tmp_datstr][var_grid[tmp_datstr][var]]['datetime']
             time_datetime = time_d['Dataset 1'][var_grid['Dataset 1'][var]]['datetime']
+            #time_datetime = cur_time_datetime_dict['Dataset 1']
+
             time_datetime_since_1970 = time_d['Dataset 1'][var_grid['Dataset 1'][var]]['datetime_since_1970']
             if nctime_calendar_type in ['360_day','360']:
                 #pdb.set_trace()
@@ -2924,7 +2714,7 @@ def nemo_slice_zlev(config = 'amm7',
             prevtime = datetime.now()
             if reload_ts:
                 if hov_time:
-                    ts_dat_dict = reload_ts_data_comb(var,var_dim,var_grid['Dataset 1'],ii,jj,iijj_ind,ldi,hov_dat_dict,time_datetime,z_meth,zz,zi,xarr_dict,grid_dict,thd,var_d[1]['mat'],var_d['d'],nz,ntime,configd,Dataset_lst,load_second_files)
+                    ts_dat_dict = reload_ts_data_comb(var,var_dim,var_grid['Dataset 1'],ii,jj,iijj_ind,ldi,hov_dat_dict,time_datetime,time_d,z_meth,zz,zi,xarr_dict,grid_dict,thd,var_d[1]['mat'],var_d['d'],nz,ntime,configd,Dataset_lst,load_second_files)
                 else:
                     ts_dat_dict['x'] = time_datetime
                     #ts_dat_dict['Dataset 1'] = np.ma.ones(ntime)*np.ma.masked
@@ -3220,6 +3010,7 @@ def nemo_slice_zlev(config = 'amm7',
                     tmplw = 0.5
                     if secdataset_proc == tmp_datstr:tmplw = 1
                     tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ts_dat_dict[tmp_datstr],Dataset_col[dsi], lw = tmplw))
+                    #tsax_lst.append(ax[4].plot(cur_time_datetime_dict[tmp_datstr],ts_dat_dict[tmp_datstr],Dataset_col[dsi], lw = tmplw))
                     if do_ensemble:
                         tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ens_ts_dat[0],'k', lw = 1))
                         tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ens_ts_dat[1],'k', lw = 1))
@@ -5452,7 +5243,7 @@ def nemo_slice_zlev(config = 'amm7',
                                     for tmp_datstr in Dataset_lst:fsct_hov_dat_dict[tmp_datstr][fcst_ldi] = fsct_hov_dat[tmp_datstr]
                                     fsct_hov_x[fcst_ldi] = fsct_hov_dat['x'] + timedelta(hours = ld_time_offset[fcst_ldi])
                 
-                                    fsct_ts_dat = reload_ts_data_comb(var,var_dim,var_grid['Dataset 1'],ii,jj,iijj_ind,fcst_ldi,fsct_hov_dat,time_datetime,z_meth,zz,zi,xarr_dict,grid_dict,thd,var_d[1]['mat'],var_d['d'],nz,ntime,configd,Dataset_lst,load_second_files)
+                                    fsct_ts_dat = reload_ts_data_comb(var,var_dim,var_grid['Dataset 1'],ii,jj,iijj_ind,fcst_ldi,fsct_hov_dat,time_datetime,time_d,z_meth,zz,zi,xarr_dict,grid_dict,thd,var_d[1]['mat'],var_d['d'],nz,ntime,configd,Dataset_lst,load_second_files)
                                     
                                     for tmp_datstr in Dataset_lst:fsct_ts_dat_dict[tmp_datstr][fcst_ldi] = fsct_ts_dat[tmp_datstr]
                                     fsct_ts_x[fcst_ldi] = fsct_ts_dat['x'] + timedelta(hours = ld_time_offset[fcst_ldi])
