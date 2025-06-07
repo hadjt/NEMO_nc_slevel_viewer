@@ -2232,7 +2232,8 @@ def reload_pf_data_comb(data_inst,var,var_dim,ii,jj,nz,grid_dict,Dataset_lst,con
                 pf_dat[tmp_datstr] = np.ma.zeros((nz))*np.ma.masked
             else:
                 tmp_pf = np.ma.masked_invalid(data_inst[tmp_datstr][:,tmp_jj,tmp_ii])
-                pf_dat[tmp_datstr] = np.ma.masked_invalid(np.interp(pf_dat['y'], grid_dict[tmp_datstr]['gdept'][:,tmp_jj,tmp_ii], tmp_pf))
+                #pf_dat[tmp_datstr] = np.ma.masked_invalid(np.interp(pf_dat['y'], grid_dict[tmp_datstr]['gdept'][:,tmp_jj,tmp_ii], tmp_pf))
+                pf_dat[tmp_datstr] = np.ma.masked_invalid(np.interp(pf_dat['y'], grid_dict[tmp_datstr]['gdept'][:,tmp_jj,tmp_ii], tmp_pf.filled(np.nan)))
 #            
 
             #pdb.set_trace()
@@ -2242,7 +2243,7 @@ def reload_pf_data_comb(data_inst,var,var_dim,ii,jj,nz,grid_dict,Dataset_lst,con
     return pf_dat
     
 
-def reload_hov_data_comb(var,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd):       
+def reload_hov_data_comb(var,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd):       
     #Dataset_lst = [ss for ss in xarr_dict.keys()]      
     Dataset_lst_secondary = Dataset_lst.copy()
     if 'Dataset 1' in Dataset_lst_secondary: Dataset_lst_secondary.remove('Dataset 1')    
@@ -2270,8 +2271,8 @@ def reload_hov_data_comb(var,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii
 
             tmp_var_U, tmp_var_V = 'vozocrtx','vomecrty'
 
-            hov_dat_U_dict = reload_hov_data_comb(tmp_var_U,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd)
-            hov_dat_V_dict = reload_hov_data_comb(tmp_var_V,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd)
+            hov_dat_U_dict = reload_hov_data_comb(tmp_var_U,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd)
+            hov_dat_V_dict = reload_hov_data_comb(tmp_var_V,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd)
 
             for tmp_datstr in Dataset_lst:
                 hov_dat[tmp_datstr]  = np.sqrt(hov_dat_U_dict[tmp_datstr]**2 + hov_dat_V_dict[tmp_datstr]**2)
@@ -2280,16 +2281,16 @@ def reload_hov_data_comb(var,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii
 
             tmp_var_U, tmp_var_V = 'vozocrtx','vomecrty'
 
-            hov_dat_U_dict = reload_hov_data_comb(tmp_var_U,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd)
-            hov_dat_V_dict = reload_hov_data_comb(tmp_var_V,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd)
+            hov_dat_U_dict = reload_hov_data_comb(tmp_var_U,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd)
+            hov_dat_V_dict = reload_hov_data_comb(tmp_var_V,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd)
 
             for tmp_datstr in Dataset_lst:
                 hov_dat[tmp_datstr]  = 180.*np.arctan2(hov_dat_V_dict[tmp_datstr],hov_dat_U_dict[tmp_datstr])/np.pi
        
        
         elif var == 'rho':
-            hov_dat_T_dict = reload_hov_data_comb('votemper',var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd)
-            hov_dat_S_dict = reload_hov_data_comb('vosaline',var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd)
+            hov_dat_T_dict = reload_hov_data_comb('votemper',var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd)
+            hov_dat_S_dict = reload_hov_data_comb('vosaline',var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd)
 
             
             for tmp_datstr in Dataset_lst:
@@ -2297,8 +2298,8 @@ def reload_hov_data_comb(var,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii
 
         elif var == 'N2':
             try:
-                hov_dat_T_dict = reload_hov_data_comb('votemper',var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd)
-                hov_dat_S_dict = reload_hov_data_comb('vosaline',var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd)
+                hov_dat_T_dict = reload_hov_data_comb('votemper',var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd)
+                hov_dat_S_dict = reload_hov_data_comb('vosaline',var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd)
 
                 for tmp_datstr in Dataset_lst: # _secondary:
 
@@ -2341,19 +2342,38 @@ def reload_hov_data_comb(var,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii
 
 
         hov_dat['Dataset 1'] = np.ma.masked_invalid(xarr_dict['Dataset 1'][var_grid[var]][ldi].variables[var][:,:,thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']][:,:,jj,ii].load()).T
-        
+        if do_mask_dict['Dataset 1']:
+            tmp_mask = grid_dict['Dataset 1']['tmask'][:,thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']][:,jj,ii] == 0
+            hov_dat['Dataset 1'][tmp_mask,:] = np.ma.masked
+            #pdb.set_trace()
         for tmp_datstr in Dataset_lst_secondary:
             th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
             
             if configd[th_d_ind] == configd[1]: #if configd[th_d_ind] is None:
-                hov_dat[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables[var][:,:,thd[2]['y0']:thd[2]['y1']:thd[2]['dy'],thd[2]['x0']:thd[2]['x1']:thd[2]['dx']][:,:,jj,ii].load()).T
+                #hov_dat[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables[var][:,:,thd[2]['y0']:thd[2]['y1']:thd[2]['dy'],thd[2]['x0']:thd[2]['x1']:thd[2]['dx']][:,:,jj,ii].load()).T
+                hov_dat[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables[var][:,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,:,jj,ii].load()).T
+                if do_mask_dict[tmp_datstr]:
+                    tmp_mask = grid_dict[tmp_datstr][:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,jj,ii] == 0
+                    
+                    hov_dat[tmp_datstr][tmp_mask,:] = np.ma.masked
+                    #pdb.set_trace()
+   
+                
             else:
                 ii_2nd_ind,jj_2nd_ind = iijj_ind[tmp_datstr]['ii'],iijj_ind[tmp_datstr]['jj']
 
                 hov_dat[tmp_datstr] = np.ma.zeros(xarr_dict['Dataset 1'][var_grid[var]][ldi].variables[var][:,:,thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']].shape[1::-1])*np.ma.masked
                 tmpdat_hov = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables[var][:,:,thd[2]['y0']:thd[2]['y1']:thd[2]['dy'],thd[2]['x0']:thd[2]['x1']:thd[2]['dx']][:,:,jj_2nd_ind,ii_2nd_ind].load())
+
+
+                if do_mask_dict[tmp_datstr]:
+                    tmp_mask = grid_dict[tmp_datstr]['tmask'][:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,jj,ii] == 0
+                    tmpdat_hov[tmp_mask,:] = np.ma.masked
+                    #pdb.set_trace()
+
+
                 tmpdat_hov_gdept =  grid_dict[tmp_datstr]['gdept'][:,jj_2nd_ind,ii_2nd_ind]               
-                for i_i,(tmpdat) in enumerate(tmpdat_hov):hov_dat[tmp_datstr][:,i_i] = np.ma.masked_invalid(np.interp(hov_dat['y'], tmpdat_hov_gdept, tmpdat))
+                for i_i,(tmpdat) in enumerate(tmpdat_hov):hov_dat[tmp_datstr][:,i_i] = np.ma.masked_invalid(np.interp(hov_dat['y'], tmpdat_hov_gdept, tmpdat.filled(np.nan)))
 
     else:
         for tmp_datstr in Dataset_lst: hov_dat[tmp_datstr] = np.ma.zeros((nz,ntime))*np.ma.masked
@@ -2417,8 +2437,8 @@ def reload_ts_data_comb(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,tim
             if var.upper() in ['PEA', 'PEAT','PEAS','Pync_Z'.upper(),'Pync_Th'.upper(),'N2max'.upper()]:
                 try:
 
-                    hov_dat_T_dict = reload_hov_data_comb('votemper',var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd)
-                    hov_dat_S_dict = reload_hov_data_comb('vosaline',var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,load_2nd_files,Dataset_lst,configd)
+                    hov_dat_T_dict = reload_hov_data_comb('votemper',var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd)
+                    hov_dat_S_dict = reload_hov_data_comb('vosaline',var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd)
 
                     for tmp_datstr in Dataset_lst: # _secondary:
 
@@ -2473,7 +2493,7 @@ def reload_ts_data_comb(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,tim
 
         else:
             ts_dat_dict['Dataset 1'] = np.ma.masked_invalid(xarr_dict['Dataset 1'][var_grid[var]][ldi].variables[var][:,thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']][:,jj,ii].load())
-            
+
             for tmp_datstr in Dataset_lst_secondary:
                 th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
 

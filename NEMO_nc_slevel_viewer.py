@@ -2749,11 +2749,11 @@ def nemo_slice_zlev(config = 'amm7',
                 if do_mask_dict[tmp_datstr]:
                     if var_dim[var] == 3:
                         data_inst[tmp_datstr] = np.ma.array(data_inst[tmp_datstr], mask = (grid_dict[tmp_datstr]['tmask'][0,:,:] == False))
-                    elif var_dim[var] == 4:
+                    elif var_dim[var] == 4:                        
                         data_inst[tmp_datstr] = np.ma.array(data_inst[tmp_datstr], mask = (grid_dict[tmp_datstr]['tmask'] == False))
 
 
-            
+            #pdb.set_trace()
             ###################################################################################################
             ### Slice data for plotting 
             ###################################################################################################
@@ -2898,7 +2898,7 @@ def nemo_slice_zlev(config = 'amm7',
                 if hov_time:
                     if var_dim[var] == 4:
                         #pdb.set_trace()
-                        hov_dat_dict = reload_hov_data_comb(var,var_d[1]['mat'],var_grid['Dataset 1'],var_d['d'],ldi,thd, time_datetime, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict,load_second_files,Dataset_lst,configd)
+                        hov_dat_dict = reload_hov_data_comb(var,var_d[1]['mat'],var_grid['Dataset 1'],var_d['d'],ldi,thd, time_datetime, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict,do_mask_dict,load_second_files,Dataset_lst,configd)
 
                         if do_grad == 2:
                             #hov_dat_dict['Dataset 1'],hov_dat_dict['Dataset 2'] = grad_vert_hov_prof_data(hov_dat_dict['Dataset 1'],hov_dat_dict['Dataset 2'],hov_dat_dict['y'])
@@ -5446,7 +5446,7 @@ def nemo_slice_zlev(config = 'amm7',
 
                                 for fcst_ldi in range(nldi):
 
-                                    fsct_hov_dat = reload_hov_data_comb(var,var_d[1]['mat'],var_grid['Dataset 1'],var_d['d'],fcst_ldi, thd,time_datetime, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict, load_second_files,Dataset_lst,configd)
+                                    fsct_hov_dat = reload_hov_data_comb(var,var_d[1]['mat'],var_grid['Dataset 1'],var_d['d'],fcst_ldi, thd,time_datetime, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict,do_mask_dict, load_second_files,Dataset_lst,configd)
                                     for tmp_datstr in Dataset_lst:fsct_hov_dat_dict[tmp_datstr][fcst_ldi] = fsct_hov_dat[tmp_datstr]
                                     fsct_hov_x[fcst_ldi] = fsct_hov_dat['x'] + timedelta(hours = ld_time_offset[fcst_ldi])
                 
