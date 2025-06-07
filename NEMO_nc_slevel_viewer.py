@@ -5060,13 +5060,15 @@ def nemo_slice_zlev(config = 'amm7',
                                     for xi,tmp_datstr in enumerate(Dataset_lst): axxs[xi].set_title(tmp_datstr)
                                     xs_ylim = np.array(axxs[0].get_ylim())
                                     xs_xlim = np.array(axxs[0].get_xlim())
-                                    xs_ylim[0] = tmp_xsect_z[tmp_datstr][~(tmp_xsect_x[tmp_datstr]*tmp_xsect_z[tmp_datstr]*tmp_xsect_dat[tmp_datstr]).mask].max()
+                                    tmp_xsect_zmat = tmp_xsect_z[tmp_datstr][~(tmp_xsect_x[tmp_datstr]*tmp_xsect_z[tmp_datstr]*tmp_xsect_dat[tmp_datstr]).mask]
+                                    if tmp_xsect_zmat.size>0:
+                                        xs_ylim[0] = tmp_xsect_z[tmp_datstr][~(tmp_xsect_x[tmp_datstr]*tmp_xsect_z[tmp_datstr]*tmp_xsect_dat[tmp_datstr]).mask].max()
+
                                     for xi,tmp_datstr in enumerate(Dataset_lst): axxs[xi].set_ylim(xs_ylim)
 
                                     if do_MLD:
                                         for xi,tmp_datstr in enumerate(Dataset_lst):axxs[xi].plot(tmp_xsect_x[tmp_datstr],tmp_xsect_mld_dat[tmp_datstr],'k', lw = 0.5)
-                                
-                                
+                                    
                                     #for axi,tmpax  in enumerate(axxs): 
                                     for axi,tmp_datstr in enumerate(Dataset_lst): 
                                         #tmpax = axxs[axi]
