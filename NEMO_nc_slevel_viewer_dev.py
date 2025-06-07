@@ -678,13 +678,17 @@ def nemo_slice_zlev(config = 'amm7',
 
 
     init_timer.append((datetime.now(),'Lon/Lats loaded'))
-
-    if do_mask:
-        if 'tmask' not in rootgrp_gdept_dict[tmp_datstr].variables.keys():
-            do_mask = False
-            
+    do_mask_dict = {}
+    for tmp_datstr in Dataset_lst:
+        tmp_do_mask = do_mask
+        if tmp_do_mask:
+            if 'tmask' not in rootgrp_gdept_dict[tmp_datstr].variables.keys():
+                
+                tmp_do_mask = False
+        do_mask_dict[tmp_datstr] = tmp_do_mask
+    #pdb.set_trace()       
     #create depth (gdept) dictionary
-    grid_dict,nz = load_grid_dict(Dataset_lst,rootgrp_gdept_dict, thd, nce1t,nce2t,nce3t,configd, config_fnames_dict,cutxind,cutyind,cutout_data, do_mask)
+    grid_dict,nz = load_grid_dict(Dataset_lst,rootgrp_gdept_dict, thd, nce1t,nce2t,nce3t,configd, config_fnames_dict,cutxind,cutyind,cutout_data, do_mask_dict)
     #pdb.set_trace()
     # if using WW3 grid, load regridding interpolation weights
 
@@ -2741,8 +2745,8 @@ def nemo_slice_zlev(config = 'amm7',
                             
 
 
-            if do_mask:
-                for tmp_datstr in  Dataset_lst:
+            for tmp_datstr in  Dataset_lst:
+                if do_mask_dict[tmp_datstr]:
                     if var_dim[var] == 3:
                         data_inst[tmp_datstr] = np.ma.array(data_inst[tmp_datstr], mask = (grid_dict[tmp_datstr]['tmask'][0,:,:] == False))
                     elif var_dim[var] == 4:
@@ -2784,13 +2788,13 @@ def nemo_slice_zlev(config = 'amm7',
                             if var_dim[var] == 4:
                         '''
                         #pdb.set_trace()
-                        map_dat_dict[tmp_datstr] = field_gradient_2d(map_dat_dict[tmp_datstr], thd[1]['dx']*grid_dict['Dataset 1']['e1t'],thd[1]['dx']*grid_dict['Dataset 1']['e2t'], do_mask = do_mask, curr_griddict = grid_dict[tmp_datstr]) # scale up widths between grid boxes
+                        map_dat_dict[tmp_datstr] = field_gradient_2d(map_dat_dict[tmp_datstr], thd[1]['dx']*grid_dict['Dataset 1']['e1t'],thd[1]['dx']*grid_dict['Dataset 1']['e2t'], do_mask = do_mask_dict['Dataset 1'], curr_griddict = grid_dict[tmp_datstr]) # scale up widths between grid boxes
                         
                         # if Sec_regrid is true, do gradient on _Sec_regrid in well, not instead, as needed for clim calcs
                         if Sec_regrid & (tmp_datstr!= 'Dataset 1'):
                             th_d_ind = int(tmp_datstr[8:])
                             #pdb.set_trace()
-                            map_dat_dict[tmp_datstr + '_Sec_regrid'] = field_gradient_2d(map_dat_dict[tmp_datstr + '_Sec_regrid'], thd[th_d_ind]['dx']*grid_dict[tmp_datstr]['e1t'],thd[th_d_ind]['dx']*grid_dict[tmp_datstr]['e2t'], do_mask = do_mask, curr_griddict = grid_dict[tmp_datstr]) # scale up widths between grid boxes
+                            map_dat_dict[tmp_datstr + '_Sec_regrid'] = field_gradient_2d(map_dat_dict[tmp_datstr + '_Sec_regrid'], thd[th_d_ind]['dx']*grid_dict[tmp_datstr]['e1t'],thd[th_d_ind]['dx']*grid_dict[tmp_datstr]['e2t'], do_mask = do_mask_dict[tmp_datstr], curr_griddict = grid_dict[tmp_datstr]) # scale up widths between grid boxes
 
                     
                     if do_memory & do_timer: timer_lst.append(('Calculated Grad of map_dat_dict',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))

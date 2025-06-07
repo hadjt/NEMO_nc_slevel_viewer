@@ -3425,10 +3425,12 @@ def create_Dataset_lst(fname_dict):
 
 
 def load_grid_dict(Dataset_lst,
-rootgrp_gdept_dict, thd, nce1t,nce2t,nce3t,configd, config_fnames_dict,cutxind,cutyind,cutout_data, do_mask):
+rootgrp_gdept_dict, thd, nce1t,nce2t,nce3t,configd, config_fnames_dict,cutxind,cutyind,cutout_data, do_mask_dict):
     grid_dict = {}
     for tmp_datstr in Dataset_lst:
         th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
+
+        do_mask = do_mask_dict[tmp_datstr]
 
         grid_dict[tmp_datstr] = {}
         if cutout_data:
@@ -5227,6 +5229,7 @@ def int_ind_wgt_from_xypos(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_d
     tmp_thd_dy = tmp_thd['dy']
     tmp_lat_d_2 = lat_d[2]
     tmp_lon_d_2 = lon_d[2]
+    #pdb.set_trace()
 
     sel_bl_jj_out, sel_bl_ii_out, NWS_wgt, sel_jj_out, sel_ii_out = int_ind_wgt_from_xypos_func(tmp_xypos_dict,
         loni,latj, tmp_lon_d_2,tmp_lat_d_2, tmp_thd_x0 = tmp_thd_x0,tmp_thd_y0 = tmp_thd_y0,tmp_thd_dx = tmp_thd_dx,tmp_thd_dy = tmp_thd_dy)
