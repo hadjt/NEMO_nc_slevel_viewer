@@ -21,7 +21,7 @@ from scipy.interpolate import griddata
 ### set-up modules
 from NEMO_nc_slevel_viewer_lib import create_config_fnames_dict,create_rootgrp_gdept_dict,create_gdept_ncvarnames
 from NEMO_nc_slevel_viewer_lib import create_col_lst,create_Dataset_lst,create_xarr_dict
-from NEMO_nc_slevel_viewer_lib import create_lon_lat_dict,create_ncvar_lon_lat_time
+from NEMO_nc_slevel_viewer_lib import create_lon_lat_dict,create_ncvar_lon_lat_time_dict
 
 from NEMO_nc_slevel_viewer_lib import trim_file_dict,remove_extra_end_file_dict,add_derived_vars
 from NEMO_nc_slevel_viewer_lib import connect_to_files_with_xarray,load_grid_dict
@@ -323,9 +323,9 @@ def nemo_slice_zlev(config = 'amm7',
 
     z_meth_mat = ['z_slice','ss','nb','df','zm']
 
-    nav_lon_varname = 'nav_lon'
-    nav_lat_varname = 'nav_lat'
-    time_varname = 'time_counter'
+    #nav_lon_varname = 'nav_lon'
+    #nav_lat_varname = 'nav_lat'
+    #time_varname = 'time_counter'
 
 
     if use_cmocean:
@@ -561,14 +561,15 @@ def nemo_slice_zlev(config = 'amm7',
 
     #pdb.set_trace()
     # get lon, lat and time names from files
-    nav_lon_varname,nav_lat_varname,time_varname,nav_lon_var_mat,nav_lat_var_mat,time_varname_mat = create_ncvar_lon_lat_time(ncvar_d)
+    nav_lon_varname_dict,nav_lat_varname_dict,time_varname_dict,nav_lon_var_mat,nav_lat_var_mat,time_varname_mat = create_ncvar_lon_lat_time_dict(ncvar_d)
+    #time_varname = time_varname_dict['Dataset 1']
     
     init_timer.append((datetime.now(),'created ncvar lon lat time'))
 
     if resample_freq is not None:
         #pdb.set_trace()
         print('xarray open_mfdataset: Start resample with %s'%(resample_freq), datetime.now())
-        xarr_dict = resample_xarray(xarr_dict,resample_freq,time_varname)
+        xarr_dict = resample_xarray(xarr_dict,resample_freq,time_varname_dict)
         print('xarray open_mfdataset: Finish resample with %s'%(resample_freq), datetime.now())
         init_timer.append((datetime.now(),'xarray resampled'))
 
@@ -585,7 +586,7 @@ def nemo_slice_zlev(config = 'amm7',
 
 
     # Create lon and lat dictionaries
-    lon_d,lat_d = create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncglamt,ncgphit,nav_lon_varname,nav_lat_varname,ncdim_d,cutxind,cutyind,cutout_data)
+    lon_d,lat_d = create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncglamt,ncgphit,nav_lon_varname_dict,nav_lat_varname_dict,ncdim_d,cutxind,cutyind,cutout_data)
     
 
     domsize = {}
@@ -921,7 +922,7 @@ def nemo_slice_zlev(config = 'amm7',
     init_timer.append((datetime.now(),'nc time started'))
 
     #pdb.set_trace()
-    time_datetime,time_datetime_since_1970,ntime,ti, nctime_calendar_type = extract_time_from_xarr(xarr_dict['Dataset 1']['T'],fname_dict['Dataset 1']['T'][0],time_varname,ncdim_d['Dataset 1']['T']['t'],date_in_ind,date_fmt,ti,verbose_debugging)
+    time_datetime,time_datetime_since_1970,ntime,ti, nctime_calendar_type = extract_time_from_xarr(xarr_dict['Dataset 1']['T'],fname_dict['Dataset 1']['T'][0],time_varname_dict['Dataset 1'],ncdim_d['Dataset 1']['T']['t'],date_in_ind,date_fmt,ti,verbose_debugging)
 
     init_timer.append((datetime.now(),'nc time completed'))
 
@@ -983,7 +984,7 @@ def nemo_slice_zlev(config = 'amm7',
         # load time from second data set to check if matches with first dataset.         
 
         time_datetime_2nd,time_datetime_since_1970_2nd,ntime_2nd,ti, nctime_calendar_type = extract_time_from_xarr(xarr_dict['Dataset 2']['T'],fname_dict['Dataset 2']['T'][0],
-            time_varname,ncdim_d['Dataset 2']['T']['t'],date_in_ind,date_fmt,ti,verbose_debugging)
+            time_varname_dict['Dataset 2'],ncdim_d['Dataset 2']['T']['t'],date_in_ind,date_fmt,ti,verbose_debugging)
 
 
         
@@ -1033,7 +1034,7 @@ def nemo_slice_zlev(config = 'amm7',
     for tmp_datstr in Dataset_lst: # xarr_dict.keys():
         #time_d[tmp_datstr] = {}
         for tmpgrid in xarr_dict[tmp_datstr].keys():
-
+            '''
             for ncvar in ncvar_d[tmp_datstr][tmpgrid]: 
                 #if ncvar.upper() in nav_lon_var_mat: nav_lon_varname = ncvar
                 #if ncvar.upper() in nav_lat_var_mat: nav_lat_varname = ncvar
@@ -1042,10 +1043,10 @@ def nemo_slice_zlev(config = 'amm7',
             #if ncvar.upper() in time_varname_mat: time_varname = ncvar
 
             #time_d[tmp_datstr][tmpgrid] = {}
-
+            '''
             #pdb.set_trace()    
             #if tmpgrid == 'I': continue #  no longer need to skip for Increments, as extract_time_from_xarr handles it
-            time_d[tmp_datstr][tmpgrid]['datetime'],time_d[tmp_datstr][tmpgrid]['datetime_since_1970'],tmp_ntime,tmp_ti, nctime_calendar_type = extract_time_from_xarr(xarr_dict[tmp_datstr][tmpgrid],fname_dict[tmp_datstr][tmpgrid][0], tmp_time_varname,ncdim_d[tmp_datstr][tmpgrid]['t'],date_in_ind,date_fmt,ti,verbose_debugging)
+            (time_d[tmp_datstr][tmpgrid]['datetime'],time_d[tmp_datstr][tmpgrid]['datetime_since_1970'],tmp_ntime,tmp_ti, nctime_calendar_type) =  extract_time_from_xarr(xarr_dict[tmp_datstr][tmpgrid],fname_dict[tmp_datstr][tmpgrid][0], time_varname_dict[tmp_datstr],ncdim_d[tmp_datstr][tmpgrid]['t'],date_in_ind,date_fmt,ti,verbose_debugging)
 
     # add derived variables
     var_d,var_dim, var_grid = add_derived_vars(var_d,var_dim, var_grid, Dataset_lst)
@@ -3767,8 +3768,11 @@ def nemo_slice_zlev(config = 'amm7',
                             tmpobsdat_mat = tmpobsdat_mat.reshape(-1,1)
 
                         # choose the obs to plot, depending on the current depth (surface, zslice etc.)
-                        if z_meth in ['z_slice','ss']:
+                        if z_meth in ['z_slice','ss','z_index']:
                             if z_meth == 'z_slice':  obs_tmp_zz = zz
+                            if z_meth == 'z_index': 
+                                obs_tmp_zz = zz
+                                print('check ops for z_index')
                             # find the obs nearst to depth zi, or surface
                             obs_obs_zi_lst = np.ma.abs(tmpobsz - zz).argmin(axis = 1)
                             tmpobsdat = np.ma.array([tmpobsdat_mat[tmpzi,tmpzz] for tmpzi, tmpzz in enumerate(obs_obs_zi_lst)])
