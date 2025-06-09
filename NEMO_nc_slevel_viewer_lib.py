@@ -1669,7 +1669,33 @@ def stream_from_vocetr_eff(v_tr):
         psi = (v_tr[:,:,::-1].cumsum(axis = 2)[:,:,::-1])
     return psi
 
-            
+        
+def update_cur_var_grid(var,tmp_datstr,ldi, var_grid, xarr_dict):
+
+    #tmp_cur_var_grid = var_grid(var,tmp_datstr,ldi, var_grid, xarr_dict )
+    
+    tmp_cur_var_grid = var_grid[var]
+
+    # sometime we take T, S and SSH from different files (grid), and compare to a config where they are all in the same file
+    # so check that it is?
+
+    if var not in xarr_dict[tmp_datstr][tmp_cur_var_grid][ldi].variables.keys():
+    #if tmp_cur_var_grid not in xarr_dict[tmp_datstr].keys():
+        #pdb.set_trace()
+        print('tmp_cur_var_grid',tmp_cur_var_grid)
+        for tmp_var_grid in xarr_dict[tmp_datstr].keys():
+            print('tmp_var_grid',tmp_var_grid)
+            if var in xarr_dict[tmp_datstr][tmp_var_grid][ldi].variables.keys():
+                print('tmp_cur_var_grid before',tmp_cur_var_grid)
+                tmp_cur_var_grid = tmp_var_grid
+                print('tmp_cur_var_grid after',tmp_cur_var_grid)
+
+    #tmp_cur_var_grid_lst = [tmp_var_grid for tmp_var_grid in xarr_dict[tmp_datstr].keys() if var in xarr_dict[tmp_datstr][tmp_var_grid][ldi].variables.keys()]
+    #if len(tmp_cur_var_grid_lst) == 1:
+    #    tmp_cur_var_grid = tmp_cur_var_grid_lst[0]
+
+    return tmp_cur_var_grid
+    
 
 def reload_data_instances(var,thd,ldi,ti,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files):
 
@@ -1843,19 +1869,36 @@ def reload_data_instances(var,thd,ldi,ti,var_d,var_grid, xarr_dict, grid_dict,va
                 pdb.set_trace()
 
         else:
+
+
+
+            
+            '''
             # for a given var, what grid should it be in
             tmp_cur_var_grid = var_grid[var]
 
             # sometime we take T, S and SSH from different files (grid), and compare to a config where they are all in the same file
             # so check that it is?
-            if tmp_cur_var_grid not in xarr_dict[tmp_datstr].keys():
+
+            tmp_cur_var_grid = var_grid(var,tmp_datstr,ldi, var_grid, xarr_dict )
+            
+            if var not in xarr_dict[tmp_datstr][tmp_cur_var_grid][ldi].variables.keys():
+            #if tmp_cur_var_grid not in xarr_dict[tmp_datstr].keys():
                 #pdb.set_trace()
+                print('tmp_cur_var_grid',tmp_cur_var_grid)
                 for tmp_var_grid in xarr_dict[tmp_datstr].keys():
+                    print('tmp_var_grid',tmp_var_grid)
                     if var in xarr_dict[tmp_datstr][tmp_var_grid][ldi].variables.keys():
+                        print('tmp_cur_var_grid before',tmp_cur_var_grid)
                         tmp_cur_var_grid = tmp_var_grid
+                        print('tmp_cur_var_grid after',tmp_cur_var_grid)
 
+            #tmp_cur_var_grid_lst = [tmp_var_grid for tmp_var_grid in xarr_dict[tmp_datstr].keys() if var in xarr_dict[tmp_datstr][tmp_var_grid][ldi].variables.keys()]
+            #if len(tmp_cur_var_grid_lst) == 1:
+            #    tmp_cur_var_grid = tmp_cur_var_grid_lst[0]
 
-
+            '''
+            tmp_cur_var_grid = update_cur_var_grid(var,tmp_datstr,ldi, var_grid, xarr_dict )
             if var not in xarr_dict[tmp_datstr][tmp_cur_var_grid][ldi].variables.keys():
                 pdb.set_trace()
 
@@ -2348,10 +2391,15 @@ def reload_hov_data_comb(var,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii
             #pdb.set_trace()
         for tmp_datstr in Dataset_lst_secondary:
             th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
+
+
+            tmp_cur_var_grid = update_cur_var_grid(var,tmp_datstr,ldi, var_grid, xarr_dict )
+            if var not in xarr_dict[tmp_datstr][tmp_cur_var_grid][ldi].variables.keys():
+                pdb.set_trace()
             
             if configd[th_d_ind] == configd[1]: #if configd[th_d_ind] is None:
-                #hov_dat[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables[var][:,:,thd[2]['y0']:thd[2]['y1']:thd[2]['dy'],thd[2]['x0']:thd[2]['x1']:thd[2]['dx']][:,:,jj,ii].load()).T
-                hov_dat[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables[var][:,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,:,jj,ii].load()).T
+                #hov_dat[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][tmp_cur_var_grid][ldi].variables[var][:,:,thd[2]['y0']:thd[2]['y1']:thd[2]['dy'],thd[2]['x0']:thd[2]['x1']:thd[2]['dx']][:,:,jj,ii].load()).T
+                hov_dat[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][tmp_cur_var_grid][ldi].variables[var][:,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,:,jj,ii].load()).T
                 if do_mask_dict[tmp_datstr]:
                     tmp_mask = grid_dict[tmp_datstr][:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,jj,ii] == 0
                     
@@ -2363,7 +2411,7 @@ def reload_hov_data_comb(var,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,ii
                 ii_2nd_ind,jj_2nd_ind = iijj_ind[tmp_datstr]['ii'],iijj_ind[tmp_datstr]['jj']
 
                 hov_dat[tmp_datstr] = np.ma.zeros(xarr_dict['Dataset 1'][var_grid[var]][ldi].variables[var][:,:,thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']].shape[1::-1])*np.ma.masked
-                tmpdat_hov = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables[var][:,:,thd[2]['y0']:thd[2]['y1']:thd[2]['dy'],thd[2]['x0']:thd[2]['x1']:thd[2]['dx']][:,:,jj_2nd_ind,ii_2nd_ind].load())
+                tmpdat_hov = np.ma.masked_invalid(xarr_dict[tmp_datstr][tmp_cur_var_grid][ldi].variables[var][:,:,thd[2]['y0']:thd[2]['y1']:thd[2]['dy'],thd[2]['x0']:thd[2]['x1']:thd[2]['dx']][:,:,jj_2nd_ind,ii_2nd_ind].load())
 
 
                 if do_mask_dict[tmp_datstr]:
@@ -4965,7 +5013,7 @@ def get_help_text(help_type,help_but):
     elif help_type.lower() == 'func':
         help_text= help_text + 'Function selected: %s\n\n'%help_but
         if help_but == 'Hov/Time':
-            help_text = help_text + 'Shows or hides the Hovmoller/Time axis (e) - hiding this data means the time data is '
+            help_text = help_text + 'Shows or hides the Hovmoller/Time axis (d and e) - hiding this data means the time data is '
             help_text = help_text + 'not loaded, which is quicker.'
         elif help_but == 'Show Prof':
             help_text = help_text + 'Shows or hides the profile axis (f), adjusting the size of the cross-section panels.'
@@ -4982,8 +5030,8 @@ def get_help_text(help_type,help_but):
             help_text = help_text + 'or, click on the axis b or c once and the maximum depth will be set.\n'
             help_text = help_text + 'When you click once, the zoom button will turn red (or green for right click), '
             help_text = help_text + 'when you click twice, it will change back to black.'
-        elif help_but == 'Reset zoom':
-            help_text = help_text + 'Reset the Zoom to default.'
+        #elif help_but == 'Reset zoom':
+        #    help_text = help_text + 'Reset the Zoom to default.'
         elif help_but == 'ColScl':
             help_text = help_text + 'Changes the colourmap scale, from linear, to focusing on the high or lower values. '
             help_text = help_text + 'Clicking on this cycles through these options, which is reflected in the button label '
@@ -5028,6 +5076,7 @@ def get_help_text(help_type,help_but):
             help_text = help_text + 'Shows or hides contours based on the colourbar tick values.'
         elif help_but == 'Grad':
             help_text = help_text + 'Cycles between off (greyed out grad), to the horizontal gradient (Grad: Horiz) and the vertical Gradient (Grad: Vert). '
+            help_text = help_text + 'Left clicking moves forward through the sequence (No Grad, Horiz Grad, Vert Grad), right click moves throught the sequence backwards. '
         elif help_but == 'T Diff':
             help_text = help_text + 'Shows the difference between the current time and the previous time, '
             help_text = help_text + 'i.e. how much it has change since the previous day etc. Greyed out if the first time of the dataset is selected.'
@@ -5072,6 +5121,16 @@ def get_help_text(help_type,help_but):
             help_text = help_text + ''
         elif help_but == 'Quit':
             help_text = help_text + 'Quits the programme.'
+            help_text = help_text + ''
+            help_text = help_text + ''
+        elif help_but == 'Sec Grid':
+            help_text = help_text + 'When two data sets are from differnt configurations, the second (etc) are interpolated onto the grid of the first config. '
+            help_text = help_text + 'This allows you to display the secondary models on there native grids. When showing difference plots, they are still regridded onto the first model grid.'
+            help_text = help_text + ''
+            help_text = help_text + ''
+        elif help_but == 'MLD':
+            help_text = help_text + 'Shows the mixed layer depth on the cross section and hovmuller subplots (b, c and d). '
+            help_text = help_text + 'Right clicking gives a window where you can select which MLD variable within the file you would like to plot.'
             help_text = help_text + ''
             help_text = help_text + ''
         elif help_but in ['Click','Loop']:

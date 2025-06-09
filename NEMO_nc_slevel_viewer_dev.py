@@ -2688,6 +2688,7 @@ def nemo_slice_zlev(config = 'amm7',
                 if hov_time:
                     if var_dim[var] == 4:
                         #pdb.set_trace()
+                        
                         hov_dat_dict = reload_hov_data_comb(var,var_d[1]['mat'],var_grid['Dataset 1'],var_d['d'],ldi,thd, time_datetime, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict,do_mask_dict,load_second_files,Dataset_lst,configd)
 
                         if do_grad == 2:
@@ -5721,19 +5722,18 @@ def main():
     if using a variable in the file list use:
 
 
-    fig_fname_lab=dataset1
-    fig_fname_lab_2nd=dataset1
+        expt1=dataset1
+        expt2=dataset2
 
-
-    flist1=$(echo "/directory/to/some/files/${fig_fname_lab}/prodm_op_am-dm.gridT*-36.nc)
-    flist2=$(echo "/directory/to/some/files/${fig_fname_lab_2nd}/prodm_op_am-dm.gridT*-36.nc)
+        flist1=$(echo "/directory/to/some/files/${expt1}/prodm_op_am-dm.gridT*-36.nc)
+        flist2=$(echo "/directory/to/some/files/${expt2}/prodm_op_am-dm.gridT*-36.nc)
 
     Optional arguments are give as keyword value pairs, with the keyword following a double hypen.
     for some argements, (th, files etc.), there are mulitple values given                                         
     We will list the most useful options first.
 
     
-    --fnames - addition file list for differnt datasets and grid, e.g. to show the different 
+    --fnames - additional file list for differnt datasets and grid, e.g. to show the different 
         between two sets of files. 
         
         --files is followed by the data set number, and the grid, before the file list,  
@@ -5743,11 +5743,11 @@ def main():
 
     
     --fnames 1 U - specify a consistent set of U and V files, to calculate a drived variable current magintude. 
-        assumes the variable vozocrtx is present. Later upgrade will allow the plotting of vectors, 
-        and to handle other current variable names. Must have both U_fname_lst and V_fname_lst.
+        assumes the variable vozocrtx is present. Later upgrade will allow other current variable names. 
+        Must have both U_fname_lst and V_fname_lst.
     --fnames 1 V - specify a consistent set of U and V files, to calculate a drived variable current magintude. 
-        assumes the variable vomecrty is present. Later upgrade will allow the plotting of vectors, 
-        and to handle other current variable names. Must have both U_fname_lst and V_fname_lst.
+        assumes the variable vomecrty is present. Later upgrade will allow other current variable names. 
+        Must have both U_fname_lst and V_fname_lst.
         
     --fnames 2 U as above for a second data set
     --fnames 2 V as above for a second data set
@@ -5763,7 +5763,7 @@ def main():
     secondary configs are entered as:
     --configs 2
     available configs include:
-        AMM7, AMM15, CO9P2, ORCA025, ORCA025EXT or ORCA12                                         
+        AMM7, AMM15, CO9P2, ORCA025, ORCA025EXT,  ORCA12, GCOAST, AMM7CMEMS or AMM15CMEMS
                                              
     --ii            initial ii value
     --jj            initial jj value
@@ -5786,7 +5786,7 @@ def main():
 
     Data Thinning
     =============
-    To speed up handling of large files, you can "thin" the data, only loading every x row and column of the data:
+    To speed up handling of large files and datasets, you can "thin" the data, only loading every x row and column of the data:
         data[thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']]
 
     When commparing two data sets, you can thin them separately
@@ -5828,6 +5828,13 @@ def main():
     The th arguemnts replace the following legacy argmuents
         thin, thin_x0, thin_x1, thin_files thin_files_0, thin_file_1
         thin_2nd, thin_x0_2nd, thin_x1_2nd, thin_files_2nd thin_files_0_2nd, thin_file_1_2nd
+    
+    When displaying large files, it is often the plotting that reduces the responisveness. AMM15 is
+    ~1500*1500, but most of this detail is not visible. You can reduce the number of pixels
+    displayed in the map plot to pxy pixels x pxy, which often speeds up the plotting.
+                                             
+    --th 1 pxy    Maximum pixels displayed (500 is a good starting point)
+                                             
     
     It is possible to save figures, these will also have text files with the settings to recreate the figure
     at a higher resolution (more files, less thining) with just plot
