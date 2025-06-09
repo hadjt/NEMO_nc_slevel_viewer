@@ -3591,24 +3591,33 @@ def create_ncvar_lon_lat_time_dict(ncvar_d):
     nav_lat_varname_dict = {}
     time_varname_dict = {}
 
-    for tmp_datstr in ncvar_d.keys():#Dataset_lst:
 
-        for ncvar in ncvar_d[tmp_datstr]['T']: 
-            if ncvar.upper() in nav_lon_var_mat: nav_lon_varname = ncvar
-            if ncvar.upper() in nav_lat_var_mat: nav_lat_varname = ncvar
-            if ncvar.upper() in time_varname_mat: time_varname = ncvar
+    for tmp_datstr in ncvar_d.keys():#Dataset_lst:               
+        #nav_lon_varname_dict[tmp_datstr] = {}            
+        #nav_lat_varname_dict[tmp_datstr] = {}            
+        time_varname_dict[tmp_datstr] = {}
+ 
+        for tmpgrid in ncvar_d[tmp_datstr].keys():   
 
-        
-        #if nav_lon_varname not in ncvar_d['Dataset 1']['T']:
-        #    pdb.set_trace()
+            #for ncvar in ncvar_d[tmp_datstr]['T']: 
+            for ncvar in ncvar_d[tmp_datstr][tmpgrid]: 
+                if ncvar.upper() in nav_lon_var_mat: nav_lon_varname = ncvar
+                if ncvar.upper() in nav_lat_var_mat: nav_lat_varname = ncvar
+                if ncvar.upper() in time_varname_mat: time_varname = ncvar
 
-        nav_lon_varname_dict[tmp_datstr] = nav_lon_varname
-        nav_lat_varname_dict[tmp_datstr] = nav_lat_varname
-        time_varname_dict[tmp_datstr] = time_varname
+            
+            #if nav_lon_varname not in ncvar_d['Dataset 1']['T']:
+            #    pdb.set_trace()
 
-        if nav_lon_varname is None:pdb.set_trace()
-        if nav_lat_varname is None:pdb.set_trace()
-        if time_varname is None:pdb.set_trace()
+            #nav_lon_varname_dict[tmp_datstr][tmpgrid] = nav_lon_varname
+            #nav_lat_varname_dict[tmp_datstr][tmpgrid] = nav_lat_varname
+            time_varname_dict[tmp_datstr][tmpgrid] = time_varname
+            if tmpgrid == 'T':
+                nav_lon_varname_dict[tmp_datstr] = nav_lon_varname
+                nav_lat_varname_dict[tmp_datstr] = nav_lat_varname
+            if nav_lon_varname is None:pdb.set_trace()
+            if nav_lat_varname is None:pdb.set_trace()
+            if time_varname is None:pdb.set_trace()
     
 
     #pdb.set_trace()
@@ -3887,8 +3896,9 @@ def resample_xarray(xarr_dict,resample_freq,time_varname_dict):
 
 
     for tmp_datstr in xarr_dict.keys():
-        time_varname = time_varname_dict[tmp_datstr]
+        #time_varname = time_varname_dict[tmp_datstr]
         for tmpgrid in xarr_dict[tmp_datstr].keys():
+            time_varname = time_varname_dict[tmp_datstr][tmpgrid]
             for xarlii in range(len(xarr_dict[tmp_datstr][tmpgrid])):
                 if time_varname == 'time_counter':
                     xarr_dict[tmp_datstr][tmpgrid][xarlii] = xarr_dict[tmp_datstr][tmpgrid][xarlii].resample(time_counter = resample_freq).mean()
@@ -3922,10 +3932,13 @@ def extract_time_from_xarr(xarr_dict_in,ex_fname_in,time_varname_in,t_dim,date_i
         time_varname = time_varname_in
     #pdb.set_trace()
     # Extract time variable (with attributes) from xarray
-    nctime = xarr_dict_in[0].variables[time_varname]
-
+    try:
+        nctime = xarr_dict_in[0].variables[time_varname]
+    except:
+        pdb.set_trace()
 
     try:
+
         #xarray nctime to datetime:
         #xarray nctime to timestamp
         if isinstance(nctime.to_numpy()[0],np.datetime64):

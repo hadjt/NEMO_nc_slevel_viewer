@@ -891,7 +891,7 @@ def nemo_slice_zlev(config = 'amm7',
     init_timer.append((datetime.now(),'nc time started'))
 
     #pdb.set_trace()
-    time_datetime,time_datetime_since_1970,ntime,ti, nctime_calendar_type = extract_time_from_xarr(xarr_dict['Dataset 1']['T'],fname_dict['Dataset 1']['T'][0],time_varname_dict['Dataset 1'],ncdim_d['Dataset 1']['T']['t'],date_in_ind,date_fmt,ti,verbose_debugging)
+    time_datetime,time_datetime_since_1970,ntime,ti, nctime_calendar_type = extract_time_from_xarr(xarr_dict['Dataset 1']['T'],fname_dict['Dataset 1']['T'][0],time_varname_dict['Dataset 1']['T'],ncdim_d['Dataset 1']['T']['t'],date_in_ind,date_fmt,ti,verbose_debugging)
 
     init_timer.append((datetime.now(),'nc time completed'))
 
@@ -953,7 +953,7 @@ def nemo_slice_zlev(config = 'amm7',
         # load time from second data set to check if matches with first dataset.         
 
         time_datetime_2nd,time_datetime_since_1970_2nd,ntime_2nd,ti, nctime_calendar_type = extract_time_from_xarr(xarr_dict['Dataset 2']['T'],fname_dict['Dataset 2']['T'][0],
-            time_varname_dict['Dataset 2'],ncdim_d['Dataset 2']['T']['t'],date_in_ind,date_fmt,ti,verbose_debugging)
+            time_varname_dict['Dataset 2']['T'],ncdim_d['Dataset 2']['T']['t'],date_in_ind,date_fmt,ti,verbose_debugging)
 
 
         
@@ -1015,7 +1015,7 @@ def nemo_slice_zlev(config = 'amm7',
             '''
             #pdb.set_trace()    
             #if tmpgrid == 'I': continue #  no longer need to skip for Increments, as extract_time_from_xarr handles it
-            (time_d[tmp_datstr][tmpgrid]['datetime'],time_d[tmp_datstr][tmpgrid]['datetime_since_1970'],tmp_ntime,tmp_ti, nctime_calendar_type) =  extract_time_from_xarr(xarr_dict[tmp_datstr][tmpgrid],fname_dict[tmp_datstr][tmpgrid][0], time_varname_dict[tmp_datstr],ncdim_d[tmp_datstr][tmpgrid]['t'],date_in_ind,date_fmt,ti,verbose_debugging)
+            (time_d[tmp_datstr][tmpgrid]['datetime'],time_d[tmp_datstr][tmpgrid]['datetime_since_1970'],tmp_ntime,tmp_ti, nctime_calendar_type) =  extract_time_from_xarr(xarr_dict[tmp_datstr][tmpgrid],fname_dict[tmp_datstr][tmpgrid][0], time_varname_dict[tmp_datstr][tmpgrid],ncdim_d[tmp_datstr][tmpgrid]['t'],date_in_ind,date_fmt,ti,verbose_debugging)
 
     # add derived variables
     var_d,var_dim, var_grid = add_derived_vars(var_d,var_dim, var_grid, Dataset_lst)
