@@ -41,7 +41,7 @@ from NEMO_nc_slevel_viewer_lib import grad_vert_ns_data,grad_vert_ew_data,grad_v
 from NEMO_nc_slevel_viewer_lib import field_gradient_2d, vector_div, vector_curl,sw_dens
 
 # Data manipulation modules
-from NEMO_nc_slevel_viewer_lib import rotated_grid_from_amm15, reduce_rotamm15_grid,regrid_2nd_thin_params,regrid_iijj_ew_ns
+#from NEMO_nc_slevel_viewer_lib import rotated_grid_from_amm15, reduce_rotamm15_grid,regrid_2nd_thin_params,regrid_iijj_ew_ns
 from NEMO_nc_slevel_viewer_lib import interp1dmat_create_weight
 
 # Plotting modules
@@ -131,6 +131,8 @@ def nemo_slice_zlev(config = 'amm7',
     figsuptitfontsize = 14*0.8
     matplotlib.rcParams['font.size'] = 10*0.8
 
+    '''
+
     cutout_data = False
     if cutxind is None:
         cutxind = [0,None]
@@ -141,8 +143,20 @@ def nemo_slice_zlev(config = 'amm7',
     else:
         cutout_data = True
     
+    pdb.set_trace()
 
+    cutxind = thd[1]['cutx0'],thd[1]['cutx1']
+    cutyind = thd[1]['cuty0'],thd[1]['cuty1']
     
+    # global model (e.g. orca12) enforce th y1 to be e.g. -200, to avoid polar convergence
+    if cutyind[1] is not None: thd[1]['y1'] = None
+    
+    if cutxind[0]!=0:cutout_data = True
+    if cutyind[0]!=0:cutout_data = True
+    if cutxind[1] is not None:cutout_data = True
+    if cutyind[1] is not None:cutout_data = True
+    '''
+
     ens_stat_lst = ['EnsMean','EnsStd','EnsVar','EnsCnt']
     if do_ensemble:
         Ens_stat = None
@@ -426,10 +440,50 @@ def nemo_slice_zlev(config = 'amm7',
     nlat_amm15 = 1345
 
 
+
+
+
     # create a dictionary with all the config info in it
     config_fnames_dict = create_config_fnames_dict(configd,Dataset_lst,script_dir)
 
     init_timer.append((datetime.now(),'Indices set'))
+
+
+
+    # check if there are any LBCs
+    do_LBC_d = {}
+    do_LBC = False
+
+    
+    #for tmp_datstr in Dataset_lst:
+    #    th_d_ind = int(tmp_datstr[8:])
+    #    pdb.set_trace()
+    
+    for cfi in configd.keys():
+        if configd[cfi][-3:].upper() == 'LBC':
+            do_LBC_d[cfi] = True
+            do_LBC = True
+
+        else:
+            do_LBC_d[cfi] = False
+
+    if do_LBC == True:
+        LBC_coord_d = {}
+        for cfi in configd.keys():
+            if do_LBC_d[cfi]:
+                LBC_coord_d[cfi] = {}
+                for LBC_set in range(1,11):
+                    LBC_set_name = 'bdy_coord_%i_file'%LBC_set
+                    if LBC_set_name in config_fnames_dict[configd[cfi]].keys():
+                        LBC_coord_d[cfi][LBC_set] = {}
+                            
+                        rootgrp = Dataset(config_fnames_dict[configd[cfi]][LBC_set_name], 'r')
+                        for LBC_var in rootgrp.variables.keys(): LBC_coord_d[cfi][LBC_set][LBC_var] = rootgrp.variables[LBC_var][:]                        
+                        rootgrp.close()
+    #pdb.set_trace()
+
+    init_timer.append((datetime.now(),'LBC prep work'))
+
     
     z_meth_default = config_fnames_dict[configd[1]]['z_meth_default']
     
@@ -445,84 +499,9 @@ def nemo_slice_zlev(config = 'amm7',
 
     #pdb.set_trace()
 
-    """
-    #config version specific info - mainly grid, and lat/lon info
-    if configd[1].upper() == 'AMM7':
-        #grid lat lon
-        lon = np.arange(-19.888889,12.99967+1/9.,1/9.)
-        lat = np.arange(40.066669,65+1/15.,1/15.)
 
-    elif configd[1].upper() == 'GULF18':
-
-        #grid lat lon
-        lon = rootgrp_gdept_dict['Dataset 1'].variables[ncglamt][:,0,:].ravel()
-        lat = rootgrp_gdept_dict['Dataset 1'].variables[ncgphit][:,:,0].ravel()
-    """
     if z_meth is None:
         z_meth = z_meth_default
-    '''
-
-    #default regirdding settings
-    regrid_meth = 1 # NN
-    regrid_params = None
-    regrid_params = {}  
-    regrid_params['do_regrid'] = 0
-
-
-    # regridding indices.
-    for tmp_datstr in Dataset_lst[1:]:
-        th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
-        #rootgrp_gdept_dict[tmp_datstr] = rootgrp_gdept_dict['Dataset 1']
-        
-
-        regrid_params[tmp_datstr] = None#(None,None,None,None,None)
-        if (configd[th_d_ind] is not None) & (configd[th_d_ind]!=configd[1]):
-        #if (configd[th_d_ind] is not None) :
-
-            if (configd[1].upper() in ['AMM7','AMM15']) & (configd[th_d_ind].upper() in ['AMM7','AMM15']):  
-                #mesh_file_2nd = config_fnames_dict[configd[th_d_ind]]['mesh_file'] 
-                #rootgrp_gdept_dict[tmp_datstr] = Dataset(mesh_file_2nd, 'r', format='NETCDF4')
-
-                regrid_params['do_regrid'] = 2
-
-                if (configd[1].upper() == 'AMM15') & (configd[th_d_ind].upper() == 'AMM7'):  
-
-
-                    lon = np.arange(-19.888889,12.99967+1/9.,1/9.)
-                    lat = np.arange(40.066669,65+1/15.,1/15.)
-
-
-                    amm_conv_dict = {}
-                    rootgrp = Dataset(config_fnames_dict[configd[1]]['regrid_amm7_amm15'], 'r')
-                    for var_conv in rootgrp.variables.keys(): amm_conv_dict[var_conv] = rootgrp.variables[var_conv][:]
-                    rootgrp.close()
-        
-                    nlon_amm        = nlon_amm15
-                    nlat_amm        = nlat_amm15
-                    nlon_amm_2nd    = nlon_amm7
-                    nlat_amm_2nd    = nlat_amm7
-
-
-                elif (configd[1].upper() == 'AMM7') & (configd[th_d_ind].upper() == 'AMM15'):
-
-                    amm_conv_dict = {}
-                    rootgrp = Dataset(config_fnames_dict[configd[th_d_ind]]['regrid_amm15_amm7'], 'r')
-                    for var_conv in rootgrp.variables.keys(): amm_conv_dict[var_conv] = rootgrp.variables[var_conv][:]
-                    rootgrp.close()
-        
-                    nlon_amm        = nlon_amm7
-                    nlat_amm        = nlat_amm7
-                    nlon_amm_2nd    = nlon_amm15
-                    nlat_amm_2nd    = nlat_amm15
-
-                regrid_params[tmp_datstr] = regrid_2nd_thin_params(amm_conv_dict,nlon_amm,nlat_amm, nlon_amm_2nd,nlat_amm_2nd,thd)
-                #pdb.set_trace()
-            else:
-
-                #NWS_amm_bl_jj_ind_out, NWS_amm_bl_ii_ind_out, NWS_amm_wgt_out, NWS_amm_nn_jj_ind_out, NWS_amm_nn_ii_ind_out
-                print('Differing configs not only amm15 and amm7')
-                pdb.set_trace()
-    '''
     init_timer.append((datetime.now(),'config 2 params'))
 
 
@@ -561,9 +540,12 @@ def nemo_slice_zlev(config = 'amm7',
 
     #pdb.set_trace()
     # get lon, lat and time names from files
-    nav_lon_varname_dict,nav_lat_varname_dict,time_varname_dict,nav_lon_var_mat,nav_lat_var_mat,time_varname_mat = create_ncvar_lon_lat_time_dict(ncvar_d)
+    check_var_name_present = True
+    if do_LBC:check_var_name_present = False
+    nav_lon_varname_dict,nav_lat_varname_dict,time_varname_dict,nav_lon_var_mat,nav_lat_var_mat,time_varname_mat = create_ncvar_lon_lat_time_dict(ncvar_d, check_var_name_present = check_var_name_present)
     #time_varname = time_varname_dict['Dataset 1']
     
+    #pdb.set_trace()
     init_timer.append((datetime.now(),'created ncvar lon lat time'))
 
     if resample_freq is not None:
@@ -580,13 +562,28 @@ def nemo_slice_zlev(config = 'amm7',
    
 
 
-            
+    cutout_d = {}    
+    for tmp_datstr in Dataset_lst:
+        th_d_ind = int(tmp_datstr[8:])
+        cutout_d[th_d_ind] = {}
+        cutout_d[th_d_ind]['cutxind'] = thd[th_d_ind]['cutx0'],thd[th_d_ind]['cutx1']
+        cutout_d[th_d_ind]['cutyind'] = thd[th_d_ind]['cuty0'],thd[th_d_ind]['cuty1']
+        cutout_d[th_d_ind]['do_cutout'] = False
+
+        if cutout_d[th_d_ind]['cutxind'][0]!=0:cutout_d[th_d_ind]['do_cutout'] = True
+        if cutout_d[th_d_ind]['cutyind'][0]!=0:cutout_d[th_d_ind]['do_cutout'] = True
+        if cutout_d[th_d_ind]['cutxind'][1] is not None:cutout_d[th_d_ind]['do_cutout'] = True
+        if cutout_d[th_d_ind]['cutyind'][1] is not None:
+            cutout_d[th_d_ind]['do_cutout'] = True
+            thd[th_d_ind]['y1'] = None
+  
 
     print ('xarray open_mfdataset Finish',datetime.now())
 
-
+    #pdb.set_trace()
     # Create lon and lat dictionaries
-    lon_d,lat_d = create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncglamt,ncgphit,nav_lon_varname_dict,nav_lat_varname_dict,ncdim_d,cutxind,cutyind,cutout_data)
+    #lon_d,lat_d = create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncglamt,ncgphit,nav_lon_varname_dict,nav_lat_varname_dict,ncdim_d,cutxind,cutyind,cutout_data)
+    lon_d,lat_d = create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncglamt,ncgphit,nav_lon_varname_dict,nav_lat_varname_dict,ncdim_d,cutout_d)
     
 
     domsize = {}
@@ -653,7 +650,8 @@ def nemo_slice_zlev(config = 'amm7',
         do_mask_dict[tmp_datstr] = tmp_do_mask
     #pdb.set_trace()       
     #create depth (gdept) dictionary
-    grid_dict,nz = load_grid_dict(Dataset_lst,rootgrp_gdept_dict, thd, nce1t,nce2t,nce3t,configd, config_fnames_dict,cutxind,cutyind,cutout_data, do_mask_dict)
+    #grid_dict,nz = load_grid_dict(Dataset_lst,rootgrp_gdept_dict, thd, nce1t,nce2t,nce3t,configd, config_fnames_dict,cutxind,cutyind,cutout_data, do_mask_dict)
+    grid_dict,nz = load_grid_dict(Dataset_lst,rootgrp_gdept_dict, thd, nce1t,nce2t,nce3t,configd, config_fnames_dict,cutout_d, do_mask_dict)
     #pdb.set_trace()
     # if using WW3 grid, load regridding interpolation weights
 
@@ -941,6 +939,11 @@ def nemo_slice_zlev(config = 'amm7',
                     '''  
     init_timer.append((datetime.now(),'justplot prepared'))
     # repeat if comparing two time series. 
+
+
+
+
+    '''
     if load_second_files:
         
         #var_d[2] = {}
@@ -998,7 +1001,7 @@ def nemo_slice_zlev(config = 'amm7',
         # use a difference colormap if comparing files
         curr_cmap = scnd_cmap
 
-    
+    '''
     # open file list with xarray
     for tmp_datstr in Dataset_lst: # xarr_dict.keys():
         #time_d[tmp_datstr] = {}
@@ -1121,7 +1124,7 @@ def nemo_slice_zlev(config = 'amm7',
 
 
     #default regirdding settings
-    regrid_meth = 1 # NN
+    regrid_meth = 2 # BL # 1 # NN
     regrid_params = None
     regrid_params = {}  
     regrid_params['do_regrid'] = 0
@@ -2427,7 +2430,7 @@ def nemo_slice_zlev(config = 'amm7',
             if preload_data:
                 #print('reload_data_instances:',var,preload_data_var,(data_inst_1 is None),(preload_data_ti != ti),(preload_data_var != var))
                 #print('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - ')
-
+                #pdb.set_trace()
                 # if data_inst_1 is None (i.e. first loop), or
                 #       if the time has changed, or
                 #       if the variable has changed
@@ -2476,6 +2479,79 @@ def nemo_slice_zlev(config = 'amm7',
                         reload_MLD = False
                         if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_mld',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                     
+            
+
+            if do_LBC:
+                for tmp_datstr in  Dataset_lst:
+                    th_d_ind = int(tmp_datstr[8:])
+                    print('do_LBC_d[th_d_ind]',do_LBC_d[th_d_ind])
+                    if do_LBC_d[th_d_ind]:
+                        try:
+                            if data_inst[tmp_datstr].shape[-2:] != grid_dict[tmp_datstr]['gdept'].shape[-2:]:
+
+                                tmp_LBC_grid = var_grid[tmp_datstr][var]
+                                if tmp_LBC_grid == 'T': tmp_LBC_grid = 'T_1'
+                                
+                                LBC_set = int(tmp_LBC_grid[-1])
+                                LBC_type = tmp_LBC_grid[:-2]
+
+                            
+                                tmp_LBC_data_in = data_inst[tmp_datstr]
+
+
+
+                                if LBC_type in ['T','U','V']:
+                                    tmpLBCnbj =LBC_coord_d[th_d_ind][LBC_set]['nbj'+LBC_type.lower()]
+                                    tmpLBCnbi =LBC_coord_d[th_d_ind][LBC_set]['nbi'+LBC_type.lower()]
+                                    tmp_LBC_data_out = np.ma.zeros(grid_dict[tmp_datstr]['gdept'].shape)*np.ma.masked                                
+                                    #tmp_LBC_data_out[:,LBC_coord_d[th_d_ind][LBC_set]['nbjt'], LBC_coord_d[th_d_ind][LBC_set]['nbit']] = tmp_LBC_data_in
+                                    tmp_LBC_data_out[:,tmpLBCnbj,tmpLBCnbi] = tmp_LBC_data_in
+                                elif LBC_type in ['T_bt','U_bt','V_bt']:
+                                    tmpLBCnbj =LBC_coord_d[th_d_ind][LBC_set]['nbj'+LBC_type[0].lower()][LBC_coord_d[th_d_ind][LBC_set]['nbr'+LBC_type[0].lower()]==1]
+                                    tmpLBCnbi =LBC_coord_d[th_d_ind][LBC_set]['nbi'+LBC_type[0].lower()][LBC_coord_d[th_d_ind][LBC_set]['nbr'+LBC_type[0].lower()]==1]
+
+                                    tmp_LBC_data_out = np.ma.zeros(grid_dict[tmp_datstr]['gdept'].shape[1:])*np.ma.masked  
+                                    tmp_LBC_data_out[tmpLBCnbj,tmpLBCnbi] = tmp_LBC_data_in
+                                else:
+                                    pdb.set_trace()
+                                '''
+                                if LBC_type == 'T':
+                                    tmp_LBC_data_out = np.ma.zeros(grid_dict[tmp_datstr]['gdept'].shape)*np.ma.masked                                
+                                    tmp_LBC_data_out[:,LBC_coord_d[th_d_ind][LBC_set]['nbjt'], LBC_coord_d[th_d_ind][LBC_set]['nbit']] = tmp_LBC_data_in
+                                elif LBC_type == 'U':
+                                    tmp_LBC_data_out = np.ma.zeros(grid_dict[tmp_datstr]['gdept'].shape)*np.ma.masked                                
+                                    tmp_LBC_data_out[:,LBC_coord_d[th_d_ind][LBC_set]['nbju'], LBC_coord_d[th_d_ind][LBC_set]['nbiu']] = tmp_LBC_data_in
+                                elif LBC_type == 'V':
+                                    tmp_LBC_data_out = np.ma.zeros(grid_dict[tmp_datstr]['gdept'].shape)*np.ma.masked                                
+                                    tmp_LBC_data_out[:,LBC_coord_d[th_d_ind][LBC_set]['nbjtv'], LBC_coord_d[th_d_ind][LBC_set]['nbiv']] = tmp_LBC_data_in
+                                elif LBC_type == 'T_bt':
+                                    tmp_LBC_data_out = np.ma.zeros(grid_dict[tmp_datstr]['gdept'].shape[1:])*np.ma.masked  
+                                    
+                                tmp_LBC_data_out = np.ma.zeros(grid_dict[tmp_datstr]['gdept'].shape)*np.ma.masked                                
+                                tmp_LBC_data_out[:,LBC_coord_d[th_d_ind][LBC_set]['nbjt'], LBC_coord_d[th_d_ind][LBC_set]['nbit']] = tmp_LBC_data_in
+                            
+
+
+
+                                    tmp_LBC_data_out[LBC_coord_d[th_d_ind][LBC_set]['nbjt'], LBC_coord_d[th_d_ind][LBC_set]['nbit']] = tmp_LBC_data_in
+                    
+                                    tmp_LBC_data_out[LBC_coord_d[th_d_ind][LBC_set]['nbjt'], LBC_coord_d[th_d_ind][LBC_set]['nbit']][LBC_coord_d[th_d_ind][LBC_set]['nbrt']==1]
+
+
+                                elif LBC_type == 'U_bt':
+                                    tmp_LBC_data_out = np.ma.zeros(grid_dict[tmp_datstr]['gdept'].shape[1:])*np.ma.masked                                
+                                    tmp_LBC_data_out[LBC_coord_d[th_d_ind][LBC_set]['nbju'], LBC_coord_d[th_d_ind][LBC_set]['nbiu']] = tmp_LBC_data_in
+                                elif LBC_type == 'V_bt':
+                                    tmp_LBC_data_out = np.ma.zeros(grid_dict[tmp_datstr]['gdept'].shape[1:])*np.ma.masked                                
+                                    tmp_LBC_data_out[LBC_coord_d[th_d_ind][LBC_set]['nbjv'], LBC_coord_d[th_d_ind][LBC_set]['nbiv']] = tmp_LBC_data_in
+                                '''
+                                data_inst[tmp_datstr] = tmp_LBC_data_out.copy()
+                                del(tmp_LBC_data_out)
+                        except:
+                            pdb.set_trace()
+
+
+            #pdb.set_trace()
             ###################################################################################################
             ### Status of buttons
             ###################################################################################################
@@ -3011,6 +3087,12 @@ def nemo_slice_zlev(config = 'amm7',
                     tmplw = 0.5
                     if secdataset_proc == tmp_datstr:tmplw = 1
                     tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ts_dat_dict[tmp_datstr],Dataset_col[dsi], lw = tmplw))
+
+                    #tmp_ts_x = ts_dat_dict['x']
+                    #tmp_ts_y = ts_dat_dict[tmp_datstr]
+                    #tmp_ts_n = np.minimum(tmp_ts_x.size,tmp_ts_y.size)
+                    #tsax_lst.append(ax[4].plot(ts_dat_dict['x'][:tmp_ts_n],ts_dat_dict[tmp_datstr][:tmp_ts_n],Dataset_col[dsi], lw = tmplw))
+
                     #tsax_lst.append(ax[4].plot(cur_time_datetime_dict[tmp_datstr],ts_dat_dict[tmp_datstr],Dataset_col[dsi], lw = tmplw))
                     if do_ensemble:
                         tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ens_ts_dat[0],'k', lw = 1))
@@ -6632,6 +6714,10 @@ def main():
 
         thd[1]['pxy'] = None
 
+        thd[1]['cutx0'] = 0
+        thd[1]['cutx1'] = None
+        thd[1]['cuty0'] = 0
+        thd[1]['cuty1'] = None
             
 
         #pdb.set_trace()

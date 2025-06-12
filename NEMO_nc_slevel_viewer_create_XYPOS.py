@@ -1,3 +1,5 @@
+#salloc --mem=24000 --time=360 
+
 import matplotlib.pyplot as plt
 from datetime import datetime,timedelta
 import numpy as np
@@ -399,7 +401,11 @@ def test_xypos_interp():
 
     pdb.set_trace()
 
+
 def main():
+
+
+    pdb.set_trace()
 
     test_xypos_interp()
 
