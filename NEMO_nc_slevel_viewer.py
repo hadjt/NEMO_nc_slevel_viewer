@@ -30,6 +30,7 @@ from NEMO_nc_slevel_viewer_lib import extract_time_from_xarr,resample_xarray
 
 # Data loading modules
 from NEMO_nc_slevel_viewer_lib import reload_data_instances
+from NEMO_nc_slevel_viewer_lib import reload_data_instances_time,reload_hov_data_comb_time,reload_ts_data_comb_time
 from NEMO_nc_slevel_viewer_lib import reload_map_data_comb,reload_ew_data_comb,reload_ns_data_comb
 from NEMO_nc_slevel_viewer_lib import reload_hov_data_comb,reload_ts_data_comb,reload_pf_data_comb
 
@@ -2406,6 +2407,8 @@ def nemo_slice_zlev(config = 'amm7',
             #time_datetime = cur_time_datetime_dict['Dataset 1']
 
             time_datetime_since_1970 = time_d['Dataset 1'][var_grid['Dataset 1'][var]]['datetime_since_1970']
+
+            print(tmp_current_time,time_datetime[0],time_datetime[-1],ti)
             if nctime_calendar_type in ['360_day','360']:
                 #pdb.set_trace()
                 ti = np.array([np.abs(ss *360*86400) for ss in (time_datetime - tmp_current_time)]).argmin()
@@ -2415,6 +2418,8 @@ def nemo_slice_zlev(config = 'amm7',
             #    ti = np.array([np.abs(ss.total_seconds()) for ss in (time_datetime - tmp_current_time)]).argmin()
             #except:
             #    pdb.set_trace()
+            print(tmp_current_time,time_datetime[0],time_datetime[-1],ti)
+            print('\n\n\n\n\n')
             ntime = len(time_datetime)
             
             if do_timer: timer_lst.append(('Load Instance',datetime.now()))
@@ -2440,7 +2445,8 @@ def nemo_slice_zlev(config = 'amm7',
 
                     if do_memory & do_timer: timer_lst.append(('Deleted data_inst',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                     #pdb.set_trace()
-                    data_inst,preload_data_ti,preload_data_var,preload_data_ldi= reload_data_instances(var,thd,ldi,ti,var_d,var_grid['Dataset 1'], xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
+                    #data_inst,preload_data_ti,preload_data_var,preload_data_ldi= reload_data_instances(var,thd,ldi,ti,var_d,var_grid['Dataset 1'], xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
+                    data_inst,preload_data_ti,preload_data_var,preload_data_ldi= reload_data_instances_time(var,thd,ldi,ti,time_datetime_since_1970[ti],time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
 
                     if do_memory & do_timer: timer_lst.append(('Reloaded data_inst',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
 
@@ -2765,7 +2771,8 @@ def nemo_slice_zlev(config = 'amm7',
                     if var_dim[var] == 4:
                         #pdb.set_trace()
                         
-                        hov_dat_dict = reload_hov_data_comb(var,var_d[1]['mat'],var_grid['Dataset 1'],var_d['d'],ldi,thd, time_datetime, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict,do_mask_dict,load_second_files,Dataset_lst,configd)
+                        #hov_dat_dict = reload_hov_data_comb(var,var_d[1]['mat'],var_grid['Dataset 1'],var_d['d'],ldi,thd, time_datetime, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict,do_mask_dict,load_second_files,Dataset_lst,configd)
+                        hov_dat_dict = reload_hov_data_comb_time(var,var_d[1]['mat'],var_grid,var_d['d'],ldi,thd, time_datetime,time_d, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict,do_mask_dict,load_second_files,Dataset_lst,configd)
 
                         if do_grad == 2:
                             #hov_dat_dict['Dataset 1'],hov_dat_dict['Dataset 2'] = grad_vert_hov_prof_data(hov_dat_dict['Dataset 1'],hov_dat_dict['Dataset 2'],hov_dat_dict['y'])
@@ -2791,7 +2798,8 @@ def nemo_slice_zlev(config = 'amm7',
             prevtime = datetime.now()
             if reload_ts:
                 if hov_time:
-                    ts_dat_dict = reload_ts_data_comb(var,var_dim,var_grid['Dataset 1'],ii,jj,iijj_ind,ldi,hov_dat_dict,time_datetime,time_d,z_meth,zz,zi,xarr_dict,do_mask_dict,grid_dict,thd,var_d[1]['mat'],var_d['d'],nz,ntime,configd,Dataset_lst,load_second_files)
+                    #ts_dat_dict = reload_ts_data_comb(var,var_dim,var_grid['Dataset 1'],ii,jj,iijj_ind,ldi,hov_dat_dict,time_datetime,time_d,z_meth,zz,zi,xarr_dict,do_mask_dict,grid_dict,thd,var_d[1]['mat'],var_d['d'],nz,ntime,configd,Dataset_lst,load_second_files)
+                    ts_dat_dict = reload_ts_data_comb_time(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,time_datetime,time_d,z_meth,zz,zi,xarr_dict,do_mask_dict,grid_dict,thd,var_d[1]['mat'],var_d['d'],nz,ntime,configd,Dataset_lst,load_second_files)
                 else:
                     ts_dat_dict['x'] = time_datetime
                     #ts_dat_dict['Dataset 1'] = np.ma.ones(ntime)*np.ma.masked
@@ -5322,11 +5330,14 @@ def nemo_slice_zlev(config = 'amm7',
 
                                 for fcst_ldi in range(nldi):
 
-                                    fsct_hov_dat = reload_hov_data_comb(var,var_d[1]['mat'],var_grid['Dataset 1'],var_d['d'],fcst_ldi, thd,time_datetime, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict,do_mask_dict, load_second_files,Dataset_lst,configd)
+                                    #fsct_hov_dat = reload_hov_data_comb(var,var_d[1]['mat'],var_grid['Dataset 1'],var_d['d'],fcst_ldi, thd,time_datetime, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict,do_mask_dict, load_second_files,Dataset_lst,configd)
+                                    #fsct_hov_dat = reload_hov_data_comb_time(var,var_d[1]['mat'],var_grid['Dataset 1'],var_d['d'],fcst_ldi, thd,time_datetime, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict,do_mask_dict, load_second_files,Dataset_lst,configd)
+                                    fsct_hov_dat = reload_hov_data_comb_time(var,var_d[1]['mat'],var_grid,var_d['d'],fcst_ldi, thd,time_datetime, time_d,ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict,do_mask_dict, load_second_files,Dataset_lst,configd)
                                     for tmp_datstr in Dataset_lst:fsct_hov_dat_dict[tmp_datstr][fcst_ldi] = fsct_hov_dat[tmp_datstr]
                                     fsct_hov_x[fcst_ldi] = fsct_hov_dat['x'] + timedelta(hours = ld_time_offset[fcst_ldi])
                 
-                                    fsct_ts_dat = reload_ts_data_comb(var,var_dim,var_grid['Dataset 1'],ii,jj,iijj_ind,fcst_ldi,fsct_hov_dat,time_datetime,time_d,z_meth,zz,zi,xarr_dict,do_mask_dict,grid_dict,thd,var_d[1]['mat'],var_d['d'],nz,ntime,configd,Dataset_lst,load_second_files)
+                                    #fsct_ts_dat = reload_ts_data_comb(var,var_dim,var_grid['Dataset 1'],ii,jj,iijj_ind,fcst_ldi,fsct_hov_dat,time_datetime,time_d,z_meth,zz,zi,xarr_dict,do_mask_dict,grid_dict,thd,var_d[1]['mat'],var_d['d'],nz,ntime,configd,Dataset_lst,load_second_files)
+                                    fsct_ts_dat = reload_ts_data_comb_time(var,var_dim,var_grid,ii,jj,iijj_ind,fcst_ldi,fsct_hov_dat,time_datetime,time_d,z_meth,zz,zi,xarr_dict,do_mask_dict,grid_dict,thd,var_d[1]['mat'],var_d['d'],nz,ntime,configd,Dataset_lst,load_second_files)
                                     
                                     for tmp_datstr in Dataset_lst:fsct_ts_dat_dict[tmp_datstr][fcst_ldi] = fsct_ts_dat[tmp_datstr]
                                     fsct_ts_x[fcst_ldi] = fsct_ts_dat['x'] + timedelta(hours = ld_time_offset[fcst_ldi])
