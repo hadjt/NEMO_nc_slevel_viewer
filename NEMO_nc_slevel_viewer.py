@@ -336,7 +336,7 @@ def nemo_slice_zlev(config = 'amm7',
     tmp_var_U, tmp_var_V = 'vozocrtx','vomecrty'
 
 
-    z_meth_mat = ['z_slice','ss','nb','df','zm']
+    #z_meth_mat = ['z_slice','ss','nb','df','zm']
 
     #nav_lon_varname = 'nav_lon'
     #nav_lat_varname = 'nav_lat'
@@ -1805,6 +1805,8 @@ def nemo_slice_zlev(config = 'amm7',
     if z_meth == 'nb':func_but_text_han['Near-Bed'].set_color('r')
     if z_meth == 'df':func_but_text_han['Surface-Bed'].set_color('r')
     if z_meth == 'zm':func_but_text_han['Depth-Mean'].set_color('r')
+    if z_meth == 'zx':func_but_text_han['Depth-Mean'].set_color('r')
+    if z_meth == 'zn':func_but_text_han['Depth-Mean'].set_color('r')
 
     func_but_text_han['waiting'].set_color('w')
 
@@ -2804,7 +2806,14 @@ def nemo_slice_zlev(config = 'amm7',
                     ts_dat_dict['x'] = time_datetime
                     #ts_dat_dict['Dataset 1'] = np.ma.ones(ntime)*np.ma.masked
                     #ts_dat_dict['Dataset 2'] = np.ma.ones(ntime)*np.ma.masked
-                    for tmp_datstr in Dataset_lst:ts_dat_dict[tmp_datstr] = np.ma.ones(ntime)*np.ma.masked
+                    ts_dat_dict['Sec Grid'] = {}
+                    for tmp_datstr in Dataset_lst:
+                        ts_dat_dict[tmp_datstr] = np.ma.ones(ntime)*np.ma.masked
+                        ts_dat_dict['Sec Grid'][tmp_datstr] = {}
+                        ts_dat_dict['Sec Grid'][tmp_datstr]['x'] = time_datetime
+                        ts_dat_dict['Sec Grid'][tmp_datstr]['data'] = np.ma.ones(ntime)*np.ma.masked
+
+
                 reload_ts = False
 
                 if do_memory & do_timer: timer_lst.append(('Reloaded reload_ts_data_comb',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
@@ -3094,7 +3103,9 @@ def nemo_slice_zlev(config = 'amm7',
                 for dsi,tmp_datstr in enumerate(Dataset_lst):
                     tmplw = 0.5
                     if secdataset_proc == tmp_datstr:tmplw = 1
-                    tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ts_dat_dict[tmp_datstr],Dataset_col[dsi], lw = tmplw))
+                    #tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ts_dat_dict[tmp_datstr],Dataset_col[dsi], lw = tmplw))
+                    tsax_lst.append(ax[4].plot(ts_dat_dict['Sec Grid'][tmp_datstr]['x'],ts_dat_dict['Sec Grid'][tmp_datstr]['data'],Dataset_col[dsi], lw = tmplw))
+
 
                     #tmp_ts_x = ts_dat_dict['x']
                     #tmp_ts_y = ts_dat_dict[tmp_datstr]
@@ -3255,6 +3266,8 @@ def nemo_slice_zlev(config = 'amm7',
             elif z_meth == 'nb':nice_lev = 'Near-Bed'
             elif z_meth == 'df':nice_lev = 'Surface-Bed'
             elif z_meth == 'zm':nice_lev = 'Depth-Mean'
+            elif z_meth == 'zx':nice_lev = 'Depth-Max'
+            elif z_meth == 'zn':nice_lev = 'Depth-Min'
 
             if var_dim[var] == 4:  
                 map_title_str = '%s (%s); %s %s'%(nice_varname_dict[var],nice_lev,lon_lat_to_str(lon_d[1][jj,ii],lat_d[1][jj,ii])[0],time_datetime[ti])
@@ -3676,6 +3689,12 @@ def nemo_slice_zlev(config = 'amm7',
                         elif z_meth == 'zm':
                             #depth mean obs if zm.
                             tmpobsdat = tmpobsdat_mat.mean(axis = 1)
+                        elif z_meth == 'zx':
+                            #depth mean obs if zm.
+                            tmpobsdat = tmpobsdat_mat.max(axis = 1)
+                        elif z_meth == 'zn':
+                            #depth mean obs if zm.
+                            tmpobsdat = tmpobsdat_mat.min(axis = 1)
                         else:
 
                             pdb.set_trace()
@@ -5612,7 +5631,7 @@ def nemo_slice_zlev(config = 'amm7',
                                 if but_name == 'Surface':z_meth = 'ss'
                                 if but_name == 'Near-Bed': z_meth = 'nb'
                                 if but_name == 'Surface-Bed': z_meth = 'df'
-                                if but_name == 'Depth-Mean': z_meth = 'zm'
+                                if but_name == 'Depth-Mean': z_meth = 'zx'
                                 reload_map = True
                                 reload_ts = True
 
@@ -5622,6 +5641,9 @@ def nemo_slice_zlev(config = 'amm7',
                                 func_but_text_han['Surface-Bed'].set_color('k')
                                 func_but_text_han['Depth-Mean'].set_color('k')
                                 func_but_text_han[but_name].set_color('r')
+                                
+
+
                                 # redraw canvas
                                 fig.canvas.draw_idle()
                                 
@@ -6119,7 +6141,7 @@ def main():
         if legacy_mode:
             parser.add_argument('--fig_fname_lab', type=str, required=False)
             parser.add_argument('--fig_fname_lab_2nd', type=str, required=False)
-        parser.add_argument('--z_meth', type=str, help="z_slice, ss, nb, df, zm, or z_index for z level models")# Parse the argument
+        parser.add_argument('--z_meth', type=str, help="z_slice, ss, nb, df, zm, zx, zn, or z_index for z level models")# Parse the argument
 
         parser.add_argument('--secdataset_proc', type=str, required=False)
 

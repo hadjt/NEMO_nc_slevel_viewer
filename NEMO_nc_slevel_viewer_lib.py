@@ -1982,6 +1982,7 @@ def reload_data_instances_time(var,thd,ldi,ti,current_time_datetime_since_1970,t
     print('======================================')
     print('Reloaded data instances for ti = %i, var = %s %s = %s'%(ti,var,datetime.now(),datetime.now() - start_time_load_inst))
 
+    if data_inst['Dataset 1'].mask.all(): pdb.set_trace()
 
     return data_inst,preload_data_ti,preload_data_var,preload_data_ldi
 
@@ -2245,7 +2246,7 @@ def reload_map_data_comb(var,z_meth,zz,zi, data_inst,var_dim,interp1d_ZwgtT,grid
     else:
         if z_meth == 'z_slice':
             map_dat_dict = reload_map_data_comb_zmeth_zslice(zz, data_inst,interp1d_ZwgtT,grid_dict,regrid_params,regrid_meth ,thd,configd,Dataset_lst,use_xarray_gdept = use_xarray_gdept,Sec_regrid = Sec_regrid)
-        elif z_meth in ['nb','df','zm']:
+        elif z_meth in ['nb','df','zm','zx','zn']:
             map_dat_dict = reload_map_data_comb_zmeth_nb_df_zm_3d(z_meth, data_inst,grid_dict,regrid_params,regrid_meth ,thd,configd,Dataset_lst,Sec_regrid = Sec_regrid)
         elif z_meth in ['ss']:
             map_dat_dict = reload_map_data_comb_zmeth_ss_3d(data_inst,regrid_params,regrid_meth,thd,configd,Dataset_lst,Sec_regrid = Sec_regrid)
@@ -2314,6 +2315,8 @@ def reload_map_data_comb_zmeth_nb_df_zm_3d(z_meth, data_inst,grid_dict,regrid_pa
     map_dat_ss_1 = map_dat_3d_1[0]
     map_dat_nb_1 = nearbed_int_index_val(map_dat_3d_1)
     map_dat_zm_1 = weighted_depth_mean_masked_var(map_dat_3d_1,grid_dict['Dataset 1']['e3t'])
+    map_dat_zx_1 = map_dat_3d_1.max(axis = 0)
+    map_dat_zn_1 = map_dat_3d_1.min(axis = 0)
     del(map_dat_3d_1)
     map_dat_df_1 = map_dat_ss_1 - map_dat_nb_1
 
@@ -2321,6 +2324,8 @@ def reload_map_data_comb_zmeth_nb_df_zm_3d(z_meth, data_inst,grid_dict,regrid_pa
     if z_meth == 'nb': map_dat_dict['Dataset 1'] = map_dat_nb_1
     if z_meth == 'df': map_dat_dict['Dataset 1'] = map_dat_ss_1 - map_dat_nb_1
     if z_meth == 'zm': map_dat_dict['Dataset 1'] = map_dat_zm_1
+    if z_meth == 'zx': map_dat_dict['Dataset 1'] = map_dat_zx_1
+    if z_meth == 'zn': map_dat_dict['Dataset 1'] = map_dat_zn_1
 
     for tmp_datstr in Dataset_lst_secondary:
         th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
@@ -2343,16 +2348,22 @@ def reload_map_data_comb_zmeth_nb_df_zm_3d(z_meth, data_inst,grid_dict,regrid_pa
         map_dat_ss_2 = map_dat_3d_2[0]
         map_dat_nb_2 = nearbed_int_index_val(map_dat_3d_2)
         map_dat_zm_2 = weighted_depth_mean_masked_var(map_dat_3d_2,grid_dict[tmp_datstr]['e3t'])
+        map_dat_zx_2 = map_dat_3d_2.max(axis = 0)
+        map_dat_zn_2 = map_dat_3d_2.min(axis = 0)
         del(map_dat_3d_2)
         map_dat_df_2 = map_dat_ss_2 - map_dat_nb_2
         if z_meth == 'nb': map_dat_dict[tmp_datstr] = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,map_dat_nb_2)
         if z_meth == 'df': map_dat_dict[tmp_datstr] = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,map_dat_df_2)
         if z_meth == 'zm': map_dat_dict[tmp_datstr] = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,map_dat_zm_2)
+        if z_meth == 'zx': map_dat_dict[tmp_datstr] = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,map_dat_zx_2)
+        if z_meth == 'zn': map_dat_dict[tmp_datstr] = regrid_2nd(regrid_params[tmp_datstr],regrid_meth,thd,configd,th_d_ind,map_dat_zn_2)
 
         if Sec_regrid:
             if z_meth == 'nb': map_dat_dict[tmp_datstr + '_Sec_regrid'] = map_dat_nb_2
             if z_meth == 'df': map_dat_dict[tmp_datstr + '_Sec_regrid'] = map_dat_df_2
             if z_meth == 'zm': map_dat_dict[tmp_datstr + '_Sec_regrid'] = map_dat_zm_2
+            if z_meth == 'zx': map_dat_dict[tmp_datstr + '_Sec_regrid'] = map_dat_zx_2
+            if z_meth == 'zn': map_dat_dict[tmp_datstr + '_Sec_regrid'] = map_dat_zn_2
         
     return map_dat_dict
 
@@ -3033,17 +3044,23 @@ def reload_ts_data_comb_time(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dic
 
     elif var_dim[var] == 4:
 
-        if z_meth in ['ss','nb','df','zm']:
+        if z_meth in ['ss','nb','df','zm','zx','zn']:
 
 
             
             for tmp_datstr in Dataset_lst:
 
-                ss_ts_dat_1 = hov_dat_dict[tmp_datstr][0,:].ravel()
-                hov_nb_ind_1 = (hov_dat_dict[tmp_datstr][:,0].mask == False).sum()-1
-                nb_ts_dat_1 = hov_dat_dict[tmp_datstr][hov_nb_ind_1,:].ravel()
+                #tmp_hov_dat = hov_dat_dict[tmp_datstr]
+                #this should be done on the native time grid
+                tmp_hov_dat = hov_dat_dict['Sec Grid'][tmp_datstr]['data']
+
+                ss_ts_dat_1 = tmp_hov_dat[0,:].ravel()
+                hov_nb_ind_1 = (tmp_hov_dat[:,0].mask == False).sum()-1
+                nb_ts_dat_1 = tmp_hov_dat[hov_nb_ind_1,:].ravel()
                 df_ts_dat_1 = ss_ts_dat_1 - nb_ts_dat_1
 
+                mx_ts_dat_1 = tmp_hov_dat.max(axis = 0).ravel()
+                mn_ts_dat_1 = tmp_hov_dat.min(axis = 0).ravel()
                 
                 
                 if z_meth == 'ss':
@@ -3053,22 +3070,29 @@ def reload_ts_data_comb_time(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dic
                 if z_meth == 'df':
                     ts_dat_dict[tmp_datstr] = df_ts_dat_1
                 if z_meth == 'zm':
-                    ts_e3t_1 = np.ma.array(grid_dict[tmp_datstr]['e3t'][:,jj,ii], mask = hov_dat_dict[tmp_datstr][:,0].mask)
+                    ts_e3t_1 = np.ma.array(grid_dict[tmp_datstr]['e3t'][:,jj,ii], mask = tmp_hov_dat[:,0].mask)
                     ts_dm_wgt_1 = ts_e3t_1/ts_e3t_1.sum()
-                    ts_dat_dict[tmp_datstr] = ((hov_dat_dict[tmp_datstr].T*ts_dm_wgt_1).T).sum(axis = 0)
+                    ts_dat_dict[tmp_datstr] = ((tmp_hov_dat.T*ts_dm_wgt_1).T).sum(axis = 0)
 
+                if z_meth == 'zx':
+                    ts_dat_dict[tmp_datstr] = mx_ts_dat_1
+                if z_meth == 'zn':
+                    ts_dat_dict[tmp_datstr] = mn_ts_dat_1
 
         elif z_meth == 'z_slice':
             #pdb.set_trace()
             for tmp_datstr in Dataset_lst:
+                tmp_hov_dat = hov_dat_dict['Sec Grid'][tmp_datstr]['data']
                 hov_zi = (np.abs(zz - hov_dat_dict['y'])).argmin()
-                ts_dat_dict[tmp_datstr] = hov_dat_dict[tmp_datstr][hov_zi,:].ravel()
+                ts_dat_dict[tmp_datstr] = tmp_hov_dat[hov_zi,:].ravel()
 
 
         elif z_meth == 'z_index':
             for tmp_datstr in Dataset_lst:
 
-                ts_dat_dict[tmp_datstr] = hov_dat_dict[tmp_datstr][zi,:]
+                tmp_hov_dat = hov_dat_dict['Sec Grid'][tmp_datstr]['data']
+
+                ts_dat_dict[tmp_datstr] = tmp_hov_dat[zi,:]
 
     '''
     
@@ -3096,7 +3120,7 @@ def reload_ts_data_comb_time(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dic
     
 
     #ts_dat_dict['Sec Grid'][tmp_datstr]['x'] = time_d[tmp_datstr][tmp_grid]['datetime']
-    for tmp_datstr in Dataset_lst:        ts_dat_dict['Sec Grid'][tmp_datstr]['data'] = ts_dat_dict[tmp_datstr].copy()
+    for tmp_datstr in Dataset_lst:  ts_dat_dict['Sec Grid'][tmp_datstr]['data'] = ts_dat_dict[tmp_datstr].copy()
 
     # temporally regrid the hov data onto the the Dataset 1
     tmpx_1 = ts_dat_dict['x']
@@ -3132,26 +3156,11 @@ def reload_ts_data_comb_time(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dic
 
 
 
-    '''
-    ntst = ts_dat_dict['Dataset 1'].size
-    for tmp_datstr in Dataset_lst[1:]: 
-        tmptsdat = ts_dat_dict[tmp_datstr]
-        ntmptsdat = tmptsdat.size
-        if ntst!=ntmptsdat:
-            #print("hov_dat['Dataset 1'].size",hov_dat['Dataset 1'].size)
-            ts_dat_dict[tmp_datstr] = np.ma.zeros(ts_dat_dict['Dataset 1'].shape)*np.ma.masked
-           
-            if ntst>ntmptsdat:
-                ts_dat_dict[tmp_datstr][:ntmptsdat] = tmptsdat[:]
-            else: 
-                ts_dat_dict[tmp_datstr][:] = tmptsdat[:ntst]
-                #pdb.set_trace()
-        
-    '''
 
-
-
-
+    #pdb.set_trace()
+    for tmp_datstr in Dataset_lst[:]: 
+        if ts_dat_dict['Sec Grid'][tmp_datstr]['x'].size !=  ts_dat_dict['Sec Grid'][tmp_datstr]['data'].size: 
+            pdb.set_trace()
 
     return ts_dat_dict 
 
@@ -3500,7 +3509,7 @@ def reload_ts_data_comb(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,tim
 
     elif var_dim[var] == 4:
 
-        if z_meth in ['ss','nb','df','zm']:
+        if z_meth in ['ss','nb','df','zm','zx','zn']:
 
 
             
@@ -3511,7 +3520,8 @@ def reload_ts_data_comb(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,tim
                 nb_ts_dat_1 = hov_dat_dict[tmp_datstr][hov_nb_ind_1,:].ravel()
                 df_ts_dat_1 = ss_ts_dat_1 - nb_ts_dat_1
 
-                
+                mx_ts_dat_1 = hov_dat_dict[tmp_datstr].max(axis = 0).ravel()
+                mn_ts_dat_1 = hov_dat_dict[tmp_datstr].min(axis = 0).ravel()
                 
                 if z_meth == 'ss':
                     ts_dat_dict[tmp_datstr] = ss_ts_dat_1
@@ -3524,6 +3534,10 @@ def reload_ts_data_comb(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,tim
                     ts_dm_wgt_1 = ts_e3t_1/ts_e3t_1.sum()
                     ts_dat_dict[tmp_datstr] = ((hov_dat_dict[tmp_datstr].T*ts_dm_wgt_1).T).sum(axis = 0)
 
+                if z_meth == 'zx':
+                    ts_dat_dict[tmp_datstr] = mx_ts_dat_1
+                if z_meth == 'zn':
+                    ts_dat_dict[tmp_datstr] = mn_ts_dat_1
 
         elif z_meth == 'z_slice':
             #pdb.set_trace()
