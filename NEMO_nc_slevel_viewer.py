@@ -1808,6 +1808,8 @@ def nemo_slice_zlev(config = 'amm7',
     if z_meth == 'zx':func_but_text_han['Depth-Mean'].set_color('r')
     if z_meth == 'zn':func_but_text_han['Depth-Mean'].set_color('r')
 
+    DepthMean_sw = 0
+
     func_but_text_han['waiting'].set_color('w')
 
     
@@ -1860,6 +1862,9 @@ def nemo_slice_zlev(config = 'amm7',
     func_but_line_han['Clim: Zoom'][0].set_linewidth(1)
     func_but_line_han['Clim: Zoom'][0].set_color('w')
     func_but_line_han['Clim: Zoom'][0].set_path_effects(str_pe)
+    func_but_line_han['Depth-Mean'][0].set_linewidth(1)
+    func_but_line_han['Depth-Mean'][0].set_color('w')
+    func_but_line_han['Depth-Mean'][0].set_path_effects(str_pe)
     if do_Obs:
         #pdb.set_trace()
         func_but_line_han['Obs'][0].set_linewidth(1)
@@ -5627,11 +5632,29 @@ def nemo_slice_zlev(config = 'amm7',
 
                         elif but_name in ['Surface','Near-Bed','Surface-Bed','Depth-Mean']:
                             if var_dim[var] == 4:
+
+
+                                if but_name == 'Depth-Mean':
+                                    if z_meth in ['zm','zx','zn']:
+                                        # switch button
+                                        DepthMean_sw+=1
+                                        if DepthMean_sw == 3: DepthMean_sw = 0
+                                        
+                                    if DepthMean_sw == 0:
+                                        func_but_text_han['Depth-Mean'].set_text('Depth-Mean')
+                                        z_meth = 'zm'
+                                    elif DepthMean_sw == 1:
+                                        func_but_text_han['Depth-Mean'].set_text('Depth-Max')
+                                        z_meth = 'zx'
+                                    elif DepthMean_sw == 2:
+                                        func_but_text_han['Depth-Mean'].set_text('Depth-Min')
+                                        z_meth = 'zn'
+
+                                
                                 
                                 if but_name == 'Surface':z_meth = 'ss'
                                 if but_name == 'Near-Bed': z_meth = 'nb'
                                 if but_name == 'Surface-Bed': z_meth = 'df'
-                                if but_name == 'Depth-Mean': z_meth = 'zx'
                                 reload_map = True
                                 reload_ts = True
 
@@ -5642,7 +5665,7 @@ def nemo_slice_zlev(config = 'amm7',
                                 func_but_text_han['Depth-Mean'].set_color('k')
                                 func_but_text_han[but_name].set_color('r')
                                 
-
+                                
 
                                 # redraw canvas
                                 fig.canvas.draw_idle()

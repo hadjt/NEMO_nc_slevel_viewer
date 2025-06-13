@@ -3070,7 +3070,9 @@ def reload_ts_data_comb_time(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dic
                 if z_meth == 'df':
                     ts_dat_dict[tmp_datstr] = df_ts_dat_1
                 if z_meth == 'zm':
-                    ts_e3t_1 = np.ma.array(grid_dict[tmp_datstr]['e3t'][:,jj,ii], mask = tmp_hov_dat[:,0].mask)
+                    # We are working on the native time grid, but we have interpolated to Dataset 1 depths, so 
+                    # we should use e3t from Dataset 1
+                    ts_e3t_1 = np.ma.array(grid_dict['Dataset 1']['e3t'][:,jj,ii], mask = tmp_hov_dat[:,0].mask)
                     ts_dm_wgt_1 = ts_e3t_1/ts_e3t_1.sum()
                     ts_dat_dict[tmp_datstr] = ((tmp_hov_dat.T*ts_dm_wgt_1).T).sum(axis = 0)
 
@@ -3080,7 +3082,6 @@ def reload_ts_data_comb_time(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dic
                     ts_dat_dict[tmp_datstr] = mn_ts_dat_1
 
         elif z_meth == 'z_slice':
-            #pdb.set_trace()
             for tmp_datstr in Dataset_lst:
                 tmp_hov_dat = hov_dat_dict['Sec Grid'][tmp_datstr]['data']
                 hov_zi = (np.abs(zz - hov_dat_dict['y'])).argmin()
