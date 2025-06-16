@@ -2202,7 +2202,16 @@ def nemo_slice_zlev(config = 'amm7',
 
         fig_out_name = fig_out_name.replace(' ','_')
 
+        print(func_but_text_han.keys())
+        print(func_but_line_han.keys())
 
+
+        #pdb.set_trace()
+
+        for ss in func_but_line_han.keys():func_but_line_han[ss][0].set_visible(False)
+        for ss in func_but_text_han.keys():func_but_text_han[ss].set_visible(False)
+
+    
         if fig_cutout:
 
 
@@ -2216,6 +2225,11 @@ def nemo_slice_zlev(config = 'amm7',
             fig.savefig(fig_out_name+ '.png',bbox_inches = bbox_inches, dpi = figdpi)
         else:
             fig.savefig(fig_out_name+ '.png', dpi = figdpi)
+
+
+        for ss in func_but_text_han.keys():func_but_text_han[ss].set_visible(True)
+        for ss in func_but_line_han.keys():func_but_line_han[ss][0].set_visible(True)
+
 
         #print('')
         #print(fig_out_name + '.png')
