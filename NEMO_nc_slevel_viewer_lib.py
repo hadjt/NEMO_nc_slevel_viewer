@@ -536,12 +536,18 @@ def get_pnts_pcolor_in_region(illtype = 'pcolor', ax = None):
 
 
 
-def field_gradient_2d(tmpdat_in,e1t_in,e2t_in,dir_grad = False,  do_mask = False,curr_griddict= None):
+def field_gradient_2d(tmpdat_in,e1t_in,e2t_in,
+                      do_mask = False,curr_griddict= None,
+                      meth_2d=0,meth=0, abs_pre = False, abs_post = False, regrid_xy = False,dx_d_dx = False):
 
     # Copy inputs, so can't affect originals.
     e1t = e1t_in.copy()
     e2t = e2t_in.copy()
-    tmpdat = tmpdat_in.copy()
+    
+    if abs_pre:
+        tmpdat = np.abs(tmpdat_in.copy())
+    else:
+        tmpdat = tmpdat_in.copy()
 
     # Where land suppression is used, can have bad values in land processors (i.e. 1e308).
     # if negative cell width/height, set to zero. if greater then 1000km, set to zero
@@ -568,15 +574,55 @@ def field_gradient_2d(tmpdat_in,e1t_in,e2t_in,dir_grad = False,  do_mask = False
     xs = e1t.cumsum(axis = 1)
     ys = e2t.cumsum(axis = 0)
 
-    dtmpdat_dx_c = (tmpdat[1:-1,2:] - tmpdat[1:-1,:-2])/(0.001*2*(xs[1:-1,2:] - xs[1:-1,:-2]))
-    dtmpdat_dy_c = (tmpdat[2:,1:-1] - tmpdat[:-2,1:-1])/(0.001*2*(ys[2:,1:-1] - ys[:-2,1:-1]))
+    if meth == 0: # centred difference:
 
-    dtmpdat_dkm = np.sqrt( (dtmpdat_dx_c)**2 + (dtmpdat_dy_c)**2   )
+        if dx_d_dx:
+            dtmpdat_dx_c = (tmpdat[1:-1,2:] - tmpdat[1:-1,:-2])
+            dtmpdat_dy_c = (tmpdat[2:,1:-1] - tmpdat[:-2,1:-1])
+        else:
+            dtmpdat_dx_c = (tmpdat[1:-1,2:] - tmpdat[1:-1,:-2])/(0.001*2*(xs[1:-1,2:] - xs[1:-1,:-2]))
+            dtmpdat_dy_c = (tmpdat[2:,1:-1] - tmpdat[:-2,1:-1])/(0.001*2*(ys[2:,1:-1] - ys[:-2,1:-1]))
+
+        dtmpdat_dkm = np.sqrt( (dtmpdat_dx_c)**2 + (dtmpdat_dy_c)**2   )
 
 
-    dtmpdat_dkm_out = np.ma.zeros((nlat,nlon))
-    dtmpdat_dkm_out[:] = np.ma.masked
-    dtmpdat_dkm_out[1:-1,1:-1] = dtmpdat_dkm
+        dtmpdat_dkm_out = np.ma.zeros((nlat,nlon))
+        dtmpdat_dkm_out[:] = np.ma.masked
+        if   meth_2d == 0:
+            dtmpdat_dkm_out[1:-1,1:-1] = dtmpdat_dkm
+        elif meth_2d == 1:
+            dtmpdat_dkm_out[1:-1,1:-1] = dtmpdat_dx_c
+        elif meth_2d == 2:
+            dtmpdat_dkm_out[1:-1,1:-1] = dtmpdat_dy_c
+
+    elif meth == 1:
+
+        if dx_d_dx:
+            dtmpdat_dx_c = (tmpdat[:-1,1:] - tmpdat[:-1,:-1])
+            dtmpdat_dy_c = (tmpdat[1:,:-1] - tmpdat[:-1,:-1])
+        else:
+            dtmpdat_dx_c = (tmpdat[:-1,1:] - tmpdat[:-1,:-1])/(0.001*2*(xs[:-1,1:] - xs[:-1,:-1]))
+            dtmpdat_dy_c = (tmpdat[1:,:-1] - tmpdat[:-1,:-1])/(0.001*2*(ys[1:,:-1] - ys[:-1,:-1]))
+
+        dtmpdat_dkm = np.sqrt( (dtmpdat_dx_c)**2 + (dtmpdat_dy_c)**2   )
+
+
+        dtmpdat_dkm_out = np.ma.zeros((nlat,nlon))
+        dtmpdat_dkm_out[:] = np.ma.masked
+
+        if   meth_2d == 0:
+            dtmpdat_dkm_out[:-1,:-1] = dtmpdat_dkm
+        elif meth_2d == 1:
+            dtmpdat_dkm_out[:-1,:-1] = dtmpdat_dx_c
+        elif meth_2d == 2:
+            dtmpdat_dkm_out[:-1,:-1] = dtmpdat_dy_c
+
+    if abs_post:
+        dtmpdat_dkm_out = np.abs(dtmpdat_dkm_out)
+    
+    return dtmpdat_dkm_out
+
+    '''
     if dir_grad:
         dtmpdat_dx_c_out = np.ma.zeros((nlat,nlon))
         dtmpdat_dy_c_out = np.ma.zeros((nlat,nlon))
@@ -587,7 +633,7 @@ def field_gradient_2d(tmpdat_in,e1t_in,e2t_in,dir_grad = False,  do_mask = False
         return dtmpdat_dkm_out, dtmpdat_dx_c_out, dtmpdat_dy_c_out
     else:
         return dtmpdat_dkm_out
-
+    '''
 
 
 
@@ -4106,92 +4152,189 @@ def regrid_2nd(regrid_params_in,regrid_meth,thd,configd,th_d_ind,dat_in): #):
 
 
 
-def grad_horiz_ns_data(thd,grid_dict,ii, ns_slice_dict):
+def grad_horiz_ns_data(thd,grid_dict,ii, ns_slice_dict, meth=0, abs_pre = False, abs_post = False, regrid_xy = False,dx_d_dx = False):
     Dataset_lst = [ss for ss in ns_slice_dict.keys()] 
     Dataset_lst.remove('x')
     Dataset_lst.remove('y')
 
 
-    ns_slice_dx =  thd[1]['dx']*((grid_dict['Dataset 1']['e2t'][2:,ii] +  grid_dict['Dataset 1']['e2t'][:-2,ii])/2 + grid_dict['Dataset 1']['e2t'][1:-1,ii])
+    if meth == 0:
+        ns_slice_dx =  thd[1]['dx']*((grid_dict['Dataset 1']['e2t'][2:,ii] +  grid_dict['Dataset 1']['e2t'][:-2,ii])/2 + grid_dict['Dataset 1']['e2t'][1:-1,ii])
+    elif meth == 1:
+        ns_slice_dx =  thd[1]['dx']*((grid_dict['Dataset 1']['e2t'][1:,ii] +  grid_dict['Dataset 1']['e2t'][:-1,ii])/2 )
 
     for tmp_datstr in Dataset_lst:
 
-        dns_1 = ns_slice_dict[tmp_datstr][:,2:] - ns_slice_dict[tmp_datstr][:,:-2]
+        if abs_pre:
+            tmp_data_in = np.abs(ns_slice_dict[tmp_datstr])
+        else:
+            tmp_data_in = ns_slice_dict[tmp_datstr]
 
-        ns_slice_dict[tmp_datstr][:,1:-1] = dns_1/ns_slice_dx#_1
+        if meth == 0:
+            dns_1 = tmp_data_in[:,2:] - tmp_data_in[:,:-2]
 
-        ns_slice_dict[tmp_datstr][:,0] = np.ma.masked
-        ns_slice_dict[tmp_datstr][:,-1] = np.ma.masked
+            if dx_d_dx:
+                ns_slice_dict[tmp_datstr][:,1:-1] = dns_1
+            else:
+                ns_slice_dict[tmp_datstr][:,1:-1] = dns_1/ns_slice_dx
 
+            ns_slice_dict[tmp_datstr][:,-1] = np.ma.masked
+        if meth == 1:
+            dns_1 = tmp_data_in[:,1:] - tmp_data_in[:,:-1]
+
+            if dx_d_dx:
+                ns_slice_dict[tmp_datstr][:,:-1] = dns_1
+            else:
+                ns_slice_dict[tmp_datstr][:,:-1] = dns_1/ns_slice_dx
+                
+            ns_slice_dict[tmp_datstr][:,-1] = np.ma.masked
+
+    if abs_post:
+        ns_slice_dict[tmp_datstr] = np.abs(ns_slice_dict[tmp_datstr])
     return ns_slice_dict
 
 
-def grad_horiz_ew_data(thd,grid_dict,jj, ew_slice_dict):
+def grad_horiz_ew_data(thd,grid_dict,jj, ew_slice_dict, meth=0, abs_pre = False, abs_post = False, regrid_xy = False,dx_d_dx = False):
     Dataset_lst = [ss for ss in ew_slice_dict.keys()] 
     Dataset_lst.remove('x')
     Dataset_lst.remove('y')
 
 
-    ew_slice_dx =  thd[1]['dx']*((grid_dict['Dataset 1']['e1t'][jj,2:] +  grid_dict['Dataset 1']['e1t'][jj,:-2])/2 + grid_dict['Dataset 1']['e1t'][jj,1:-1])
+    if meth == 0:
+        ew_slice_dx =  thd[1]['dx']*((grid_dict['Dataset 1']['e1t'][jj,2:] +  grid_dict['Dataset 1']['e1t'][jj,:-2])/2 + grid_dict['Dataset 1']['e1t'][jj,1:-1])
+    elif meth == 1:
+        ew_slice_dx =  thd[1]['dx']*((grid_dict['Dataset 1']['e1t'][jj,1:] +  grid_dict['Dataset 1']['e1t'][jj,:-1])/2)
 
     for tmp_datstr in Dataset_lst:
 
-        dew_1 = ew_slice_dict[tmp_datstr][:,2:] - ew_slice_dict[tmp_datstr][:,:-2]
+        if abs_pre:
+            tmp_data_in = np.abs(ew_slice_dict[tmp_datstr])
+        else:
+            tmp_data_in = ew_slice_dict[tmp_datstr]
 
-        ew_slice_dict[tmp_datstr][:,1:-1] = dew_1/ew_slice_dx#_1
+        if meth == 0:
+            dew_1 = tmp_data_in[:,2:] - tmp_data_in[:,:-2]
 
-        ew_slice_dict[tmp_datstr][:,0] = np.ma.masked
-        ew_slice_dict[tmp_datstr][:,-1] = np.ma.masked
+            if dx_d_dx:
+                ew_slice_dict[tmp_datstr][:,1:-1] = dew_1
+            else:
+                ew_slice_dict[tmp_datstr][:,1:-1] = dew_1/ew_slice_dx
+                
+            ew_slice_dict[tmp_datstr][:,-1] = np.ma.masked
+        elif meth == 1:
+            dew_1 = tmp_data_in[:,1:] - tmp_data_in[:,:-1]
 
+            if dx_d_dx:
+                ew_slice_dict[tmp_datstr][:,:-1] = dew_1
+            else:
+                ew_slice_dict[tmp_datstr][:,:-1] = dew_1/ew_slice_dx
+            ew_slice_dict[tmp_datstr][:,-1] = np.ma.masked
+
+    if abs_post:
+        ew_slice_dict[tmp_datstr] = np.abs(ew_slice_dict[tmp_datstr])
     return ew_slice_dict
 
 
-def grad_vert_ns_data(ns_slice_dict):
+def grad_vert_ns_data(ns_slice_dict, meth=0, abs_pre = False, abs_post = False, regrid_xy = False,dx_d_dx = False):
+    
+    # meth = 0 is centred differnce, 1 = forward diff
+
+    
     Dataset_lst = [ss for ss in ns_slice_dict.keys()] 
     Dataset_lst.remove('x')
     Dataset_lst.remove('y')
 
     ns_slice_y = ns_slice_dict['y']
-    dns_z = ns_slice_y[2:,:] - ns_slice_y[:-2,:]
+    if meth == 0:
+        dns_z = ns_slice_y[2:,:] - ns_slice_y[:-2,:]
+    elif meth == 1:
+        dns_z = ns_slice_y[1:,:] - ns_slice_y[:-1,:]
 
     for tmp_datstr in Dataset_lst:
 
-        dns_1 = ns_slice_dict[tmp_datstr][2:,:] - ns_slice_dict[tmp_datstr][:-2,:]
+        if abs_pre:
+            tmp_data_in = np.abs(ns_slice_dict[tmp_datstr])
+        else:
+            tmp_data_in = ns_slice_dict[tmp_datstr]
 
-        ns_slice_dict[tmp_datstr][1:-1,:] = dns_1/dns_z
 
-        ns_slice_dict[tmp_datstr][ 0,:] = np.ma.masked
-        ns_slice_dict[tmp_datstr][-1,:] = np.ma.masked
+        if meth == 0:
+            dns_1 = tmp_data_in[2:,:] - tmp_data_in[:-2,:]
 
+            if dx_d_dx:
+                ns_slice_dict[tmp_datstr][1:-1,:] = dns_1
+            else:
+                ns_slice_dict[tmp_datstr][1:-1,:] = dns_1/dns_z
+
+            ns_slice_dict[tmp_datstr][ 0,:] = np.ma.masked
+            ns_slice_dict[tmp_datstr][-1,:] = np.ma.masked
+        elif meth == 1:
+            dns_1 = tmp_data_in[1:,:] - tmp_data_in[:-1,:]
+
+            if dx_d_dx:
+                ns_slice_dict[tmp_datstr][:-1,:] = dns_1
+            else:
+                ns_slice_dict[tmp_datstr][:-1,:] = dns_1/dns_z
+
+            ns_slice_dict[tmp_datstr][-1,:] = np.ma.masked
+
+        if abs_post:
+            ns_slice_dict[tmp_datstr] = np.abs(ns_slice_dict[tmp_datstr])
     return ns_slice_dict
 
 
-def grad_vert_ew_data(ew_slice_dict):
+def grad_vert_ew_data(ew_slice_dict, meth=0, abs_pre = False, abs_post = False, regrid_xy = False,dx_d_dx = False):
+    
+    # meth = 0 is centred differnce, 1 = forward diff
+
+
     Dataset_lst = [ss for ss in ew_slice_dict.keys()] 
     Dataset_lst.remove('x')
     Dataset_lst.remove('y')
 
     ew_slice_y = ew_slice_dict['y']
-    dew_z = ew_slice_y[2:,:] - ew_slice_y[:-2,:]
+    if meth == 0:
+        dew_z = ew_slice_y[2:,:] - ew_slice_y[:-2,:]
+    elif meth == 1:
+        dew_z = ew_slice_y[1:,:] - ew_slice_y[:-1,:]
 
     for tmp_datstr in Dataset_lst:
 
-        dew_1 = ew_slice_dict[tmp_datstr][2:,:] - ew_slice_dict[tmp_datstr][:-2,:]
+        if abs_pre:
+            tmp_data_in = np.abs(ew_slice_dict[tmp_datstr])
+        else:
+            tmp_data_in = ew_slice_dict[tmp_datstr]
+            
+        if meth == 0:
+            dew_1 = tmp_data_in[2:,:] - tmp_data_in[:-2,:]
+            if dx_d_dx:
+                ew_slice_dict[tmp_datstr][1:-1,:] = dew_1
+            else:
+                ew_slice_dict[tmp_datstr][1:-1,:] = dew_1/dew_z
 
-        ew_slice_dict[tmp_datstr][1:-1,:] = dew_1/dew_z
+            ew_slice_dict[tmp_datstr][ 0,:] = np.ma.masked
+            ew_slice_dict[tmp_datstr][-1,:] = np.ma.masked
+        elif meth == 1:
+            dew_1 = tmp_data_in[1:,:] - tmp_data_in[:-1,:]
+            if dx_d_dx:
+                ew_slice_dict[tmp_datstr][:-1,:] = dew_1
+            else:
+                ew_slice_dict[tmp_datstr][:-1,:] = dew_1/dew_z
 
-        ew_slice_dict[tmp_datstr][ 0,:] = np.ma.masked
-        ew_slice_dict[tmp_datstr][-1,:] = np.ma.masked
+            ew_slice_dict[tmp_datstr][-1,:] = np.ma.masked
 
+        if abs_post:
+            ew_slice_dict[tmp_datstr] = np.abs(ew_slice_dict[tmp_datstr])
     return ew_slice_dict
 
 
 
 
-#def grad_vert_hov_prof_data(hov_dat_1,hov_dat_2,hov_y):
-def grad_vert_hov_prof_data(hov_dat_dict):
+def grad_vert_hov_prof_data(hov_dat_dict, meth=0, abs_pre = False, abs_post = False, regrid_xy = False,dx_d_dx = False):
 
-    #hov_dat_dict['Dataset 1'],hov_dat_dict['Dataset 2'] = grad_vert_hov_prof_data(hov_dat_dict['Dataset 1'],hov_dat_dict['Dataset 2'],hov_dat_dict['y'])
+  
+
+    # meth = 0 is centred differnce, 1 = forward diff
 
     Dataset_lst = [ss for ss in hov_dat_dict.keys()]   
     if 'x' in Dataset_lst: Dataset_lst.remove('x')       
@@ -4199,14 +4342,40 @@ def grad_vert_hov_prof_data(hov_dat_dict):
 
 
     hov_y = hov_dat_dict['y']
-    dhov_z = hov_y[2:] - hov_y[:-2]
+    if meth == 0:
+        dhov_z = hov_y[2:] - hov_y[:-2]
+    elif meth == 1:
+        dhov_z = hov_y[1:] - hov_y[:-1]
     
     for tmp_datstr in Dataset_lst:
 
-        dhov_1 = hov_dat_dict[tmp_datstr][2:] - hov_dat_dict[tmp_datstr][:-2]
-        hov_dat_dict[tmp_datstr][1:-1] = (dhov_1.T/dhov_z).T
+        if abs_pre:
+            tmp_data_in = np.abs(hov_dat_dict[tmp_datstr])
+        else:
+            tmp_data_in = hov_dat_dict[tmp_datstr]
+
+        if meth == 0:
+            dhov_1 = tmp_data_in[2:] - tmp_data_in[:-2]
+            if dx_d_dx:
+                hov_dat_dict[tmp_datstr][1:-1] = (dhov_1.T).T
+            else:
+                hov_dat_dict[tmp_datstr][1:-1] = (dhov_1.T/dhov_z).T
+            hov_dat_dict[tmp_datstr][ 0] = np.ma.masked
+            hov_dat_dict[tmp_datstr][-1] = np.ma.masked
+        elif meth == 1:
+            dhov_1 = tmp_data_in[1:] - tmp_data_in[:-1]
+            if dx_d_dx:
+                hov_dat_dict[tmp_datstr][:-1] = (dhov_1.T).T
+            else:
+                hov_dat_dict[tmp_datstr][:-1] = (dhov_1.T/dhov_z).T
+            hov_dat_dict[tmp_datstr][-1] = np.ma.masked
+
         hov_dat_dict[tmp_datstr][ 0] = np.ma.masked
         hov_dat_dict[tmp_datstr][-1] = np.ma.masked
+
+
+        if abs_post:
+            hov_dat_dict[tmp_datstr] = np.abs(hov_dat_dict[tmp_datstr])
 
 
     return hov_dat_dict
@@ -5949,12 +6118,15 @@ def pop_up_opt_window(opt_but_names,opt_but_sw = None):
     # if a swich is provided, change button titles based on T/F in switch
     if opt_but_sw is not None:
         for tmpoob in opt_but_sw.keys():
-            if opt_but_sw[tmpoob]['v']:
-                obcax_tx_hd[tmpoob].set_text(opt_but_sw[tmpoob]['T'])
-                if 'T_col' in opt_but_sw[tmpoob].keys():obcax_tx_hd[tmpoob].set_color(opt_but_sw[tmpoob]['T_col'])
-            else:
-                obcax_tx_hd[tmpoob].set_text(opt_but_sw[tmpoob]['F'])
-                if 'F_col' in opt_but_sw[tmpoob].keys():obcax_tx_hd[tmpoob].set_color(opt_but_sw[tmpoob]['F_col'])
+            if isinstance(opt_but_sw[tmpoob]['v'],bool):
+                if opt_but_sw[tmpoob]['v']:
+                    obcax_tx_hd[tmpoob].set_text(opt_but_sw[tmpoob]['T'])
+                    if 'T_col' in opt_but_sw[tmpoob].keys():obcax_tx_hd[tmpoob].set_color(opt_but_sw[tmpoob]['T_col'])
+                else:
+                    obcax_tx_hd[tmpoob].set_text(opt_but_sw[tmpoob]['F'])
+                    if 'F_col' in opt_but_sw[tmpoob].keys():obcax_tx_hd[tmpoob].set_color(opt_but_sw[tmpoob]['F_col'])
+            elif isinstance(opt_but_sw[tmpoob]['v'],(int, float)):
+                obcax_tx_hd[tmpoob].set_text(opt_but_sw[tmpoob][int(opt_but_sw[tmpoob]['v'])])
 
     # Set x and y lims
     obcax.set_xlim(0,1)
@@ -6183,8 +6355,16 @@ def get_help_text(help_type,help_but):
         elif help_but == 'Contours':
             help_text = help_text + 'Shows or hides contours based on the colourbar tick values.'
         elif help_but == 'Grad':
-            help_text = help_text + 'Cycles between off (greyed out grad), to the horizontal gradient (Grad: Horiz) and the vertical Gradient (Grad: Vert). '
+            help_text = help_text + 'Gradient of the data, either horizontal or vertical, with options.'
+            help_text = help_text + 'Left and right clicks cycles between off (greyed out grad), to the horizontal gradient (Grad: Horiz) and the vertical Gradient (Grad: Vert). '
             help_text = help_text + 'Left clicking moves forward through the sequence (No Grad, Horiz Grad, Vert Grad), right click moves throught the sequence backwards. '
+            help_text = help_text + 'Central Click displays options window. These include:\n'
+            help_text = help_text + ' - Grad Meth: Centred Diff, or Forward Diff - default is centred difference, but forward differnce is better to show gridscale noise.\n'
+            help_text = help_text + ' - Grad 2D Method: magnitude; d/dx; d/dy. For the main map (a); the spatial gradient can be displayed as the magnitude, or the eastward or northward component\n'
+            help_text = help_text + ' - Pre-proc: |x| ; x. The absolute of the data can be taken before calculating the gradient (default: off (x)).\n'
+            help_text = help_text + ' - Post-proc: |x| ; x. The absolute of the gradient can be taken before after calculating it, before displaying it (default: off (x)).\n'
+            help_text = help_text + ' - dx(dy/dx) | dy/dx. The gradient can be multiplied by the spacing, to effectively give the difference between grid boxes.\n'
+            #help_text = help_text + ' - grad_regrid_xy (not coded). Option to regrid the lon/lat, as the forward differnece option shifts the data.\n'
         elif help_but == 'T Diff':
             help_text = help_text + 'Shows the difference between the current time and the previous time, '
             help_text = help_text + 'i.e. how much it has change since the previous day etc. Greyed out if the first time of the dataset is selected.'

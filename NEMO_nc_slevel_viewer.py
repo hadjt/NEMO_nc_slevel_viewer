@@ -324,6 +324,18 @@ def nemo_slice_zlev(config = 'amm7',
     if do_grad is None: do_grad = 0
     if do_cont is None: do_cont = True
     
+
+
+    grad_meth=0
+    grad_2d_meth = 0
+    grad_abs_pre = False
+    grad_abs_post = False
+    grad_regrid_xy = False
+    grad_dx_d_dx = False
+
+
+
+
     if verbose_debugging:
         print('======================================================')
         print('======================================================')
@@ -1872,6 +1884,9 @@ def nemo_slice_zlev(config = 'amm7',
     func_but_line_han['Depth-Mean'][0].set_linewidth(1)
     func_but_line_han['Depth-Mean'][0].set_color('w')
     func_but_line_han['Depth-Mean'][0].set_path_effects(str_pe)
+    func_but_line_han['Grad'][0].set_linewidth(1)
+    func_but_line_han['Grad'][0].set_color('w')
+    func_but_line_han['Grad'][0].set_path_effects(str_pe)
     if do_Obs:
         #pdb.set_trace()
         func_but_line_han['Obs'][0].set_linewidth(1)
@@ -2689,20 +2704,18 @@ def nemo_slice_zlev(config = 'amm7',
                             if var_dim[var] == 4:
                         '''
                         #pdb.set_trace()
-                        map_dat_dict[tmp_datstr] = field_gradient_2d(map_dat_dict[tmp_datstr], thd[1]['dx']*grid_dict['Dataset 1']['e1t'],thd[1]['dx']*grid_dict['Dataset 1']['e2t'], do_mask = do_mask_dict['Dataset 1'], curr_griddict = grid_dict[tmp_datstr]) # scale up widths between grid boxes
+                        map_dat_dict[tmp_datstr] = field_gradient_2d(map_dat_dict[tmp_datstr], thd[1]['dx']*grid_dict['Dataset 1']['e1t'],thd[1]['dx']*grid_dict['Dataset 1']['e2t'], do_mask = do_mask_dict['Dataset 1'], curr_griddict = grid_dict[tmp_datstr],
+                                                                       meth_2d=grad_2d_meth,meth=grad_meth, abs_pre = grad_abs_pre, abs_post = grad_abs_post, regrid_xy = grad_regrid_xy,dx_d_dx = grad_dx_d_dx) # scale up widths between grid boxes
                         
                         # if Sec_regrid is true, do gradient on _Sec_regrid in well, not instead, as needed for clim calcs
                         if Sec_regrid & (tmp_datstr!= 'Dataset 1'):
                             th_d_ind = int(tmp_datstr[8:])
                             #pdb.set_trace()
-                            map_dat_dict[tmp_datstr + '_Sec_regrid'] = field_gradient_2d(map_dat_dict[tmp_datstr + '_Sec_regrid'], thd[th_d_ind]['dx']*grid_dict[tmp_datstr]['e1t'],thd[th_d_ind]['dx']*grid_dict[tmp_datstr]['e2t'], do_mask = do_mask_dict[tmp_datstr], curr_griddict = grid_dict[tmp_datstr]) # scale up widths between grid boxes
+                            map_dat_dict[tmp_datstr + '_Sec_regrid'] = field_gradient_2d(map_dat_dict[tmp_datstr + '_Sec_regrid'], thd[th_d_ind]['dx']*grid_dict[tmp_datstr]['e1t'],thd[th_d_ind]['dx']*grid_dict[tmp_datstr]['e2t'], do_mask = do_mask_dict[tmp_datstr], curr_griddict = grid_dict[tmp_datstr],
+                                                                                           meth_2d=grad_2d_meth,meth=grad_meth, abs_pre = grad_abs_pre, abs_post = grad_abs_post, regrid_xy = grad_regrid_xy,dx_d_dx = grad_dx_d_dx) # scale up widths between grid boxes
 
                     
                     if do_memory & do_timer: timer_lst.append(('Calculated Grad of map_dat_dict',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
-
-                    #map_dat_dict['Dataset 1'] = field_gradient_2d(map_dat_dict['Dataset 1'], thd[1]['dx']*grid_dict['Dataset 1']['e1t'],thd[1]['dx']*grid_dict['Dataset 1']['e2t']) # scale up widths between grid boxes
-                    #map_dat_dict['Dataset 2'] = field_gradient_2d(map_dat_dict['Dataset 2'], thd[1]['dx']*grid_dict['Dataset 1']['e1t'],thd[1]['dx']*grid_dict['Dataset 1']['e2t']) # map 2 aleady on map1 grid, so use grid_dict['Dataset 1']['e1t'] not grid_dict['Dataset 2']['e1t']
-                #pdb.set_trace()
 
             if verbose_debugging: print('Reloaded map data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now(),'; dt = %s'%(datetime.now()-prevtime))
             prevtime = datetime.now()
@@ -2744,11 +2757,11 @@ def nemo_slice_zlev(config = 'amm7',
                     ew_slice_dict = reload_ew_data_comb(ii,jj, data_inst, lon_d[1], lat_d[1], grid_dict, var_dim[var], regrid_meth,iijj_ind,Dataset_lst,configd)
 
                     if do_grad == 1:
-                        #ew_slice_dict['Dataset 1'], ew_slice_dict['Dataset 2'] = grad_horiz_ew_data(thd,grid_dict,jj, ew_slice_dict['Dataset 1'],ew_slice_dict['Dataset 2'])
-                        ew_slice_dict = grad_horiz_ew_data(thd,grid_dict,jj, ew_slice_dict)
+                        ew_slice_dict = grad_horiz_ew_data(thd,grid_dict,jj, ew_slice_dict,
+                                                           meth=grad_meth, abs_pre = grad_abs_pre, abs_post = grad_abs_post, regrid_xy = grad_regrid_xy,dx_d_dx = grad_dx_d_dx)
                     if do_grad == 2:
-                        #ew_slice_dict['Dataset 1'], ew_slice_dict['Dataset 2'] = grad_vert_ew_data(ew_slice_dict['Dataset 1'],ew_slice_dict['Dataset 2'],ew_slice_dict['y'])
-                        ew_slice_dict = grad_vert_ew_data(ew_slice_dict)
+                        ew_slice_dict = grad_vert_ew_data(ew_slice_dict,
+                                                          meth=grad_meth, abs_pre = grad_abs_pre, abs_post = grad_abs_post, regrid_xy = grad_regrid_xy,dx_d_dx = grad_dx_d_dx)
                 else:
                     ew_slice_dict = reload_ew_data_comb(ii,jj, data_inst, lon_d[1], lat_d[1], grid_dict, var_dim[var], regrid_meth,iijj_ind,Dataset_lst,configd)
 
@@ -2765,11 +2778,11 @@ def nemo_slice_zlev(config = 'amm7',
                     ns_slice_dict = reload_ns_data_comb(ii,jj, data_inst, lon_d[1], lat_d[1], grid_dict, var_dim[var],regrid_meth, iijj_ind,Dataset_lst,configd)
  
                     if do_grad == 1:
-                        #ns_slice_dict['Dataset 1'], ns_slice_dict['Dataset 2'] = grad_horiz_ns_data(thd,grid_dict,ii, ns_slice_dict['Dataset 1'],ns_slice_dict['Dataset 2'])
-                        ns_slice_dict = grad_horiz_ns_data(thd,grid_dict,ii, ns_slice_dict)
+                        ns_slice_dict = grad_horiz_ns_data(thd,grid_dict,ii, ns_slice_dict,
+                                                           meth=grad_meth, abs_pre = grad_abs_pre, abs_post = grad_abs_post, regrid_xy = grad_regrid_xy,dx_d_dx = grad_dx_d_dx)
                     if do_grad == 2:
-                        #ns_slice_dict['Dataset 1'], ns_slice_dict['Dataset 2'] = grad_vert_ns_data(ns_slice_dict['Dataset 1'],ns_slice_dict['Dataset 2'],ns_slice_dict['y'])
-                        ns_slice_dict = grad_vert_ns_data(ns_slice_dict)
+                        ns_slice_dict = grad_vert_ns_data(ns_slice_dict,
+                                                          meth=grad_meth, abs_pre = grad_abs_pre, abs_post = grad_abs_post, regrid_xy = grad_regrid_xy,dx_d_dx = grad_dx_d_dx)
                 else:
 
                     ns_slice_dict = reload_ns_data_comb(ii,jj, data_inst, lon_d[1], lat_d[1], grid_dict, var_dim[var],regrid_meth, iijj_ind,Dataset_lst,configd)
@@ -2789,7 +2802,8 @@ def nemo_slice_zlev(config = 'amm7',
                 pf_dat_dict = reload_pf_data_comb(data_inst,var,var_dim,ii,jj,nz,grid_dict,Dataset_lst,configd,iijj_ind)
 
                 if do_grad == 2:
-                    pf_dat_dict = grad_vert_hov_prof_data(pf_dat_dict)
+                    pf_dat_dict = grad_vert_hov_prof_data(pf_dat_dict,
+                                                          meth=grad_meth, abs_pre = grad_abs_pre, abs_post = grad_abs_post, regrid_xy = grad_regrid_xy,dx_d_dx = grad_dx_d_dx)
 
 
                 
@@ -2800,12 +2814,11 @@ def nemo_slice_zlev(config = 'amm7',
                     if var_dim[var] == 4:
                         #pdb.set_trace()
                         
-                        #hov_dat_dict = reload_hov_data_comb(var,var_d[1]['mat'],var_grid['Dataset 1'],var_d['d'],ldi,thd, time_datetime, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict,do_mask_dict,load_second_files,Dataset_lst,configd)
                         hov_dat_dict = reload_hov_data_comb_time(var,var_d[1]['mat'],var_grid,var_d['d'],ldi,thd, time_datetime,time_d, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict,do_mask_dict,load_second_files,Dataset_lst,configd)
 
                         if do_grad == 2:
-                            #hov_dat_dict['Dataset 1'],hov_dat_dict['Dataset 2'] = grad_vert_hov_prof_data(hov_dat_dict['Dataset 1'],hov_dat_dict['Dataset 2'],hov_dat_dict['y'])
-                            hov_dat_dict = grad_vert_hov_prof_data(hov_dat_dict)
+                            hov_dat_dict = grad_vert_hov_prof_data(hov_dat_dict,
+                                                                   meth=grad_meth, abs_pre = grad_abs_pre, abs_post = grad_abs_post, regrid_xy = grad_regrid_xy,dx_d_dx = grad_dx_d_dx)
                     else:
                         hov_dat_dict = {}
                         hov_dat_dict['x'] = time_datetime
@@ -5524,6 +5537,62 @@ def nemo_slice_zlev(config = 'amm7',
                                     do_grad = 0
                                 elif do_grad == 2:
                                     do_grad = 1
+
+
+                            elif mouse_info['button'].name == 'MIDDLE':
+
+                                # Bring up a options window for Obs
+                                
+                                # button names                            
+                                grad_but_names = ['grad_meth','grad_2d_meth','grad_abs_pre','grad_abs_post','grad_dx_d_dx']# 'grad_regrid_xy',
+                                
+                                # button switches  
+                                grad_but_sw = {}
+                                grad_but_sw['grad_abs_pre'] =  {'v':grad_abs_pre, 'T':'Pre-proc: |x|','F':'Pre-proc: x','T_col': '0.5','F_col':'k'}
+                                grad_but_sw['grad_abs_post'] = {'v':grad_abs_post, 'T':'Post-proc: |x|','F':'Post-proc: x','T_col': '0.5','F_col':'k'}
+                                #grad_but_sw['grad_regrid_xy'] = {'v':grad_regrid_xy, 'T':'Regrid xy coords','F':'Original xy coords','T_col': 'k','F_col':'0.5'}
+                                grad_but_sw['grad_dx_d_dx'] =  {'v':grad_dx_d_dx, 'T':'dx(dy/dx)','F':'dy/dx', 'T_col': '0.5','F_col':'k'}
+                                
+                                grad_but_sw['grad_meth'] = {'v':grad_meth,0:'Grad Meth: Centred Diff',1: 'Grad Meth: Forward Diff'}
+                                grad_but_sw['grad_2d_meth'] = {'v':grad_2d_meth,0:'Grad 2D Method: magnitude',1: 'Grad 2D Method: d/dx',2: '2D Method: d/dy'}
+                                gradbut_sel = pop_up_opt_window(grad_but_names, opt_but_sw = grad_but_sw)
+
+                                
+
+                                # Set the main figure and axis to be current
+                                plt.figure(fig.figure)
+                                plt.sca(clickax)
+
+                                if gradbut_sel ==  'grad_meth':
+                                    grad_meth +=1
+                                    if grad_meth ==2:grad_meth = 0
+                                elif gradbut_sel ==  'grad_2d_meth':
+                                    grad_2d_meth +=1
+                                    if grad_2d_meth ==3:grad_2d_meth = 0
+                                elif gradbut_sel ==  'grad_abs_pre':
+                                    grad_abs_pre = not grad_abs_pre
+                                elif gradbut_sel ==  'grad_abs_post':
+                                    grad_abs_post = not grad_abs_post
+                                elif grad_regrid_xy ==  'grad_regrid_xy':
+                                    grad_regrid_xy = not grad_regrid_xy
+                                elif gradbut_sel ==  'grad_dx_d_dx':
+                                    grad_dx_d_dx = not grad_dx_d_dx
+
+                                print('grad_meth:',grad_meth)
+                                print('grad_abs_pre:',grad_abs_pre)
+                                print('grad_abs_post:',grad_abs_post)
+                                print('grad_regrid_xy:',grad_regrid_xy)
+                                print('grad_dx_d_dx:',grad_dx_d_dx)
+
+                                # if the button closed was one of the Obs types, add or remove from the hide list
+                                #for m_var in MLD_var_lst:  
+                                #    if mld_but_sw[m_var]['v']:
+                                #        MLD_var = m_var
+                                        
+                        
+
+
+
 
                             if do_grad == 0:
                                 func_but_text_han['Grad'].set_color('0.5')
