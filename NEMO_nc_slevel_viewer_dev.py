@@ -29,10 +29,10 @@ from NEMO_nc_slevel_viewer_lib import connect_to_files_with_xarray,load_grid_dic
 from NEMO_nc_slevel_viewer_lib import extract_time_from_xarr,resample_xarray
 
 # Data loading modules
-from NEMO_nc_slevel_viewer_lib import reload_data_instances
+#from NEMO_nc_slevel_viewer_lib import reload_data_instances
 from NEMO_nc_slevel_viewer_lib import reload_data_instances_time,reload_hov_data_comb_time,reload_ts_data_comb_time
-from NEMO_nc_slevel_viewer_lib import reload_map_data_comb,reload_ew_data_comb,reload_ns_data_comb
-from NEMO_nc_slevel_viewer_lib import reload_hov_data_comb,reload_ts_data_comb,reload_pf_data_comb
+from NEMO_nc_slevel_viewer_lib import reload_map_data_comb,reload_ew_data_comb,reload_ns_data_comb,reload_pf_data_comb
+#from NEMO_nc_slevel_viewer_lib import reload_hov_data_comb,reload_ts_data_comb
 
 
 # Data processing modules
@@ -701,6 +701,12 @@ def nemo_slice_zlev(config = 'amm7',
     nice_varname_dict['barot_mag'] = 'Barotropic current magnitude'
     nice_varname_dict['baroc_phi'] = 'Baroclinic current phase (degrees)'
     nice_varname_dict['barot_phi'] = 'Barotropic current phase (degrees)'
+
+
+    nice_varname_dict['dUdz'] = 'Baroclinic U current difference with depth'
+    nice_varname_dict['dVdz'] = 'Baroclinic V current difference with depth'
+    nice_varname_dict['absdUdz'] = 'Absolute Baroclinic U current difference with depth'
+    nice_varname_dict['absdVdz'] = 'Absolute Baroclinic V current difference with depth'
 
     nice_varname_dict['baroc_curl'] = 'Baroclinic current curl'
     nice_varname_dict['barot_curl'] = 'Barotropic current curl'
@@ -1800,13 +1806,14 @@ def nemo_slice_zlev(config = 'amm7',
     func_but_text_han['Near-Bed'].set_color('k')
     func_but_text_han['Surface-Bed'].set_color('k')
     func_but_text_han['Depth-Mean'].set_color('k')
-    if z_meth == 'z_slice':func_but_text_han['Depth level'].set_color('r')
-    if z_meth == 'ss':func_but_text_han['Surface'].set_color('r')
-    if z_meth == 'nb':func_but_text_han['Near-Bed'].set_color('r')
-    if z_meth == 'df':func_but_text_han['Surface-Bed'].set_color('r')
-    if z_meth == 'zm':func_but_text_han['Depth-Mean'].set_color('r')
-    if z_meth == 'zx':func_but_text_han['Depth-Mean'].set_color('r')
-    if z_meth == 'zn':func_but_text_han['Depth-Mean'].set_color('r')
+    if   z_meth == 'z_slice':func_but_text_han['Depth level'].set_color('r')
+    elif z_meth == 'ss':func_but_text_han['Surface'].set_color('r')
+    elif z_meth == 'nb':func_but_text_han['Near-Bed'].set_color('r')
+    elif z_meth == 'df':func_but_text_han['Surface-Bed'].set_color('r')
+    elif z_meth == 'zm':func_but_text_han['Depth-Mean'].set_color('r')
+    elif z_meth == 'zx':func_but_text_han['Depth-Mean'].set_color('r')
+    elif z_meth == 'zn':func_but_text_han['Depth-Mean'].set_color('r')
+    elif z_meth == 'zs':func_but_text_han['Depth-Mean'].set_color('r')
 
     DepthMean_sw = 0
 
@@ -2118,7 +2125,8 @@ def nemo_slice_zlev(config = 'amm7',
                     sel_ti = np.abs(xlocval - time_datetime_since_1970).argmin()
                     
                 elif ai in [5]:
-                    print('No action for Profiles axes')
+                    #print('No action for Profiles axes')
+                    sel_zz = int( (1-normyloc)*np.ptp(clylim) + clylim.min() )
                 else:
                     print('clicked in another axes??')
                     return
@@ -2415,7 +2423,7 @@ def nemo_slice_zlev(config = 'amm7',
 
             time_datetime_since_1970 = time_d['Dataset 1'][var_grid['Dataset 1'][var]]['datetime_since_1970']
 
-            print(tmp_current_time,time_datetime[0],time_datetime[-1],ti)
+            #print(tmp_current_time,time_datetime[0],time_datetime[-1],ti)
             if nctime_calendar_type in ['360_day','360']:
                 #pdb.set_trace()
                 ti = np.array([np.abs(ss *360*86400) for ss in (time_datetime - tmp_current_time)]).argmin()
@@ -2425,8 +2433,8 @@ def nemo_slice_zlev(config = 'amm7',
             #    ti = np.array([np.abs(ss.total_seconds()) for ss in (time_datetime - tmp_current_time)]).argmin()
             #except:
             #    pdb.set_trace()
-            print(tmp_current_time,time_datetime[0],time_datetime[-1],ti)
-            print('\n\n\n\n\n')
+            #print(tmp_current_time,time_datetime[0],time_datetime[-1],ti)
+            #print('\n\n\n\n\n')
             ntime = len(time_datetime)
             
             if do_timer: timer_lst.append(('Load Instance',datetime.now()))
@@ -2474,12 +2482,12 @@ def nemo_slice_zlev(config = 'amm7',
 
                         data_inst_U = None
                         if do_memory & do_timer: timer_lst.append(('Deleted data_inst_U',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
-                        data_inst_U,preload_data_ti_U,preload_data_var_U,preload_data_ldi_U = reload_data_instances(tmp_var_U,thd,ldi,ti,var_d,var_grid['Dataset 1'], xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
+                        data_inst_U,preload_data_ti_U,preload_data_var_U,preload_data_ldi_U = reload_data_instances_time(tmp_var_U,thd,ldi,ti,time_datetime_since_1970[ti],time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
                         if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_U',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                         
                         data_inst_V = None
                         if do_memory & do_timer: timer_lst.append(('Deleted data_inst_V',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
-                        data_inst_V,preload_data_ti_V,preload_data_var_V,preload_data_ldi_V = reload_data_instances(tmp_var_V,thd,ldi,ti,var_d,var_grid['Dataset 1'], xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
+                        data_inst_V,preload_data_ti_V,preload_data_var_V,preload_data_ldi_V = reload_data_instances_time(tmp_var_V,thd,ldi,ti,time_datetime_since_1970[ti],time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
                         if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_V',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
 
 
@@ -2488,7 +2496,7 @@ def nemo_slice_zlev(config = 'amm7',
                     if reload_MLD:
                         data_inst_mld = None
                         if do_memory & do_timer: timer_lst.append(('Deleted data_inst_mld',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
-                        data_inst_mld,preload_data_ti_mld,preload_data_var_mld,preload_data_ldi_mld= reload_data_instances(MLD_var,thd,ldi,ti,var_d,var_grid['Dataset 1'], xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
+                        data_inst_mld,preload_data_ti_mld,preload_data_var_mld,preload_data_ldi_mld= reload_data_instances_time(MLD_var,thd,ldi,ti,time_datetime_since_1970[ti],time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
                         reload_MLD = False
                         if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_mld',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                     
@@ -2578,8 +2586,8 @@ def nemo_slice_zlev(config = 'amm7',
 
                         if (data_inst_Tm1['Dataset 1'] is None)|(preload_data_ti_Tm1 != (ti-1))|(preload_data_var_Tm1 != var)|(preload_data_ldi_Tm1 != ldi):
 
-                            (data_inst_Tm1,preload_data_ti_Tm1,preload_data_var_Tm1,preload_data_ldi_Tm1) = reload_data_instances(var,thd,ldi,ti-1,
-                                    var_d,var_grid['Dataset 1'], xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
+                            (data_inst_Tm1,preload_data_ti_Tm1,preload_data_var_Tm1,preload_data_ldi_Tm1) = reload_data_instances_time(var,thd,ldi,ti-1,
+                                    time_datetime_since_1970[ti],time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
                             if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_Tm1',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                         
                         #pdb.set_trace()
@@ -3273,6 +3281,7 @@ def nemo_slice_zlev(config = 'amm7',
             elif z_meth == 'zm':nice_lev = 'Depth-Mean'
             elif z_meth == 'zx':nice_lev = 'Depth-Max'
             elif z_meth == 'zn':nice_lev = 'Depth-Min'
+            elif z_meth == 'zs':nice_lev = 'Depth-Std'
 
             if var_dim[var] == 4:  
                 map_title_str = '%s (%s); %s %s'%(nice_varname_dict[var],nice_lev,lon_lat_to_str(lon_d[1][jj,ii],lat_d[1][jj,ii])[0],time_datetime[ti])
@@ -3700,6 +3709,9 @@ def nemo_slice_zlev(config = 'amm7',
                         elif z_meth == 'zn':
                             #depth mean obs if zm.
                             tmpobsdat = tmpobsdat_mat.min(axis = 1)
+                        elif z_meth == 'zs':
+                            #depth mean obs if zm.
+                            tmpobsdat = tmpobsdat_mat.std(axis = 1)
                         else:
 
                             pdb.set_trace()
@@ -4136,7 +4148,7 @@ def nemo_slice_zlev(config = 'amm7',
                 reload_hov = True
                 reload_ts = True
 
-            elif sel_ax in [3]:
+            elif sel_ax in [3, 5]:
                 # if in hov/time series, change map, and slices
 
                 # re calculate depth values, as y scale reversed, 
@@ -5635,11 +5647,18 @@ def nemo_slice_zlev(config = 'amm7',
 
 
                                 if but_name == 'Depth-Mean':
-                                    if z_meth in ['zm','zx','zn']:
+                                    if z_meth in ['zm','zx','zn','zs']:
                                         # switch button
-                                        DepthMean_sw+=1
-                                        if DepthMean_sw == 3: DepthMean_sw = 0
-                                        
+                                        if mouse_info['button'].name == 'LEFT':
+                                            DepthMean_sw+=1
+                                        else:
+                                        #elif mouse_info['button'].name == 'RIGHT':
+                                            DepthMean_sw-=1
+
+                                    if DepthMean_sw == 4: DepthMean_sw = 0
+                                    if DepthMean_sw == -1: DepthMean_sw = 3
+
+
                                     if DepthMean_sw == 0:
                                         func_but_text_han['Depth-Mean'].set_text('Depth-Mean')
                                         z_meth = 'zm'
@@ -5649,6 +5668,9 @@ def nemo_slice_zlev(config = 'amm7',
                                     elif DepthMean_sw == 2:
                                         func_but_text_han['Depth-Mean'].set_text('Depth-Min')
                                         z_meth = 'zn'
+                                    elif DepthMean_sw == 3:
+                                        func_but_text_han['Depth-Mean'].set_text('Depth-Std')
+                                        z_meth = 'zs'
 
                                 
                                 
@@ -6164,7 +6186,7 @@ def main():
         if legacy_mode:
             parser.add_argument('--fig_fname_lab', type=str, required=False)
             parser.add_argument('--fig_fname_lab_2nd', type=str, required=False)
-        parser.add_argument('--z_meth', type=str, help="z_slice, ss, nb, df, zm, zx, zn, or z_index for z level models")# Parse the argument
+        parser.add_argument('--z_meth', type=str, help="z_slice, ss, nb, df, zm, zx, zn, zs, or z_index for z level models")# Parse the argument
 
         parser.add_argument('--secdataset_proc', type=str, required=False)
 
