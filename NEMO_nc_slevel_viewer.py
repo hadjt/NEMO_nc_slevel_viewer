@@ -5937,7 +5937,7 @@ def nemo_slice_zlev(config = 'amm7',
 
 
 def main():
-    legacy_mode = False
+    #legacy_mode = False
 
     nemo_slice_zlev_helptext=textwrap.dedent('''\
     Interactive NEMO ncfile viewer.
@@ -6209,6 +6209,7 @@ def main():
 
         parser.add_argument('--zlim_max', type=int, required=False)
         parser.add_argument('--var', type=str)# Parse the argument
+        '''
         if legacy_mode:
             parser.add_argument('--fname_lst_2nd', type=str, required=False, help='Input file list, enclose in "" more than simple wild card, Check this has the same number of files as the fname_lst')
             parser.add_argument('--config_2nd', type=str, required=False, help="Only AMM7, AMM15. No implemented CO9P2, ORCA025, ORCA025EXT or ORCA12")# Parse the argument
@@ -6220,11 +6221,11 @@ def main():
 
             parser.add_argument('--WW3_fname_lst', type=str, required=False, help='Input WW3 file list for current magnitude. Assumes file contains vozocrtx, enclose in "" more than simple wild card')
             parser.add_argument('--WW3_fname_lst_2nd', type=str, required=False, help='Input WW3 file list for current magnitude. Assumes file contains vozocrtx, enclose in "" more than simple wild card')
-        
+        '''
         parser.add_argument('--preload_data', type=str, required=False)
         parser.add_argument('--allow_diff_time', type=str, required=False)
 
-
+        '''
         if legacy_mode:
             parser.add_argument('--thin', type=int, required=False)
             parser.add_argument('--thin_2nd', type=int, required=False)
@@ -6241,7 +6242,7 @@ def main():
             parser.add_argument('--thin_files', type=int, required=False)
             parser.add_argument('--thin_files_0', type=int, required=False)
             parser.add_argument('--thin_files_1', type=int, required=False)
-
+        '''
     
 
         parser.add_argument('--xlim', type=float, required=False, nargs = 2)
@@ -6259,10 +6260,11 @@ def main():
         parser.add_argument('--date_ind', type=str, required=False)
         parser.add_argument('--date_fmt', type=str, required=False)
 
-
+        '''
         if legacy_mode:
             parser.add_argument('--fig_fname_lab', type=str, required=False)
             parser.add_argument('--fig_fname_lab_2nd', type=str, required=False)
+        '''
         parser.add_argument('--z_meth', type=str, help="z_slice, ss, nb, df, zm, zx, zn, zs, or z_index for z level models")# Parse the argument
 
         parser.add_argument('--secdataset_proc', type=str, required=False)
@@ -6623,9 +6625,19 @@ def main():
 
 
         print(args.fname_lst)
-        fname_lst = glob.glob(args.fname_lst)
-        fname_lst.sort()
+        fname_lst_in = args.fname_lst
+        fname_lst = []
+        for sub_fname_lst_in in fname_lst_in.split('\n'):
+            sub_fname_lst = glob.glob(sub_fname_lst_in)
+            for ss in sub_fname_lst:fname_lst.append(ss)
+        
+        #pdb.set_trace()
 
+
+        #fname_lst = glob.glob(args.fname_lst)
+        fname_lst.sort()
+        #pdb.set_trace()
+        """
         if legacy_mode:
             #Deal with file lists
             fname_lst_2nd = None
@@ -6673,8 +6685,6 @@ def main():
                 pdb.set_trace()
 
 
-        if legacy_mode:
-            #load_second_files = False
 
             configd = {}
             configd[1] = args.config
@@ -6719,7 +6729,7 @@ def main():
                 if V_fname_lst is not None: fname_dict['Dataset 2']['V'] = V_fname_lst_2nd
                 if WW3_fname_lst is not None: fname_dict['Dataset 2']['WW3'] = WW3_fname_lst_2nd
 
-
+        """
 
 
 
@@ -6744,7 +6754,20 @@ def main():
 
                 tmp_grid = tmparr[1]
                 tmp_files = tmparr[2]
-                fname_dict[tmp_datstr][tmp_grid] = np.sort(glob.glob(tmp_files))
+
+
+                #fname_dict[tmp_datstr][tmp_grid] = np.sort(glob.glob(tmp_files))
+
+                sec_fname_lst_in = tmp_files
+                sec_fname_lst = []
+                for sub_sec_fname_lst_in in sec_fname_lst_in.split('\n'):
+                    sec_sub_fname_lst = glob.glob(sub_sec_fname_lst_in)
+                    for ss in sec_sub_fname_lst:sec_fname_lst.append(ss)
+                
+
+                fname_dict[tmp_datstr][tmp_grid] = np.sort(sec_sub_fname_lst)
+
+
                 if len(fname_dict[tmp_datstr][tmp_grid]) == 0: 
                     print('\n\nNo Files for %s %s = %s\n\n'%(tmp_datstr,tmp_grid,tmp_files))
                     pdb.set_trace()
@@ -6773,7 +6796,7 @@ def main():
         uniqconfig = np.unique(configlst)
 
     
-
+        """
         if legacy_mode:
             fig_lab_d = {}
             #for tmp_datstr in dataset_lst:
@@ -6790,7 +6813,7 @@ def main():
             #del(fig_fname_lab_2nd)
 
             #pdb.set_trace()
-
+        """
 
         if args.figlabs is not None:
             fig_lab_d = {}
@@ -6803,7 +6826,7 @@ def main():
                 #pdb.set_trace()
                 fig_lab_d[tmp_datstr] = tmparr[1]
 
-
+        """
         if legacy_mode:
 
             thd = {}
@@ -6852,7 +6875,7 @@ def main():
 
 
             #pdb.set_trace()
-        
+        """
         # set up empty th dictionary
         thd = {}
         thd[1] = {}
