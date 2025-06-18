@@ -5937,7 +5937,7 @@ def nemo_slice_zlev(config = 'amm7',
 
 
 def main():
-    #legacy_mode = False
+
 
     nemo_slice_zlev_helptext=textwrap.dedent('''\
     Interactive NEMO ncfile viewer.
@@ -6061,10 +6061,6 @@ def main():
     --th 2 x1    last row to load of the second data set, if of a differnt configuration.
     --th 2 y0    first column to load of the second data set, if of a differnt configuration.
     --th 2 y1    last column to load of the second data set, if of a differnt configuration.
-                                             
-    The th arguemnts replace the following legacy argmuents
-        thin, thin_x0, thin_x1, thin_files thin_files_0, thin_file_1
-        thin_2nd, thin_x0_2nd, thin_x1_2nd, thin_files_2nd thin_files_0_2nd, thin_file_1_2nd
     
     When displaying large files, it is often the plotting that reduces the responisveness. AMM15 is
     ~1500*1500, but most of this detail is not visible. You can reduce the number of pixels
@@ -6209,41 +6205,10 @@ def main():
 
         parser.add_argument('--zlim_max', type=int, required=False)
         parser.add_argument('--var', type=str)# Parse the argument
-        '''
-        if legacy_mode:
-            parser.add_argument('--fname_lst_2nd', type=str, required=False, help='Input file list, enclose in "" more than simple wild card, Check this has the same number of files as the fname_lst')
-            parser.add_argument('--config_2nd', type=str, required=False, help="Only AMM7, AMM15. No implemented CO9P2, ORCA025, ORCA025EXT or ORCA12")# Parse the argument
 
-            parser.add_argument('--U_fname_lst', type=str, required=False, help='Input U file list for current magnitude. Assumes file contains vozocrtx, enclose in "" more than simple wild card')
-            parser.add_argument('--V_fname_lst', type=str, required=False, help='Input U file list for current magnitude. Assumes file contains vomecrty, enclose in "" more than simple wild card')
-            parser.add_argument('--U_fname_lst_2nd', type=str, required=False, help='Input U file list for current magnitude. Assumes file contains vozocrtx, enclose in "" more than simple wild card')
-            parser.add_argument('--V_fname_lst_2nd', type=str, required=False, help='Input U file list for current magnitude. Assumes file contains vomecrty, enclose in "" more than simple wild card')
-
-            parser.add_argument('--WW3_fname_lst', type=str, required=False, help='Input WW3 file list for current magnitude. Assumes file contains vozocrtx, enclose in "" more than simple wild card')
-            parser.add_argument('--WW3_fname_lst_2nd', type=str, required=False, help='Input WW3 file list for current magnitude. Assumes file contains vozocrtx, enclose in "" more than simple wild card')
-        '''
         parser.add_argument('--preload_data', type=str, required=False)
         parser.add_argument('--allow_diff_time', type=str, required=False)
 
-        '''
-        if legacy_mode:
-            parser.add_argument('--thin', type=int, required=False)
-            parser.add_argument('--thin_2nd', type=int, required=False)
-
-            parser.add_argument('--thin_x0', type=int, required=False)
-            parser.add_argument('--thin_x1', type=int, required=False)
-            parser.add_argument('--thin_y0', type=int, required=False)
-            parser.add_argument('--thin_y1', type=int, required=False)
-            parser.add_argument('--thin_x0_2nd', type=int, required=False)
-            parser.add_argument('--thin_x1_2nd', type=int, required=False)
-            parser.add_argument('--thin_y0_2nd', type=int, required=False)
-            parser.add_argument('--thin_y1_2nd', type=int, required=False)
-
-            parser.add_argument('--thin_files', type=int, required=False)
-            parser.add_argument('--thin_files_0', type=int, required=False)
-            parser.add_argument('--thin_files_1', type=int, required=False)
-        '''
-    
 
         parser.add_argument('--xlim', type=float, required=False, nargs = 2)
         parser.add_argument('--ylim', type=float, required=False, nargs = 2)
@@ -6260,11 +6225,6 @@ def main():
         parser.add_argument('--date_ind', type=str, required=False)
         parser.add_argument('--date_fmt', type=str, required=False)
 
-        '''
-        if legacy_mode:
-            parser.add_argument('--fig_fname_lab', type=str, required=False)
-            parser.add_argument('--fig_fname_lab_2nd', type=str, required=False)
-        '''
         parser.add_argument('--z_meth', type=str, help="z_slice, ss, nb, df, zm, zx, zn, zs, or z_index for z level models")# Parse the argument
 
         parser.add_argument('--secdataset_proc', type=str, required=False)
@@ -6636,101 +6596,6 @@ def main():
 
         #fname_lst = glob.glob(args.fname_lst)
         fname_lst.sort()
-        #pdb.set_trace()
-        """
-        if legacy_mode:
-            #Deal with file lists
-            fname_lst_2nd = None
-            U_fname_lst = None
-            V_fname_lst = None
-            U_fname_lst_2nd = None
-            V_fname_lst_2nd = None
-            WW3_fname_lst = None
-            WW3_fname_lst_2nd = None
-
-            load_second_files = False
-            
-            if (args.fname_lst_2nd) is not None:
-                fname_lst_2nd = glob.glob(args.fname_lst_2nd)
-                load_second_files = True
-            if (args.U_fname_lst) is not None:U_fname_lst = glob.glob(args.U_fname_lst)
-            if (args.V_fname_lst) is not None:V_fname_lst = glob.glob(args.V_fname_lst)
-            if (args.U_fname_lst_2nd) is not None:
-                U_fname_lst_2nd = glob.glob(args.U_fname_lst_2nd)
-                load_second_files = True
-            if (args.V_fname_lst_2nd) is not None:
-                V_fname_lst_2nd = glob.glob(args.V_fname_lst_2nd)
-                load_second_files = True
-            if (args.WW3_fname_lst) is not None:WW3_fname_lst = glob.glob(args.WW3_fname_lst)
-            if (args.WW3_fname_lst_2nd) is not None:
-                WW3_fname_lst_2nd = glob.glob(args.WW3_fname_lst_2nd)
-                load_second_files = True
-
-            if (fname_lst_2nd) is not None:fname_lst_2nd.sort()
-            if (U_fname_lst) is not None:U_fname_lst.sort()
-            if (V_fname_lst) is not None:V_fname_lst.sort()
-            if (U_fname_lst_2nd) is not None:U_fname_lst_2nd.sort()
-            if (V_fname_lst_2nd) is not None:V_fname_lst_2nd.sort()
-
-            if (WW3_fname_lst) is not None:WW3_fname_lst.sort()
-            if (WW3_fname_lst_2nd) is not None:WW3_fname_lst_2nd.sort()
-
-
-            if len(fname_lst) == 0: 
-                print('')
-                print('no files passed')
-                print('')
-                print('')
-                print('=======================================================')
-                pdb.set_trace()
-
-
-
-            configd = {}
-            configd[1] = args.config
-            if load_second_files:
-                if (args.config_2nd) is None: 
-                    configd[2] = configd[1]
-                else:
-                    configd[2] =args.config_2nd
-            '''
-            if args.config_2nd is not None: 
-                configd[2]
-
-            configd[2] = None
-            if 'config_2nd' in args:
-                if args.config_2nd is not None: 
-                    configd[2] = args.config_2nd
-            
-                    load_second_files = True
-            
-            
-            if 'fname_lst_2nd' in args:
-                if 'config_2nd' in args:
-                    if args.config_2nd is None: 
-                        configd[2] = None
-                
-                load_second_files = True
-            '''
-            #if 2 in configd.keys():
-        
-            fname_dict = {}
-            fname_dict['Dataset 1'] = {}
-            fname_dict['Dataset 1']['T'] = fname_lst
-            if U_fname_lst is not None: fname_dict['Dataset 1']['U'] = U_fname_lst
-            if V_fname_lst is not None: fname_dict['Dataset 1']['V'] = V_fname_lst
-            if WW3_fname_lst is not None: fname_dict['Dataset 1']['WW3'] = WW3_fname_lst
-
-            #pdb.set_trace()
-            if load_second_files: 
-                fname_dict['Dataset 2'] = {}
-                fname_dict['Dataset 2']['T'] = fname_lst_2nd
-                if U_fname_lst is not None: fname_dict['Dataset 2']['U'] = U_fname_lst_2nd
-                if V_fname_lst is not None: fname_dict['Dataset 2']['V'] = V_fname_lst_2nd
-                if WW3_fname_lst is not None: fname_dict['Dataset 2']['WW3'] = WW3_fname_lst_2nd
-
-        """
-
 
 
 
@@ -6796,24 +6661,6 @@ def main():
         uniqconfig = np.unique(configlst)
 
     
-        """
-        if legacy_mode:
-            fig_lab_d = {}
-            #for tmp_datstr in dataset_lst:
-            fig_lab_d['Dataset 1'] = None
-            #pdb.set_trace()
-
-            if 'fig_fname_lab' in args: fig_lab_d['Dataset 1'] = args.fig_fname_lab
-            if load_second_files: 
-                if 'fig_fname_lab_2nd' in args:fig_lab_d['Dataset 2'] = args.fig_fname_lab_2nd
-                
-            #if fig_fname_lab is not None: fig_lab_d['Dataset 1'] = fig_fname_lab
-            #if fig_fname_lab_2nd is not None: fig_lab_d['Dataset 2'] = fig_fname_lab_2nd
-            #del(fig_fname_lab)
-            #del(fig_fname_lab_2nd)
-
-            #pdb.set_trace()
-        """
 
         if args.figlabs is not None:
             fig_lab_d = {}
@@ -6826,56 +6673,6 @@ def main():
                 #pdb.set_trace()
                 fig_lab_d[tmp_datstr] = tmparr[1]
 
-        """
-        if legacy_mode:
-
-            thd = {}
-            thd[1] = {}
-            thd[1]['df'] = 1
-            thd[1]['f0'] = 0
-            thd[1]['f1'] = None
-            if (args.thin_files)   is not None: thd[1]['df'] = args.thin_files
-            if (args.thin_files_0) is not None: thd[1]['f0'] = args.thin_files_0
-            if (args.thin_files_1) is not None: thd[1]['f1'] = args.thin_files_1
-
-            thd[1]['dx'] = 1
-            thd[1]['dy'] = 1
-            thd[1]['x0'] = 0
-            thd[1]['x1'] = None
-            thd[1]['y0'] = 0
-            thd[1]['y1'] = None
-    
-            if (args.thin)    is not None: thd[1]['dx'] = args.thin
-            if (args.thin)    is not None: thd[1]['dy'] = args.thin
-            if (args.thin_x0) is not None: thd[1]['x0'] = args.thin_x0
-            if (args.thin_x1) is not None: thd[1]['x1'] = args.thin_x1
-            if (args.thin_y0) is not None: thd[1]['y0'] = args.thin_y0
-            if (args.thin_y1) is not None: thd[1]['y1'] = args.thin_y1
-
-            if load_second_files:
-                thd[2] = {}
-                thd[2]['df'] = thd[1]['df']
-                thd[2]['f0'] = thd[1]['f0']
-                thd[2]['f1'] = thd[1]['f1']
-                thd[2]['dx'] = thd[1]['dx']
-                thd[2]['dy'] = thd[1]['dy']
-                thd[2]['x0'] = thd[1]['x0']
-                thd[2]['x1'] = thd[1]['x1']
-                thd[2]['y0'] = thd[1]['y0']
-                thd[2]['y1'] = thd[1]['y1']
-
-
-
-                if (args.thin_2nd)    is not None: thd[2]['dx'] = args.thin_2nd
-                if (args.thin_2nd)    is not None: thd[2]['dy'] = args.thin_2nd
-                if (args.thin_x0_2nd) is not None: thd[2]['x0'] = args.thin_x0_2nd
-                if (args.thin_x1_2nd) is not None: thd[2]['x1'] = args.thin_x1_2nd
-                if (args.thin_y0_2nd) is not None: thd[2]['y0'] = args.thin_y0_2nd
-                if (args.thin_y1_2nd) is not None: thd[2]['y1'] = args.thin_y1_2nd
-
-
-            #pdb.set_trace()
-        """
         # set up empty th dictionary
         thd = {}
         thd[1] = {}
@@ -7019,23 +6816,6 @@ def main():
         # force_dim_d_in =
         #   {1: {'1': {'Ti': 'x', 'x_grid_T_inner': 'y'}}, 2: {'1': {'Ti': 'x', 'x_grid_T_inner': 'y'}}}
 
-
-        '''
-        force_dim_d_in = None
-        if args.forced_dim is not None:
-            force_dim_d_in = {}
-            force_dim_d['all_grid'] = True
-            for tmpfdimlst in args.forced_dim:
-                
-                if (len(tmpfdimlst)%2 != 1) | len(tmpfdimlst)<2:
-                    print('arg error: (forced_dim):', tmpvarrenlst) 
-
-                tmpdimgrid = tmpfdimlst[0]
-                force_dim_d_in[tmpdimgrid] = {}
-                nfdimlst=len(tmpfdimlst[1:])/2
-                for tfdi in range(int(nfdimlst)): force_dim_d_in[tmpdimgrid][tmpfdimlst[(tfdi*2)+1]] = tmpfdimlst[(tfdi*2)+2]
-                
-        '''
 
         #for ii, tmp_datstr in enumerate(dataset_lst):
         #pdb.set_trace() 
