@@ -465,6 +465,7 @@ def nemo_slice_zlev(config = 'amm7',
 
     # check if there are any LBCs
     do_LBC_d = {}
+    LBC_coord_d = {}
     do_LBC = False
 
     
@@ -1378,6 +1379,14 @@ def nemo_slice_zlev(config = 'amm7',
         nvarbutcol = 1000
 
 
+    do_z_spike_mag = True
+    # dep
+    zm_2d_meth_lst = ['zm','zx','zn','zs']
+    zm_2d_meth_full_lst = ['Depth-Mean','Depth-Max','Depth-Min','Depth-Std']
+
+    if do_z_spike_mag:
+        zm_2d_meth_lst.append('zd')
+        zm_2d_meth_full_lst.append('|Z-Spike|')
 
     init_timer.append((datetime.now(),'Fig str, n buttons'))
     #import locale
@@ -1825,6 +1834,7 @@ def nemo_slice_zlev(config = 'amm7',
     elif z_meth == 'zm':func_but_text_han['Depth-Mean'].set_color('r')
     elif z_meth == 'zx':func_but_text_han['Depth-Mean'].set_color('r')
     elif z_meth == 'zn':func_but_text_han['Depth-Mean'].set_color('r')
+    elif z_meth == 'zd':func_but_text_han['Depth-Mean'].set_color('r')
     elif z_meth == 'zs':func_but_text_han['Depth-Mean'].set_color('r')
 
     DepthMean_sw = 0
@@ -2489,9 +2499,11 @@ def nemo_slice_zlev(config = 'amm7',
 
                     if do_memory & do_timer: timer_lst.append(('Deleted data_inst',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                     #pdb.set_trace()
-                    #data_inst,preload_data_ti,preload_data_var,preload_data_ldi= reload_data_instances(var,thd,ldi,ti,var_d,var_grid['Dataset 1'], xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
-                    data_inst,preload_data_ti,preload_data_var,preload_data_ldi= reload_data_instances_time(var,thd,ldi,ti,time_datetime_since_1970[ti],time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
-
+                    #data_inst,psreload_data_ti,preload_data_var,preload_data_ldi= reload_data_instances(var,thd,ldi,ti,var_d,var_grid['Dataset 1'], xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
+                    data_inst,preload_data_ti,preload_data_var,preload_data_ldi= reload_data_instances_time(var,thd,ldi,ti,
+                        time_datetime_since_1970[ti],time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files,
+                        do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
+                    #pdb.set_trace()
                     if do_memory & do_timer: timer_lst.append(('Reloaded data_inst',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
 
                     # For T Diff
@@ -2511,12 +2523,16 @@ def nemo_slice_zlev(config = 'amm7',
 
                         data_inst_U = None
                         if do_memory & do_timer: timer_lst.append(('Deleted data_inst_U',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
-                        data_inst_U,preload_data_ti_U,preload_data_var_U,preload_data_ldi_U = reload_data_instances_time(tmp_var_U,thd,ldi,ti,time_datetime_since_1970[ti],time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
+                        data_inst_U,preload_data_ti_U,preload_data_var_U,preload_data_ldi_U = reload_data_instances_time(tmp_var_U,thd,ldi,ti,
+                            time_datetime_since_1970[ti],time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files,
+                            do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
                         if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_U',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                         
                         data_inst_V = None
                         if do_memory & do_timer: timer_lst.append(('Deleted data_inst_V',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
-                        data_inst_V,preload_data_ti_V,preload_data_var_V,preload_data_ldi_V = reload_data_instances_time(tmp_var_V,thd,ldi,ti,time_datetime_since_1970[ti],time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
+                        data_inst_V,preload_data_ti_V,preload_data_var_V,preload_data_ldi_V = reload_data_instances_time(tmp_var_V,thd,ldi,ti,
+                            time_datetime_since_1970[ti],time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files,
+                            do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
                         if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_V',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
 
 
@@ -2525,82 +2541,12 @@ def nemo_slice_zlev(config = 'amm7',
                     if reload_MLD:
                         data_inst_mld = None
                         if do_memory & do_timer: timer_lst.append(('Deleted data_inst_mld',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
-                        data_inst_mld,preload_data_ti_mld,preload_data_var_mld,preload_data_ldi_mld= reload_data_instances_time(MLD_var,thd,ldi,ti,time_datetime_since_1970[ti],time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
+                        data_inst_mld,preload_data_ti_mld,preload_data_var_mld,preload_data_ldi_mld= reload_data_instances_time(MLD_var,thd,ldi,ti,
+                            time_datetime_since_1970[ti],time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files,
+                            do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
                         reload_MLD = False
                         if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_mld',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                     
-            
-
-            if do_LBC:
-                for tmp_datstr in  Dataset_lst:
-                    th_d_ind = int(tmp_datstr[8:])
-                    print('do_LBC_d[th_d_ind]',do_LBC_d[th_d_ind])
-                    if do_LBC_d[th_d_ind]:
-                        try:
-                            if data_inst[tmp_datstr].shape[-2:] != grid_dict[tmp_datstr]['gdept'].shape[-2:]:
-
-                                tmp_LBC_grid = var_grid[tmp_datstr][var]
-                                if tmp_LBC_grid == 'T': tmp_LBC_grid = 'T_1'
-                                
-                                LBC_set = int(tmp_LBC_grid[-1])
-                                LBC_type = tmp_LBC_grid[:-2]
-
-                            
-                                tmp_LBC_data_in = data_inst[tmp_datstr]
-
-
-
-                                if LBC_type in ['T','U','V']:
-                                    tmpLBCnbj =LBC_coord_d[th_d_ind][LBC_set]['nbj'+LBC_type.lower()]
-                                    tmpLBCnbi =LBC_coord_d[th_d_ind][LBC_set]['nbi'+LBC_type.lower()]
-                                    tmp_LBC_data_out = np.ma.zeros(grid_dict[tmp_datstr]['gdept'].shape)*np.ma.masked                                
-                                    #tmp_LBC_data_out[:,LBC_coord_d[th_d_ind][LBC_set]['nbjt'], LBC_coord_d[th_d_ind][LBC_set]['nbit']] = tmp_LBC_data_in
-                                    tmp_LBC_data_out[:,tmpLBCnbj,tmpLBCnbi] = tmp_LBC_data_in
-                                elif LBC_type in ['T_bt','U_bt','V_bt']:
-                                    tmpLBCnbj =LBC_coord_d[th_d_ind][LBC_set]['nbj'+LBC_type[0].lower()][LBC_coord_d[th_d_ind][LBC_set]['nbr'+LBC_type[0].lower()]==1]
-                                    tmpLBCnbi =LBC_coord_d[th_d_ind][LBC_set]['nbi'+LBC_type[0].lower()][LBC_coord_d[th_d_ind][LBC_set]['nbr'+LBC_type[0].lower()]==1]
-
-                                    tmp_LBC_data_out = np.ma.zeros(grid_dict[tmp_datstr]['gdept'].shape[1:])*np.ma.masked  
-                                    tmp_LBC_data_out[tmpLBCnbj,tmpLBCnbi] = tmp_LBC_data_in
-                                else:
-                                    pdb.set_trace()
-                                '''
-                                if LBC_type == 'T':
-                                    tmp_LBC_data_out = np.ma.zeros(grid_dict[tmp_datstr]['gdept'].shape)*np.ma.masked                                
-                                    tmp_LBC_data_out[:,LBC_coord_d[th_d_ind][LBC_set]['nbjt'], LBC_coord_d[th_d_ind][LBC_set]['nbit']] = tmp_LBC_data_in
-                                elif LBC_type == 'U':
-                                    tmp_LBC_data_out = np.ma.zeros(grid_dict[tmp_datstr]['gdept'].shape)*np.ma.masked                                
-                                    tmp_LBC_data_out[:,LBC_coord_d[th_d_ind][LBC_set]['nbju'], LBC_coord_d[th_d_ind][LBC_set]['nbiu']] = tmp_LBC_data_in
-                                elif LBC_type == 'V':
-                                    tmp_LBC_data_out = np.ma.zeros(grid_dict[tmp_datstr]['gdept'].shape)*np.ma.masked                                
-                                    tmp_LBC_data_out[:,LBC_coord_d[th_d_ind][LBC_set]['nbjtv'], LBC_coord_d[th_d_ind][LBC_set]['nbiv']] = tmp_LBC_data_in
-                                elif LBC_type == 'T_bt':
-                                    tmp_LBC_data_out = np.ma.zeros(grid_dict[tmp_datstr]['gdept'].shape[1:])*np.ma.masked  
-                                    
-                                tmp_LBC_data_out = np.ma.zeros(grid_dict[tmp_datstr]['gdept'].shape)*np.ma.masked                                
-                                tmp_LBC_data_out[:,LBC_coord_d[th_d_ind][LBC_set]['nbjt'], LBC_coord_d[th_d_ind][LBC_set]['nbit']] = tmp_LBC_data_in
-                            
-
-
-
-                                    tmp_LBC_data_out[LBC_coord_d[th_d_ind][LBC_set]['nbjt'], LBC_coord_d[th_d_ind][LBC_set]['nbit']] = tmp_LBC_data_in
-                    
-                                    tmp_LBC_data_out[LBC_coord_d[th_d_ind][LBC_set]['nbjt'], LBC_coord_d[th_d_ind][LBC_set]['nbit']][LBC_coord_d[th_d_ind][LBC_set]['nbrt']==1]
-
-
-                                elif LBC_type == 'U_bt':
-                                    tmp_LBC_data_out = np.ma.zeros(grid_dict[tmp_datstr]['gdept'].shape[1:])*np.ma.masked                                
-                                    tmp_LBC_data_out[LBC_coord_d[th_d_ind][LBC_set]['nbju'], LBC_coord_d[th_d_ind][LBC_set]['nbiu']] = tmp_LBC_data_in
-                                elif LBC_type == 'V_bt':
-                                    tmp_LBC_data_out = np.ma.zeros(grid_dict[tmp_datstr]['gdept'].shape[1:])*np.ma.masked                                
-                                    tmp_LBC_data_out[LBC_coord_d[th_d_ind][LBC_set]['nbjv'], LBC_coord_d[th_d_ind][LBC_set]['nbiv']] = tmp_LBC_data_in
-                                '''
-                                data_inst[tmp_datstr] = tmp_LBC_data_out.copy()
-                                del(tmp_LBC_data_out)
-                        except:
-                            pdb.set_trace()
-
-
             #pdb.set_trace()
             ###################################################################################################
             ### Status of buttons
@@ -2616,7 +2562,8 @@ def nemo_slice_zlev(config = 'amm7',
                         if (data_inst_Tm1['Dataset 1'] is None)|(preload_data_ti_Tm1 != (ti-1))|(preload_data_var_Tm1 != var)|(preload_data_ldi_Tm1 != ldi):
 
                             (data_inst_Tm1,preload_data_ti_Tm1,preload_data_var_Tm1,preload_data_ldi_Tm1) = reload_data_instances_time(var,thd,ldi,ti-1,
-                                    time_datetime_since_1970[ti],time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
+                                time_datetime_since_1970[ti],time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files,
+                                do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
                             if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_Tm1',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                         
                         #pdb.set_trace()
@@ -2814,7 +2761,7 @@ def nemo_slice_zlev(config = 'amm7',
                     if var_dim[var] == 4:
                         #pdb.set_trace()
                         
-                        hov_dat_dict = reload_hov_data_comb_time(var,var_d[1]['mat'],var_grid,var_d['d'],ldi,thd, time_datetime,time_d, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict,do_mask_dict,load_second_files,Dataset_lst,configd)
+                        hov_dat_dict = reload_hov_data_comb_time(var,var_d[1]['mat'],var_grid,var_d['d'],ldi,thd, time_datetime,time_d, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict,do_mask_dict,load_second_files,Dataset_lst,configd,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
 
                         if do_grad == 2:
                             hov_dat_dict = grad_vert_hov_prof_data(hov_dat_dict,
@@ -2841,7 +2788,7 @@ def nemo_slice_zlev(config = 'amm7',
             if reload_ts:
                 if hov_time:
                     #ts_dat_dict = reload_ts_data_comb(var,var_dim,var_grid['Dataset 1'],ii,jj,iijj_ind,ldi,hov_dat_dict,time_datetime,time_d,z_meth,zz,zi,xarr_dict,do_mask_dict,grid_dict,thd,var_d[1]['mat'],var_d['d'],nz,ntime,configd,Dataset_lst,load_second_files)
-                    ts_dat_dict = reload_ts_data_comb_time(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,time_datetime,time_d,z_meth,zz,zi,xarr_dict,do_mask_dict,grid_dict,thd,var_d[1]['mat'],var_d['d'],nz,ntime,configd,Dataset_lst,load_second_files)
+                    ts_dat_dict = reload_ts_data_comb_time(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,time_datetime,time_d,z_meth,zz,zi,xarr_dict,do_mask_dict,grid_dict,thd,var_d[1]['mat'],var_d['d'],nz,ntime,configd,Dataset_lst,load_second_files,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
                 else:
                     ts_dat_dict['x'] = time_datetime
                     #ts_dat_dict['Dataset 1'] = np.ma.ones(ntime)*np.ma.masked
@@ -3212,8 +3159,31 @@ def nemo_slice_zlev(config = 'amm7',
                         tmplw = 0.5
                         if secdataset_proc == tmp_datstr:tmplw = 1
                         for pfi in pf_dat_dict[tmp_datstr]:pf_xvals.append(pfi)
+
                         pfax_lst.append(ax[5].plot(pf_dat_dict[tmp_datstr],pf_dat_dict['y'],Dataset_col[dsi], lw = tmplw))
 
+
+                        if z_meth == 'zd':
+                            pf_xmean = pf_dat_dict[tmp_datstr].mean()
+                            
+                            tmpprof = pf_dat_dict[tmp_datstr]
+
+                            tmpprof_1_hpf = tmpprof[1:-1] - ((tmpprof[0:-2] + 2*tmpprof[1:-1] + tmpprof[2:])/4)
+                            
+                            zzzwgt = np.ones((tmpprof_1_hpf.shape[0]))
+                            zzzwgt[1::2] = -1
+                            zd_ts_dat_1 = np.abs((tmpprof_1_hpf.T*zzzwgt).T.mean(axis = 0))
+                            pfax_lst.append(ax[5].plot(pf_xmean*pf_dat_dict['y'][1:-1]/pf_dat_dict['y'][1:-1],pf_dat_dict['y'][1:-1],'k', lw = 0.25 ))
+                            #pfax_lst.append(ax[5].plot(tmpprof_1_hpf - tmpprof_1_hpf.mean() + pf_xmean,pf_dat_dict['y'][1:-1],Dataset_col[dsi], lw = 0.5, ls = '--'))
+                            #pfax_lst.append(ax[5].plot((tmpprof_1_hpf*zzzwgt) - (tmpprof_1_hpf*zzzwgt).mean() + pf_xmean,pf_dat_dict['y'][1:-1],Dataset_col[dsi], lw = 0.25))
+                            pfax_lst.append(ax[5].plot(tmpprof_1_hpf + pf_xmean,pf_dat_dict['y'][1:-1],Dataset_col[dsi], lw = 0.5, ls = '--'))
+                            pfax_lst.append(ax[5].plot((tmpprof_1_hpf*zzzwgt) + pf_xmean,pf_dat_dict['y'][1:-1],Dataset_col[dsi], lw = 0.25))
+                            #pfax_lst.append(ax[5].plot(pf_dat_dict[tmp_datstr],pf_dat_dict['y'],Dataset_col[dsi], lw = tmplw))
+
+                            del(tmpprof_1_hpf)
+
+                        #else:
+                        
                         # if Obs, plotted the observed data
                         if do_Obs:
                             if Obs_hide == False:
@@ -3301,14 +3271,23 @@ def nemo_slice_zlev(config = 'amm7',
 
             nice_lev = ''
                 
+            
             if z_meth in ['z_slice','z_index']:nice_lev = '%i m'%zz
             elif z_meth == 'ss':nice_lev = 'Surface'
             elif z_meth == 'nb':nice_lev = 'Near-Bed'
             elif z_meth == 'df':nice_lev = 'Surface-Bed'
-            elif z_meth == 'zm':nice_lev = 'Depth-Mean'
-            elif z_meth == 'zx':nice_lev = 'Depth-Max'
-            elif z_meth == 'zn':nice_lev = 'Depth-Min'
-            elif z_meth == 'zs':nice_lev = 'Depth-Std'
+            elif z_meth in zm_2d_meth_lst:
+                for zm_2d_meth,zm_2d_meth_full in zip(zm_2d_meth_lst,zm_2d_meth_full_lst):
+                    if z_meth == zm_2d_meth:
+                        nice_lev = zm_2d_meth_full
+            else:
+                pdb.set_trace()
+
+            #elif z_meth == 'zm':nice_lev = 'Depth-Mean'
+            #elif z_meth == 'zx':nice_lev = 'Depth-Max'
+            #elif z_meth == 'zn':nice_lev = 'Depth-Min'
+            #elif z_meth == 'zd':nice_lev = 'Depth Spike Mag'
+            #elif z_meth == 'zs':nice_lev = 'Depth-Std'
 
             if var_dim[var] == 4:  
                 map_title_str = '%s (%s); %s %s'%(nice_varname_dict[var],nice_lev,lon_lat_to_str(lon_d[1][jj,ii],lat_d[1][jj,ii])[0],time_datetime[ti])
@@ -3727,7 +3706,7 @@ def nemo_slice_zlev(config = 'amm7',
                             obs_obs_zi_lst = tmpobsz.argmax(axis = 1)
                             tmpobsdat_nb = np.ma.array([tmpobsdat_mat[tmpzi,tmpzz] for tmpzi, tmpzz in enumerate(obs_obs_zi_lst)])
                             tmpobsdat = tmpobsdat_ss - tmpobsdat_nb
-                        elif z_meth == 'zm':
+                        elif z_meth in ['zm','zd']:
                             #depth mean obs if zm.
                             tmpobsdat = tmpobsdat_mat.mean(axis = 1)
                         elif z_meth == 'zx':
@@ -5400,7 +5379,7 @@ def nemo_slice_zlev(config = 'amm7',
                                     fsct_hov_x[fcst_ldi] = fsct_hov_dat['x'] + timedelta(hours = ld_time_offset[fcst_ldi])
                 
                                     #fsct_ts_dat = reload_ts_data_comb(var,var_dim,var_grid['Dataset 1'],ii,jj,iijj_ind,fcst_ldi,fsct_hov_dat,time_datetime,time_d,z_meth,zz,zi,xarr_dict,do_mask_dict,grid_dict,thd,var_d[1]['mat'],var_d['d'],nz,ntime,configd,Dataset_lst,load_second_files)
-                                    fsct_ts_dat = reload_ts_data_comb_time(var,var_dim,var_grid,ii,jj,iijj_ind,fcst_ldi,fsct_hov_dat,time_datetime,time_d,z_meth,zz,zi,xarr_dict,do_mask_dict,grid_dict,thd,var_d[1]['mat'],var_d['d'],nz,ntime,configd,Dataset_lst,load_second_files)
+                                    fsct_ts_dat = reload_ts_data_comb_time(var,var_dim,var_grid,ii,jj,iijj_ind,fcst_ldi,fsct_hov_dat,time_datetime,time_d,z_meth,zz,zi,xarr_dict,do_mask_dict,grid_dict,thd,var_d[1]['mat'],var_d['d'],nz,ntime,configd,Dataset_lst,load_second_files,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
                                     
                                     for tmp_datstr in Dataset_lst:fsct_ts_dat_dict[tmp_datstr][fcst_ldi] = fsct_ts_dat[tmp_datstr]
                                     fsct_ts_x[fcst_ldi] = fsct_ts_dat['x'] + timedelta(hours = ld_time_offset[fcst_ldi])
@@ -5726,11 +5705,13 @@ def nemo_slice_zlev(config = 'amm7',
 
 
                         elif but_name in ['Surface','Near-Bed','Surface-Bed','Depth-Mean']:
+                            #zm_2d_meth_lst = ['zm','zx','zn','zs','zd']
+                            #zm_2d_meth_full_lst = ['Depth-Mean','Depth-Max','Depth-Min','Depth Spike Mag','Depth-Std']
+                            
                             if var_dim[var] == 4:
 
-
                                 if but_name == 'Depth-Mean':
-                                    if z_meth in ['zm','zx','zn','zs']:
+                                    if z_meth in zm_2d_meth_lst:
                                         # switch button
                                         if mouse_info['button'].name == 'LEFT':
                                             DepthMean_sw+=1
@@ -5738,9 +5719,22 @@ def nemo_slice_zlev(config = 'amm7',
                                         #elif mouse_info['button'].name == 'RIGHT':
                                             DepthMean_sw-=1
 
-                                    if DepthMean_sw == 4: DepthMean_sw = 0
-                                    if DepthMean_sw == -1: DepthMean_sw = 3
+                                    #if DepthMean_sw == 4: DepthMean_sw = 0
+                                    #if DepthMean_sw == -1: DepthMean_sw = 3
 
+                                    if DepthMean_sw == len(zm_2d_meth_lst): DepthMean_sw = 0
+                                    if DepthMean_sw == -1: DepthMean_sw = len(zm_2d_meth_lst)-1
+                                    
+                                    func_but_text_han['Depth-Mean'].set_text(zm_2d_meth_full_lst[DepthMean_sw])
+                                    z_meth = zm_2d_meth_lst[DepthMean_sw]
+
+
+
+                                    '''
+                                    for tmp_DepthMean_sw,(zm_2d_meth,zm_2d_meth_full) in enumerate(zip(zm_2d_meth_lst,zm_2d_meth_full_lst)):
+                                        if DepthMean_sw == tmp_DepthMean_sw:
+                                            func_but_text_han['Depth-Mean'].set_text(zm_2d_meth_full)
+                                            z_meth = zm_2d_meth
 
                                     if DepthMean_sw == 0:
                                         func_but_text_han['Depth-Mean'].set_text('Depth-Mean')
@@ -5754,7 +5748,7 @@ def nemo_slice_zlev(config = 'amm7',
                                     elif DepthMean_sw == 3:
                                         func_but_text_han['Depth-Mean'].set_text('Depth-Std')
                                         z_meth = 'zs'
-
+                                    '''
                                 
                                 
                                 if but_name == 'Surface':z_meth = 'ss'
