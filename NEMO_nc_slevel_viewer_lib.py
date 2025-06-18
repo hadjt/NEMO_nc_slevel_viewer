@@ -1745,6 +1745,92 @@ def update_cur_var_grid(var,tmp_datstr,ldi, var_grid, xarr_dict):
     return tmp_cur_var_grid
     
 
+
+
+def LBC_iijj_ind(do_LBC_d,LBC_coord_d,var_grid,var, LBC_iijj_threshold = 1):
+
+    tmp_datstr = 'Dataset 1'
+    th_d_ind = int(tmp_datstr[8:])
+    if do_LBC_d[th_d_ind]:
+        
+        tmp_LBC_grid = var_grid[tmp_datstr][var]
+        if tmp_LBC_grid == 'T': tmp_LBC_grid = 'T_1'
+        
+        LBC_set = int(tmp_LBC_grid[-1])
+        LBC_type = tmp_LBC_grid[:-2]
+
+        if LBC_type in ['T','U','V']:
+            tmpLBCnbj = LBC_coord_d[th_d_ind][LBC_set]['nbj'+LBC_type.lower()]
+            tmpLBCnbi = LBC_coord_d[th_d_ind][LBC_set]['nbi'+LBC_type.lower()]
+        elif LBC_type in ['T_bt','U_bt','V_bt']:
+            tmpLBCnbj =LBC_coord_d[th_d_ind][LBC_set]['nbj'+LBC_type[0].lower()][LBC_coord_d[th_d_ind][LBC_set]['nbr'+LBC_type[0].lower()]==1]
+            tmpLBCnbi =LBC_coord_d[th_d_ind][LBC_set]['nbi'+LBC_type[0].lower()][LBC_coord_d[th_d_ind][LBC_set]['nbr'+LBC_type[0].lower()]==1]
+
+                    
+        LBC_dist_mat = np.sqrt((tmpLBCnbj - jj) **2  + (tmpLBCnbi - ii)**2)
+        jj = 0
+        if LBC_dist_mat.min()<LBC_iijj_threshold:
+            ii = LBC_dist_mat.argmin()
+        else:
+            ii = np.ma.masked
+
+    return ii,jj
+
+
+
+
+
+
+def  LBC_regrid_ind(do_LBC_d,LBC_coord_d,Dataset_lst,data_inst,grid_dict,var,var_grid):
+    
+    # loop throigh the datasets
+    for tmp_datstr in  Dataset_lst:
+        th_d_ind = int(tmp_datstr[8:])
+        #print('do_LBC_d[th_d_ind]',do_LBC_d[th_d_ind])
+
+        # if the this dataset is LBC
+        if do_LBC_d[th_d_ind]:
+            try:
+                # if the data_inst is not the correct shape, i.e. is likely the LBC rather than the model grid
+                if data_inst[tmp_datstr].shape[-2:] != grid_dict[tmp_datstr]['gdept'].shape[-2:]:
+                    
+                    # LBC_regrid_ind(LBC_coord_d,Dataset_lst,data_inst,grid_dict[tmp_datstr]['gdept'].shape,var_grid)
+                    # tmp_LBC_data_in = data_inst[tmp_datstr]
+
+                    tmp_LBC_grid = var_grid[tmp_datstr][var]
+                    if tmp_LBC_grid == 'T': tmp_LBC_grid = 'T_1'
+                    
+                    LBC_set = int(tmp_LBC_grid[-1])
+                    LBC_type = tmp_LBC_grid[:-2]
+
+                
+                    tmp_LBC_data_in = data_inst[tmp_datstr]
+
+
+
+                    if LBC_type in ['T','U','V']:
+                        tmpLBCnbj = LBC_coord_d[th_d_ind][LBC_set]['nbj'+LBC_type.lower()]
+                        tmpLBCnbi = LBC_coord_d[th_d_ind][LBC_set]['nbi'+LBC_type.lower()]
+                        tmp_LBC_data_out = np.ma.zeros(grid_dict[tmp_datstr]['gdept'].shape)*np.ma.masked                                
+                        #tmp_LBC_data_out[:,LBC_coord_d[th_d_ind][LBC_set]['nbjt'], LBC_coord_d[th_d_ind][LBC_set]['nbit']] = tmp_LBC_data_in
+                        tmp_LBC_data_out[:,tmpLBCnbj,tmpLBCnbi] = tmp_LBC_data_in
+                    elif LBC_type in ['T_bt','U_bt','V_bt']:
+                        tmpLBCnbj =LBC_coord_d[th_d_ind][LBC_set]['nbj'+LBC_type[0].lower()][LBC_coord_d[th_d_ind][LBC_set]['nbr'+LBC_type[0].lower()]==1]
+                        tmpLBCnbi =LBC_coord_d[th_d_ind][LBC_set]['nbi'+LBC_type[0].lower()][LBC_coord_d[th_d_ind][LBC_set]['nbr'+LBC_type[0].lower()]==1]
+
+                        tmp_LBC_data_out = np.ma.zeros(grid_dict[tmp_datstr]['gdept'].shape[1:])*np.ma.masked  
+                        tmp_LBC_data_out[tmpLBCnbj,tmpLBCnbi] = tmp_LBC_data_in
+                    else:
+                        pdb.set_trace()
+                    data_inst[tmp_datstr] = tmp_LBC_data_out.copy()
+                    del(tmp_LBC_data_out)
+            except:
+                pdb.set_trace()
+
+    return data_inst
+
+
+
 def reload_data_instances_time(var,thd,ldi,ti,current_time_datetime_since_1970,time_d,
                                var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
                                do_LBC = None, do_LBC_d = None,LBC_coord_d = None):
@@ -2322,15 +2408,22 @@ def reload_data_instances_time(var,thd,ldi,ti,current_time_datetime_since_1970,t
         pdb.set_trace()
 
 
-
+    # LBC_regrid_ind(do_LBC,do_LBC_d,LBC_coord_d,Dataset_lst,data_inst,grid_dict,var_grid)
 
     if do_LBC:
+
+        data_inst = LBC_regrid_ind(do_LBC_d,LBC_coord_d,Dataset_lst,data_inst,grid_dict,var,var_grid)
+        '''
         for tmp_datstr in  Dataset_lst:
             th_d_ind = int(tmp_datstr[8:])
             print('do_LBC_d[th_d_ind]',do_LBC_d[th_d_ind])
             if do_LBC_d[th_d_ind]:
                 try:
+
                     if data_inst[tmp_datstr].shape[-2:] != grid_dict[tmp_datstr]['gdept'].shape[-2:]:
+                        
+                        # LBC_regrid_ind(LBC_coord_d,Dataset_lst,data_inst,grid_dict[tmp_datstr]['gdept'].shape,var_grid)
+                        # tmp_LBC_data_in = data_inst[tmp_datstr]
 
                         tmp_LBC_grid = var_grid[tmp_datstr][var]
                         if tmp_LBC_grid == 'T': tmp_LBC_grid = 'T_1'
@@ -2363,11 +2456,10 @@ def reload_data_instances_time(var,thd,ldi,ti,current_time_datetime_since_1970,t
                     pdb.set_trace()
 
 
-
+        '''
 
 
     return data_inst,preload_data_ti,preload_data_var,preload_data_ldi
-
 
 """
 
@@ -3931,43 +4023,39 @@ def reload_ts_data_comb_time(var,var_dim,var_grid,ii_in,jj_in,iijj_ind,ldi,hov_d
 
 
                 ii,jj = ii_in,jj_in
-                if do_LBC is not None:
-                    if do_LBC:
-                        tmp_datstr = 'Dataset 1'
-                        th_d_ind = int(tmp_datstr[8:])
-                        if do_LBC_d[th_d_ind]:
-                            
-                            tmp_LBC_grid = var_grid[tmp_datstr][var]
-                            if tmp_LBC_grid == 'T': tmp_LBC_grid = 'T_1'
-                            
-                            LBC_set = int(tmp_LBC_grid[-1])
-                            LBC_type = tmp_LBC_grid[:-2]
+                if do_LBC:
 
-                            if LBC_type in ['T','U','V']:
-                                tmpLBCnbj = LBC_coord_d[th_d_ind][LBC_set]['nbj'+LBC_type.lower()]
-                                tmpLBCnbi = LBC_coord_d[th_d_ind][LBC_set]['nbi'+LBC_type.lower()]
-                            elif LBC_type in ['T_bt','U_bt','V_bt']:
-                                tmpLBCnbj =LBC_coord_d[th_d_ind][LBC_set]['nbj'+LBC_type[0].lower()][LBC_coord_d[th_d_ind][LBC_set]['nbr'+LBC_type[0].lower()]==1]
-                                tmpLBCnbi =LBC_coord_d[th_d_ind][LBC_set]['nbi'+LBC_type[0].lower()][LBC_coord_d[th_d_ind][LBC_set]['nbr'+LBC_type[0].lower()]==1]
+                    ii,jj = LBC_iijj_ind(do_LBC_d,LBC_coord_d,var_grid,var, LBC_iijj_threshold = 1)
+                    '''
 
-                                        
-                            LBC_dist_mat = np.sqrt((tmpLBCnbj - jj) **2  + (tmpLBCnbi - ii)**2)
-                            jj = 0
-                            if LBC_dist_mat.min()<1:
-                                ii = LBC_dist_mat.argmin()
-                            else:
-                                ii = np.ma.masked
+                    tmp_datstr = 'Dataset 1'
+                    th_d_ind = int(tmp_datstr[8:])
+                    if do_LBC_d[th_d_ind]:
+                        
+                        tmp_LBC_grid = var_grid[tmp_datstr][var]
+                        if tmp_LBC_grid == 'T': tmp_LBC_grid = 'T_1'
+                        
+                        LBC_set = int(tmp_LBC_grid[-1])
+                        LBC_type = tmp_LBC_grid[:-2]
 
+                        if LBC_type in ['T','U','V']:
+                            tmpLBCnbj = LBC_coord_d[th_d_ind][LBC_set]['nbj'+LBC_type.lower()]
+                            tmpLBCnbi = LBC_coord_d[th_d_ind][LBC_set]['nbi'+LBC_type.lower()]
+                        elif LBC_type in ['T_bt','U_bt','V_bt']:
+                            tmpLBCnbj =LBC_coord_d[th_d_ind][LBC_set]['nbj'+LBC_type[0].lower()][LBC_coord_d[th_d_ind][LBC_set]['nbr'+LBC_type[0].lower()]==1]
+                            tmpLBCnbi =LBC_coord_d[th_d_ind][LBC_set]['nbi'+LBC_type[0].lower()][LBC_coord_d[th_d_ind][LBC_set]['nbr'+LBC_type[0].lower()]==1]
 
-
-
-
+                                    
+                        LBC_dist_mat = np.sqrt((tmpLBCnbj - jj) **2  + (tmpLBCnbi - ii)**2)
+                        jj = 0
+                        if LBC_dist_mat.min()<1:
+                            ii = LBC_dist_mat.argmin()
+                        else:
+                            ii = np.ma.masked
 
 
 
-
-
-
+                    '''
 
 
 
