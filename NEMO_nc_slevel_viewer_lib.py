@@ -6813,7 +6813,7 @@ def int_ind_wgt_from_xypos(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_d
     return sel_bl_jj_out, sel_bl_ii_out, NWS_wgt, sel_jj_out, sel_ii_out
 
 """
-def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,loni,latj, nearest_gridbox = True):
+def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,loni,latj, XYPOS_ind_extended_NN = True,meth = 'bilin', verbose = False):
     '''
     For a given lon and lat (loni, latj), find the ii,jj index of a given dataset.
 
@@ -6821,30 +6821,7 @@ def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lo
     
     
     '''
-
-
-
-    '''
-
-
-    tmp_CMIP_mask = CMIP_T[CMIP_t_ind,zi,:,:].mask
-    tmp_CMIP_T = CMIP_T[CMIP_t_ind,zi,:,:][~tmp_CMIP_mask]
-    tmp_CMIP_lon = CMIP_lon[~tmp_CMIP_mask]
-    tmp_CMIP_lat = CMIP_lat[~tmp_CMIP_mask]
-
-    tmp_CMIP_mask = CMIP_T[CMIP_t_ind,zi,:,:].mask
-    tmp_CMIP_T = CMIP_T[CMIP_t_ind,zi,:,:][~tmp_CMIP_mask]
-    tmp_CMIP_lon = CMIP_lon[~tmp_CMIP_mask]
-    tmp_CMIP_lat = CMIP_lat[~tmp_CMIP_mask]
-
-    points = (tmp_CMIP_lon,tmp_CMIP_lat)
-    values = tmp_CMIP_T
-
-    CMIP_BC_nn[zi,:] = griddata(points, values, (glamt,gphit), method='nearest')
-    CMIP_BC_lin[zi,:] = griddata(points, values, (glamt,gphit), method='linear')
-    CMIP_BC_cub[zi,:] = griddata(points, values, (glamt,gphit), method='cubic')
-    '''
-
+    XYPOS_ind_extended_NN = True
 
 
 
@@ -6870,17 +6847,88 @@ def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lo
 
         # Convert indices to lon and lats with the XYPOS file
         #
-        #try:
-        if nearest_gridbox:
-            sel_ii_out = np.floor((xypos_dict[tmp_datstr]['XPOS_NN'][xy_j_ind,xy_i_ind] - thd[th_d_ind]['x0'])/thd[th_d_ind]['dx']).astype('int')
-            sel_jj_out = np.floor((xypos_dict[tmp_datstr]['YPOS_NN'][xy_j_ind,xy_i_ind] - thd[th_d_ind]['y0'])/thd[th_d_ind]['dy']).astype('int')
-        else:
-            sel_ii_out = np.floor((xypos_dict[tmp_datstr]['XPOS'][xy_j_ind,xy_i_ind] - thd[th_d_ind]['x0'])/thd[th_d_ind]['dx']).astype('int')
-            sel_jj_out = np.floor((xypos_dict[tmp_datstr]['YPOS'][xy_j_ind,xy_i_ind] - thd[th_d_ind]['y0'])/thd[th_d_ind]['dy']).astype('int')
-        #except:
-            #pdb.set_trace()
+        if meth == 'nearest':
+            if XYPOS_ind_extended_NN:
+                #Use XYPOS ind array extended with a nearest neighbour interpolation - so no masked values
+                sel_ii_out = np.floor((xypos_dict[tmp_datstr]['XPOS_NN'][xy_j_ind,xy_i_ind] - thd[th_d_ind]['x0'])/thd[th_d_ind]['dx']).astype('int')
+                sel_jj_out = np.floor((xypos_dict[tmp_datstr]['YPOS_NN'][xy_j_ind,xy_i_ind] - thd[th_d_ind]['y0'])/thd[th_d_ind]['dy']).astype('int')
+            else:
+                sel_ii_out = np.floor((xypos_dict[tmp_datstr]['XPOS'][xy_j_ind,xy_i_ind] - thd[th_d_ind]['x0'])/thd[th_d_ind]['dx']).astype('int')
+                sel_jj_out = np.floor((xypos_dict[tmp_datstr]['YPOS'][xy_j_ind,xy_i_ind] - thd[th_d_ind]['y0'])/thd[th_d_ind]['dy']).astype('int')
+            
         
-        #pdb.set_trace() 
+        elif meth == 'bilin':
+
+
+            # xypos i,j flt indexes for a given lon/lat
+            xy_i_ind_flt = ((loni-xypos_dict[tmp_datstr]['lon_min'])/xypos_dict[tmp_datstr]['dlon'])
+            xy_j_ind_flt = ((latj-xypos_dict[tmp_datstr]['lat_min'])/xypos_dict[tmp_datstr]['dlat'])
+            if verbose: print(xy_i_ind_flt,xy_j_ind_flt)
+
+            # previous and subsequent xypos indices with ceil and floor
+            xy_i_ind_flt_0 = int(np.floor(xy_i_ind_flt))
+            xy_i_ind_flt_1 = int(np.ceil(xy_i_ind_flt))
+            xy_j_ind_flt_0 = int(np.floor(xy_j_ind_flt))
+            xy_j_ind_flt_1 = int(np.ceil(xy_j_ind_flt))
+            if verbose: print(xy_i_ind_flt_0,xy_i_ind_flt_1,xy_j_ind_flt_0,xy_j_ind_flt_1)
+
+            # ensure the indices are within the xypos matrix
+            xy_i_ind_flt_0 = np.ma.minimum(np.ma.maximum(xy_i_ind_flt_0,0),nxylon-1)
+            xy_j_ind_flt_0 = np.ma.minimum(np.ma.maximum(xy_j_ind_flt_0,0),nxylat-1)
+            xy_i_ind_flt_1 = np.ma.minimum(np.ma.maximum(xy_i_ind_flt_1,0),nxylon-1)
+            xy_j_ind_flt_1 = np.ma.minimum(np.ma.maximum(xy_j_ind_flt_1,0),nxylat-1)
+            if verbose: print(xy_i_ind_flt_0,xy_i_ind_flt_1,xy_j_ind_flt_0,xy_j_ind_flt_1)
+
+            # distance from flt ind and edges 
+            xy_i_ind_flt_d = xy_i_ind_flt_1 - xy_i_ind_flt_0
+            xy_j_ind_flt_d = xy_j_ind_flt_1 - xy_j_ind_flt_0
+            if verbose: print(xy_i_ind_flt_d,xy_j_ind_flt_d)
+
+            # Distance from flt index to grid box edges (horiz and vert)
+            xy_lrbt_dist_0 = (xy_i_ind_flt - xy_i_ind_flt_0)/(xy_i_ind_flt_d) # from left
+            xy_lrbt_dist_1 = (xy_i_ind_flt_1 - xy_i_ind_flt)/(xy_i_ind_flt_d) # from right
+            xy_lrbt_dist_2 = (xy_j_ind_flt - xy_j_ind_flt_0)/(xy_j_ind_flt_d) # from bottom
+            xy_lrbt_dist_3 = (xy_j_ind_flt_1 - xy_j_ind_flt)/(xy_j_ind_flt_d) # from top
+            if verbose: print(xy_lrbt_dist_0,xy_lrbt_dist_1,xy_lrbt_dist_2,xy_lrbt_dist_3,xy_lrbt_dist_0+xy_lrbt_dist_1,xy_lrbt_dist_2+xy_lrbt_dist_3 )
+
+            # if the flt ind is exactly an int, floor and ceil is the same, and so the xy_i_ind_flt_d == 0
+            #       if so, set weighting to 0.5 (otherwise nan and masked)
+            if xy_i_ind_flt_d == 0:
+                xy_lrbt_dist_0 = 0.5
+                xy_lrbt_dist_1 = 0.5
+            if xy_j_ind_flt_d == 0:
+                xy_lrbt_dist_2 = 0.5
+                xy_lrbt_dist_3 = 0.5
+
+            if verbose: print(xy_lrbt_dist_0,xy_lrbt_dist_1,xy_lrbt_dist_2,xy_lrbt_dist_3,xy_lrbt_dist_0+xy_lrbt_dist_1,xy_lrbt_dist_2+xy_lrbt_dist_3)
+
+
+            # Weightings for each of the edges.
+            xy_wgt_0 = xy_lrbt_dist_1*xy_lrbt_dist_3 # BL: dist to TR
+            xy_wgt_1 = xy_lrbt_dist_0*xy_lrbt_dist_3 # BR: dist to TL
+            xy_wgt_2 = xy_lrbt_dist_1*xy_lrbt_dist_2 # TL: dist to BR
+            xy_wgt_3 = xy_lrbt_dist_0*xy_lrbt_dist_2 # TR: dist to BR
+            if verbose: print(xy_wgt_0,xy_wgt_1,xy_wgt_2,xy_wgt_3,xy_wgt_0+xy_wgt_1+xy_wgt_2+xy_wgt_3 )
+
+            if (xy_wgt_0 + xy_wgt_1 + xy_wgt_2 + xy_wgt_3) != 1:
+                print('XYPOS Weigthing not adding to 1')
+                pdb.set_trace()
+
+            # (BL lon*BL wgt) + (BR lon*BR wgt) + (TL lon*TL wgt) + (TR lon*TR wgt)
+            if XYPOS_ind_extended_NN:
+                #Use XYPOS ind array extended with a nearest neighbour interpolation - so no masked values
+                sel_ii_out_flt = xypos_dict[tmp_datstr]['XPOS_NN'][xy_j_ind_flt_0,xy_i_ind_flt_0]*xy_wgt_0 + xypos_dict[tmp_datstr]['XPOS_NN'][xy_j_ind_flt_0,xy_i_ind_flt_1]*xy_wgt_1 + xypos_dict[tmp_datstr]['XPOS_NN'][xy_j_ind_flt_1,xy_i_ind_flt_0]*xy_wgt_2 + xypos_dict[tmp_datstr]['XPOS_NN'][xy_j_ind_flt_1,xy_i_ind_flt_1]*xy_wgt_3
+                sel_jj_out_flt = xypos_dict[tmp_datstr]['YPOS_NN'][xy_j_ind_flt_0,xy_i_ind_flt_0]*xy_wgt_0 + xypos_dict[tmp_datstr]['YPOS_NN'][xy_j_ind_flt_0,xy_i_ind_flt_1]*xy_wgt_1 + xypos_dict[tmp_datstr]['YPOS_NN'][xy_j_ind_flt_1,xy_i_ind_flt_0]*xy_wgt_2 + xypos_dict[tmp_datstr]['YPOS_NN'][xy_j_ind_flt_1,xy_i_ind_flt_1]*xy_wgt_3
+            else:
+                sel_ii_out_flt = xypos_dict[tmp_datstr]['XPOS'][xy_j_ind_flt_0,xy_i_ind_flt_0]*xy_wgt_0 + xypos_dict[tmp_datstr]['XPOS'][xy_j_ind_flt_0,xy_i_ind_flt_1]*xy_wgt_1 + xypos_dict[tmp_datstr]['XPOS'][xy_j_ind_flt_1,xy_i_ind_flt_0]*xy_wgt_2 + xypos_dict[tmp_datstr]['XPOS'][xy_j_ind_flt_1,xy_i_ind_flt_1]*xy_wgt_3
+                sel_jj_out_flt = xypos_dict[tmp_datstr]['YPOS'][xy_j_ind_flt_0,xy_i_ind_flt_0]*xy_wgt_0 + xypos_dict[tmp_datstr]['YPOS'][xy_j_ind_flt_0,xy_i_ind_flt_1]*xy_wgt_1 + xypos_dict[tmp_datstr]['YPOS'][xy_j_ind_flt_1,xy_i_ind_flt_0]*xy_wgt_2 + xypos_dict[tmp_datstr]['YPOS'][xy_j_ind_flt_1,xy_i_ind_flt_1]*xy_wgt_3
+           
+
+            if verbose: print(sel_ii_out_flt,sel_jj_out_flt)
+            # round and set to ind.
+            sel_ii_out = np.round(sel_ii_out_flt).astype('int')
+            sel_jj_out = np.round(sel_jj_out_flt).astype('int')
+            if verbose: print(sel_ii_out,sel_jj_out)
 
 
         sel_ii_out-=thd[th_d_ind]['cutx0']
@@ -6922,6 +6970,7 @@ def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lo
             #pdb.set_trace()
 
     if np.ma.is_masked((sel_jj_out*sel_ii_out).any()):
+        print('XYPOS indices are masked')
         pdb.set_trace()
 
     return sel_jj_out,sel_ii_out
