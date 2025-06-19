@@ -3894,7 +3894,7 @@ def regrid_2nd(regrid_params_in,regrid_meth,thd,configd,th_d_ind,dat_in): #):
 
     #
     # if configd[th_d_ind] == 'GULF18': pdb.set_trace()
-    if (configd[th_d_ind].upper() == configd[1].upper())|(configd[th_d_ind].split('_')[0].upper() == configd[1].split('_')[0].upper()):
+    if (configd[th_d_ind].upper() == configd[1].upper())|(configd[th_d_ind].split('_')[0].upper() == configd[1].split('_')[0].upper())|((configd[th_d_ind].split('_')[0].upper() in ['AMM15','CO9P2','C09P2']) & (configd[1].split('_')[0].upper() in ['AMM15','CO9P2','C09P2'])):
         #print('dont regrid',configd[th_d_ind],configd[1])
 
 

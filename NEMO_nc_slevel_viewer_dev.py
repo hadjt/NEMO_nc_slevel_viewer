@@ -5039,20 +5039,20 @@ def nemo_slice_zlev(config = 'amm7',
 
                             # if 2 datasets, and 3d var do the if... otherwise if 1 dataset or if 2d dataset, do the else
                             if (nDataset == 2)&(var_dim[var] == 4):
-                                if (configd[1] == configd[2]):
+                                if ((configd[1] == configd[2])|((configd[1].upper() in ['AMM15','C09P2','CO9P2']) & (configd[2].upper() in ['AMM15','C09P2','CO9P2']))):
                                 
                                     figxs = plt.figure()
                                     figxs.set_figheight(10*1.2)
                                     figxs.set_figwidth(8*1.5)
                                     figxs.suptitle('Cross-section: %s'%nice_varname_dict[var], fontsize = 20)
-                                    plt.subplots_adjust(top=0.92,bottom=0.05,left=0.05,right=1,hspace=0.25,wspace=0.6)
+                                    plt.subplots_adjust(top=0.90,bottom=0.05,left=0.05,right=1,hspace=0.25,wspace=0.6)
                                     axxs = [plt.subplot(311),plt.subplot(312),plt.subplot(313)]
                                     paxxs = []
                                     for xi,tmp_datstr in enumerate(Dataset_lst): paxxs.append(axxs[xi].pcolormesh(tmp_xsect_x[tmp_datstr],tmp_xsect_z[tmp_datstr],tmp_xsect_dat[tmp_datstr]))
                                     paxxs.append(axxs[2].pcolormesh(tmp_xsect_x[xsect_secdataset_proc],tmp_xsect_z[xsect_secdataset_proc],tmp_xsect_dat[Dataset_lst[1]] - tmp_xsect_dat[Dataset_lst[0]], cmap = matplotlib.cm.seismic))
                                     for tmpax  in axxs: tmpax.invert_yaxis()
-                                    for xi,tmp_datstr in enumerate(Dataset_lst): axxs[xi].set_title(tmp_datstr)
-                                    axxs[2].set_title('%s - %s'%(Dataset_lst[1],Dataset_lst[0]))
+                                    for xi,tmp_datstr in enumerate(Dataset_lst): axxs[xi].set_title(fig_lab_d[tmp_datstr])
+                                    axxs[2].set_title('%s - %s'%(fig_lab_d[Dataset_lst[1]],fig_lab_d[Dataset_lst[0]]))
                                     xs_ylim = np.array(axxs[0].get_ylim())
                                     xs_xlim = np.array(axxs[0].get_xlim())
                                     xs_ylim[0] = tmp_xsect_z[xsect_secdataset_proc][~(tmp_xsect_x[xsect_secdataset_proc]*tmp_xsect_z[xsect_secdataset_proc]*tmp_xsect_dat[xsect_secdataset_proc]).mask].max()
@@ -5104,7 +5104,7 @@ def nemo_slice_zlev(config = 'amm7',
                                     paxxs = []
                                     for xi,tmp_datstr in enumerate(Dataset_lst): paxxs.append(axxs[xi].pcolormesh(tmp_xsect_x[tmp_datstr],tmp_xsect_z[tmp_datstr],tmp_xsect_dat[tmp_datstr]))
                                     for tmpax  in axxs: tmpax.invert_yaxis()
-                                    for xi,tmp_datstr in enumerate(Dataset_lst): axxs[xi].set_title(tmp_datstr)
+                                    for xi,tmp_datstr in enumerate(Dataset_lst): axxs[xi].set_title(fig_lab_d[tmp_datstr])
                                     xs_ylim = np.array(axxs[0].get_ylim())
                                     xs_xlim = np.array(axxs[0].get_xlim())
                                     tmp_xsect_zmat = tmp_xsect_z[tmp_datstr][~(tmp_xsect_x[tmp_datstr]*tmp_xsect_z[tmp_datstr]*tmp_xsect_dat[tmp_datstr]).mask]
@@ -5165,7 +5165,7 @@ def nemo_slice_zlev(config = 'amm7',
                                 elif var_dim[var] == 3:
                                     axxs[0].axhline(0,color = 'k', lw = 0.5) 
                                     
-                                    for xi,tmp_datstr in enumerate(Dataset_lst):axxs[0].plot(tmp_xsect_x[tmp_datstr],tmp_xsect_dat[tmp_datstr],label = tmp_datstr)
+                                    for xi,tmp_datstr in enumerate(Dataset_lst):axxs[0].plot(tmp_xsect_x[tmp_datstr],tmp_xsect_dat[tmp_datstr],label = fig_lab_d[tmp_datstr])
                                     axxs[0].legend()
 
                                 xs_xlim = np.array(axxs[0].get_xlim())
