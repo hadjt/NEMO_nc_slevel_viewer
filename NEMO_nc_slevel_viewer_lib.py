@@ -6824,6 +6824,7 @@ def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lo
     XYPOS_ind_extended_NN = True
 
 
+    #meth = 'nearest'
 
 
     #Numeric code of the dataset
@@ -6925,10 +6926,16 @@ def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lo
                 sel_jj_out_flt = xypos_dict[tmp_datstr]['YPOS'][xy_j_ind_flt_0,xy_i_ind_flt_0]*xy_wgt_0 + xypos_dict[tmp_datstr]['YPOS'][xy_j_ind_flt_0,xy_i_ind_flt_1]*xy_wgt_1 + xypos_dict[tmp_datstr]['YPOS'][xy_j_ind_flt_1,xy_i_ind_flt_0]*xy_wgt_2 + xypos_dict[tmp_datstr]['YPOS'][xy_j_ind_flt_1,xy_i_ind_flt_1]*xy_wgt_3
            
 
+
+            sel_ii_out = np.floor((sel_ii_out_flt - thd[th_d_ind]['x0'])/thd[th_d_ind]['dx']).astype('int')
+            sel_jj_out = np.floor((sel_jj_out_flt - thd[th_d_ind]['y0'])/thd[th_d_ind]['dy']).astype('int')
+
+
+
             if verbose: print(sel_ii_out_flt,sel_jj_out_flt)
             # round and set to ind.
-            sel_ii_out = np.round(sel_ii_out_flt).astype('int')
-            sel_jj_out = np.round(sel_jj_out_flt).astype('int')
+            #sel_ii_out = np.round(sel_ii_out_flt).astype('int')
+            #sel_jj_out = np.round(sel_jj_out_flt).astype('int')
             if verbose: print(sel_ii_out,sel_jj_out)
 
 
