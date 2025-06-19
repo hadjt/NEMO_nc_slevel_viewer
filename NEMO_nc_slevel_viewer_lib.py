@@ -6910,8 +6910,9 @@ def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lo
             xy_wgt_3 = xy_lrbt_dist_0*xy_lrbt_dist_2 # TR: dist to BR
             if verbose: print(xy_wgt_0,xy_wgt_1,xy_wgt_2,xy_wgt_3,xy_wgt_0+xy_wgt_1+xy_wgt_2+xy_wgt_3 )
 
-            if (xy_wgt_0 + xy_wgt_1 + xy_wgt_2 + xy_wgt_3) != 1:
-                print('XYPOS Weigthing not adding to 1')
+            #if (xy_wgt_0 + xy_wgt_1 + xy_wgt_2 + xy_wgt_3) != 1:
+            if np.isclose(xy_wgt_0 + xy_wgt_1 + xy_wgt_2 + xy_wgt_3, 1) == False:
+                print('XYPOS Weigthing not adding to 1', (xy_wgt_0 + xy_wgt_1 + xy_wgt_2 + xy_wgt_3))
                 pdb.set_trace()
 
             # (BL lon*BL wgt) + (BR lon*BR wgt) + (TL lon*TL wgt) + (TR lon*TR wgt)

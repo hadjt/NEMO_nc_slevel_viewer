@@ -1662,6 +1662,8 @@ def nemo_slice_zlev(config = 'amm7',
         data_inst_Tm1 = {}
         #data_inst_Tm1['Dataset 1'],data_inst_Tm1['Dataset 2'] = None,None
         preload_data_ti_Tm1,preload_data_var_Tm1,preload_data_ldi_Tm1 = 0.5,'None',0.5
+        preload_data_ii_Tm1,preload_data_jj_Tm1 = 0,0
+        preload_data_zz_Tm1 = 0
 
         
 
@@ -2512,8 +2514,15 @@ def nemo_slice_zlev(config = 'amm7',
                         #for tmp_datstr in Dataset_lst:data_inst_Tm1[tmp_datstr] = None
                         data_inst_Tm1 = None
                         data_inst_Tm1 = {}
-                        for tmp_datstr in Dataset_lst:data_inst_Tm1[tmp_datstr] = None          
+                        ts_dat_dict_Tm1 = {}
+                        hov_dat_dict_Tm1 = {}
+                        for tmp_datstr in Dataset_lst:
+                            data_inst_Tm1[tmp_datstr] = None     
+                            ts_dat_dict_Tm1[tmp_datstr] = None     
+                            hov_dat_dict_Tm1[tmp_datstr] = None          
                         preload_data_ti_Tm1,preload_data_var_Tm1,preload_data_ldi_Tm1 = 0.5,'None',0.5
+                        preload_data_ii_Tm1,preload_data_jj_Tm1 = 0,0
+                        preload_data_zz_Tm1 = 0
                         Time_Diff_cnt = 0
                         if do_memory & do_timer: timer_lst.append(('Deleted data_inst_Tm1',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
 
@@ -2552,6 +2561,64 @@ def nemo_slice_zlev(config = 'amm7',
             ### Status of buttons
             ###################################################################################################
             
+
+            ###################################################################################################
+
+            if reload_hov:
+                Time_Diff_cnt_hovtime = 0
+                if hov_time:
+                    if var_dim[var] == 4:
+                        #pdb.set_trace()
+                        
+                        hov_dat_dict = reload_hov_data_comb_time(var,var_d[1]['mat'],var_grid,var_d['d'],ldi,thd, time_datetime,time_d, ii,jj,iijj_ind,nz,ntime, grid_dict,xarr_dict,do_mask_dict,load_second_files,Dataset_lst,configd,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
+
+                        if do_grad == 2:
+                            hov_dat_dict = grad_vert_hov_prof_data(hov_dat_dict,
+                                                                   meth=grad_meth, abs_pre = grad_abs_pre, abs_post = grad_abs_post, regrid_xy = grad_regrid_xy,dx_d_dx = grad_dx_d_dx)
+                    else:
+                        hov_dat_dict = {}
+                        hov_dat_dict['x'] = time_datetime
+                        hov_dat_dict['y'] = np.ma.zeros((nz,time_datetime.size))
+
+                else:
+                    
+                    hov_dat_dict['x'] = time_datetime
+                    hov_dat_dict['y'] =  grid_dict['Dataset 1']['gdept'][:,jj,ii]
+                    #hov_dat_dict['Dataset 1'] = np.ma.zeros((hov_dat_dict['y'].shape+hov_dat_dict['x'].shape))*np.ma.masked
+                    #hov_dat_dict['Dataset 2'] = np.ma.zeros((hov_dat_dict['y'].shape+hov_dat_dict['x'].shape))*np.ma.masked
+                    for tmp_datstr in Dataset_lst:hov_dat_dict[tmp_datstr] = np.ma.zeros((hov_dat_dict['y'].shape+hov_dat_dict['x'].shape))*np.ma.masked
+                reload_hov = False
+                
+                if do_memory & do_timer: timer_lst.append(('Reloaded reload_hov_data_comb',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
+            
+
+            if verbose_debugging: print('Reloaded hov data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now(),'; dt = %s'%(datetime.now()-prevtime))
+            prevtime = datetime.now()
+            if reload_ts:
+                if hov_time:
+                    #ts_dat_dict = reload_ts_data_comb(var,var_dim,var_grid['Dataset 1'],ii,jj,iijj_ind,ldi,hov_dat_dict,time_datetime,time_d,z_meth,zz,zi,xarr_dict,do_mask_dict,grid_dict,thd,var_d[1]['mat'],var_d['d'],nz,ntime,configd,Dataset_lst,load_second_files)
+                    ts_dat_dict = reload_ts_data_comb_time(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,time_datetime,time_d,z_meth,zz,zi,xarr_dict,do_mask_dict,grid_dict,thd,var_d[1]['mat'],var_d['d'],nz,ntime,configd,Dataset_lst,load_second_files,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
+                else:
+                    ts_dat_dict['x'] = time_datetime
+                    #ts_dat_dict['Dataset 1'] = np.ma.ones(ntime)*np.ma.masked
+                    #ts_dat_dict['Dataset 2'] = np.ma.ones(ntime)*np.ma.masked
+                    ts_dat_dict['Sec Grid'] = {}
+                    for tmp_datstr in Dataset_lst:
+                        ts_dat_dict[tmp_datstr] = np.ma.ones(ntime)*np.ma.masked
+                        ts_dat_dict['Sec Grid'][tmp_datstr] = {}
+                        ts_dat_dict['Sec Grid'][tmp_datstr]['x'] = time_datetime
+                        ts_dat_dict['Sec Grid'][tmp_datstr]['data'] = np.ma.ones(ntime)*np.ma.masked
+
+
+                reload_ts = False
+
+                if do_memory & do_timer: timer_lst.append(('Reloaded reload_ts_data_comb',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
+            
+            ###################################################################################################
+
+
+
+
             if do_Tdiff:
                 if ti == 0:
                     func_but_text_han['Time Diff'].set_color('0.5')
@@ -2565,13 +2632,55 @@ def nemo_slice_zlev(config = 'amm7',
                                 time_datetime_since_1970[ti],time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files,
                                 do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
                             if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_Tm1',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
-                        
-                        #pdb.set_trace()
+                        #print('   Time_Diff_cnt_hovtime =',Time_Diff_cnt_hovtime)
+                        #print('   preload_data_ii_Tm1',preload_data_ii_Tm1,ii,preload_data_jj_Tm1,jj,preload_data_zz_Tm1,zz)
+                        if (hov_dat_dict_Tm1['Dataset 1'] is None)|(preload_data_ii_Tm1!=ii)|(preload_data_jj_Tm1!=jj)|(preload_data_zz_Tm1!=zz)|(preload_data_ti_Tm1 != (ti-1))|(preload_data_var_Tm1 != var)|(preload_data_ldi_Tm1 != ldi):
+                            #print('   recalc Hov Diff')
+                            
+                            # can't just copy the dictionary, as the contents are still pointers
+                            if hov_time:
+                                ts_dat_dict_Tm1 = {}
+                                hov_dat_dict_Tm1 = {}
+                                for ss in ts_dat_dict.keys():ts_dat_dict_Tm1[ss] = ts_dat_dict[ss].copy()
+                                for tmp_datstr in Dataset_lst:ts_dat_dict_Tm1['Sec Grid'] = {}
+                                for tmp_datstr in Dataset_lst:ts_dat_dict_Tm1['Sec Grid'][tmp_datstr] = {}
+                                for tmp_datstr in Dataset_lst:ts_dat_dict_Tm1['Sec Grid'][tmp_datstr]['data'] = ts_dat_dict['Sec Grid'][tmp_datstr]['data'].copy()
+                                #for tmp_datstr in Dataset_lst:id(ts_dat_dict_Tm1['Sec Grid'][tmp_datstr]['data']) ,id( ts_dat_dict['Sec Grid'][tmp_datstr]['data'])
+
+
+                                for ss in hov_dat_dict.keys():hov_dat_dict_Tm1[ss] = hov_dat_dict[ss].copy()
+                                #pdb.set_trace()
+                                #ts_dat_dict['Sec Grid'][tmp_datstr]['data']
+
+                                for tmp_datstr in Dataset_lst:
+                                    hov_dat_dict_Tm1[tmp_datstr][:,1:] = hov_dat_dict[tmp_datstr][:,:-1].copy()
+                                    ts_dat_dict_Tm1[tmp_datstr][1:] = ts_dat_dict[tmp_datstr][:-1].copy()
+                                    hov_dat_dict_Tm1[tmp_datstr][:,0] = np.ma.masked
+                                    ts_dat_dict_Tm1[tmp_datstr][0] = np.ma.masked
+                                    ts_dat_dict_Tm1['Sec Grid'][tmp_datstr]['data'][1:] = ts_dat_dict['Sec Grid'][tmp_datstr]['data'][:-1].copy()
+                                    ts_dat_dict_Tm1['Sec Grid'][tmp_datstr]['data'][0] = np.ma.masked
+                                
+                                preload_data_ii_Tm1,preload_data_jj_Tm1 ,preload_data_zz_Tm1 = ii,jj,zz
+
+                                reload_hov = True
+                                reload_ts = True
+
                         if Time_Diff_cnt == 0:
-                            #data_inst['Dataset 1'] = data_inst['Dataset 1'] - data_inst_Tm1['Dataset 1']
-                            #data_inst['Dataset 2'] = data_inst['Dataset 2'] - data_inst_Tm1['Dataset 2']
-                            for tmp_datstr in  Dataset_lst:data_inst[tmp_datstr] = data_inst[tmp_datstr] - data_inst_Tm1[tmp_datstr]
+                            for tmp_datstr in  Dataset_lst:
+                                data_inst[tmp_datstr] = data_inst[tmp_datstr] - data_inst_Tm1[tmp_datstr]
+
                             Time_Diff_cnt -= 1
+
+
+                        if Time_Diff_cnt_hovtime == 0:
+                            if hov_time:
+                                for tmp_datstr in  Dataset_lst:
+                                    #print('   subtract hovtime_Tm1')
+                                    hov_dat_dict[tmp_datstr] = hov_dat_dict[tmp_datstr] - hov_dat_dict_Tm1[tmp_datstr]
+                                    ts_dat_dict[tmp_datstr] = ts_dat_dict[tmp_datstr] - ts_dat_dict_Tm1[tmp_datstr]
+                                    ts_dat_dict['Sec Grid'][tmp_datstr]['data'] = ts_dat_dict['Sec Grid'][tmp_datstr]['data'] - ts_dat_dict_Tm1['Sec Grid'][tmp_datstr]['data']
+
+                                Time_Diff_cnt_hovtime -= 1
                         func_but_text_han['Clim: sym'].set_color('r')
                         #curr_cmap = scnd_cmap
                         clim_sym_but = 1
@@ -2587,11 +2696,17 @@ def nemo_slice_zlev(config = 'amm7',
                         if (data_inst_Tm1['Dataset 1'] is not None):
 
                             if Time_Diff_cnt == -1:
-                                #if (preload_data_ti_Tm1 == (ti-1))|(preload_data_var_Tm1 == var)|(preload_data_ldi_Tm1 == ldi):
-                                #data_inst['Dataset 1'] = data_inst['Dataset 1'] + data_inst_Tm1['Dataset 1']
-                                #data_inst['Dataset 2'] = data_inst['Dataset 2'] + data_inst_Tm1['Dataset 2']
-                                for tmp_datstr in  Dataset_lst:data_inst[tmp_datstr] = data_inst[tmp_datstr] + data_inst_Tm1[tmp_datstr]
+                                for tmp_datstr in  Dataset_lst:
+                                    data_inst[tmp_datstr] = data_inst[tmp_datstr] + data_inst_Tm1[tmp_datstr]
                                 Time_Diff_cnt += 1
+
+                            if Time_Diff_cnt_hovtime == -1:
+                                for tmp_datstr in  Dataset_lst:
+                                    if hov_time:
+                                        hov_dat_dict[tmp_datstr] = hov_dat_dict[tmp_datstr] + hov_dat_dict_Tm1[tmp_datstr]
+                                        ts_dat_dict[tmp_datstr] = ts_dat_dict[tmp_datstr] + ts_dat_dict_Tm1[tmp_datstr]
+                                        ts_dat_dict['Sec Grid'][tmp_datstr]['data'] = ts_dat_dict['Sec Grid'][tmp_datstr]['data'] + ts_dat_dict_Tm1['Sec Grid'][tmp_datstr]['data']
+                                Time_Diff_cnt_hovtime += 1
 
                             func_but_text_han['Clim: sym'].set_color('k')
                             clim_sym_but = 0
@@ -2599,9 +2714,14 @@ def nemo_slice_zlev(config = 'amm7',
                             reload_map = True
                             reload_ew = True
                             reload_ns = True
+                            reload_hov = True
+                            reload_ts = True
 
                             # clear the data_inst_Tm1 array if not in use
-                            for tmp_datstr in  Dataset_lst:data_inst_Tm1[tmp_datstr] = None
+                            for tmp_datstr in  Dataset_lst:
+                                data_inst_Tm1[tmp_datstr] = None
+                                hov_dat_dict_Tm1[tmp_datstr] = None
+                                ts_dat_dict_Tm1[tmp_datstr] = None
 
                 if do_memory & do_timer: timer_lst.append(('Applied T_diff',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                     
@@ -2755,7 +2875,7 @@ def nemo_slice_zlev(config = 'amm7',
 
                 
                 if do_memory & do_timer: timer_lst.append(('Reloaded reload_pf_data_comb',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
-            
+            '''
             if reload_hov:
                 if hov_time:
                     if var_dim[var] == 4:
@@ -2804,7 +2924,10 @@ def nemo_slice_zlev(config = 'amm7',
                 reload_ts = False
 
                 if do_memory & do_timer: timer_lst.append(('Reloaded reload_ts_data_comb',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
-            
+            '''
+
+
+
             #if Obs and reloading,  
             if do_Obs:
                 if reload_Obs:
@@ -6577,7 +6700,7 @@ def main():
                 
 
                 fname_dict[tmp_datstr][tmp_grid] = np.sort(sec_fname_lst)
-                pdb.set_trace()
+                #pdb.set_trace()
 
                 if len(fname_dict[tmp_datstr][tmp_grid]) == 0: 
                     print('\n\nNo Files for %s %s = %s\n\n'%(tmp_datstr,tmp_grid,tmp_files))
