@@ -4492,10 +4492,10 @@ def remove_extra_end_file_dict(fname_dict):
 
     return fname_dict
 def trim_file_dict(fname_dict,thd):
-
+    #pdb.set_trace()
     for tmp_datstr in fname_dict.keys():
+        th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
         for tmpgrid in fname_dict[tmp_datstr].keys():
-            th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
             #pdb.set_trace()
             fname_dict[tmp_datstr][tmpgrid] = fname_dict[tmp_datstr][tmpgrid][  thd[th_d_ind]['f0']:thd[th_d_ind]['f1']:thd[th_d_ind]['df']]
     return fname_dict

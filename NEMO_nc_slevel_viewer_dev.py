@@ -6516,45 +6516,6 @@ def main():
                 print('use_xarray_gdept',args.use_xarray_gdept)
                 pdb.set_trace()
 
-
-        '''
-
-        if args.boolvar is None:
-            boolvar_in=True
-        elif args.boolvar is not None:
-            if args.boolvar.upper() in ['TRUE','T']:
-                boolvar_in = bool(True)
-            elif args.boolvar.upper() in ['FALSE','F']:
-                boolvar_in = bool(False)
-            else:                
-                print(args.boolvar)
-                pdb.set_trace()
-
-
-
-
-
-        config = None
-        fname_lst = None
-        fname_lst_2nd = None
-        config_2nd = None
-        U_fname_lst = None
-        V_fname_lst = None
-        U_fname_lst_2nd = None
-        U_fname_lst_2nd = None
-        thin = 1
-        thin_2nd = 1
-        thin_x0=0
-        thin_x1=None
-        thin_y0=0
-        thin_y1=None
-        thin_files = 1
-        thin_files_0 = 0
-        thin_files_1 = None
-
-
-
-        '''
         #set default values for None
 
 
@@ -6572,19 +6533,9 @@ def main():
 
         #print('justplot',args.justplot)
         
-        #if args.thin is None: args.thin=1
-        #if args.thin_2nd is None: args.thin_2nd=1
-        #if args.thin_files is None: args.thin_files=1
-        #if args.thin_files_0 is None: args.thin_files_0=0
-        #if args.thin_files_1 is None: args.thin_files_1=None
-
-        #if args.thin_x0 is None: args.thin_files_0=0
-        #if args.thin_x1 is None: args.thin_files_1=None
-        #if args.thin_y0 is None: args.thin_files_0=0
-        #if args.thin_y1 is None: args.thin_files_1=None
-
-
+        #add files into fname_dict, allowing for \n separated lists (not handled by glob.glob)
         print(args.fname_lst)
+        #fname_lst = glob.glob(args.fname_lst)
         fname_lst_in = args.fname_lst
         fname_lst = []
         for sub_fname_lst_in in fname_lst_in.split('\n'):
@@ -6593,12 +6544,7 @@ def main():
         
         #pdb.set_trace()
 
-
-        #fname_lst = glob.glob(args.fname_lst)
         fname_lst.sort()
-
-
-
 
         load_second_files = False
         fname_dict = {}
@@ -6621,8 +6567,8 @@ def main():
                 tmp_files = tmparr[2]
 
 
-                #fname_dict[tmp_datstr][tmp_grid] = np.sort(glob.glob(tmp_files))
-
+                
+                #add files into fname_dict, allowing for \n separated lists (not handled by glob.glob)
                 sec_fname_lst_in = tmp_files
                 sec_fname_lst = []
                 for sub_sec_fname_lst_in in sec_fname_lst_in.split('\n'):
@@ -6630,8 +6576,8 @@ def main():
                     for ss in sec_sub_fname_lst:sec_fname_lst.append(ss)
                 
 
-                fname_dict[tmp_datstr][tmp_grid] = np.sort(sec_sub_fname_lst)
-
+                fname_dict[tmp_datstr][tmp_grid] = np.sort(sec_fname_lst)
+                pdb.set_trace()
 
                 if len(fname_dict[tmp_datstr][tmp_grid]) == 0: 
                     print('\n\nNo Files for %s %s = %s\n\n'%(tmp_datstr,tmp_grid,tmp_files))
