@@ -106,7 +106,8 @@ def nemo_slice_zlev(config = 'amm7',
     Obs_dict = None, Obs_reloadmeth = 2,Obs_hide = False,
     do_MLD = True,do_mask = False,
     use_xarray_gdept = True,
-    force_dim_d = None,xarr_rename_master_dict=None):
+    force_dim_d = None,xarr_rename_master_dict=None,
+    EOS_d = None):
 
     print('Initialise at ',datetime.now())
     init_timer = []
@@ -157,6 +158,14 @@ def nemo_slice_zlev(config = 'amm7',
     if cutxind[1] is not None:cutout_data = True
     if cutyind[1] is not None:cutout_data = True
     '''
+
+
+    if EOS_d is None:
+        EOS_d = {}
+        EOS_d['do_TEOS_EOS_conv'] = False
+
+
+
 
     ens_stat_lst = ['EnsMean','EnsStd','EnsVar','EnsCnt']
     if do_ensemble:
@@ -2508,7 +2517,7 @@ def nemo_slice_zlev(config = 'amm7',
                     #data_inst,psreload_data_ti,preload_data_var,preload_data_ldi= reload_data_instances(var,thd,ldi,ti,var_d,var_grid['Dataset 1'], xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
                     data_inst,preload_data_ti,preload_data_var,preload_data_ldi= reload_data_instances_time(var,thd,ldi,ti,
                         time_datetime_since_1970[ti],time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files,
-                        do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
+                        do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d = EOS_d)
                     #pdb.set_trace()
                     if do_memory & do_timer: timer_lst.append(('Reloaded data_inst',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
 
@@ -2538,14 +2547,14 @@ def nemo_slice_zlev(config = 'amm7',
                         if do_memory & do_timer: timer_lst.append(('Deleted data_inst_U',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                         data_inst_U,preload_data_ti_U,preload_data_var_U,preload_data_ldi_U = reload_data_instances_time(tmp_var_U,thd,ldi,ti,
                             time_datetime_since_1970[ti],time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files,
-                            do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
+                            do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d = EOS_d)
                         if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_U',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                         
                         data_inst_V = None
                         if do_memory & do_timer: timer_lst.append(('Deleted data_inst_V',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                         data_inst_V,preload_data_ti_V,preload_data_var_V,preload_data_ldi_V = reload_data_instances_time(tmp_var_V,thd,ldi,ti,
                             time_datetime_since_1970[ti],time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files,
-                            do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
+                            do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d = EOS_d)
                         if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_V',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
 
 
@@ -2556,7 +2565,7 @@ def nemo_slice_zlev(config = 'amm7',
                         if do_memory & do_timer: timer_lst.append(('Deleted data_inst_mld',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                         data_inst_mld,preload_data_ti_mld,preload_data_var_mld,preload_data_ldi_mld= reload_data_instances_time(MLD_var,thd,ldi,ti,
                             time_datetime_since_1970[ti],time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files,
-                            do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
+                            do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d = EOS_d)
                         reload_MLD = False
                         if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_mld',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                     
@@ -2634,7 +2643,7 @@ def nemo_slice_zlev(config = 'amm7',
 
                             (data_inst_Tm1,preload_data_ti_Tm1,preload_data_var_Tm1,preload_data_ldi_Tm1) = reload_data_instances_time(var,thd,ldi,ti-1,
                                 time_datetime_since_1970[ti],time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files,
-                                do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
+                                do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d = EOS_d)
                             if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_Tm1',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                         #print('   Time_Diff_cnt_hovtime =',Time_Diff_cnt_hovtime)
                         #print('   preload_data_ii_Tm1',preload_data_ii_Tm1,ii,preload_data_jj_Tm1,jj,preload_data_zz_Tm1,zz)
@@ -6425,6 +6434,7 @@ def main():
         parser.add_argument('--files', action='append', nargs='+')
         parser.add_argument('--configs', action='append', nargs='+')
         parser.add_argument('--th', action='append', nargs='+')
+        parser.add_argument('--EOS', action='append', nargs='+')
         parser.add_argument('--figlabs', action='append', nargs='+')
         parser.add_argument('--forced_dim', action='append', nargs='+')
         parser.add_argument('--rename_var', action='append', nargs='+')
@@ -6775,6 +6785,53 @@ def main():
                 #pdb.set_trace()
                 fig_lab_d[tmp_datstr] = tmparr[1]
 
+
+
+
+        # set up empty EOS dictionary
+        EOS_d = {}
+        EOS_d['do_TEOS_EOS_conv'] = False
+        if args.EOS is not None:
+            
+            EOS_d['do_TEOS_EOS_conv'] = 1==1
+            #EOS_d[1]='TEOS10_2_EOS80'
+            #EOS_d[1]='EOS80_2_TEOS10'
+            EOS_d['T']=2==2
+            EOS_d['S']=3==3
+
+            for ii in range(len(dataset_lst)):                 EOS_d[ii+1] = ('' + '.')[:-1]
+            #for ii in range(len(dataset_lst)): id(EOS_d[ii+1])
+            #for ss in EOS_d.keys():ss,id(EOS_d[ss])
+
+
+            #pdb.set_trace()
+
+            EOS_args = (args.EOS)
+            EOS_args.sort()
+
+            print('th arguments:',EOS_args)
+            #for tmparr in args.th:
+            for tmparr in EOS_args:
+                #pdb.set_trace()
+                if len(tmparr)!=2:
+                    print('arg error: (EOS):', tmparr)
+
+
+                if tmparr[0].upper() in ['T','S']:
+                    tmp_EOS_TS = tmparr[0].upper()
+                    if tmparr[1].upper() in ['TRUE','T']:
+                        EOS_d[tmp_EOS_TS] = bool(True)
+                    elif tmparr[1].upper() in ['FALSE','F']:
+                        EOS_d[tmp_EOS_TS] = bool(False)
+                else:
+                    tmp_datstr = int(tmparr[0])
+                    if tmparr[1].upper() in ['TEOS10_2_EOS80', 'T2E']:
+                        EOS_d[tmp_datstr] = 'TEOS10_2_EOS80'
+                    elif tmparr[1].upper() in ['EOS80_2_TEOS10', 'E2T']:
+                        EOS_d[tmp_datstr] = 'EOS80_2_TEOS10'
+
+        #--EOS 1 T2E
+        #pdb.set_trace() 
         # set up empty th dictionary
         thd = {}
         thd[1] = {}
@@ -6803,6 +6860,8 @@ def main():
         for ii in range(len(dataset_lst)-1):
             thd[ii+2] = thd[1].copy()
 
+
+
         # update with arguements.
         # if argument entered for one dataset, copy to all subsequent datasets with the same config
         if args.th is not None:
@@ -6816,21 +6875,6 @@ def main():
                 if len(tmparr)!=3:
                     print('arg error: (th):', tmparr)
                 #take the dataset name
-                '''
-                tmp_datstr = int(tmparr[0])
-                tmp_thvar = tmparr[1]
-                tmp_thval = tmparr[2]
-                if tmp_thval.lower() == 'none':
-                    tmp_thval = None
-                else:
-                    tmp_thval = int(tmp_thval)
-                #pdb.set_trace()
-                if tmp_thvar in ['dxy','dx','dy']:
-                    thd[tmp_datstr]['dx'] = tmp_thval
-                    thd[tmp_datstr]['dy'] = tmp_thval
-                else:
-                    thd[tmp_datstr][tmp_thvar] = tmp_thval
-                '''
                 tmp_datstr = int(tmparr[0])
                 tmpconfig = configd[tmp_datstr]
                 tmp_thvar = tmparr[1]
@@ -6974,7 +7018,7 @@ def main():
             fig_dir = args.fig_dir, fig_lab = args.fig_lab,fig_cutout = fig_cutout_in,
             verbose_debugging = verbose_debugging_in,do_timer = do_timer_in,do_memory = do_memory_in,do_ensemble = do_ensemble_in,do_mask = do_mask_in,
             use_xarray_gdept = use_xarray_gdept_in,
-            force_dim_d = force_dim_d_in,xarr_rename_master_dict=xarr_rename_master_dict_in)
+            force_dim_d = force_dim_d_in,xarr_rename_master_dict=xarr_rename_master_dict_in,EOS_d = EOS_d)
 
 
 
