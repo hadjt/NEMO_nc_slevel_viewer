@@ -2916,8 +2916,8 @@ def reload_pf_data_comb(data_inst,var,var_dim,ii,jj,nz,grid_dict,Dataset_lst,con
 
 
 def reload_hov_data_comb_time(var,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,
-                              ii_in,jj_in,iijj_ind,nz,ntime,grid_dict,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd,
-                              do_LBC = None, do_LBC_d = None,LBC_coord_d = None):       
+                              ii_in,jj_in,iijj_ind,nz,ntime,grid_dict,lon_d,lat_d,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd,
+                              do_LBC = None, do_LBC_d = None,LBC_coord_d = None, EOS_d = None):       
     #Dataset_lst = [ss for ss in xarr_dict.keys()]   
     # #do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d   
     Dataset_lst_secondary = Dataset_lst.copy()
@@ -2951,8 +2951,8 @@ def reload_hov_data_comb_time(var,var_mat,var_grid,deriv_var,ldi,thd,time_dateti
 
             tmp_var_U, tmp_var_V = 'vozocrtx','vomecrty'
 
-            hov_dat_U_dict = reload_hov_data_comb_time(tmp_var_U,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
-            hov_dat_V_dict = reload_hov_data_comb_time(tmp_var_V,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
+            hov_dat_U_dict = reload_hov_data_comb_time(tmp_var_U,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,ii,jj,iijj_ind,nz,ntime,grid_dict,lon_d,lat_d,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d)
+            hov_dat_V_dict = reload_hov_data_comb_time(tmp_var_V,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,ii,jj,iijj_ind,nz,ntime,grid_dict,lon_d,lat_d,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d)
 
             for tmp_datstr in Dataset_lst:
                 hov_dat[tmp_datstr]  = np.sqrt(hov_dat_U_dict[tmp_datstr]**2 + hov_dat_V_dict[tmp_datstr]**2)
@@ -2961,8 +2961,8 @@ def reload_hov_data_comb_time(var,var_mat,var_grid,deriv_var,ldi,thd,time_dateti
 
             tmp_var_U, tmp_var_V = 'vozocrtx','vomecrty'
 
-            hov_dat_U_dict = reload_hov_data_comb_time(tmp_var_U,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
-            hov_dat_V_dict = reload_hov_data_comb_time(tmp_var_V,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
+            hov_dat_U_dict = reload_hov_data_comb_time(tmp_var_U,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,ii,jj,iijj_ind,nz,ntime,grid_dict,lon_d,lat_d,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d)
+            hov_dat_V_dict = reload_hov_data_comb_time(tmp_var_V,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,ii,jj,iijj_ind,nz,ntime,grid_dict,lon_d,lat_d,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d)
 
             for tmp_datstr in Dataset_lst:
                 hov_dat[tmp_datstr]  = 180.*np.arctan2(hov_dat_V_dict[tmp_datstr],hov_dat_U_dict[tmp_datstr])/np.pi
@@ -2971,8 +2971,8 @@ def reload_hov_data_comb_time(var,var_mat,var_grid,deriv_var,ldi,thd,time_dateti
 
             tmp_var_U, tmp_var_V = 'vozocrtx','vomecrty'
 
-            hov_dat_U_dict = reload_hov_data_comb_time(tmp_var_U,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
-            #hov_dat_V_dict = reload_hov_data_comb_time(tmp_var_V,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd)
+            hov_dat_U_dict = reload_hov_data_comb_time(tmp_var_U,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,ii,jj,iijj_ind,nz,ntime,grid_dict,lon_d,lat_d,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d)
+            #hov_dat_V_dict = reload_hov_data_comb_time(tmp_var_V,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,ii,jj,iijj_ind,nz,ntime,grid_dict,lon_d,lat_d,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd)
             #pdb.set_trace()
             for tmp_datstr in Dataset_lst:
                 hov_dat[tmp_datstr] = hov_dat_U_dict[tmp_datstr]
@@ -2983,8 +2983,8 @@ def reload_hov_data_comb_time(var,var_mat,var_grid,deriv_var,ldi,thd,time_dateti
 
             tmp_var_U, tmp_var_V = 'vozocrtx','vomecrty'
 
-            #hov_dat_U_dict = reload_hov_data_comb_time(tmp_var_U,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd)
-            hov_dat_V_dict = reload_hov_data_comb_time(tmp_var_V,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
+            #hov_dat_U_dict = reload_hov_data_comb_time(tmp_var_U,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,ii,jj,iijj_ind,nz,ntime,grid_dict,lon_d,lat_d,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd)
+            hov_dat_V_dict = reload_hov_data_comb_time(tmp_var_V,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,ii,jj,iijj_ind,nz,ntime,grid_dict,lon_d,lat_d,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d)
 
             for tmp_datstr in Dataset_lst:
                 hov_dat[tmp_datstr]  = hov_dat_V_dict[tmp_datstr]
@@ -2995,8 +2995,8 @@ def reload_hov_data_comb_time(var,var_mat,var_grid,deriv_var,ldi,thd,time_dateti
 
             tmp_var_U, tmp_var_V = 'vozocrtx','vomecrty'
 
-            hov_dat_U_dict = reload_hov_data_comb_time(tmp_var_U,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
-            #hov_dat_V_dict = reload_hov_data_comb_time(tmp_var_V,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd)
+            hov_dat_U_dict = reload_hov_data_comb_time(tmp_var_U,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,ii,jj,iijj_ind,nz,ntime,grid_dict,lon_d,lat_d,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d)
+            #hov_dat_V_dict = reload_hov_data_comb_time(tmp_var_V,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,ii,jj,iijj_ind,nz,ntime,grid_dict,lon_d,lat_d,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd)
             #pdb.set_trace()
             for tmp_datstr in Dataset_lst:
                 hov_dat[tmp_datstr] = hov_dat_U_dict[tmp_datstr]
@@ -3008,8 +3008,8 @@ def reload_hov_data_comb_time(var,var_mat,var_grid,deriv_var,ldi,thd,time_dateti
 
             tmp_var_U, tmp_var_V = 'vozocrtx','vomecrty'
 
-            #hov_dat_U_dict = reload_hov_data_comb_time(tmp_var_U,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd)
-            hov_dat_V_dict = reload_hov_data_comb_time(tmp_var_V,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
+            #hov_dat_U_dict = reload_hov_data_comb_time(tmp_var_U,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,ii,jj,iijj_ind,nz,ntime,grid_dict,lon_d,lat_d,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd)
+            hov_dat_V_dict = reload_hov_data_comb_time(tmp_var_V,var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,ii,jj,iijj_ind,nz,ntime,grid_dict,lon_d,lat_d,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d)
 
             for tmp_datstr in Dataset_lst:
                 hov_dat[tmp_datstr]  = hov_dat_V_dict[tmp_datstr]
@@ -3017,8 +3017,8 @@ def reload_hov_data_comb_time(var,var_mat,var_grid,deriv_var,ldi,thd,time_dateti
                 hov_dat[tmp_datstr] = np.abs(hov_dat[tmp_datstr])
        
         elif var == 'rho':
-            hov_dat_T_dict = reload_hov_data_comb_time('votemper',var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
-            hov_dat_S_dict = reload_hov_data_comb_time('vosaline',var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
+            hov_dat_T_dict = reload_hov_data_comb_time('votemper',var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,ii,jj,iijj_ind,nz,ntime,grid_dict,lon_d,lat_d,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d)
+            hov_dat_S_dict = reload_hov_data_comb_time('vosaline',var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,ii,jj,iijj_ind,nz,ntime,grid_dict,lon_d,lat_d,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d)
 
             
             for tmp_datstr in Dataset_lst:
@@ -3026,8 +3026,8 @@ def reload_hov_data_comb_time(var,var_mat,var_grid,deriv_var,ldi,thd,time_dateti
 
         elif var == 'N2':
             try:
-                hov_dat_T_dict = reload_hov_data_comb_time('votemper',var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
-                hov_dat_S_dict = reload_hov_data_comb_time('vosaline',var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
+                hov_dat_T_dict = reload_hov_data_comb_time('votemper',var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,ii,jj,iijj_ind,nz,ntime,grid_dict,lon_d,lat_d,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d)
+                hov_dat_S_dict = reload_hov_data_comb_time('vosaline',var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,ii,jj,iijj_ind,nz,ntime,grid_dict,lon_d,lat_d,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d)
 
                 for tmp_datstr in Dataset_lst: # _secondary:
 
@@ -3250,12 +3250,65 @@ def reload_hov_data_comb_time(var,var_mat,var_grid,deriv_var,ldi,thd,time_dateti
                 #pdb.set_trace()
         '''
 
+
+
+    #pdb.set_trace()
+    if EOS_d is None:
+        EOS_d = {}
+        EOS_d['do_TEOS_EOS_conv'] = False
+
+    if EOS_d['do_TEOS_EOS_conv']:
+        if var =='votemper':
+            if EOS_d['T']:
+                
+                hov_dat_S_dict = reload_hov_data_comb_time('vosaline',var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,ii,jj,iijj_ind,nz,ntime,grid_dict,lon_d,lat_d,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d)
+
+            
+        for tmp_datstr in Dataset_lst:
+            th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
+
+
+
+
+            tmp_jj,tmp_ii = jj,ii
+
+            if tmp_datstr in Dataset_lst_secondary:
+                th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
+                if configd[th_d_ind] != configd[1]: 
+                    tmp_jj,tmp_ii = iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']
+
+
+            #dep = grid_dict[tmp_datstr]['gdept'][:,tmp_jj,tmp_ii]
+            dep = np.tile(grid_dict[tmp_datstr]['gdept'][:,tmp_jj,tmp_ii],(ntime,1)).T
+            lon = lon_d[th_d_ind][tmp_jj,tmp_ii]
+            lat = lat_d[th_d_ind][tmp_jj,tmp_ii]
+
+            #pdb.set_trace()
+
+            if var =='vosaline':
+                if EOS_d['S']:
+
+                    if EOS_d[th_d_ind] == 'TEOS10_2_EOS80':
+                        hov_dat[tmp_datstr] = EOS_convert_TEOS10_2_EOS80_S(hov_dat[tmp_datstr], dep, lon, lat,tmp_datstr = tmp_datstr)
+                    elif EOS_d[th_d_ind] == 'EOS80_2_TEOS10':
+                        hov_dat[tmp_datstr] = EOS_convert_EOS80_2_TEOS10_S(hov_dat[tmp_datstr], dep, lon, lat,tmp_datstr = tmp_datstr)
+                    
+
+            elif var =='votemper':
+                if EOS_d['T']:
+
+                    if EOS_d[th_d_ind] == 'TEOS10_2_EOS80':
+                        hov_dat[tmp_datstr] = EOS_convert_TEOS10_2_EOS80_T(hov_dat[tmp_datstr],hov_dat_S_dict[tmp_datstr], dep, lon, lat,tmp_datstr = tmp_datstr)
+                    elif EOS_d[th_d_ind] == 'EOS80_2_TEOS10':
+                        hov_dat[tmp_datstr] = EOS_convert_EOS80_2_TEOS10_T(hov_dat[tmp_datstr],hov_dat_S_dict[tmp_datstr], dep, lon, lat,tmp_datstr = tmp_datstr)
+                        
+
     return hov_dat
+          
 
-   
-
-def reload_ts_data_comb_time(var,var_dim,var_grid,ii_in,jj_in,iijj_ind,ldi,hov_dat_dict,time_datetime,time_d,z_meth,zz,zi,xarr_dict,do_mask_dict,grid_dict,thd,var_mat,deriv_var,nz,ntime,configd,Dataset_lst,load_2nd_files,
-                             do_LBC = None, do_LBC_d = None,LBC_coord_d = None):
+def reload_ts_data_comb_time(var,var_dim,var_grid,ii_in,jj_in,iijj_ind,ldi,hov_dat_dict,time_datetime,time_d,z_meth,zz,zi,lon_d,lat_d,
+                             xarr_dict,do_mask_dict,grid_dict,thd,var_mat,deriv_var,nz,ntime,configd,Dataset_lst,load_2nd_files,
+                             do_LBC = None, do_LBC_d = None,LBC_coord_d = None, EOS_d = None):
     #do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d
     #Dataset_lst = [ss for ss in hov_dat_dict.keys()]      
     #Dataset_lst.remove('x')       
@@ -3284,8 +3337,13 @@ def reload_ts_data_comb_time(var,var_dim,var_grid,ii_in,jj_in,iijj_ind,ldi,hov_d
         if var in ['wnd_mag']:
             #pdb.set_trace()
 
-            ts_dat_U_1 = reload_ts_data_comb('uwnd',var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,time_datetime,time_d,z_meth,zz,zi,xarr_dict,do_mask_dict,grid_dict,thd,var_mat,deriv_var,nz,ntime,configd,Dataset_lst,load_2nd_files)
-            ts_dat_V_1 = reload_ts_data_comb('vwnd',var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,time_datetime,time_d,z_meth,zz,zi,xarr_dict,do_mask_dict,grid_dict,thd,var_mat,deriv_var,nz,ntime,configd,Dataset_lst,load_2nd_files)
+            #ts_dat_U_1 = reload_ts_data_comb_time('uwnd',var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,time_datetime,time_d,z_meth,zz,zi,xarr_dict,do_mask_dict,grid_dict,thd,var_mat,deriv_var,nz,ntime,configd,Dataset_lst,load_2nd_files)
+            #ts_dat_V_1 = reload_ts_data_comb_time('vwnd',var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,time_datetime,time_d,z_meth,zz,zi,xarr_dict,do_mask_dict,grid_dict,thd,var_mat,deriv_var,nz,ntime,configd,Dataset_lst,load_2nd_files)
+
+
+            ts_dat_U_1 = reload_ts_data_comb_time('uwnd',var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,time_datetime,time_d,z_meth,zz,zi,lon_d,lat_d,xarr_dict,do_mask_dict,grid_dict,thd,var_mat,deriv_var,nz,ntime,configd,Dataset_lst,load_2nd_files,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d)
+            ts_dat_V_1 = reload_ts_data_comb_time('vwnd',var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,time_datetime,time_d,z_meth,zz,zi,lon_d,lat_d,xarr_dict,do_mask_dict,grid_dict,thd,var_mat,deriv_var,nz,ntime,configd,Dataset_lst,load_2nd_files,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d)
+            
             
             if var == 'wnd_mag': 
                 for tmp_datstr in Dataset_lst: ts_dat_dict[tmp_datstr] = np.sqrt(ts_dat_U_1[tmp_datstr]**2 + ts_dat_V_1[tmp_datstr]**2)
@@ -3320,8 +3378,8 @@ def reload_ts_data_comb_time(var,var_dim,var_grid,ii_in,jj_in,iijj_ind,ldi,hov_d
             if var.upper() in ['PEA', 'PEAT','PEAS','Pync_Z'.upper(),'Pync_Th'.upper(),'N2max'.upper()]:
                 try:
 
-                    hov_dat_T_dict = reload_hov_data_comb_time('votemper',var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
-                    hov_dat_S_dict = reload_hov_data_comb_time('vosaline',var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,ii,jj,iijj_ind,nz,ntime,grid_dict,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
+                    hov_dat_T_dict = reload_hov_data_comb_time('votemper',var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,ii,jj,iijj_ind,nz,ntime,grid_dict,lon_d,lat_d,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d)
+                    hov_dat_S_dict = reload_hov_data_comb_time('vosaline',var_mat,var_grid,deriv_var,ldi,thd,time_datetime,time_d,ii,jj,iijj_ind,nz,ntime,grid_dict,lon_d,lat_d,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d)
 
                     for tmp_datstr in Dataset_lst: # _secondary:
 
@@ -5129,7 +5187,7 @@ def extract_time_from_xarr(xarr_dict_in,ex_fname_in,time_varname_in,t_dim,date_i
     '''
     #pdb.set_trace()
     
-    print ('xarray start reading nctime',datetime.now())
+    #print ('xarray start reading nctime',datetime.now())
 
 
 
