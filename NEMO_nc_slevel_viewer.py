@@ -4407,6 +4407,7 @@ def nemo_slice_zlev(config = 'amm7',
                     if (clii >= but_pos_x0) & (clii <= but_pos_x1) & (cljj >= but_pos_y0) & (cljj <= but_pos_y1):
                         is_in_axes = True
                         print('but_name:',but_name)
+                        zoom_corner_point = True
 
                         func_but_text_han['waiting'].set_text('Waiting:\n' + but_name)
 
@@ -4443,8 +4444,11 @@ def nemo_slice_zlev(config = 'amm7',
                                 del(buttonpress)
 
 
-                                if tmp_zoom_in: func_but_text_han['Zoom'].set_color('r')
-                                elif not tmp_zoom_in: func_but_text_han['Zoom'].set_color('g')
+                                if tmp_zoom_in:
+                                    zoom_col = 'r'
+                                else:
+                                    zoom_col = 'g'
+                                func_but_text_han['Zoom'].set_color(zoom_col)
                                 # redraw canvas
                                 fig.canvas.draw_idle()
                                 
@@ -4454,6 +4458,17 @@ def nemo_slice_zlev(config = 'amm7',
                                 if zoom0_ax in [1,2,3]:
                                     zlim_max = zoom0_zz
                                 elif zoom0_ax in [0]:
+
+                                    zoomax_lst = []
+
+
+                                    if zoom_corner_point:
+                                        zoomax_lst.append(ax[0].plot(zoom0_sel_xlocval,zoom0_sel_ylocval,'+', color = zoom_col))
+                                        fig.canvas.draw_idle()
+                                        if verbose_debugging: print('Canvas flush', datetime.now())
+                                        fig.canvas.flush_events()
+                                        if verbose_debugging: print('Canvas drawn and flushed', datetime.now())
+
                                     #tmpzoom1 = plt.ginput(1)
                                     buttonpress = True
                                     while buttonpress: buttonpress = plt.waitforbuttonpress()
@@ -4462,10 +4477,20 @@ def nemo_slice_zlev(config = 'amm7',
 
                                     zoom1_ax,zoom1_ii,zoom1_jj,zoom1_ti,zoom1_zz, zoom1_sel_xlocval,zoom1_sel_ylocval = indices_from_ginput_ax(ax,tmpzoom1[0][0],tmpzoom1[0][1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
                                         
+
+                                    if zoom_corner_point:
+                                        zoomax_lst.append(ax[0].plot(zoom1_sel_xlocval,zoom1_sel_ylocval,'+', color = zoom_col))
+                                        fig.canvas.draw_idle()
+                                        if verbose_debugging: print('Canvas flush', datetime.now())
+                                        fig.canvas.flush_events()
+                                        if verbose_debugging: print('Canvas drawn and flushed', datetime.now())
+
                                     if verbose_debugging: print(zoom0_ax,zoom0_ii,zoom0_jj,zoom0_ti,zoom0_zz)
                                     if verbose_debugging: print(zoom1_ax,zoom1_ii,zoom1_jj,zoom1_ti,zoom1_zz)
                                     if verbose_debugging: print(cur_xlim)
                                     if verbose_debugging: print(cur_ylim)
+
+
 
                                     # if both clicks in main axes, use clicks for the new x and ylims
                                     if (zoom0_ax is not None) & (zoom1_ax is not None):
@@ -4503,7 +4528,8 @@ def nemo_slice_zlev(config = 'amm7',
                                                     cur_ylim = dcur_ylim*(dcur_ylim/dcur_cl_ylim)*np.array([-0.5,0.5])+mncur_ylim
 
 
-                                
+
+
                                 if verbose_debugging: print(cur_xlim)
                                 if verbose_debugging: print(cur_ylim)
                                 func_but_text_han['Zoom'].set_color('k')
@@ -4512,7 +4538,11 @@ def nemo_slice_zlev(config = 'amm7',
                                 
                                 #flush canvas
                                 fig.canvas.flush_events()
-                                                
+                                if zoom_corner_point:
+                                    if zoom0_ax in [0]:     
+                                        for zoomax in zoomax_lst:
+                                            rem_loc = zoomax.pop(0)
+                                            rem_loc.remove()          
                                                 
                         elif but_name == 'Axis':
                             if axis_scale == 'Auto':
