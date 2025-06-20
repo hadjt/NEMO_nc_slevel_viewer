@@ -316,7 +316,10 @@ def nemo_slice_zlev(config = 'amm7',
 
 
     for tmp_datstr in Dataset_lst:
-        if fig_lab_d[tmp_datstr] is None: fig_lab_d[tmp_datstr] = tmp_datstr
+        if tmp_datstr in fig_lab_d.keys():
+            if fig_lab_d[tmp_datstr] is None: fig_lab_d[tmp_datstr] = tmp_datstr
+        else:
+            fig_lab_d[tmp_datstr] = tmp_datstr
 
 
     axis_scale = 'Auto'
@@ -728,7 +731,7 @@ def nemo_slice_zlev(config = 'amm7',
     nice_varname_dict['barot_div'] = 'Barotropic current divergence'
 
     nice_varname_dict['vozocrtx'] = 'Baroclinic current (eastward component)'
-    nice_varname_dict['vomecrty'] = 'Baroclinic current (westward component)'
+    nice_varname_dict['vomecrty'] = 'Baroclinic current (northward component)'
 
     nice_varname_dict['sossheig'] = 'Sea surface height'
     nice_varname_dict['temper_bot'] = 'Bottom temperature'
@@ -1368,7 +1371,7 @@ def nemo_slice_zlev(config = 'amm7',
     for tmp_datstr in Dataset_lst:
         #if fig_lab_d[tmp_datstr] is not None: 
         fig_tit_str_lab = fig_tit_str_lab + ' %s = %s;'%(tmp_datstr,fig_lab_d[tmp_datstr])
-
+    fig_tit_str_lab = fig_tit_str_lab = '. Showing %s.'%(fig_lab_d[tmp_datstr])
 
     nvarbutcol = 16 # 18
     nvarbutcol = 22 # 18
@@ -2222,6 +2225,7 @@ def nemo_slice_zlev(config = 'amm7',
                     fig_tit_str_lab = '%s minus %s'%(fig_lab_d[tmpdataset_1],fig_lab_d[tmpdataset_2])
         
         
+        #fig.suptitle(fig_tit_str_int + '\n' + fig_tit_str_lab, fontsize=14)
         
 
         fig.suptitle( fig_tit_str_lab, fontsize=14)
@@ -2266,7 +2270,7 @@ def nemo_slice_zlev(config = 'amm7',
 
 
 
-        fig.suptitle(fig_tit_str_int + '\n' + fig_tit_str_lab, fontsize=14)
+        fig.suptitle(fig_tit_str_int + '\n' + fig_tit_str_lab, fontsize=figsuptitfontsize)
 
         try:
 
@@ -2503,7 +2507,7 @@ def nemo_slice_zlev(config = 'amm7',
                     #pdb.set_trace()
                     #data_inst,psreload_data_ti,preload_data_var,preload_data_ldi= reload_data_instances(var,thd,ldi,ti,var_d,var_grid['Dataset 1'], xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
                     data_inst,preload_data_ti,preload_data_var,preload_data_ldi= reload_data_instances_time(var,thd,ldi,ti,
-                        time_datetime_since_1970[ti],time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files,
+                        time_datetime_since_1970[ti],time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files,
                         do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
                     #pdb.set_trace()
                     if do_memory & do_timer: timer_lst.append(('Reloaded data_inst',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
@@ -2533,14 +2537,14 @@ def nemo_slice_zlev(config = 'amm7',
                         data_inst_U = None
                         if do_memory & do_timer: timer_lst.append(('Deleted data_inst_U',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                         data_inst_U,preload_data_ti_U,preload_data_var_U,preload_data_ldi_U = reload_data_instances_time(tmp_var_U,thd,ldi,ti,
-                            time_datetime_since_1970[ti],time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files,
+                            time_datetime_since_1970[ti],time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files,
                             do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
                         if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_U',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                         
                         data_inst_V = None
                         if do_memory & do_timer: timer_lst.append(('Deleted data_inst_V',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                         data_inst_V,preload_data_ti_V,preload_data_var_V,preload_data_ldi_V = reload_data_instances_time(tmp_var_V,thd,ldi,ti,
-                            time_datetime_since_1970[ti],time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files,
+                            time_datetime_since_1970[ti],time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files,
                             do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
                         if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_V',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
 
@@ -2551,7 +2555,7 @@ def nemo_slice_zlev(config = 'amm7',
                         data_inst_mld = None
                         if do_memory & do_timer: timer_lst.append(('Deleted data_inst_mld',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                         data_inst_mld,preload_data_ti_mld,preload_data_var_mld,preload_data_ldi_mld= reload_data_instances_time(MLD_var,thd,ldi,ti,
-                            time_datetime_since_1970[ti],time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files,
+                            time_datetime_since_1970[ti],time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files,
                             do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
                         reload_MLD = False
                         if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_mld',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
@@ -2629,7 +2633,7 @@ def nemo_slice_zlev(config = 'amm7',
                         if (data_inst_Tm1['Dataset 1'] is None)|(preload_data_ti_Tm1 != (ti-1))|(preload_data_var_Tm1 != var)|(preload_data_ldi_Tm1 != ldi):
 
                             (data_inst_Tm1,preload_data_ti_Tm1,preload_data_var_Tm1,preload_data_ldi_Tm1) = reload_data_instances_time(var,thd,ldi,ti-1,
-                                time_datetime_since_1970[ti],time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files,
+                                time_datetime_since_1970[ti],time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files,
                                 do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
                             if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_Tm1',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                         #print('   Time_Diff_cnt_hovtime =',Time_Diff_cnt_hovtime)
@@ -5799,7 +5803,7 @@ def nemo_slice_zlev(config = 'amm7',
 
                         
                         elif but_name in secdataset_proc_list:
-                            secdataset_proc = but_name
+                            secdataset_proc = but_name 
 
 
                             for tmpsecdataset_proc in secdataset_proc_list: func_but_text_han[tmpsecdataset_proc].set_color('k')
@@ -5810,7 +5814,35 @@ def nemo_slice_zlev(config = 'amm7',
                             if do_ensemble:
                                 Ens_stat = None
                                 for ens_stat in ens_stat_lst: func_but_text_han[ens_stat].set_color('k')
-                                
+
+                            
+
+                            fig_tit_str_lab = ''
+                            #if fig_lab_d['Dataset 1'] is not None: fig_tit_str_lab = fig_tit_str_lab + ' Dataset 1 = %s;'%fig_lab_d['Dataset 1']
+                            #if fig_lab_d['Dataset 2'] is not None: fig_tit_str_lab = fig_tit_str_lab + ' Dataset 2 = %s;'%fig_lab_d['Dataset 2']
+                            for tmp_datstr in Dataset_lst:
+                                #if fig_lab_d[tmp_datstr] is not None: 
+                                fig_tit_str_lab = fig_tit_str_lab + ' %s = %s;'%(tmp_datstr,fig_lab_d[tmp_datstr])
+
+
+                            cur_fig_tit_str_lab = ''
+                            if load_second_files == False:
+                                cur_fig_tit_str_lab = fig_lab_d['Dataset 1']
+                            else:
+                                if secdataset_proc in Dataset_lst:
+                                    cur_fig_tit_str_lab = '%s'%fig_lab_d[secdataset_proc]
+                                else:
+                                    tmpdataset_1 = 'Dataset ' + secdataset_proc[3]
+                                    tmpdataset_2 = 'Dataset ' + secdataset_proc[8]
+                                    tmpdataset_oper = secdataset_proc[4]
+                                    if tmpdataset_oper == '-':
+                                        cur_fig_tit_str_lab = '%s minus %s'%(fig_lab_d[tmpdataset_1],fig_lab_d[tmpdataset_2])
+                            
+                            
+                            fig_tit_str_lab = fig_tit_str_lab = '. Showing %s.'%(cur_fig_tit_str_lab)
+                            
+                            fig.suptitle(fig_tit_str_int + '\n' + fig_tit_str_lab, fontsize=figsuptitfontsize)
+                            
 
                         #elif do_ensemble:
                         #    if but_name in ens_stat_lst:
@@ -5952,7 +5984,8 @@ def nemo_slice_zlev(config = 'amm7',
             if verbose_debugging: print('Interpret Mouse click: remove lines and axes', datetime.now())
             #pdb.set_trace()
             #print(ii,jj, ti, zz,var)
-            print("selected ii = %i,jj = %i,ti = %i,zz = %i, var = '%s'"%(ii,jj, ti, zz,var))
+            #print("selected ii = %i,jj = %i,ti = %i,zz = %i, var = '%s'"%(ii,jj, ti, zz,var))
+            print("selected --ii %i --jj %i --ti  %i --zz %i --var '%s'"%(ii,jj, ti, zz,var))
             # after selected indices and vareiabels, delete plots, ready for next cycle
             #pdb.set_trace()
             for tmp_cax in cax:tmp_cax.remove()

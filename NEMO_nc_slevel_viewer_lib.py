@@ -1832,7 +1832,7 @@ def  LBC_regrid_ind(do_LBC_d,LBC_coord_d,Dataset_lst,data_inst,grid_dict,var,var
 
 
 def reload_data_instances_time(var,thd,ldi,ti,current_time_datetime_since_1970,time_d,
-                               var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
+                               var_d,var_grid,lon_d,lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
                                do_LBC = None, do_LBC_d = None,LBC_coord_d = None):
     #do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d
     tmp_var_U, tmp_var_V = 'vozocrtx','vomecrty'
@@ -1854,10 +1854,10 @@ def reload_data_instances_time(var,thd,ldi,ti,current_time_datetime_since_1970,t
             #map_dat_2d_V_1 = reload_data_instances('vwnd',thd,ldi,ti,var_d,var_grid['Dataset 1'], xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files)[0]
 
             data_inst_U,preload_data_ti_T,preload_data_var_T,preload_data_ldi_T= reload_data_instances_time('uwnd',thd,ldi,ti,
-                current_time_datetime_since_1970,time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
+                current_time_datetime_since_1970,time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
                 do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
             data_inst_V,preload_data_ti_T,preload_data_var_T,preload_data_ldi_T= reload_data_instances_time('vwnd',thd,ldi,ti,
-                current_time_datetime_since_1970,time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
+                current_time_datetime_since_1970,time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
                 do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
             
             #map_dat_2d_U_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr]['U'][ldi].variables[tmp_var_Ubar][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
@@ -1901,10 +1901,10 @@ def reload_data_instances_time(var,thd,ldi,ti,current_time_datetime_since_1970,t
 
 
             data_inst_N,preload_data_ti_T,preload_data_var_T,preload_data_ldi_T= reload_data_instances_time('N3n',thd,ldi,ti,
-                current_time_datetime_since_1970,time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
+                current_time_datetime_since_1970,time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
                 do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
             data_inst_P,preload_data_ti_T,preload_data_var_T,preload_data_ldi_T= reload_data_instances_time('N1p',thd,ldi,ti,
-                current_time_datetime_since_1970,time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
+                current_time_datetime_since_1970,time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
                 do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
 
 
@@ -1928,11 +1928,8 @@ def reload_data_instances_time(var,thd,ldi,ti,current_time_datetime_since_1970,t
 
 
             data_inst_U,preload_data_ti_T,preload_data_var_T,preload_data_ldi_T= reload_data_instances_time(tmp_var_U,thd,ldi,ti,
-                current_time_datetime_since_1970,time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
+                current_time_datetime_since_1970,time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
                 do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
-            #data_inst_V,preload_data_ti_T,preload_data_var_T,preload_data_ldi_T= reload_data_instances_time(tmp_var_V,thd,ldi,ti,
-            #    current_time_datetime_since_1970,time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
-            #    do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
 
 
             for tmp_datstr in Dataset_lst:
@@ -1956,11 +1953,8 @@ def reload_data_instances_time(var,thd,ldi,ti,current_time_datetime_since_1970,t
         elif var in ['dVdz']:
             
 
-            #data_inst_U,preload_data_ti_T,preload_data_var_T,preload_data_ldi_T= reload_data_instances_time(tmp_var_U,thd,ldi,ti,
-            #    current_time_datetime_since_1970,time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
-            #    do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
             data_inst_V,preload_data_ti_T,preload_data_var_T,preload_data_ldi_T= reload_data_instances_time(tmp_var_V,thd,ldi,ti,
-                current_time_datetime_since_1970,time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
+                current_time_datetime_since_1970,time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
                 do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
 
 
@@ -1982,11 +1976,8 @@ def reload_data_instances_time(var,thd,ldi,ti,current_time_datetime_since_1970,t
         elif var in ['abs_dUdz']:
 
             data_inst_U,preload_data_ti_T,preload_data_var_T,preload_data_ldi_T= reload_data_instances_time(tmp_var_U,thd,ldi,ti,
-                current_time_datetime_since_1970,time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
+                current_time_datetime_since_1970,time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
                 do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
-            #data_inst_V,preload_data_ti_T,preload_data_var_T,preload_data_ldi_T= reload_data_instances_time(tmp_var_V,thd,ldi,ti,
-            #    current_time_datetime_since_1970,time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
-            #    do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
 
 
             for tmp_datstr in Dataset_lst:
@@ -2008,11 +1999,8 @@ def reload_data_instances_time(var,thd,ldi,ti,current_time_datetime_since_1970,t
             
         elif var in ['abs_dVdz']:
             
-            #data_inst_U,preload_data_ti_T,preload_data_var_T,preload_data_ldi_T= reload_data_instances_time(tmp_var_U,thd,ldi,ti,
-            #    current_time_datetime_since_1970,time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
-            #    do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
             data_inst_V,preload_data_ti_T,preload_data_var_T,preload_data_ldi_T= reload_data_instances_time(tmp_var_V,thd,ldi,ti,
-                current_time_datetime_since_1970,time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
+                current_time_datetime_since_1970,time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
                 do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
 
 
@@ -2034,10 +2022,10 @@ def reload_data_instances_time(var,thd,ldi,ti,current_time_datetime_since_1970,t
         elif var in ['baroc_mag','baroc_div','baroc_curl','baroc_phi']:
 
             data_inst_U,preload_data_ti_T,preload_data_var_T,preload_data_ldi_T= reload_data_instances_time(tmp_var_U,thd,ldi,ti,
-                current_time_datetime_since_1970,time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
+                current_time_datetime_since_1970,time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
                 do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
             data_inst_V,preload_data_ti_T,preload_data_var_T,preload_data_ldi_T= reload_data_instances_time(tmp_var_V,thd,ldi,ti,
-                current_time_datetime_since_1970,time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
+                current_time_datetime_since_1970,time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
                 do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
 
 
@@ -2068,10 +2056,10 @@ def reload_data_instances_time(var,thd,ldi,ti,current_time_datetime_since_1970,t
             tmp_var_Ubar = 'uocetr_eff_e3u'
             tmp_var_Vbar = 'vocetr_eff_e3v'
             data_inst_U,preload_data_ti_T,preload_data_var_T,preload_data_ldi_T= reload_data_instances_time(tmp_var_Ubar,thd,ldi,ti,
-                current_time_datetime_since_1970,time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
+                current_time_datetime_since_1970,time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
                 do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
             data_inst_V,preload_data_ti_T,preload_data_var_T,preload_data_ldi_T= reload_data_instances_time(tmp_var_Vbar,thd,ldi,ti,
-                current_time_datetime_since_1970,time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
+                current_time_datetime_since_1970,time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
                 do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
 
 
@@ -2098,10 +2086,10 @@ def reload_data_instances_time(var,thd,ldi,ti,current_time_datetime_since_1970,t
             tmp_var_Ubar = 'uocetr_eff'
             tmp_var_Vbar = 'vocetr_eff'
             data_inst_U,preload_data_ti_T,preload_data_var_T,preload_data_ldi_T= reload_data_instances_time(tmp_var_Ubar,thd,ldi,ti,
-                current_time_datetime_since_1970,time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
+                current_time_datetime_since_1970,time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
                 do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
             data_inst_V,preload_data_ti_T,preload_data_var_T,preload_data_ldi_T= reload_data_instances_time(tmp_var_Vbar,thd,ldi,ti,
-                current_time_datetime_since_1970,time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
+                current_time_datetime_since_1970,time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
                 do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
 
 
@@ -2143,10 +2131,10 @@ def reload_data_instances_time(var,thd,ldi,ti,current_time_datetime_since_1970,t
 
 
             data_inst_U,preload_data_ti_T,preload_data_var_T,preload_data_ldi_T= reload_data_instances_time(tmp_var_Ubar,thd,ldi,ti,
-                current_time_datetime_since_1970,time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
+                current_time_datetime_since_1970,time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
                 do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
             data_inst_V,preload_data_ti_T,preload_data_var_T,preload_data_ldi_T= reload_data_instances_time(tmp_var_Vbar,thd,ldi,ti,
-                current_time_datetime_since_1970,time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
+                current_time_datetime_since_1970,time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
                 do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
 
 
@@ -2176,7 +2164,7 @@ def reload_data_instances_time(var,thd,ldi,ti,current_time_datetime_since_1970,t
         elif var in ['StreamFunction']:
             tmp_var_Vbar = 'vocetr_eff'
             data_inst_V,preload_data_ti_T,preload_data_var_T,preload_data_ldi_T= reload_data_instances_time(tmp_var_Vbar,thd,ldi,ti,
-                current_time_datetime_since_1970,time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
+                current_time_datetime_since_1970,time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
                 do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
 
 
@@ -2195,7 +2183,7 @@ def reload_data_instances_time(var,thd,ldi,ti,current_time_datetime_since_1970,t
 
 
             data_inst_V,preload_data_ti_T,preload_data_var_T,preload_data_ldi_T= reload_data_instances_time(tmp_var_Vbar,thd,ldi,ti,
-                current_time_datetime_since_1970,time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
+                current_time_datetime_since_1970,time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
                 do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
 
 
@@ -2209,10 +2197,10 @@ def reload_data_instances_time(var,thd,ldi,ti,current_time_datetime_since_1970,t
     
         elif var.upper() in ['PEA', 'PEAT','PEAS']:
             data_inst_T,preload_data_ti_T,preload_data_var_T,preload_data_ldi_T= reload_data_instances_time('votemper',thd,ldi,ti,
-                current_time_datetime_since_1970,time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
+                current_time_datetime_since_1970,time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
                 do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
             data_inst_S,preload_data_ti_T,preload_data_var_T,preload_data_ldi_T= reload_data_instances_time('vosaline',thd,ldi,ti,
-                current_time_datetime_since_1970,time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
+                current_time_datetime_since_1970,time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
                 do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
 
 
@@ -2244,10 +2232,10 @@ def reload_data_instances_time(var,thd,ldi,ti,current_time_datetime_since_1970,t
         elif var.upper() in ['RHO','N2'.upper(),'Pync_Z'.upper(),'Pync_Th'.upper(),'N2max'.upper()]:
             #tmp_rho = {}
             data_inst_T,preload_data_ti_T,preload_data_var_T,preload_data_ldi_T= reload_data_instances_time('votemper',thd,ldi,ti,
-                current_time_datetime_since_1970,time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
+                current_time_datetime_since_1970,time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
                 do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
             data_inst_S,preload_data_ti_T,preload_data_var_T,preload_data_ldi_T= reload_data_instances_time('vosaline',thd,ldi,ti,
-                current_time_datetime_since_1970,time_d,var_d,var_grid, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
+                current_time_datetime_since_1970,time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_2nd_files,
                 do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d)
 
 
@@ -2410,6 +2398,16 @@ def reload_data_instances_time(var,thd,ldi,ti,current_time_datetime_since_1970,t
 
     if do_LBC:
         data_inst = LBC_regrid_ind(do_LBC_d,LBC_coord_d,Dataset_lst,data_inst,grid_dict,var,var_grid)
+
+    #pdb.set_trace()
+
+    '''
+    import gsw as gsw
+    
+
+    dep = grid_dict[tmp_datstr]['gdept']
+    
+    '''
 
     return data_inst,preload_data_ti,preload_data_var,preload_data_ldi
 
@@ -4119,6 +4117,8 @@ def grad_vert_hov_prof_data(hov_dat_dict, meth=0, abs_pre = False, abs_post = Fa
     Dataset_lst = [ss for ss in hov_dat_dict.keys()]   
     if 'x' in Dataset_lst: Dataset_lst.remove('x')       
     if 'y' in Dataset_lst: Dataset_lst.remove('y')    
+    
+    if 'Sec Grid' in Dataset_lst: Dataset_lst.remove('Sec Grid')    
 
 
     hov_y = hov_dat_dict['y']
@@ -4143,6 +4143,23 @@ def grad_vert_hov_prof_data(hov_dat_dict, meth=0, abs_pre = False, abs_post = Fa
             hov_dat_dict[tmp_datstr][ 0] = np.ma.masked
             hov_dat_dict[tmp_datstr][-1] = np.ma.masked
         elif meth == 1:
+            '''
+            pdb.set_trace()
+              File "/home/users/jonathan.tinker/python3/NEMO_nc_slevel_viewer/NEMO_nc_slevel_viewer_dev.py", line 6952, in <module>
+    if __name__ == "__main__":
+        ^^^^^^
+  File "/home/users/jonathan.tinker/python3/NEMO_nc_slevel_viewer/NEMO_nc_slevel_viewer_dev.py", line 6924, in main
+    #pdb.set_trace()
+  File "/home/users/jonathan.tinker/python3/NEMO_nc_slevel_viewer/NEMO_nc_slevel_viewer_dev.py", line 2576, in nemo_slice_zlev
+    hov_dat_dict = grad_vert_hov_prof_data(hov_dat_dict,
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/users/jonathan.tinker/python3/NEMO_nc_slevel_viewer/NEMO_nc_slevel_viewer_lib.py", line 4146, in grad_vert_hov_prof_data
+    dhov_1 = tmp_data_in[1:] - tmp_data_in[:-1]
+             ~~~~~~~~~~~^^^^
+KeyError: slice(1, None, None)
+
+            
+            '''
             dhov_1 = tmp_data_in[1:] - tmp_data_in[:-1]
             if dx_d_dx:
                 hov_dat_dict[tmp_datstr][:-1] = (dhov_1.T).T
