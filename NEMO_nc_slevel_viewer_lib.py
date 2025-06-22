@@ -72,8 +72,22 @@ def load_nc_dims(tmp_data):
 
     poss_zdims = ['depth','deptht','depthu','depthv','depthw','z', 'nc']
     poss_tdims = ['time_counter','time','t']
-    poss_xdims = ['x','X','lon','ni','x_grid_T','x_grid_U','x_grid_V', 'lon','longitude']
-    poss_ydims = ['y','Y','lat','nj','y_grid_T','y_grid_U','y_grid_V', 'lat','latitude']
+    poss_xdims = ['x','X','lon','ni','x_grid_T','x_grid_U','x_grid_V', 'lon','longitude','xbt','xbT','xbU','xbV']
+    poss_ydims = ['y','Y','lat','nj','y_grid_T','y_grid_U','y_grid_V', 'lat','latitude','yb']
+
+
+    '''
+    WW3 doesn't have the right dimension, so needs a nemo grid first
+
+    ncdump -h /data/scratch/frwave/wave_rolling_archive/amm15/amm15_2025062000.nc |head
+    netcdf amm15_2025062000 {
+    dimensions:
+        time = UNLIMITED ; // (169 currently)
+        seapoint = 394316 ;
+    variables:
+
+    
+    '''
     #pdb.set_trace()
     if x_dim not in nc_dims: 
         x_dim_lst = [i for i in nc_dims if i in poss_xdims]
@@ -1717,7 +1731,7 @@ def update_cur_var_grid(var,tmp_datstr,ldi, var_grid, xarr_dict):
 
     #tmp_cur_var_grid = var_grid(var,tmp_datstr,ldi, var_grid, xarr_dict )
     
-    tmp_cur_var_grid = var_grid[var]
+    tmp_cur_var_grid = var_grid[var][0]
 
     # sometime we take T, S and SSH from different files (grid), and compare to a config where they are all in the same file
     # so check that it is?
@@ -1753,7 +1767,7 @@ def LBC_iijj_ind(do_LBC_d,LBC_coord_d,var_grid,var, LBC_iijj_threshold = 1):
     th_d_ind = int(tmp_datstr[8:])
     if do_LBC_d[th_d_ind]:
         
-        tmp_LBC_grid = var_grid[tmp_datstr][var]
+        tmp_LBC_grid = var_grid[tmp_datstr][var][0]
         if tmp_LBC_grid == 'T': tmp_LBC_grid = 'T_1'
         
         LBC_set = int(tmp_LBC_grid[-1])
@@ -1777,8 +1791,53 @@ def LBC_iijj_ind(do_LBC_d,LBC_coord_d,var_grid,var, LBC_iijj_threshold = 1):
     return ii,jj
 
 
+def  LBC_regrid_ind_update_one_dataset(do_LBC_d,LBC_coord_d,Dataset_lst,tmp_data_inst,tmp_LBC_data_out,tmp_datstr,tmp_cur_var_grid,grid_dict,var,var_grid):
+
+    th_d_ind = int(tmp_datstr[8:])
+    #print('do_LBC_d[th_d_ind]',do_LBC_d[th_d_ind])
+
+    # if the this dataset is LBC
+    if do_LBC_d[th_d_ind]:
+        try:
+            # if the data_inst is not the correct shape, i.e. is likely the LBC rather than the model grid
+            if tmp_data_inst.shape[-2:] != grid_dict[tmp_datstr]['gdept'].shape[-2:]:
+                
+                # LBC_regrid_ind(LBC_coord_d,Dataset_lst,data_inst,grid_dict[tmp_datstr]['gdept'].shape,var_grid)
+                # tmp_LBC_data_in = data_inst[tmp_datstr]
+
+                tmp_LBC_grid = tmp_cur_var_grid
+                if tmp_LBC_grid == 'T': tmp_LBC_grid = 'T_1'
+                
+                LBC_set = int(tmp_LBC_grid[-1])
+                LBC_type = tmp_LBC_grid[:-2]
+
+            
+                tmp_LBC_data_in = tmp_data_inst
 
 
+
+                if LBC_type in ['T','U','V']:
+                    tmpLBCnbj = LBC_coord_d[th_d_ind][LBC_set]['nbj'+LBC_type.lower()]#[LBC_coord_d[th_d_ind][LBC_set]['nbr'+LBC_type[0].lower()]==1]
+                    tmpLBCnbi = LBC_coord_d[th_d_ind][LBC_set]['nbi'+LBC_type.lower()]#[LBC_coord_d[th_d_ind][LBC_set]['nbr'+LBC_type[0].lower()]==1]
+
+                    if tmp_LBC_data_out is None:
+                        tmp_LBC_data_out = np.ma.zeros(grid_dict[tmp_datstr]['gdept'].shape)*np.ma.masked                                
+                    #tmp_LBC_data_out[:,LBC_coord_d[th_d_ind][LBC_set]['nbjt'], LBC_coord_d[th_d_ind][LBC_set]['nbit']] = tmp_LBC_data_in
+                    tmp_LBC_data_out[:,tmpLBCnbj,tmpLBCnbi] = tmp_LBC_data_in
+                elif LBC_type in ['T_bt','U_bt','V_bt']:
+                    tmpLBCnbj =LBC_coord_d[th_d_ind][LBC_set]['nbj'+LBC_type[0].lower()][LBC_coord_d[th_d_ind][LBC_set]['nbr'+LBC_type[0].lower()]==1]
+                    tmpLBCnbi =LBC_coord_d[th_d_ind][LBC_set]['nbi'+LBC_type[0].lower()][LBC_coord_d[th_d_ind][LBC_set]['nbr'+LBC_type[0].lower()]==1]
+                    if tmp_LBC_data_out is None:
+                        tmp_LBC_data_out = np.ma.zeros(grid_dict[tmp_datstr]['gdept'].shape[1:])*np.ma.masked  
+                    tmp_LBC_data_out[tmpLBCnbj,tmpLBCnbi] = tmp_LBC_data_in
+                else:
+                    pdb.set_trace()
+                tmp_data_inst = tmp_LBC_data_out.copy()
+                del(tmp_LBC_data_out)
+        except:
+            pdb.set_trace()
+
+    return tmp_data_inst
 
 
 def  LBC_regrid_ind(do_LBC_d,LBC_coord_d,Dataset_lst,data_inst,grid_dict,var,var_grid):
@@ -1797,7 +1856,7 @@ def  LBC_regrid_ind(do_LBC_d,LBC_coord_d,Dataset_lst,data_inst,grid_dict,var,var
                     # LBC_regrid_ind(LBC_coord_d,Dataset_lst,data_inst,grid_dict[tmp_datstr]['gdept'].shape,var_grid)
                     # tmp_LBC_data_in = data_inst[tmp_datstr]
 
-                    tmp_LBC_grid = var_grid[tmp_datstr][var]
+                    tmp_LBC_grid = var_grid[tmp_datstr][var][0]
                     if tmp_LBC_grid == 'T': tmp_LBC_grid = 'T_1'
                     
                     LBC_set = int(tmp_LBC_grid[-1])
@@ -1882,7 +1941,7 @@ def reload_data_instances_time(var,thd,ldi,ti,current_time_datetime_since_1970,t
             for tmp_datstr in Dataset_lst:
                 th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
 
-                tmpdat_inst = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[tmp_datstr][var]][ldi].variables[var][ti,:].load()) 
+                tmpdat_inst = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[tmp_datstr][var][0]][ldi].variables[var][ti,:].load()) 
 
                 data_inst[tmp_datstr] = np.ma.array(tmpdat_inst[grid_dict['WW3']['NWS_WW3_nn_ind']],mask = grid_dict['WW3']['AMM15_mask'])[thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
        
@@ -1908,8 +1967,8 @@ def reload_data_instances_time(var,thd,ldi,ti,current_time_datetime_since_1970,t
                 do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d)
 
 
-            #tmp_T_data_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[tmp_datstr][var]][ldi].variables['votemper'][curr_ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
-            #tmp_S_data_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[tmp_datstr][var]][ldi].variables['vosaline'][curr_ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+            #tmp_T_data_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[tmp_datstr][var][0]][ldi].variables['votemper'][curr_ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+            #tmp_S_data_1 = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[tmp_datstr][var][0]][ldi].variables['vosaline'][curr_ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
             
             
             for tmp_datstr in Dataset_lst:
@@ -2287,11 +2346,9 @@ def reload_data_instances_time(var,thd,ldi,ti,current_time_datetime_since_1970,t
 
                 curr_load_data = True
             else:
-                tmp_grid = var_grid[tmp_datstr][var]
+                tmp_grid = var_grid[tmp_datstr][var][0]
 
                 tmp_cur_var_grid = update_cur_var_grid(var,tmp_datstr,ldi, var_grid[tmp_datstr], xarr_dict )
-                #if var not in xarr_dict[tmp_datstr][tmp_cur_var_grid][ldi].variables.keys():
-                #    pdb.set_trace()
 
                 tmp_datetime_since_1970 = time_d[tmp_datstr][tmp_cur_var_grid]['datetime_since_1970']
 
@@ -2309,76 +2366,59 @@ def reload_data_instances_time(var,thd,ldi,ti,current_time_datetime_since_1970,t
                 if curr_load_data == False:
                     print('Not Loading data instance for %s as current time is %.2f days from available data, greater than the threshold of %.2f'%(tmp_datstr,curr_d_offset,curr_d_offset_threshold))
                 
-                    #pdb.set_trace()
-                #pdb.set_trace()
-            #if curr_d_offset>1:
-            #    pdb.set_trace()
-            #pdb.set_trace() 
+       
             if curr_load_data:
                 #try:
 
 
-
-
-
-                
-                '''
-                # for a given var, what grid should it be in
-                tmp_cur_var_grid[tmp_datstr] = var_grid[tmp_datstr][var]
-
-                # sometime we take T, S and SSH from different files (grid), and compare to a config where they are all in the same file
-                # so check that it is?
-
-                tmp_cur_var_grid[tmp_datstr] = var_grid[tmp_datstr](var,tmp_datstr,ldi, var_grid[tmp_datstr], xarr_dict )
-                
-                if var not in xarr_dict[tmp_datstr][tmp_cur_var_grid][ldi].variables.keys():
-                #if tmp_cur_var_grid not in xarr_dict[tmp_datstr].keys():
-                    #pdb.set_trace()
-                    print('tmp_cur_var_grid',tmp_cur_var_grid)
-                    for tmp_var_grid in xarr_dict[tmp_datstr].keys():
-                        print('tmp_var_grid',tmp_var_grid)
-                        if var in xarr_dict[tmp_datstr][tmp_var_grid][ldi].variables.keys():
-                            print('tmp_cur_var_grid before',tmp_cur_var_grid)
-                            tmp_cur_var_grid = tmp_var_grid
-                            print('tmp_cur_var_grid after',tmp_cur_var_grid)
-
-                #tmp_cur_var_grid_lst = [tmp_var_grid for tmp_var_grid in xarr_dict[tmp_datstr].keys() if var in xarr_dict[tmp_datstr][tmp_var_grid][ldi].variables.keys()]
-                #if len(tmp_cur_var_grid_lst) == 1:
-                #    tmp_cur_var_grid = tmp_cur_var_grid_lst[0]
-
-                '''
-                tmp_cur_var_grid = update_cur_var_grid(var,tmp_datstr,ldi, var_grid[tmp_datstr], xarr_dict )
-                if var not in xarr_dict[tmp_datstr][tmp_cur_var_grid][ldi].variables.keys():
-                    pdb.set_trace()
                 #pdb.set_trace()
 
-                #if tmp_datstr == 'Dataset 2': 
-                #    pdb.set_trace()
-                #pdb.set_trace()
-                    
-                if var_dim[var] == 3:
-                    data_inst[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][tmp_cur_var_grid][ldi].variables[var][curr_ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
-                    
-                elif var_dim[var] == 4:
+                grid_with_var = var_grid[tmp_datstr][var]
+                ngrid_with_var = len(grid_with_var)
+
+                if ngrid_with_var == 1:
+                    tmp_cur_var_grid = update_cur_var_grid(var,tmp_datstr,ldi, var_grid[tmp_datstr], xarr_dict )
+                    if var not in xarr_dict[tmp_datstr][tmp_cur_var_grid][ldi].variables.keys():
+                        pdb.set_trace()
+
+                        
+                    if var_dim[var] == 3:
+                        data_inst[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][tmp_cur_var_grid][ldi].variables[var][curr_ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+                        
+                    elif var_dim[var] == 4:
+                        #pdb.set_trace()
+                        data_inst[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][tmp_cur_var_grid][ldi].variables[var][curr_ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+                    else:
+                        print('var_dim[var] not 3 or 4',var,var_dim[var]  )
+
+
+                if (ngrid_with_var > 1) & do_LBC_d[th_d_ind]:
+                    tmp_data_inst = {}
+                    tmp_LBC_data_out = None
+                    for tmp_cur_var_grid in grid_with_var:
+                    #tmp_cur_var_grid = update_cur_var_grid(var,tmp_datstr,ldi, var_grid[tmp_datstr], xarr_dict )
+                    #if var not in xarr_dict[tmp_datstr][tmp_cur_var_grid][ldi].variables.keys():
+                    #    pdb.set_trace()
+
+                        if var_dim[var] == 3:
+                            tmp_data_inst_gr = np.ma.masked_invalid(xarr_dict[tmp_datstr][tmp_cur_var_grid][ldi].variables[var][curr_ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+                            
+                        elif var_dim[var] == 4:
+                            #pdb.set_trace()
+                            tmp_data_inst_gr = np.ma.masked_invalid(xarr_dict[tmp_datstr][tmp_cur_var_grid][ldi].variables[var][curr_ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
+                        else:
+                            print('var_dim[var] not 3 or 4',var,var_dim[var]  )
+
+                        
+                        #pdb.set_trace()
+                        tmp_LBC_data_out = LBC_regrid_ind_update_one_dataset(do_LBC_d,LBC_coord_d,Dataset_lst,tmp_data_inst_gr,tmp_LBC_data_out,tmp_datstr,tmp_cur_var_grid,grid_dict,var,var_grid)
+                        del(tmp_data_inst_gr)
+                    data_inst[tmp_datstr] = tmp_LBC_data_out
                     #pdb.set_trace()
-                    data_inst[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][tmp_cur_var_grid][ldi].variables[var][curr_ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
-                else:
-                    print('var_dim[var] not 3 or 4',var,var_dim[var]  )
-                '''    
-                if var_dim[var] == 3:
-                    data_inst[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables[var][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
-                    
-                if var_dim[var] == 4:
-                    #pdb.set_trace()
-                    data_inst[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[var]][ldi].variables[var][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].load())
-                '''
 
 
             else:
                 print('reload_data_instants: failed... ti to late?')
-                #pdb.set_trace()
-                
-                #data_inst[tmp_datstr] = np.ma.zeros((xarr_dict[tmp_datstr][tmp_cur_var_grid][ldi].variables[var][0,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].shape))*np.ma.masked
 
                 if var_dim[var] == 3:
                     data_inst[tmp_datstr] = np.ma.zeros((xarr_dict[tmp_datstr][tmp_cur_var_grid][ldi].variables[var][0,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].shape))*np.ma.masked
@@ -2390,7 +2430,7 @@ def reload_data_instances_time(var,thd,ldi,ti,current_time_datetime_since_1970,t
 
     print('======================================')
     print('Reloaded data instances for ti = %i, var = %s %s = %s'%(ti,var,datetime.now(),datetime.now() - start_time_load_inst))
-
+    pdb.set_trace()
     if data_inst['Dataset 1'].mask.all():
         print("data_inst['Dataset 1'].mask.all()")
         pdb.set_trace()
@@ -2935,7 +2975,7 @@ def reload_hov_data_comb_time(var,var_mat,var_grid,deriv_var,ldi,thd,time_dateti
     hov_dat['Sec Grid'] = {}
     for tmp_datstr in Dataset_lst:
         hov_dat['Sec Grid'][tmp_datstr] = {}
-        tmp_grid = var_grid[tmp_datstr][var]
+        tmp_grid = var_grid[tmp_datstr][var][0]
         tmp_cur_var_grid = update_cur_var_grid(var,tmp_datstr,ldi, var_grid[tmp_datstr], xarr_dict )
             
         hov_dat['Sec Grid'][tmp_datstr]['x'] = time_d[tmp_datstr][tmp_grid]['datetime']
@@ -3075,7 +3115,7 @@ def reload_hov_data_comb_time(var,var_mat,var_grid,deriv_var,ldi,thd,time_dateti
                 th_d_ind = int(tmp_datstr[8:])
                 if do_LBC_d[th_d_ind]:
                     
-                    tmp_LBC_grid = var_grid[tmp_datstr][var]
+                    tmp_LBC_grid = var_grid[tmp_datstr][var][0]
                     if tmp_LBC_grid == 'T': tmp_LBC_grid = 'T_1'
                     
                     LBC_set = int(tmp_LBC_grid[-1])
@@ -3118,7 +3158,7 @@ def reload_hov_data_comb_time(var,var_mat,var_grid,deriv_var,ldi,thd,time_dateti
                 if do_LBC:
                     if do_LBC_d[th_d_ind]:
                         
-                        tmp_LBC_grid = var_grid[tmp_datstr][var]
+                        tmp_LBC_grid = var_grid[tmp_datstr][var][0]
                         if tmp_LBC_grid == 'T': tmp_LBC_grid = 'T_1'
                         
                         LBC_set = int(tmp_LBC_grid[-1])
@@ -3325,7 +3365,7 @@ def reload_ts_data_comb_time(var,var_dim,var_grid,ii_in,jj_in,iijj_ind,ldi,hov_d
     ts_dat_dict['Sec Grid'] = {}
     for tmp_datstr in Dataset_lst:
         ts_dat_dict['Sec Grid'][tmp_datstr] = {}
-        tmp_grid = var_grid[tmp_datstr][var]
+        tmp_grid = var_grid[tmp_datstr][var][0]
         tmp_cur_var_grid = update_cur_var_grid(var,tmp_datstr,ldi, var_grid[tmp_datstr], xarr_dict )
             
         ts_dat_dict['Sec Grid'][tmp_datstr]['x'] = time_d[tmp_datstr][tmp_grid]['datetime']
@@ -3452,7 +3492,7 @@ def reload_ts_data_comb_time(var,var_dim,var_grid,ii_in,jj_in,iijj_ind,ldi,hov_d
                     th_d_ind = int(tmp_datstr[8:])
                     if do_LBC_d[th_d_ind]:
                         
-                        tmp_LBC_grid = var_grid[tmp_datstr][var]
+                        tmp_LBC_grid = var_grid[tmp_datstr][var][0]
                         if tmp_LBC_grid == 'T': tmp_LBC_grid = 'T_1'
                         
                         LBC_set = int(tmp_LBC_grid[-1])
@@ -3494,7 +3534,7 @@ def reload_ts_data_comb_time(var,var_dim,var_grid,ii_in,jj_in,iijj_ind,ldi,hov_d
 
 
                 # for a given var, what grid should it be in
-                tmp_cur_var_grid = var_grid[tmp_datstr][var]
+                tmp_cur_var_grid = var_grid[tmp_datstr][var][0]
 
                 # sometime we take T, S and SSH from different files (grid), and compare to a config where they are all in the same file
                 # so check that it is?
@@ -4323,9 +4363,10 @@ KeyError: slice(1, None, None)
 
 
 def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_mat, ld_lab_mat,ld_nctvar,
-    force_dim_d = None,xarr_rename_master_dict=None):
+    force_dim_d = None,xarr_rename_master_dict=None,gr_1st = 'T'):
     # connect to files with xarray, and create dictionaries with vars, dims, grids, time etc. 
 
+    
 
     WW3_var_lst = ['hs','tp','t0m1','dp','spr','uwnd','vwnd']
     # NB xarr_dict is not passed back.
@@ -4509,10 +4550,10 @@ def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_m
                             combine='by_coords',parallel = True, preprocess=lambda ds: ds[{ld_nctvar:slice(ldi,ldi+1)}]))   
                     '''
             #elif tmpgrid == 'I':
-            else:
+            else: # elif tmpgrid in  ['I','In','Ic']: # 
                 #pdb.set_trace()
-                    
-                tmp_T_time_datetime,tmp_T_time_datetime_since_1970,ntime,ti, nctime_calendar_type = extract_time_from_xarr(xarr_dict['Dataset 1']['T'],fname_dict['Dataset 1']['T'][0],'time_counter','time_counter',None,'%Y%m%d',1,False)
+                #tmp_T_time_datetime,tmp_T_time_datetime_since_1970,ntime,ti, nctime_calendar_type = extract_time_from_xarr(xarr_dict['Dataset 1']['T'],fname_dict['Dataset 1']['T'][0],'time_counter','time_counter',None,'%Y%m%d',1,False)
+                tmp_T_time_datetime,tmp_T_time_datetime_since_1970,ntime,ti, nctime_calendar_type = extract_time_from_xarr(xarr_dict['Dataset 1'][gr_1st],fname_dict['Dataset 1'][gr_1st][0],'time_counter','time_counter',None,'%Y%m%d',1,False)
                 if tmp_T_time_datetime.size == len(fname_dict[tmp_datstr][tmpgrid]):
                     inc_T_time_datetime = tmp_T_time_datetime
                     inc_T_time_datetime_since_1970 = tmp_T_time_datetime_since_1970
@@ -4622,8 +4663,21 @@ def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_m
         th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
         
         #for ss in var_d[th_d_ind]:  #['mat', 'T', 'U', 'V']  or ['mat', 'T', 'T_bt_1', 'U_bt_1', 'V_bt_1']
+        #pdb.set_trace()
         for tmpgrid in var_d[th_d_ind].keys():
-            for ss in var_d[th_d_ind][tmpgrid]: var_grid[tmp_datstr][ss] = tmpgrid
+            for ss in var_d[th_d_ind][tmpgrid]: 
+
+                #var_grid[tmp_datstr][ss] = tmpgrid
+
+
+                if tmpgrid == 'mat': continue
+                if ss in var_grid[tmp_datstr].keys():
+                    var_grid[tmp_datstr][ss].append(tmpgrid)
+                else:    
+                    var_grid[tmp_datstr][ss] = [tmpgrid]
+
+    
+    #pdb.set_trace()
 
         
     #pdb.set_trace()
@@ -4835,7 +4889,7 @@ def create_gdept_ncvarnames(config_fnames_dict,configd):
 
 
 
-def create_ncvar_lon_lat_time_dict(ncvar_d,check_var_name_present = True):
+def create_ncvar_lon_lat_time_dict(ncvar_d,gr_1st = None,check_var_name_present = True):
 
     nav_lon_var_mat = ['nav_lon'.upper(),'lon'.upper(),'longitude'.upper(),'TLON'.upper(),'nav_lon_grid_T'.upper(),'nav_lon_grid_U'.upper(),'nav_lon_grid_V'.upper()]
     nav_lat_var_mat = ['nav_lat'.upper(),'lat'.upper(),'latitude'.upper(),'TLAT'.upper(),'nav_lat_grid_T'.upper(),'nav_lat_grid_U'.upper(),'nav_lat_grid_V'.upper()]
@@ -4871,9 +4925,21 @@ def create_ncvar_lon_lat_time_dict(ncvar_d,check_var_name_present = True):
             #nav_lon_varname_dict[tmp_datstr][tmpgrid] = nav_lon_varname
             #nav_lat_varname_dict[tmp_datstr][tmpgrid] = nav_lat_varname
             time_varname_dict[tmp_datstr][tmpgrid] = time_varname
-            if tmpgrid in ['T','T_1']:
+            #if tmpgrid in ['T','T_1']:
+
+            '''
+            if tmpgrid == gr_1st:
                 nav_lon_varname_dict[tmp_datstr] = nav_lon_varname
                 nav_lat_varname_dict[tmp_datstr] = nav_lat_varname
+            '''
+            if gr_1st is None:
+                if tmpgrid in ['T','T_1']:
+                    nav_lon_varname_dict[tmp_datstr] = nav_lon_varname
+                    nav_lat_varname_dict[tmp_datstr] = nav_lat_varname
+            else:
+                if tmpgrid == gr_1st:
+                    nav_lon_varname_dict[tmp_datstr] = nav_lon_varname
+                    nav_lat_varname_dict[tmp_datstr] = nav_lat_varname
             if check_var_name_present:
                 if nav_lon_varname is None:pdb.set_trace()
                 if nav_lat_varname is None:pdb.set_trace()
@@ -4919,8 +4985,9 @@ def create_ncvar_lon_lat_time(ncvar_d):
 
 #def create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncglamt,ncgphit,nav_lon_varname_dict,nav_lat_varname_dict,ncdim_d,cutxind,cutyind,cutout_data):
 
-def create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncglamt,ncgphit,nav_lon_varname_dict,nav_lat_varname_dict,ncdim_d,cutout_d):
+def create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncglamt,ncgphit,nav_lon_varname_dict,nav_lat_varname_dict,ncdim_d,cutout_d,gr_1st = 'T'):
 
+    
     lon_d,lat_d = {},{}
 
     for tmp_datstr in Dataset_lst:
@@ -4996,13 +5063,16 @@ def create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncg
         else:
             #pdb.set_trace()
             # find the dimension of the latitude variable.
-            nav_lat_dims = list(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname].dims)
+            #nav_lat_dims = list(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname].dims)
+            nav_lat_dims = list(xarr_dict[tmp_datstr][gr_1st][0].variables[nav_lat_varname].dims)
 
             # if the latitude variable has a time dimension, remove it
             nav_lat_dims_no_time = nav_lat_dims.copy()
             inc_time = False
-            if ncdim_d[tmp_datstr]['T']['t'] in nav_lat_dims_no_time:
-                nav_lat_dims_no_time.remove(ncdim_d[tmp_datstr]['T']['t'] )
+            #if ncdim_d[tmp_datstr]['T']['t'] in nav_lat_dims_no_time:
+            if ncdim_d[tmp_datstr][gr_1st]['t'] in nav_lat_dims_no_time:
+                #nav_lat_dims_no_time.remove(ncdim_d[tmp_datstr]['T']['t'] )
+                nav_lat_dims_no_time.remove(ncdim_d[tmp_datstr][gr_1st]['t'] )
                 inc_time = True
 
             #if len(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname].shape) == 2:
@@ -5014,22 +5084,28 @@ def create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncg
                 #pdb.set_trace()
                 #lon_d[th_d_ind] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lon_varname].load())
                 #lat_d[th_d_ind] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname].load())
-                tmp1dlon = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lon_varname].load())
-                tmp1dlat = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname].load())
+                #tmp1dlon = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lon_varname].load())
+                #tmp1dlat = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname].load())
+                tmp1dlon = np.ma.masked_invalid(xarr_dict[tmp_datstr][gr_1st][0].variables[nav_lon_varname].load())
+                tmp1dlat = np.ma.masked_invalid(xarr_dict[tmp_datstr][gr_1st][0].variables[nav_lat_varname].load())
                 lon_d[th_d_ind],lat_d[th_d_ind] = np.meshgrid(tmp1dlon,tmp1dlat)
                 
                   
 
             elif len(nav_lat_dims_no_time) == 2:
                 if inc_time:
-                    lon_d[th_d_ind] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lon_varname][0,:,:].load())
-                    lat_d[th_d_ind] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname][0,:,:].load())
+                    #lon_d[th_d_ind] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lon_varname][0,:,:].load())
+                    #lat_d[th_d_ind] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname][0,:,:].load())
+                    lon_d[th_d_ind] = np.ma.masked_invalid(xarr_dict[tmp_datstr][gr_1st][0].variables[nav_lon_varname][0,:,:].load())
+                    lat_d[th_d_ind] = np.ma.masked_invalid(xarr_dict[tmp_datstr][gr_1st][0].variables[nav_lat_varname][0,:,:].load())
                     #lon_d[th_d_ind] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lon_varname][0,cutyind[0]:cutyind[1],cutxind[0]:cutxind[1]].load())
                     #lat_d[th_d_ind] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname][0,cutyind[0]:cutyind[1],cutxind[0]:cutxind[1]].load())
 
                 else:
-                    lon_d[th_d_ind] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lon_varname].load())
-                    lat_d[th_d_ind] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname].load())
+                    #lon_d[th_d_ind] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lon_varname].load())
+                    #lat_d[th_d_ind] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname].load())
+                    lon_d[th_d_ind] = np.ma.masked_invalid(xarr_dict[tmp_datstr][gr_1st][0].variables[nav_lon_varname].load())
+                    lat_d[th_d_ind] = np.ma.masked_invalid(xarr_dict[tmp_datstr][gr_1st][0].variables[nav_lat_varname].load())
                     #lon_d[th_d_ind] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lon_varname][cutyind[0]:cutyind[1],cutxind[0]:cutxind[1]].load())
                     #lat_d[th_d_ind] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname][cutyind[0]:cutyind[1],cutxind[0]:cutxind[1]].load())
 
@@ -5037,13 +5113,17 @@ def create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncg
             else:
                 # if only 1d lon and lat
                 if inc_time:
-                    tmp_nav_lon = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lon_varname].load())
-                    tmp_nav_lat = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname].load())
+                    #tmp_nav_lon = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lon_varname].load())
+                    #tmp_nav_lat = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname].load())
+                    tmp_nav_lon = np.ma.masked_invalid(xarr_dict[tmp_datstr][gr_1st][0].variables[nav_lon_varname].load())
+                    tmp_nav_lat = np.ma.masked_invalid(xarr_dict[tmp_datstr][gr_1st][0].variables[nav_lat_varname].load())
                     #tmp_nav_lon = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lon_varname][cutyind[0]:cutyind[1],cutxind[0]:cutxind[1]].load())
                     #tmp_nav_lat = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname][cutyind[0]:cutyind[1],cutxind[0]:cutxind[1]].load())
                 else:
-                    tmp_nav_lon = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lon_varname][0,:].load())
-                    tmp_nav_lat = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname][0,:].load())
+                    #tmp_nav_lon = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lon_varname][0,:].load())
+                    #tmp_nav_lat = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname][0,:].load())
+                    tmp_nav_lon = np.ma.masked_invalid(xarr_dict[tmp_datstr][gr_1st][0].variables[nav_lon_varname][0,:].load())
+                    tmp_nav_lat = np.ma.masked_invalid(xarr_dict[tmp_datstr][gr_1st][0].variables[nav_lat_varname][0,:].load())
                     #tmp_nav_lon = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lon_varname][0,cutyind[0]:cutyind[1],cutxind[0]:cutxind[1]].load())
                     #tmp_nav_lat = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][0].variables[nav_lat_varname][0,cutyind[0]:cutyind[1],cutxind[0]:cutxind[1]].load())
 

@@ -107,7 +107,7 @@ def nemo_slice_zlev(config = 'amm7',
     do_MLD = True,do_mask = False,
     use_xarray_gdept = True,
     force_dim_d = None,xarr_rename_master_dict=None,
-    EOS_d = None):
+    EOS_d = None,gr_1st = None):
 
     print('Initialise at ',datetime.now())
     init_timer = []
@@ -158,7 +158,6 @@ def nemo_slice_zlev(config = 'amm7',
     if cutxind[1] is not None:cutout_data = True
     if cutyind[1] is not None:cutout_data = True
     '''
-
 
     if EOS_d is None:
         EOS_d = {}
@@ -508,6 +507,18 @@ def nemo_slice_zlev(config = 'amm7',
                         rootgrp.close()
     #pdb.set_trace()
 
+
+    
+    if gr_1st is None:
+        if do_LBC == True:
+            if do_LBC_d[1]:
+                gr_1st = 'T_1'
+        else:
+            gr_1st = 'T'
+    
+
+    #pdb.set_trace()
+
     init_timer.append((datetime.now(),'LBC prep work'))
 
     
@@ -552,7 +563,7 @@ def nemo_slice_zlev(config = 'amm7',
 
     # connect to files with xarray, and create dictionaries with vars, dims, grids, time etc. S
     #pdb.set_trace()
-    var_d,var_dim,var_grid,ncvar_d,ncdim_d,time_d  = connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_mat, ld_lab_mat,ld_nctvar,force_dim_d = force_dim_d,xarr_rename_master_dict=xarr_rename_master_dict)
+    var_d,var_dim,var_grid,ncvar_d,ncdim_d,time_d  = connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_mat, ld_lab_mat,ld_nctvar,force_dim_d = force_dim_d,xarr_rename_master_dict=xarr_rename_master_dict,gr_1st = gr_1st)
     
 
     # tmp = xarr_dict['Dataset 1']['T'][0].groupby('time_counter.year').groupby('time_counter.month').mean('time_counter') 
@@ -568,7 +579,7 @@ def nemo_slice_zlev(config = 'amm7',
     # get lon, lat and time names from files
     check_var_name_present = True
     if do_LBC:check_var_name_present = False
-    nav_lon_varname_dict,nav_lat_varname_dict,time_varname_dict,nav_lon_var_mat,nav_lat_var_mat,time_varname_mat = create_ncvar_lon_lat_time_dict(ncvar_d, check_var_name_present = check_var_name_present)
+    nav_lon_varname_dict,nav_lat_varname_dict,time_varname_dict,nav_lon_var_mat,nav_lat_var_mat,time_varname_mat = create_ncvar_lon_lat_time_dict(ncvar_d, gr_1st = gr_1st,check_var_name_present = check_var_name_present)
     #time_varname = time_varname_dict['Dataset 1']
     
     #pdb.set_trace()
@@ -609,7 +620,7 @@ def nemo_slice_zlev(config = 'amm7',
     #pdb.set_trace()
     # Create lon and lat dictionaries
     #lon_d,lat_d = create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncglamt,ncgphit,nav_lon_varname_dict,nav_lat_varname_dict,ncdim_d,cutxind,cutyind,cutout_data)
-    lon_d,lat_d = create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncglamt,ncgphit,nav_lon_varname_dict,nav_lat_varname_dict,ncdim_d,cutout_d)
+    lon_d,lat_d = create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncglamt,ncgphit,nav_lon_varname_dict,nav_lat_varname_dict,ncdim_d,cutout_d,gr_1st = gr_1st)
     
 
     domsize = {}
@@ -702,6 +713,7 @@ def nemo_slice_zlev(config = 'amm7',
         if 'votemper' in var_d[1]['mat']:
             var = 'votemper'
         else:
+            #pdb.set_trace()
             var = var_d[1]['mat'][0]
 
     if var not in var_d[1]['mat']: var = var_d[1]['mat'][0]
@@ -921,7 +933,8 @@ def nemo_slice_zlev(config = 'amm7',
     init_timer.append((datetime.now(),'nc time started'))
 
     #pdb.set_trace()
-    time_datetime,time_datetime_since_1970,ntime,ti, nctime_calendar_type = extract_time_from_xarr(xarr_dict['Dataset 1']['T'],fname_dict['Dataset 1']['T'][0],time_varname_dict['Dataset 1']['T'],ncdim_d['Dataset 1']['T']['t'],date_in_ind,date_fmt,ti,verbose_debugging)
+    #time_datetime,time_datetime_since_1970,ntime,ti, nctime_calendar_type = extract_time_from_xarr(xarr_dict['Dataset 1']['T'],fname_dict['Dataset 1']['T'][0],time_varname_dict['Dataset 1']['T'],ncdim_d['Dataset 1']['T']['t'],date_in_ind,date_fmt,ti,verbose_debugging)
+    time_datetime,time_datetime_since_1970,ntime,ti, nctime_calendar_type = extract_time_from_xarr(xarr_dict['Dataset 1'][gr_1st],fname_dict['Dataset 1'][gr_1st][0],time_varname_dict['Dataset 1'][gr_1st],ncdim_d['Dataset 1'][gr_1st]['t'],date_in_ind,date_fmt,ti,verbose_debugging)
 
     init_timer.append((datetime.now(),'nc time completed'))
 
@@ -2472,10 +2485,11 @@ def nemo_slice_zlev(config = 'amm7',
             #cur_time_datetime_dict = {}
             #pdb.set_trace()
             #for tmp_datstr in Dataset_lst:cur_time_datetime_dict[tmp_datstr] =  time_d[tmp_datstr][var_grid[tmp_datstr][var]]['datetime']
-            time_datetime = time_d['Dataset 1'][var_grid['Dataset 1'][var]]['datetime']
+            #pdb.set_trace()
+            time_datetime = time_d['Dataset 1'][var_grid['Dataset 1'][var][0]]['datetime']
             #time_datetime = cur_time_datetime_dict['Dataset 1']
 
-            time_datetime_since_1970 = time_d['Dataset 1'][var_grid['Dataset 1'][var]]['datetime_since_1970']
+            time_datetime_since_1970 = time_d['Dataset 1'][var_grid['Dataset 1'][var][0]]['datetime_since_1970']
 
             #print(tmp_current_time,time_datetime[0],time_datetime[-1],ti)
             if nctime_calendar_type in ['360_day','360']:
@@ -2515,6 +2529,7 @@ def nemo_slice_zlev(config = 'amm7',
                     if do_memory & do_timer: timer_lst.append(('Deleted data_inst',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                     #pdb.set_trace()
                     #data_inst,psreload_data_ti,preload_data_var,preload_data_ldi= reload_data_instances(var,thd,ldi,ti,var_d,var_grid['Dataset 1'], xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files)
+                    
                     data_inst,preload_data_ti,preload_data_var,preload_data_ldi= reload_data_instances_time(var,thd,ldi,ti,
                         time_datetime_since_1970[ti],time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files,
                         do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d = EOS_d)
@@ -5375,7 +5390,7 @@ def nemo_slice_zlev(config = 'amm7',
 
                                     th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
 
-                                    
+                                    '''
                                     if (configd[th_d_ind] == configd[1])| (tmp_datstr== Dataset_lst[0]):
                                         tmp_T_data[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][ldi].variables['votemper'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,jj,ii].load())
                                         tmp_S_data[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][ldi].variables['vosaline'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,jj,ii].load())
@@ -5390,6 +5405,22 @@ def nemo_slice_zlev(config = 'amm7',
                                         if 'vosaline' in var_d[th_d_ind]['mat']:tmp_S_data[tmp_datstr]  = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][ldi].variables['vosaline'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']].load())
                                         if 'mld25h_1' in var_d[th_d_ind]['mat']:tmp_mld1[tmp_datstr]  = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][ldi].variables['mld25h_1'][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']].load())
                                         if 'mld25h_2' in var_d[th_d_ind]['mat']:tmp_mld2[tmp_datstr]  = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][ldi].variables['mld25h_2'][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']].load())
+                                        tmp_gdept[tmp_datstr] =  np.array(grid_dict[tmp_datstr]['gdept'])[:,iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']]               
+                                    '''   
+                                    if (configd[th_d_ind] == configd[1])| (tmp_datstr== Dataset_lst[0]):
+                                        tmp_T_data[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][gr_1st][ldi].variables['votemper'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,jj,ii].load())
+                                        tmp_S_data[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][gr_1st][ldi].variables['vosaline'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,jj,ii].load())
+                                        tmp_gdept[tmp_datstr] = np.array(grid_dict[tmp_datstr]['gdept'])[:,jj,ii]
+                                        tmp_mld1[tmp_datstr] = np.ma.masked
+                                        tmp_mld2[tmp_datstr] = np.ma.masked
+                                        if 'mld25h_1' in var_d[th_d_ind]['mat']: tmp_mld1[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][gr_1st][ldi].variables['mld25h_1'][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][jj,ii].load())
+                                        if 'mld25h_2' in var_d[th_d_ind]['mat']: tmp_mld2[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][gr_1st][ldi].variables['mld25h_2'][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][jj,ii].load())
+
+                                    else:
+                                        if 'votemper' in var_d[th_d_ind]['mat']:tmp_T_data[tmp_datstr]  = np.ma.masked_invalid(xarr_dict[tmp_datstr][gr_1st][ldi].variables['votemper'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']].load())
+                                        if 'vosaline' in var_d[th_d_ind]['mat']:tmp_S_data[tmp_datstr]  = np.ma.masked_invalid(xarr_dict[tmp_datstr][gr_1st][ldi].variables['vosaline'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']].load())
+                                        if 'mld25h_1' in var_d[th_d_ind]['mat']:tmp_mld1[tmp_datstr]  = np.ma.masked_invalid(xarr_dict[tmp_datstr][gr_1st][ldi].variables['mld25h_1'][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']].load())
+                                        if 'mld25h_2' in var_d[th_d_ind]['mat']:tmp_mld2[tmp_datstr]  = np.ma.masked_invalid(xarr_dict[tmp_datstr][gr_1st][ldi].variables['mld25h_2'][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']].load())
                                         tmp_gdept[tmp_datstr] =  np.array(grid_dict[tmp_datstr]['gdept'])[:,iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']]               
 
                                     
@@ -6471,6 +6502,8 @@ def main():
         parser.add_argument('--forced_dim', action='append', nargs='+')
         parser.add_argument('--rename_var', action='append', nargs='+')
 
+        parser.add_argument('--gr_1st', type=str, required=False)
+
 
 
         args = parser.parse_args()# Print "Hello" + the user input argument
@@ -6726,6 +6759,20 @@ def main():
         if (args.ld_nctvar) is None: args.ld_nctvar='time_counter'
 
 
+        # Assume the first dataset (in the positional argument) is on the T grid.
+        # You can specify what it is (with --gr_1st U).
+
+        if (args.gr_1st) is None:
+            gr_1st = 'T'
+
+            # if first config is and LBC, use T_1, rather than T
+            if args.config[-3:].upper() == 'LBC':
+                gr_1st = 'T_1'
+        else:
+            gr_1st = args.gr_1st
+
+
+
 
         if (args.date_fmt) is None: args.date_fmt='%Y%m%d'
 
@@ -6743,11 +6790,12 @@ def main():
         #pdb.set_trace()
 
         fname_lst.sort()
-
+        
         load_second_files = False
         fname_dict = {}
         fname_dict['Dataset 1'] = {}
-        fname_dict['Dataset 1']['T'] = fname_lst
+
+        fname_dict['Dataset 1'][gr_1st] = fname_lst
         
         if args.files is not None:
             #for ss in np.unique([tmparr[0] for tmparr in args.Obs_dict])
@@ -7050,7 +7098,7 @@ def main():
             fig_dir = args.fig_dir, fig_lab = args.fig_lab,fig_cutout = fig_cutout_in,
             verbose_debugging = verbose_debugging_in,do_timer = do_timer_in,do_memory = do_memory_in,do_ensemble = do_ensemble_in,do_mask = do_mask_in,
             use_xarray_gdept = use_xarray_gdept_in,
-            force_dim_d = force_dim_d_in,xarr_rename_master_dict=xarr_rename_master_dict_in,EOS_d = EOS_d)
+            force_dim_d = force_dim_d_in,xarr_rename_master_dict=xarr_rename_master_dict_in,EOS_d = EOS_d,gr_1st = gr_1st)
 
 
 
