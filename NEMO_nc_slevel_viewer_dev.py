@@ -107,7 +107,7 @@ def nemo_slice_zlev(config = 'amm7',
     do_MLD = True,do_mask = False,
     use_xarray_gdept = True,
     force_dim_d = None,xarr_rename_master_dict=None,
-    EOS_d = None,gr_1st = None):
+    EOS_d = None,gr_1st = None,do_match_time = True):
 
     print('Initialise at ',datetime.now())
     init_timer = []
@@ -1566,18 +1566,19 @@ def nemo_slice_zlev(config = 'amm7',
     but_line_han,but_text_han = {},{}
     for vi,var_dat in enumerate(var_but_mat): 
         tmpcol = 'k'
+        #pdb.set_trace()
         if var_dim[var_dat] == 3: #  2D (+time) vars 
-            if var_grid['Dataset 1'][var_dat] == 'T': tmpcol = 'deepskyblue'
-            if var_grid['Dataset 1'][var_dat] == 'U': tmpcol = 'yellow'
-            if var_grid['Dataset 1'][var_dat] == 'V': tmpcol = 'yellow'
-            if var_grid['Dataset 1'][var_dat] == 'WW3': tmpcol = 'lightsteelblue'
-            if var_grid['Dataset 1'][var_dat] == 'I': tmpcol = 'lightgreen'
+            if   var_grid['Dataset 1'][var_dat][0].split('_')[0] == 'T': tmpcol = 'deepskyblue'
+            elif var_grid['Dataset 1'][var_dat][0].split('_')[0] == 'U': tmpcol = 'yellow'
+            elif var_grid['Dataset 1'][var_dat][0].split('_')[0] == 'V': tmpcol = 'yellow'
+            elif var_grid['Dataset 1'][var_dat][0].split('_')[0] == 'WW3': tmpcol = 'lightsteelblue'
+            elif var_grid['Dataset 1'][var_dat][0].split('_')[0] == 'I': tmpcol = 'lightgreen'
         if var_dim[var_dat] == 4: #  3D (+time) vars 
-            if var_grid['Dataset 1'][var_dat] == 'T': tmpcol = 'b'
-            if var_grid['Dataset 1'][var_dat] == 'U': tmpcol = 'gold'
-            if var_grid['Dataset 1'][var_dat] == 'V': tmpcol = 'gold'
-            if var_grid['Dataset 1'][var_dat] == 'WW3': tmpcol = 'navy'
-            if var_grid['Dataset 1'][var_dat] == 'I': tmpcol = 'darkgreen'
+            if   var_grid['Dataset 1'][var_dat][0].split('_')[0] == 'T': tmpcol = 'b'
+            elif var_grid['Dataset 1'][var_dat][0].split('_')[0] == 'U': tmpcol = 'gold'
+            elif var_grid['Dataset 1'][var_dat][0].split('_')[0] == 'V': tmpcol = 'gold'
+            elif var_grid['Dataset 1'][var_dat][0].split('_')[0] == 'WW3': tmpcol = 'navy'
+            elif var_grid['Dataset 1'][var_dat][0].split('_')[0] == 'I': tmpcol = 'darkgreen'
         if var_dat in var_d['d']: tmpcol = '0.5'
         vi_num = vi
         if (vi>=nvarbutcol)&( vi<2*nvarbutcol):
@@ -2532,7 +2533,7 @@ def nemo_slice_zlev(config = 'amm7',
                     
                     data_inst,preload_data_ti,preload_data_var,preload_data_ldi= reload_data_instances_time(var,thd,ldi,ti,
                         time_datetime_since_1970[ti],time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files,
-                        do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d = EOS_d)
+                        do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d,do_match_time=do_match_time)
                     #pdb.set_trace()
                     if do_memory & do_timer: timer_lst.append(('Reloaded data_inst',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
 
@@ -2562,14 +2563,14 @@ def nemo_slice_zlev(config = 'amm7',
                         if do_memory & do_timer: timer_lst.append(('Deleted data_inst_U',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                         data_inst_U,preload_data_ti_U,preload_data_var_U,preload_data_ldi_U = reload_data_instances_time(tmp_var_U,thd,ldi,ti,
                             time_datetime_since_1970[ti],time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files,
-                            do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d = EOS_d)
+                            do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d,do_match_time=do_match_time)
                         if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_U',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                         
                         data_inst_V = None
                         if do_memory & do_timer: timer_lst.append(('Deleted data_inst_V',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                         data_inst_V,preload_data_ti_V,preload_data_var_V,preload_data_ldi_V = reload_data_instances_time(tmp_var_V,thd,ldi,ti,
                             time_datetime_since_1970[ti],time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files,
-                            do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d = EOS_d)
+                            do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d,do_match_time=do_match_time)
                         if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_V',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
 
 
@@ -2580,7 +2581,7 @@ def nemo_slice_zlev(config = 'amm7',
                         if do_memory & do_timer: timer_lst.append(('Deleted data_inst_mld',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                         data_inst_mld,preload_data_ti_mld,preload_data_var_mld,preload_data_ldi_mld= reload_data_instances_time(MLD_var,thd,ldi,ti,
                             time_datetime_since_1970[ti],time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files,
-                            do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d = EOS_d)
+                            do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d,do_match_time=do_match_time)
                         reload_MLD = False
                         if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_mld',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                     
@@ -2598,7 +2599,7 @@ def nemo_slice_zlev(config = 'amm7',
                     if var_dim[var] == 4:
                         #pdb.set_trace()
                         
-                        hov_dat_dict = reload_hov_data_comb_time(var,var_d[1]['mat'],var_grid,var_d['d'],ldi,thd, time_datetime,time_d, ii,jj,iijj_ind,nz,ntime, grid_dict,lon_d,lat_d,xarr_dict,do_mask_dict,load_second_files,Dataset_lst,configd,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d)
+                        hov_dat_dict = reload_hov_data_comb_time(var,var_d[1]['mat'],var_grid,var_dim,var_d['d'],ldi,thd, time_datetime,time_d, ii,jj,iijj_ind,nz,ntime, grid_dict,lon_d,lat_d,xarr_dict,do_mask_dict,load_second_files,Dataset_lst,configd,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d,do_match_time=do_match_time)
 
                         if do_grad == 2:
                             hov_dat_dict = grad_vert_hov_prof_data(hov_dat_dict,
@@ -2627,7 +2628,7 @@ def nemo_slice_zlev(config = 'amm7',
                     #ts_dat_dict = reload_ts_data_comb(var,var_dim,var_grid['Dataset 1'],ii,jj,iijj_ind,ldi,hov_dat_dict,time_datetime,time_d,z_meth,zz,zi,xarr_dict,do_mask_dict,grid_dict,thd,var_d[1]['mat'],var_d['d'],nz,ntime,configd,Dataset_lst,load_second_files)
                     ts_dat_dict = reload_ts_data_comb_time(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,time_datetime,time_d,z_meth,zz,zi,lon_d,lat_d,
                                                            xarr_dict,do_mask_dict,grid_dict,thd,var_d[1]['mat'],var_d['d'],nz,ntime,configd,Dataset_lst,
-                                                           load_second_files,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d)
+                                                           load_second_files,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d,do_match_time=do_match_time)
                 else:
                     ts_dat_dict['x'] = time_datetime
                     #ts_dat_dict['Dataset 1'] = np.ma.ones(ntime)*np.ma.masked
@@ -2660,7 +2661,7 @@ def nemo_slice_zlev(config = 'amm7',
 
                             (data_inst_Tm1,preload_data_ti_Tm1,preload_data_var_Tm1,preload_data_ldi_Tm1) = reload_data_instances_time(var,thd,ldi,ti-1,
                                 time_datetime_since_1970[ti],time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files,
-                                do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d = EOS_d)
+                                do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d,do_match_time=do_match_time)
                             if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_Tm1',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                         #print('   Time_Diff_cnt_hovtime =',Time_Diff_cnt_hovtime)
                         #print('   preload_data_ii_Tm1',preload_data_ii_Tm1,ii,preload_data_jj_Tm1,jj,preload_data_zz_Tm1,zz)
@@ -4478,11 +4479,12 @@ def nemo_slice_zlev(config = 'amm7',
 
 
                                     if zoom_corner_point:
-                                        zoomax_lst.append(ax[0].plot(zoom0_sel_xlocval,zoom0_sel_ylocval,'+', color = zoom_col))
-                                        fig.canvas.draw_idle()
-                                        if verbose_debugging: print('Canvas flush', datetime.now())
-                                        fig.canvas.flush_events()
-                                        if verbose_debugging: print('Canvas drawn and flushed', datetime.now())
+                                        if (zoom0_sel_xlocval is not None)&(zoom0_sel_ylocval is not None): # redundant, as (zoom0_ax in [0]) will be False is zoom0_ax = None
+                                            zoomax_lst.append(ax[0].plot(zoom0_sel_xlocval,zoom0_sel_ylocval,'+', color = zoom_col))
+                                            fig.canvas.draw_idle()
+                                            if verbose_debugging: print('Canvas flush', datetime.now())
+                                            fig.canvas.flush_events()
+                                            if verbose_debugging: print('Canvas drawn and flushed', datetime.now())
 
                                     #tmpzoom1 = plt.ginput(1)
                                     buttonpress = True
@@ -4494,11 +4496,12 @@ def nemo_slice_zlev(config = 'amm7',
                                         
 
                                     if zoom_corner_point:
-                                        zoomax_lst.append(ax[0].plot(zoom1_sel_xlocval,zoom1_sel_ylocval,'+', color = zoom_col))
-                                        fig.canvas.draw_idle()
-                                        if verbose_debugging: print('Canvas flush', datetime.now())
-                                        fig.canvas.flush_events()
-                                        if verbose_debugging: print('Canvas drawn and flushed', datetime.now())
+                                        if (zoom1_sel_xlocval is not None)&(zoom1_sel_ylocval is not None):
+                                            zoomax_lst.append(ax[0].plot(zoom1_sel_xlocval,zoom1_sel_ylocval,'+', color = zoom_col))
+                                            fig.canvas.draw_idle()
+                                            if verbose_debugging: print('Canvas flush', datetime.now())
+                                            fig.canvas.flush_events()
+                                            if verbose_debugging: print('Canvas drawn and flushed', datetime.now())
 
                                     if verbose_debugging: print(zoom0_ax,zoom0_ii,zoom0_jj,zoom0_ti,zoom0_zz)
                                     if verbose_debugging: print(zoom1_ax,zoom1_ii,zoom1_jj,zoom1_ti,zoom1_zz)
@@ -5570,15 +5573,19 @@ def nemo_slice_zlev(config = 'amm7',
 
 
                                 for fcst_ldi in range(nldi):
-
+                                    
                                     #fsct_hov_dat = reload_hov_data_comb(var,var_d[1]['mat'],var_grid['Dataset 1'],var_d['d'],fcst_ldi, thd,time_datetime, ii,jj,iijj_ind,nz,ntime, grid_dict,lon_d,lat_d,xarr_dict,do_mask_dict, load_second_files,Dataset_lst,configd)
                                     #fsct_hov_dat = reload_hov_data_comb_time(var,var_d[1]['mat'],var_grid['Dataset 1'],var_d['d'],fcst_ldi, thd,time_datetime, ii,jj,iijj_ind,nz,ntime, grid_dict,lon_d,lat_d,xarr_dict,do_mask_dict, load_second_files,Dataset_lst,configd)
-                                    fsct_hov_dat = reload_hov_data_comb_time(var,var_d[1]['mat'],var_grid,var_d['d'],fcst_ldi, thd,time_datetime, time_d,ii,jj,iijj_ind,nz,ntime, grid_dict,lon_d,lat_d,xarr_dict,do_mask_dict, load_second_files,Dataset_lst,configd)
-                                    for tmp_datstr in Dataset_lst:fsct_hov_dat_dict[tmp_datstr][fcst_ldi] = fsct_hov_dat[tmp_datstr]
+                                    fsct_hov_dat = reload_hov_data_comb_time(var,var_d[1]['mat'],var_grid,var_dim,var_d['d'],fcst_ldi, thd,time_datetime, time_d,ii,jj,iijj_ind,nz,ntime, grid_dict,lon_d,lat_d,xarr_dict,do_mask_dict, load_second_files,Dataset_lst,configd)
+                                    
+                                    for tmp_datstr in Dataset_lst:
+                                        #print('fsct_hov_dat_dict',fcst_ldi,tmp_datstr,fsct_hov_dat_dict[tmp_datstr][fcst_ldi].shape,fsct_hov_dat[tmp_datstr].shape)                                        
+                                        fsct_hov_dat_dict[tmp_datstr][fcst_ldi] = fsct_hov_dat[tmp_datstr]
+
                                     fsct_hov_x[fcst_ldi] = fsct_hov_dat['x'] + timedelta(hours = ld_time_offset[fcst_ldi])
                 
                                     #fsct_ts_dat = reload_ts_data_comb(var,var_dim,var_grid['Dataset 1'],ii,jj,iijj_ind,fcst_ldi,fsct_hov_dat,time_datetime,time_d,z_meth,zz,zi,xarr_dict,do_mask_dict,grid_dict,thd,var_d[1]['mat'],var_d['d'],nz,ntime,configd,Dataset_lst,load_second_files)
-                                    fsct_ts_dat = reload_ts_data_comb_time(var,var_dim,var_grid,ii,jj,iijj_ind,fcst_ldi,fsct_hov_dat,time_datetime,time_d,z_meth,zz,zi,lon_d,lat_d,xarr_dict,do_mask_dict,grid_dict,thd,var_d[1]['mat'],var_d['d'],nz,ntime,configd,Dataset_lst,load_second_files,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d)
+                                    fsct_ts_dat = reload_ts_data_comb_time(var,var_dim,var_grid,ii,jj,iijj_ind,fcst_ldi,fsct_hov_dat,time_datetime,time_d,z_meth,zz,zi,lon_d,lat_d,xarr_dict,do_mask_dict,grid_dict,thd,var_d[1]['mat'],var_d['d'],nz,ntime,configd,Dataset_lst,load_second_files,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d,do_match_time=do_match_time)
                                     
                                     for tmp_datstr in Dataset_lst:fsct_ts_dat_dict[tmp_datstr][fcst_ldi] = fsct_ts_dat[tmp_datstr]
                                     fsct_ts_x[fcst_ldi] = fsct_ts_dat['x'] + timedelta(hours = ld_time_offset[fcst_ldi])
@@ -6490,6 +6497,7 @@ def main():
         parser.add_argument('--do_memory', type=str, required=False)
         parser.add_argument('--do_ensemble', type=str, required=False)
         parser.add_argument('--do_mask', type=str, required=False)
+        parser.add_argument('--do_match_time', type=str, required=False)
         parser.add_argument('--use_xarray_gdept', type=str, required=False)
 
         parser.add_argument('--Obs_dict', action='append', nargs='+')
@@ -6680,6 +6688,21 @@ def main():
             else:                
                 print('do_mask',args.do_mask)
                 pdb.set_trace()
+
+        if args.do_match_time is None:
+            do_match_time_in=True
+        elif args.do_match_time is not None:
+            if args.do_match_time.upper() in ['TRUE','T']:
+                do_match_time_in = bool(True)
+            elif args.do_match_time.upper() in ['FALSE','F']:
+                do_match_time_in = bool(False)
+            else:                
+                print('do_match_time',args.do_match_time)
+                pdb.set_trace()
+
+
+
+
         if args.do_grad is None:
             do_grad_in=0
         else:
@@ -7098,7 +7121,7 @@ def main():
             fig_dir = args.fig_dir, fig_lab = args.fig_lab,fig_cutout = fig_cutout_in,
             verbose_debugging = verbose_debugging_in,do_timer = do_timer_in,do_memory = do_memory_in,do_ensemble = do_ensemble_in,do_mask = do_mask_in,
             use_xarray_gdept = use_xarray_gdept_in,
-            force_dim_d = force_dim_d_in,xarr_rename_master_dict=xarr_rename_master_dict_in,EOS_d = EOS_d,gr_1st = gr_1st)
+            force_dim_d = force_dim_d_in,xarr_rename_master_dict=xarr_rename_master_dict_in,EOS_d = EOS_d,gr_1st = gr_1st,do_match_time = do_match_time_in)
 
 
 
