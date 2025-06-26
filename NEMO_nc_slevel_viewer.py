@@ -617,10 +617,32 @@ def nemo_slice_zlev(config = 'amm7',
 
     print ('xarray open_mfdataset Finish',datetime.now())
 
+
     #pdb.set_trace()
     # Create lon and lat dictionaries
     #lon_d,lat_d = create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncglamt,ncgphit,nav_lon_varname_dict,nav_lat_varname_dict,ncdim_d,cutxind,cutyind,cutout_data)
     lon_d,lat_d = create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncglamt,ncgphit,nav_lon_varname_dict,nav_lat_varname_dict,ncdim_d,cutout_d,gr_1st = gr_1st)
+    
+
+    trim_lon_lat_with_thd = False
+    for tmp_datstr in Dataset_lst:
+        th_d_ind = int(tmp_datstr[8:])
+        if (thd[th_d_ind]['lat0'] is not None)&(thd[th_d_ind]['lat1'] is not None)&\
+           (thd[th_d_ind]['lon0'] is not None)&(thd[th_d_ind]['lon1'] is not None):
+                #pdb.set_trace()
+
+                thd_lon_lat_ind = (lon_d[th_d_ind]>thd[th_d_ind]['lon0']) & (lon_d[th_d_ind]<=thd[th_d_ind]['lon1']) & (lat_d[th_d_ind]>thd[th_d_ind]['lat0']) & (lat_d[th_d_ind]<=thd[th_d_ind]['lat1'])  
+
+
+                thd[th_d_ind]['x0'] = np.where(thd_lon_lat_ind.any(axis = 0))[0].min()
+                thd[th_d_ind]['x1'] = np.where(thd_lon_lat_ind.any(axis = 0))[0].max()
+                thd[th_d_ind]['y0'] = np.where(thd_lon_lat_ind.any(axis = 1))[0].min()
+                thd[th_d_ind]['y1'] = np.where(thd_lon_lat_ind.any(axis = 1))[0].max()
+
+                trim_lon_lat_with_thd = True
+    
+    if trim_lon_lat_with_thd:
+        lon_d,lat_d = create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncglamt,ncgphit,nav_lon_varname_dict,nav_lat_varname_dict,ncdim_d,cutout_d,gr_1st = gr_1st)
     
 
     domsize = {}
@@ -6448,7 +6470,7 @@ def main():
         parser.add_argument('--xlim', type=float, required=False, nargs = 2)
         parser.add_argument('--ylim', type=float, required=False, nargs = 2)
         #parser.add_argument('--tlim', type=str, required=False)
-        parser.add_argument('--clim', type=float, required=False, nargs = 8)
+        parser.add_argument('--clim', type=float, required=False, nargs = '+')
 
         parser.add_argument('--ii', type=int, required=False)
         parser.add_argument('--jj', type=int, required=False)
@@ -6948,6 +6970,10 @@ def main():
         thd[1]['x1'] = None
         thd[1]['y0'] = 0
         thd[1]['y1'] = None
+        thd[1]['lat0'] = None
+        thd[1]['lat1'] = None
+        thd[1]['lon0'] = None
+        thd[1]['lon1'] = None
 
         thd[1]['pxy'] = None
 
