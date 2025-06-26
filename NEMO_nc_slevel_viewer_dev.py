@@ -7001,25 +7001,43 @@ def main():
             #for tmparr in args.th:
             for tmparr in th_args:
                 #pdb.set_trace()
-                if len(tmparr)!=3:
+                if len(tmparr)<3:
                     print('arg error: (th):', tmparr)
                 #take the dataset name
                 tmp_datstr = int(tmparr[0])
                 tmpconfig = configd[tmp_datstr]
                 tmp_thvar = tmparr[1]
                 tmp_thval = tmparr[2]
+                if tmp_thvar.upper() in ['LON','LAT']:
+                    if len(tmparr)!=4:
+                        print('arg error: (th):', tmparr)
+                    
+                    tmp_thval_2 = tmparr[3]
+                else:
+                    if len(tmparr)!=3:
+                        print('arg error: (th):', tmparr)
+
                 if tmp_thval.lower() == 'none':
                     tmp_thval = None
-                else:
-                    tmp_thval = int(tmp_thval)
+                #else:
+                #    tmp_thval = int(tmp_thval)
+
                 for dsi in range(tmp_datstr,nDataset+1):
                     if configd[dsi] == tmpconfig:
                         #pdb.set_trace()
-                        if tmp_thvar in ['dxy','dx','dy']:
-                            thd[dsi]['dx'] = tmp_thval
-                            thd[dsi]['dy'] = tmp_thval
+                        if tmp_thvar.lower() in ['dxy','dx','dy']:
+                            thd[dsi]['dx'] = int(tmp_thval)
+                            thd[dsi]['dy'] = int(tmp_thval)
+                        elif tmp_thvar.upper() in ['LON']:
+                            thd[dsi]['lon0'] = float(tmp_thval)
+                            thd[dsi]['lon1'] = float(tmp_thval_2)
+                        elif tmp_thvar.upper() in ['LAT']:
+                            thd[dsi]['lat0'] = float(tmp_thval)
+                            thd[dsi]['lat1'] = float(tmp_thval_2)
+                        elif tmp_thvar.upper() in ['LON0','LON1','LAT0','LAT1']:
+                            thd[dsi][tmp_thvar.lower()] = float(tmp_thval)
                         else:
-                            thd[dsi][tmp_thvar] = tmp_thval
+                            thd[dsi][tmp_thvar.lower()] = int(tmp_thval)
         
         # of orca model cut off upper values as non incrementing longitude
         for cfi in configd.keys():

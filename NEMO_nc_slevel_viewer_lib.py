@@ -6250,7 +6250,8 @@ def create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncg
             lon_d[th_d_ind] = np.ma.array(lon_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
 
 
-        elif tmp_configd.upper() in ['CO9P2','AMM15','AMM7','GULF18','CO9P2_LBC','AMM15_LBC','AMM7_LBC','GULF18_LBC']:
+        else:
+        #elif tmp_configd.upper() in ['CO9P2','AMM15','AMM7','GULF18','CO9P2_LBC','AMM15_LBC','AMM7_LBC','GULF18_LBC']:
             #elif tmp_configd.upper() in ['CO9P2']: 
             # when loading a year of AMM15 3d Daily Mean files, 7/17mins initialisatoin time is to load lat lons!
             # as was taking them from the data... instead, add amm15 and amm7 to CO9p2 and load from mesh file.
@@ -6285,6 +6286,8 @@ def create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncg
             lon_d[th_d_ind] = np.ma.array(lon_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
 
             #pdb.set_trace()
+
+        """
         else:
             #pdb.set_trace()
             # find the dimension of the latitude variable.
@@ -6362,7 +6365,7 @@ def create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncg
             lon_d[th_d_ind] = np.ma.masked_invalid(lon_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
             lat_d[th_d_ind] = np.ma.masked_invalid(lat_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
 
-
+        """
 
         #Check if any nav_lat or nav_lon have masked values (i.e. using land suppression)
         if ( ((lat_d[th_d_ind] == 0) & (lon_d[th_d_ind] == 0)).sum()>10) |  (lat_d[th_d_ind] == lon_d[th_d_ind]).sum()> 100:
