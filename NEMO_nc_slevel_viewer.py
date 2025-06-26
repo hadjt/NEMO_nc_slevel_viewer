@@ -871,27 +871,8 @@ def nemo_slice_zlev(config = 'amm7',
     nice_varname_dict['Sinz'] = 'ice internal bulk salinity'
 
 
-    '''
-    nice_varname_dict['VolTran_e3_mag'] = 'VolTran_e3_mag'
-    nice_varname_dict['VolTran_e3_div'] = 'VolTran_e3_div'
-    nice_varname_dict['VolTran_e3_curl'] = 'VolTran_e3_curl'
-
-    
-    nice_varname_dict['VolTran_mag'] = 'VolTran_mag'
-    nice_varname_dict['VolTran_div'] = 'VolTran_div'
-    nice_varname_dict['VolTran_curl'] = 'VolTran_curl'
-    nice_varname_dict['StreamFunction'] = 'StreamFunct'
-    nice_varname_dict['StreamFunction_e3'] = 'StreamFunct_e3'
-    '''
 
     #WW3 var names:
-    #nice_varname_dict['cx'] = 'longitude cell size factor'
-    #nice_varname_dict['cy'] = 'latitude cell size factor'
-    #nice_varname_dict['standard_longitude'] = 'longitude'
-    #nice_varname_dict['standard_latitude'] = 'latitude'
-    #nice_varname_dict['time'] = 'time'
-    #nice_varname_dict['forecast_period'] = 'forecast period'
-    #nice_varname_dict['forecast_reference_time'] = 'forecast reference time'
     nice_varname_dict['dpt'] = 'depth'
     nice_varname_dict['ucur'] = 'eastward current'
     nice_varname_dict['vcur'] = 'northward current'
@@ -955,7 +936,6 @@ def nemo_slice_zlev(config = 'amm7',
     init_timer.append((datetime.now(),'nc time started'))
 
     #pdb.set_trace()
-    #time_datetime,time_datetime_since_1970,ntime,ti, nctime_calendar_type = extract_time_from_xarr(xarr_dict['Dataset 1']['T'],fname_dict['Dataset 1']['T'][0],time_varname_dict['Dataset 1']['T'],ncdim_d['Dataset 1']['T']['t'],date_in_ind,date_fmt,ti,verbose_debugging)
     time_datetime,time_datetime_since_1970,ntime,ti, nctime_calendar_type = extract_time_from_xarr(xarr_dict['Dataset 1'][gr_1st],fname_dict['Dataset 1'][gr_1st][0],time_varname_dict['Dataset 1'][gr_1st],ncdim_d['Dataset 1'][gr_1st]['t'],date_in_ind,date_fmt,ti,verbose_debugging)
 
     init_timer.append((datetime.now(),'nc time completed'))
@@ -998,93 +978,16 @@ def nemo_slice_zlev(config = 'amm7',
                 for jpspi, secdataset_proc in enumerate(justplot_secdataset_proc_lst): 
                     just_plt_vals.append((secdataset_proc,justplot_date_ind_str, justplot_z_meth,justplot_zz, True, True, True, False, True))
                     njust_plt_cnt+=1
-                    '''
-                    if (jpspi == 0):#                                                                     reload_map,reload_ew,reload_ns,reload_hov,reload_ts,                        
-                        just_plt_vals.append((secdataset_proc,justplot_date_ind_str, justplot_z_meth,justplot_zz, True, True, True, False, False))
-                    else:
-                        just_plt_vals.append((secdataset_proc,justplot_date_ind_str, justplot_z_meth,justplot_zz, False, False, False, False, False))
-                    '''  
     init_timer.append((datetime.now(),'justplot prepared'))
     # repeat if comparing two time series. 
 
 
 
 
-    '''
-    if load_second_files:
-        
-        #var_d[2] = {}
-        clim_sym = True
-        
-
-        init_timer.append((datetime.now(),'nc time 2nd started'))
-
-
-        # load time from second data set to check if matches with first dataset.         
-
-        time_datetime_2nd,time_datetime_since_1970_2nd,ntime_2nd,ti, nctime_calendar_type = extract_time_from_xarr(xarr_dict['Dataset 2']['T'],fname_dict['Dataset 2']['T'][0],
-            time_varname_dict['Dataset 2']['T'],ncdim_d['Dataset 2']['T']['t'],date_in_ind,date_fmt,ti,verbose_debugging)
-
-
-        
-        # check both datasets have the same times
-        if allow_diff_time == False:
-            if ntime_2nd != ntime:     
-                print()
-                print('Diff Times have different number of files. To Continue press c')
-                print()
-                pdb.set_trace() 
-            else:
-                if (time_datetime_since_1970_2nd != time_datetime_since_1970).any():   
-                    print()
-                    print("Times don't match between Dataset 1 and Dataset 2. To Continue press c")
-                    print()
-                    pdb.set_trace()
-
-
-
-        init_timer.append((datetime.now(),'nc time 2nd completed'))
-
-        # check both datasets have the same lons and lats (if same config)
-        #if configd[2] is None:
-        #if configd[2] != configd[1]:
-        #for tmp_datstr in Dataset_lst[1:]:
-        #    th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
-
-        if configd[2] == configd[1]:
-            #pdb.set_trace()
-            #if (np.array(lat_d[1].shape)==np.array(lat_d[2].shape)).all():
-            if (np.array(domsize[1])==np.array(domsize[2])).all():
-                if (lat_d[1] != lat_d[2]).any():
-                    print('Diff nav_lat_2nd dont match')
-                    pdb.set_trace()
-                if (lon_d[1] != lon_d[2]).any():
-                    print('Diff nav_lon_2nd dont match')
-                    pdb.set_trace()
-            else:
-                print('Diff nav_lat_2nd shape doesnt match')
-                #pdb.set_trace()
-
-        # use a difference colormap if comparing files
-        curr_cmap = scnd_cmap
-
-    '''
     # open file list with xarray
     for tmp_datstr in Dataset_lst: # xarr_dict.keys():
         #time_d[tmp_datstr] = {}
         for tmpgrid in xarr_dict[tmp_datstr].keys():
-            '''
-            for ncvar in ncvar_d[tmp_datstr][tmpgrid]: 
-                #if ncvar.upper() in nav_lon_var_mat: nav_lon_varname = ncvar
-                #if ncvar.upper() in nav_lat_var_mat: nav_lat_varname = ncvar
-                if ncvar.upper() in time_varname_mat: tmp_time_varname = ncvar
-
-            #if ncvar.upper() in time_varname_mat: time_varname = ncvar
-
-            #time_d[tmp_datstr][tmpgrid] = {}
-            '''
-            #pdb.set_trace()    
-            #if tmpgrid == 'I': continue #  no longer need to skip for Increments, as extract_time_from_xarr handles it
             (time_d[tmp_datstr][tmpgrid]['datetime'],time_d[tmp_datstr][tmpgrid]['datetime_since_1970'],tmp_ntime,tmp_ti, nctime_calendar_type) =  extract_time_from_xarr(xarr_dict[tmp_datstr][tmpgrid],fname_dict[tmp_datstr][tmpgrid][0], time_varname_dict[tmp_datstr][tmpgrid],ncdim_d[tmp_datstr][tmpgrid]['t'],date_in_ind,date_fmt,ti,verbose_debugging)
     print ('xarray start reading nctime',datetime.now())
     # add derived variables
@@ -1127,68 +1030,6 @@ def nemo_slice_zlev(config = 'amm7',
     init_timer.append((datetime.now(),'Derived var defined'))
 
     rot_dict = {}
-    """
-    if (configd[1].upper() in ['AMM15','CO9P2']): 
-        lon_rotamm15,lat_rotamm15 = reduce_rotamm15_grid(lon_d['amm15'], lat_d['amm15'])
-
-        dlon_rotamm15 = (np.diff(lon_rotamm15)).mean()
-        dlat_rotamm15 = (np.diff(lat_rotamm15)).mean()
-        nlon_rotamm15 = lon_rotamm15.size
-        nlat_rotamm15 = lat_rotamm15.size
-
-        
-        rot_dict[configd[1]] = {}
-        rot_dict[configd[1]]['dlon'] = dlon_rotamm15
-        rot_dict[configd[1]]['dlat'] = dlat_rotamm15
-        rot_dict[configd[1]]['nlon'] = nlon_rotamm15
-        rot_dict[configd[1]]['nlat'] = nlat_rotamm15
-        rot_dict[configd[1]]['lon_rot'] = lon_rotamm15
-        rot_dict[configd[1]]['lat_rot'] = lat_rotamm15   
-        
-        del(dlon_rotamm15)
-        del(dlat_rotamm15)
-
-        del(nlon_rotamm15)
-        del(nlat_rotamm15)
-        del(lon_rotamm15)
-        del(lat_rotamm15)
-
-
-    if load_second_files:
-        #if configd[2] is not None:
-        if (configd[2].upper() in ['AMM15','CO9P2']):
-            lon_rotamm15,lat_rotamm15 = reduce_rotamm15_grid(lon_d['amm15'], lat_d['amm15'])
-
-            dlon_rotamm15 = (np.diff(lon_rotamm15)).mean()
-            dlat_rotamm15 = (np.diff(lat_rotamm15)).mean()
-            nlon_rotamm15 = lon_rotamm15.size
-            nlat_rotamm15 = lat_rotamm15.size
-
-            rot_dict[configd[2]] = {}
-            rot_dict[configd[2]]['dlon'] = dlon_rotamm15
-            rot_dict[configd[2]]['dlat'] = dlat_rotamm15
-            rot_dict[configd[2]]['nlon'] = nlon_rotamm15
-            rot_dict[configd[2]]['nlat'] = nlat_rotamm15
-            rot_dict[configd[2]]['lon_rot'] = lon_rotamm15
-            rot_dict[configd[2]]['lat_rot'] = lat_rotamm15 
-            del(dlon_rotamm15)
-            del(dlat_rotamm15)
-
-            del(nlon_rotamm15)
-            del(nlat_rotamm15)
-            del(lon_rotamm15)
-            del(lat_rotamm15)
-
-    """
-    #pdb.set_trace()
-
-    '''
-    NWS_amm_nn_jj_ind_out, NWS_amm_nn_ii_ind_out = ind_from_lon_lat('Dataset 2',configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lon_d[1],lat_d[1])
-    #NWS_amm_nn_jj_ind_out, NWS_amm_nn_ii_ind_out = ind_from_lon_lat('Dataset 1',configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lon_d[2],lat_d[2])
-    regrid_params[tmp_datstr] = None,None, None, NWS_amm_nn_jj_ind_out, NWS_amm_nn_ii_ind_out
-    '''
-
-
 
     #default regirdding settings
     regrid_meth = 2 # BL # 1 # NN
@@ -1207,56 +1048,6 @@ def nemo_slice_zlev(config = 'amm7',
 
         if (configd[th_d_ind] is not None) & (configd[th_d_ind]!=configd[1]):
         #if (configd[th_d_ind] is not None) :   
-            """
-
-            if (configd[1].upper() in ['AMM7','AMM15']) & (configd[th_d_ind].upper() in ['AMM7','AMM15']):  
-                #mesh_file_2nd = config_fnames_dict[configd[th_d_ind]]['mesh_file'] 
-                #rootgrp_gdept_dict[tmp_datstr] = Dataset(mesh_file_2nd, 'r', format='NETCDF4')
-
-                regrid_params['do_regrid'] = 2
-
-                if (configd[1].upper() == 'AMM15') & (configd[th_d_ind].upper() == 'AMM7'):  
-
-
-                    lon = np.arange(-19.888889,12.99967+1/9.,1/9.)
-                    lat = np.arange(40.066669,65+1/15.,1/15.)
-
-
-                    amm_conv_dict = {}
-                    rootgrp = Dataset(config_fnames_dict[configd[1]]['regrid_amm7_amm15'], 'r')
-                    for var_conv in rootgrp.variables.keys(): amm_conv_dict[var_conv] = rootgrp.variables[var_conv][:]
-                    rootgrp.close()
-        
-                    nlon_amm        = nlon_amm15
-                    nlat_amm        = nlat_amm15
-                    nlon_amm_2nd    = nlon_amm7
-                    nlat_amm_2nd    = nlat_amm7
-
-
-
-                elif (configd[1].upper() == 'AMM7') & (configd[th_d_ind].upper() == 'AMM15'):
-
-                    amm_conv_dict = {}
-                    rootgrp = Dataset(config_fnames_dict[configd[th_d_ind]]['regrid_amm15_amm7'], 'r')
-                    for var_conv in rootgrp.variables.keys(): amm_conv_dict[var_conv] = rootgrp.variables[var_conv][:]
-                    rootgrp.close()
-        
-                    nlon_amm        = nlon_amm7
-                    nlat_amm        = nlat_amm7
-                    nlon_amm_2nd    = nlon_amm15
-                    nlat_amm_2nd    = nlat_amm15
-
-                regrid_params[tmp_datstr] = regrid_2nd_thin_params(amm_conv_dict,nlon_amm,nlat_amm, nlon_amm_2nd,nlat_amm_2nd,thd)
-                #pdb.set_trace()
-                #pdb.set_trace()
-            else:
-                NWS_amm_nn_jj_ind_out, NWS_amm_nn_ii_ind_out = ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lon_d[1],lat_d[1])
-
-
-
-
-            """
-
 
 
             
@@ -2074,12 +1865,6 @@ def nemo_slice_zlev(config = 'amm7',
                 #ylocval = normyloc*clylim.ptp() + clylim.min()
                 xlocval = normxloc*np.ptp(clxlim) + clxlim.min()
                 ylocval = normyloc*np.ptp(clylim) + clylim.min()
-                """
-                if (thd[1]['dx'] != 1):
-                    if configd[1].upper() not in ['AMM7','AMM15', 'CO9P2', 'ORCA025','ORCA025EXT','GULF18','ORCA12','ORCA025ICE','ORCA12ICE']:
-                        print('Thinning lon lat selection not programmed for ', configd[1].upper())
-                        pdb.set_trace()
-                """
 
                 # what do the local coordiantes of the click mean in terms of the data to plot.
                 # if on the map, or the slices, need to covert from lon and lat to ii and jj, which is complex for amm15.
@@ -2087,25 +1872,6 @@ def nemo_slice_zlev(config = 'amm7',
                 # if in map, covert lon lat to ii,jj
                 if ai == 0:
                     loni,latj= xlocval,ylocval
-                    '''
-
-                    if configd[1].upper() in ['AMM7','GULF18']:
-                        sel_ii = (np.abs(lon[thd[1]['x0']:thd[1]['x1']:thd[1]['dx']] - loni)).argmin()
-                        sel_jj = (np.abs(lat[thd[1]['y0']:thd[1]['y1']:thd[1]['dy']] - latj)).argmin()
-                    elif configd[1].upper() in ['AMM15','CO9P2']:
-                        lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(loni,latj)
-                        sel_ii = np.minimum(np.maximum( np.round((lon_mat_rot - lon_rotamm15[thd[1]['x0']:thd[1]['x1']:thd[1]['dx']].min())/(dlon_rotamm15*thd[1]['dx'])).astype('int') ,0),nlon_rotamm15//thd[1]['dx']-1)
-                        sel_jj = np.minimum(np.maximum( np.round((lat_mat_rot - lat_rotamm15[thd[1]['y0']:thd[1]['y1']:thd[1]['dy']].min())/(dlat_rotamm15*thd[1]['dx'])).astype('int') ,0),nlat_rotamm15//thd[1]['dx']-1)
-                    elif configd[1].upper() in ['ORCA025','ORCA025EXT','ORCA12','ORCA025ICE','ORCA12ICE']:
-                        sel_dist_mat = np.sqrt((lon_d[1][:,:] - loni)**2 + (lat_d[1][:,:] - latj)**2 )
-                        sel_jj,sel_ii = sel_dist_mat.argmin()//sel_dist_mat.shape[1], sel_dist_mat.argmin()%sel_dist_mat.shape[1]
-
-                    else:
-                        print('config not supported:', configd[1])
-                        pdb.set_trace()
-
-                    #pdb.set_trace()
-                    '''
 
                     print(sel_ii,sel_jj)
                     
@@ -2125,20 +1891,6 @@ def nemo_slice_zlev(config = 'amm7',
                     if (sel_jj<0):sel_jj=0
                     if (sel_ii<0):sel_ii=0
                     if (sel_jj<0):sel_jj=0
-                        
-                    '''
-                    if (sel_ii>=lon_d[1].shape[1]):
-                        #print('ii too big')
-                        #pdb.set_trace()
-                        sel_ii=lon_d[1].shape[1]-1
-                    if (sel_jj>=lon_d[1].shape[0]):
-                        #print('jj too big')
-                        #pdb.set_trace()
-                        sel_jj=lon_d[1].shape[0]-1
-                    if (sel_jj<0):sel_jj=0
-                    if (sel_ii<0):sel_ii=0
-                    if (sel_jj<0):sel_jj=0
-                    '''
                     # and reload slices, and hovmuller/time series
 
                 elif ai in [1]: 
@@ -2146,21 +1898,6 @@ def nemo_slice_zlev(config = 'amm7',
                     loni= xlocval
                     sel_ii = (np.abs(ew_line_x - loni)).argmin()
 
-                    '''
-                    if configd[1].upper() == 'AMM7':
-                        sel_ii = (np.abs(lon[thd[1]['x0']:thd[1]['x1']:thd[1]['dx']] - loni)).argmin()
-                    elif configd[1].upper() in ['AMM15','CO9P2']:
-                        latj =  ew_line_y[(np.abs(ew_line_x - loni)).argmin()] 
-                        lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(loni,latj)
-                        #sel_ii = np.minimum(np.maximum(np.round((lon_mat_rot - lon_rotamm15[thd[1]['x0']:thd[1]['x1']:thd[1]['dx']].min())/(dlon_rotamm15*thd[1]['dx'])).astype('int'),0),nlon_rotamm15//thd[1]['dx']-1)
-                        sel_ii = np.minimum(np.maximum(np.round((lon_mat_rot - rot_dict[configd[1]]['lon_rot'][thd[1]['x0']:thd[1]['x1']:thd[1]['dx']].min())/(rot_dict[configd[1]]['dlon']*thd[1]['dx'])).astype('int'),0),rot_dict[configd[1]]['nlon']//thd[1]['dx']-1)
-
-                    elif configd[1].upper() in ['ORCA025','ORCA025EXT','ORCA12','ORCA025ICE','ORCA12ICE']:
-                        sel_ii = (np.abs(ew_line_x - loni)).argmin()
-                    else:
-                        print('config not supported:', configd[1])
-                        pdb.set_trace()
-                    '''
                     #sel_zz = int( (1-normyloc)*clylim.ptp() + clylim.min() )
                     sel_zz = int( (1-normyloc)*np.ptp(clylim) + clylim.min() )
                     
@@ -2169,21 +1906,6 @@ def nemo_slice_zlev(config = 'amm7',
                     # if in ns slice, change ew slice, and hov/time series
                     latj= xlocval
                     sel_jj = (np.abs(ns_line_y - latj)).argmin()
-                    '''
-                    if configd[1].upper() == 'AMM7':
-                        sel_jj = (np.abs(lat[thd[1]['y0']:thd[1]['y1']:thd[1]['dy']] - latj)).argmin()
-                    elif configd[1].upper() in ['AMM15','CO9P2']:                        
-                        loni =  ns_line_x[(np.abs(ns_line_y - latj)).argmin()]
-                        lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(loni,latj)
-                        #sel_jj = np.minimum(np.maximum(np.round((lat_mat_rot - lat_rotamm15[thd[1]['y0']:thd[1]['y1']:thd[1]['dy']].min())/(dlat_rotamm15*thd[1]['dx'])).astype('int'),0),nlat_rotamm15//thd[1]['dx']-1)
-                        sel_jj = np.minimum(np.maximum(np.round((lat_mat_rot - rot_dict[configd[1]]['lat_rot'][thd[1]['y0']:thd[1]['y1']:thd[1]['dy']].min())/(rot_dict[configd[1]]['dlon']*thd[1]['dx'])).astype('int'),0),rot_dict[configd[1]]['nlat']//thd[1]['dx']-1)
-                    elif configd[1].upper() in ['ORCA025','ORCA025EXT','ORCA12','ORCA025ICE','ORCA12ICE']:
-                        sel_jj = (np.abs(ns_line_y - latj)).argmin()
-                    else:
-                        print('config not supported:', configd[1])
-                        #pdb.set_trace()
-                        '''
-                    #sel_zz = int( (1-normyloc)*clylim.ptp() + clylim.min() )
                     sel_zz = int( (1-normyloc)*np.ptp(clylim) + clylim.min() )
 
                 elif ai in [3]:
@@ -2244,11 +1966,6 @@ def nemo_slice_zlev(config = 'amm7',
             fig_out_name = '%s/output_%s_%s_th%02ifth%02ii%04ij%04it%03iz%03i%sg%1ir%s_%s'%(fig_dir,fig_lab,var,thd[1]['dx'],thd[1]['df'],ii,jj,ti,zz,z_meth,do_grad,resample_freq,secdataset_proc_figname)
         
 
-        '''
-        if fig_lab_d['Dataset 1'] is not None: fig_out_name = fig_out_name + '_d1_%s'%fig_lab_d['Dataset 1']
-        if fig_lab_d['Dataset 2'] is not None: fig_out_name = fig_out_name + '_d2_%s'%fig_lab_d['Dataset 2']
-        '''
-        
         for tmp_datstr in Dataset_lst:
             #if fig_lab_d[tmp_datstr] is not None: 
             fig_out_name = fig_out_name + '_d%s_%s'%(tmp_datstr[-1],fig_lab_d[tmp_datstr])
@@ -2928,58 +2645,6 @@ def nemo_slice_zlev(config = 'amm7',
 
                 
                 if do_memory & do_timer: timer_lst.append(('Reloaded reload_pf_data_comb',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
-            '''
-            if reload_hov:
-                if hov_time:
-                    if var_dim[var] == 4:
-                        #pdb.set_trace()
-                        
-                        hov_dat_dict = reload_hov_data_comb_time(var,var_d[1]['mat'],var_grid,var_d['d'],ldi,thd, time_datetime,time_d, ii,jj,iijj_ind,nz,ntime, grid_dict,lon_d,lat_d,xarr_dict,do_mask_dict,load_second_files,Dataset_lst,configd,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d)
-
-                        if do_grad == 2:
-                            hov_dat_dict = grad_vert_hov_prof_data(hov_dat_dict,
-                                                                   meth=grad_meth, abs_pre = grad_abs_pre, abs_post = grad_abs_post, regrid_xy = grad_regrid_xy,dx_d_dx = grad_dx_d_dx)
-                    else:
-                        hov_dat_dict = {}
-                        hov_dat_dict['x'] = time_datetime
-                        hov_dat_dict['y'] = np.ma.zeros((nz,time_datetime.size))
-
-                else:
-                    
-                    hov_dat_dict['x'] = time_datetime
-                    hov_dat_dict['y'] =  grid_dict['Dataset 1']['gdept'][:,jj,ii]
-                    #hov_dat_dict['Dataset 1'] = np.ma.zeros((hov_dat_dict['y'].shape+hov_dat_dict['x'].shape))*np.ma.masked
-                    #hov_dat_dict['Dataset 2'] = np.ma.zeros((hov_dat_dict['y'].shape+hov_dat_dict['x'].shape))*np.ma.masked
-                    for tmp_datstr in Dataset_lst:hov_dat_dict[tmp_datstr] = np.ma.zeros((hov_dat_dict['y'].shape+hov_dat_dict['x'].shape))*np.ma.masked
-                reload_hov = False
-                
-                if do_memory & do_timer: timer_lst.append(('Reloaded reload_hov_data_comb',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
-            
-
-            if verbose_debugging: print('Reloaded hov data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now(),'; dt = %s'%(datetime.now()-prevtime))
-            prevtime = datetime.now()
-            if reload_ts:
-                if hov_time:
-                    #ts_dat_dict = reload_ts_data_comb(var,var_dim,var_grid['Dataset 1'],ii,jj,iijj_ind,ldi,hov_dat_dict,time_datetime,time_d,z_meth,zz,zi,xarr_dict,do_mask_dict,grid_dict,thd,var_d[1]['mat'],var_d['d'],nz,ntime,configd,Dataset_lst,load_second_files)
-                    ts_dat_dict = reload_ts_data_comb_time(var,var_dim,var_grid,ii,jj,iijj_ind,ldi,hov_dat_dict,time_datetime,time_d,z_meth,zz,zi,xarr_dict,do_mask_dict,grid_dict,thd,var_d[1]['mat'],var_d['d'],nz,ntime,configd,Dataset_lst,load_second_files,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d)
-                else:
-                    ts_dat_dict['x'] = time_datetime
-                    #ts_dat_dict['Dataset 1'] = np.ma.ones(ntime)*np.ma.masked
-                    #ts_dat_dict['Dataset 2'] = np.ma.ones(ntime)*np.ma.masked
-                    ts_dat_dict['Sec Grid'] = {}
-                    for tmp_datstr in Dataset_lst:
-                        ts_dat_dict[tmp_datstr] = np.ma.ones(ntime)*np.ma.masked
-                        ts_dat_dict['Sec Grid'][tmp_datstr] = {}
-                        ts_dat_dict['Sec Grid'][tmp_datstr]['x'] = time_datetime
-                        ts_dat_dict['Sec Grid'][tmp_datstr]['data'] = np.ma.ones(ntime)*np.ma.masked
-
-
-                reload_ts = False
-
-                if do_memory & do_timer: timer_lst.append(('Reloaded reload_ts_data_comb',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
-            '''
-
-
 
             #if Obs and reloading,  
             if do_Obs:
@@ -3910,21 +3575,6 @@ def nemo_slice_zlev(config = 'amm7',
                                 oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat, s = Obs_scatSS, edgecolors = Obs_scatEC, cmap = matplotlib.cm.seismic ))
                                 
 
-                                '''
-                                if obvi == 0:
-                                    obs_OmB_clim = np.percentile(np.abs(tmpobsdat[tmpobsdat.mask == False]),95)*np.array([-1,1])    
-                                oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat, vmin = obs_OmB_clim[0],vmax = obs_OmB_clim[1], s = Obs_scatSS, edgecolors = Obs_scatEC, cmap = matplotlib.cm.seismic ))
-
-                                if obvi == 0:
-                                    #cbarax.append(fig.add_axes([0.3,0.13, 0.15,cbwid]))
-                                    #cax.append(plt.colorbar(oax_lst[0], ax = ax[0], cax = cbarax[-1], orientation = 'horizontal'))
-                                    cbarobsax = [fig.add_axes([0.305,0.11, 0.15,0.02])]
-                                    #cbarobsax[0].tick_params(top=True, labeltop=True, bottom=False, labelbottom=False)
-                                    cax.append(plt.colorbar(oax_lst[0], ax = ax[0], cax = cbarobsax[0], orientation = 'horizontal'))
-                                    cax[-1].ax.xaxis.set_ticks_position('top')
-                                    cax[-1].ax.xaxis.set_label_position('top')
-                                '''
-
                     if (len(tmp_obs_lst)>0)& (Obs_AbsAnom==False) & (Obs_hide ==  False):
                         #try:
 
@@ -4000,81 +3650,7 @@ def nemo_slice_zlev(config = 'amm7',
                     visax.append(current_barb(map_dat_dict['x'][::pdy,::pdx],map_dat_dict['y'][::pdy,::pdx],map_dat_U[::pdy,::pdx],map_dat_V[::pdy,::pdx],
                                               fixed_len = vis_fixed_len,scf = vis_scf,evx = vis_ev,evy = vis_ev,ax = ax[0], 
                                               color = 'w',linewidth=0.75, path_effects=vis_pe))
-                    
-                    ''' 
-                    
-                                        
-                    fig2 = plt.figure()
-                    tmpax2 = plt.subplot(111)
-                    plt.pcolormesh(map_dat_dict['x'],map_dat_dict['y'],np.sqrt(map_dat_U**2 + map_dat_V**2))
-                    plt.xlim(tmpxlim)
-                    plt.ylim(tmpylim)
-                    vis_pe = [pe.Stroke(linewidth=3, foreground='k'), pe.Normal()]
-                    current_barb(map_dat_dict['x'],map_dat_dict['y'],map_dat_U,map_dat_V, color = 'w',linewidth=0.75, path_effects=vis_pe,fixed_len = vis_fixed_len,scf = vis_scf,evx = vis_ev,evy = vis_ev,ax = tmpax2)
-                    fig2.show()
-                    fig2.close()
-
-                    '''
-                    
-                    #pdb.set_trace()
-
-                    """
-                    vis_ev = 1
-
-
-
-                    # find a mask of points currently displayed.
-                    map_dat_reg_mask_UV = (lon_d[1]>tmpxlim[0]) & (lon_d[1]<tmpxlim[1]) & (lat_d[1]>tmpylim[0]) & (lat_d[1]<tmpylim[1])
-
-                    # count the points, and square root them (to give an idea of number of points along each side),
-                    # and divide by 100, so give ~100 vectors along each side... then make sure greater than 1, and an integer
-                    
-                    # Root of how many points are visible in the current map - an idea of the points along each side
-                    vis_pnts_vis=np.sqrt(map_dat_reg_mask_UV.sum())
-
-                    # Root of the product of the xlim and ylim of the current map - an idea of the degrees along each side
-                    vis_xylim_vis=np.sqrt(tmpxlim.ptp()*tmpylim.ptp())
-
-                    # how many U and V points skipped.
-                    vis_ev = int(   np.maximum(   vis_pnts_vis//100,   1)   )
-                    
-                    # reduce input x, y, U and V.
-                    vis_x = map_dat_dict['x'][::vis_ev,::vis_ev]
-                    vis_y = map_dat_dict['y'][::vis_ev,::vis_ev]
-                    vis_U = map_dat_U[::vis_ev,::vis_ev]
-                    vis_V = map_dat_V[::vis_ev,::vis_ev]
-
-                    # Root of how many U and V points in cuurent map
-                    vis_UV_pnts_vis = np.sqrt(map_dat_reg_mask_UV[::vis_ev,::vis_ev].sum())
-
-                    # product of scale factor and fixed lenght = degree each side/UV points on each side * 1.25
-                    vis_fix_scf = 1.25*vis_xylim_vis/vis_UV_pnts_vis
-
-                    #vis_fix_scf = vis_xylim_vis/vis_ev/0.8/5
-
-                    vis_fixed_len = 0.05
-                    vis_scf = 4
-
-                    vis_fixed_len = vis_fix_scf/vis_scf
-                    '''
-                    print('vis_curr vis_ev = ',vis_ev)
-                    print('vis_curr vis_fixed_len = ',vis_fixed_len)
-                    print('vis_curr vis_pnts_vis = ',vis_pnts_vis)
-                    print('vis_curr vis_xylim_vis = ',vis_xylim_vis)
-                    print('vis_curr vis_UV_pnts_vis = ',vis_UV_pnts_vis)
-                    print('vis_curr vis_fix_scf = ',vis_fix_scf)
-                    '''
-                    if vis_ev <1: pdb.set_trace()
-
-                    vis_offset = 0.#np.sqrt((vis_x[1:,1:]-vis_x[:-1,:-1])**2 + (vis_y[1:,1:]-vis_y[:-1,:-1])**2 ).mean()/50
-
-                    visax.append(current_barb(vis_x, vis_y,vis_U,vis_V,                                               
-                                                color = 'k', ax = ax[0], linewidth = 0.4,
-                                                fixed_len = vis_fixed_len,scf = vis_scf))
-                    visax.append(current_barb(vis_x+vis_offset, vis_y+vis_offset,vis_U,vis_V,                                               
-                                                color = 'w', ax = ax[0], linewidth = 0.4,
-                                                fixed_len = vis_fixed_len,scf = vis_scf, linestyle = 'dotted'))
-                    """
+                   
 
             ###################################################################################################
             ### Redraw canvas
@@ -5045,34 +4621,7 @@ def nemo_slice_zlev(config = 'amm7',
                                     xsect_pnt_ind_dict[tmp_datstr] = xsect_pnt_ind
                                     nxsect_dict[tmp_datstr] = nxsect
 
-                                    
-                                """
-
-                                th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
-
-                                xs1 = datetime.now()
-                                #if configd[int(secdataset_proc[8:])].lower() in ['amm7','amm15','co9p2','gulf18','orca025']:
-                                #if True:
-
-                                xsect_ii_ind_lst = []
-                                xsect_jj_ind_lst = []
-                                xsect_n_ind_lst = []
-                                #pdb.set_trace()
-                                for xi in range(xsect_jjii_npnt-1):
-                                    tmp_xsect_ii_ind,tmp_xsect_jj_ind = profile_line( xsect_ii_pnt_lst[xi:xi+2],xsect_jj_pnt_lst[xi:xi+2], ni = tmpnlat )
-                                    xsect_ii_ind_lst.append(tmp_xsect_ii_ind)
-                                    xsect_jj_ind_lst.append(tmp_xsect_jj_ind)
-                                    xsect_n_ind_lst.append(tmp_xsect_ii_ind.size)
-
-                                xsect_ii_ind_mat = np.concatenate(xsect_ii_ind_lst)
-                                xsect_jj_ind_mat = np.concatenate(xsect_jj_ind_lst)
-                                nxsect = xsect_ii_ind_mat.size
-
-                                xsect_lon_mat = lon_d[th_d_ind][[xsect_jj_ind_mat],[xsect_ii_ind_mat]][0,:]
-                                xsect_lat_mat = lat_d[th_d_ind][[xsect_jj_ind_mat],[xsect_ii_ind_mat]][0,:]
-                                
-                                xsect_pnt_ind = np.append(0,np.cumsum(xsect_n_ind_lst)-1)
-                                """
+                                   
                                 
                             print('Xsect: indices processed.')
 
@@ -5090,18 +4639,6 @@ def nemo_slice_zlev(config = 'amm7',
             
                             tmp_xsect_x,tmp_xsect_z,tmp_xsect_dat = {},{},{}
                             tmp_xsect_mld_dat = {}
-
-                            '''
-                            for tmp_datstr in Dataset_lst:
-                                if var_dim[var] == 4:
-                                    tmp_xsect_dat[tmp_datstr] = data_inst[tmp_datstr][:,[xsect_jj_ind_mat],[xsect_ii_ind_mat]][:,0,:]
-                                    tmp_xsect_z[tmp_datstr] = grid_dict[tmp_datstr]['gdept'][:,[xsect_jj_ind_mat],[xsect_ii_ind_mat]][:,0,:]
-                                    tmp_xsect_x[tmp_datstr] = np.arange(nxsect)
-                                elif var_dim[var] == 3:
-                                    tmp_xsect_dat[tmp_datstr] = data_inst[tmp_datstr][[xsect_jj_ind_mat],[xsect_ii_ind_mat]][0,:]
-                                    tmp_xsect_x[tmp_datstr] = np.arange(nxsect)
-                                    #pdb.set_trace()
-                            '''
                             #pdb.set_trace()
                             for tmp_datstr in Dataset_lst:
                                 if var_dim[var] == 4:
@@ -5415,23 +4952,7 @@ def nemo_slice_zlev(config = 'amm7',
 
                                     th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
 
-                                    '''
-                                    if (configd[th_d_ind] == configd[1])| (tmp_datstr== Dataset_lst[0]):
-                                        tmp_T_data[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][ldi].variables['votemper'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,jj,ii].load())
-                                        tmp_S_data[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][ldi].variables['vosaline'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,jj,ii].load())
-                                        tmp_gdept[tmp_datstr] = np.array(grid_dict[tmp_datstr]['gdept'])[:,jj,ii]
-                                        tmp_mld1[tmp_datstr] = np.ma.masked
-                                        tmp_mld2[tmp_datstr] = np.ma.masked
-                                        if 'mld25h_1' in var_d[th_d_ind]['mat']: tmp_mld1[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][ldi].variables['mld25h_1'][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][jj,ii].load())
-                                        if 'mld25h_2' in var_d[th_d_ind]['mat']: tmp_mld2[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][ldi].variables['mld25h_2'][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][jj,ii].load())
 
-                                    else:
-                                        if 'votemper' in var_d[th_d_ind]['mat']:tmp_T_data[tmp_datstr]  = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][ldi].variables['votemper'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']].load())
-                                        if 'vosaline' in var_d[th_d_ind]['mat']:tmp_S_data[tmp_datstr]  = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][ldi].variables['vosaline'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']].load())
-                                        if 'mld25h_1' in var_d[th_d_ind]['mat']:tmp_mld1[tmp_datstr]  = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][ldi].variables['mld25h_1'][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']].load())
-                                        if 'mld25h_2' in var_d[th_d_ind]['mat']:tmp_mld2[tmp_datstr]  = np.ma.masked_invalid(xarr_dict[tmp_datstr]['T'][ldi].variables['mld25h_2'][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']].load())
-                                        tmp_gdept[tmp_datstr] =  np.array(grid_dict[tmp_datstr]['gdept'])[:,iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']]               
-                                    '''   
                                     if (configd[th_d_ind] == configd[1])| (tmp_datstr== Dataset_lst[0]):
                                         tmp_T_data[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][gr_1st][ldi].variables['votemper'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,jj,ii].load())
                                         tmp_S_data[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][gr_1st][ldi].variables['vosaline'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,jj,ii].load())
@@ -5543,16 +5064,7 @@ def nemo_slice_zlev(config = 'amm7',
                                     #clim = np.log10(np.array([(10**clim).mean() - (10**clim).ptp(),(10**clim).mean() + (10**clim).ptp()]))
                                     clim = np.log10(np.array([(10**clim).mean() - np.ptp((10**clim)),(10**clim).mean() + np.ptp((10**clim))]))
                         
-                            '''
 
-                        elif but_name == 'Clim: Expand': 
-                            clim = np.array(get_clim_pcolor(ax = ax[0]))
-                            if climnorm is None:
-                                clim = np.array([clim.mean() - clim.ptp(),clim.mean() + clim.ptp()])
-                            else:
-                                clim = np.log10(np.array([(10**clim).mean() - (10**clim).ptp(),(10**clim).mean() + (10**clim).ptp()]))
-                            
-                            '''
 
                         elif but_name == 'LD time':
                             ldi+=1
@@ -5816,38 +5328,6 @@ def nemo_slice_zlev(config = 'amm7',
                             reload_ns = True
                             reload_hov = True
                             reload_ts = True
-                            '''
-                            if do_grad == 0:
-                                func_but_text_han['Grad'].set_color('darkgreen')
-                                func_but_text_han['Grad'].set_text('Horiz Grad')
-                                do_grad = 1
-                                reload_map = True
-                                reload_ew = True
-                                reload_ns = True
-                                reload_hov = True
-                                reload_ts = True
-                            elif do_grad == 1:
-                                func_but_text_han['Grad'].set_color('gold')
-                                func_but_text_han['Grad'].set_text('Vert Grad')
-
-                                do_grad = 2
-                                reload_map = True
-                                reload_ew = True
-                                reload_ns = True
-                                reload_hov = True
-                                reload_ts = True
-                            elif do_grad == 2:
-                                func_but_text_han['Grad'].set_color('0.5')
-                                func_but_text_han['Grad'].set_text('Grad')
-
-                                do_grad = 0
-                                reload_map = True
-                                reload_ew = True
-                                reload_ns = True
-                                reload_hov = True
-                                reload_ts = True
-                            '''
-    
 
                         elif but_name == 'Vis curr':
 
@@ -5985,27 +5465,6 @@ def nemo_slice_zlev(config = 'amm7',
                                     z_meth = zm_2d_meth_lst[DepthMean_sw]
 
 
-
-                                    '''
-                                    for tmp_DepthMean_sw,(zm_2d_meth,zm_2d_meth_full) in enumerate(zip(zm_2d_meth_lst,zm_2d_meth_full_lst)):
-                                        if DepthMean_sw == tmp_DepthMean_sw:
-                                            func_but_text_han['Depth-Mean'].set_text(zm_2d_meth_full)
-                                            z_meth = zm_2d_meth
-
-                                    if DepthMean_sw == 0:
-                                        func_but_text_han['Depth-Mean'].set_text('Depth-Mean')
-                                        z_meth = 'zm'
-                                    elif DepthMean_sw == 1:
-                                        func_but_text_han['Depth-Mean'].set_text('Depth-Max')
-                                        z_meth = 'zx'
-                                    elif DepthMean_sw == 2:
-                                        func_but_text_han['Depth-Mean'].set_text('Depth-Min')
-                                        z_meth = 'zn'
-                                    elif DepthMean_sw == 3:
-                                        func_but_text_han['Depth-Mean'].set_text('Depth-Std')
-                                        z_meth = 'zs'
-                                    '''
-                                
                                 
                                 if but_name == 'Surface':z_meth = 'ss'
                                 if but_name == 'Near-Bed': z_meth = 'nb'
@@ -6090,16 +5549,7 @@ def nemo_slice_zlev(config = 'amm7',
             # after selected indices and vareiabels, delete plots, ready for next cycle
             #pdb.set_trace()
             for tmp_cax in cax:tmp_cax.remove()
-            '''
-            print(len(cax))
-            for tmp_cax in cax:
-                print(tmp_cax)
-                type(tmp_cax)
-                try:
-                    tmp_cax.remove()
-                except:
-                    pdb.set_trace()
-            '''
+            
             del(cax)
             
 
