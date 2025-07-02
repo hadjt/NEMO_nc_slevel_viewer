@@ -331,7 +331,7 @@ def nemo_slice_zlev(config = 'amm7',
 
 
     axis_scale = 'Auto'
-
+    grad_horiz_vert_wgt = False
     if do_grad is None: do_grad = 0
     if do_cont is None: do_cont = True
     
@@ -1063,6 +1063,10 @@ def nemo_slice_zlev(config = 'amm7',
     # find variables common to both data sets, and use them for the buttons
     #pdb.set_trace()
     var_but_mat = var_d[1]['mat'].copy()
+
+    if len(var_but_mat) == 0:
+        print('No variable common to all datasets, len(var_but_mat) == 0')
+        pdb.set_trace()
     # If two datasets, find variables in both datasets
     if load_second_files:   
         #pdb.set_trace()
@@ -1431,6 +1435,8 @@ def nemo_slice_zlev(config = 'amm7',
     #'Reset zoom','Obs: sel','Obs: opt','Clim: Reset','Clim: Expand',
     
     Sec_regrid = False
+    Sec_regrid_slice = False
+    #Sec_regrid_slice = True
     if uniqconfig.size==1:
         func_names_lst.remove('Sec Grid')
 
@@ -1813,7 +1819,7 @@ def nemo_slice_zlev(config = 'amm7',
 
     mouse_click_id = fig.canvas.mpl_connect('button_press_event', onclick)
 
-
+    
     but_text_han[var].set_color('r')
 
     if verbose_debugging: print('Added functions boxes', datetime.now())
@@ -1823,10 +1829,6 @@ def nemo_slice_zlev(config = 'amm7',
     # Define inner functions
     ###########################################################################
 
-    #global map_x,map_y,map_dat,ew_slice_dict['x'],ew_slice_dict['y'],ew_slice_dat,ns_slice_dict['x'],ns_slice_dict['y'],ns_slice_dat,hov_x,hov_y,hov_dat,ts_x,ts_dat
-    #global ii,jj
-
-    #
 
     if verbose_debugging: print('Create inner functions', datetime.now())
     init_timer.append((datetime.now(),'Create inner functions'))
@@ -2582,25 +2584,31 @@ def nemo_slice_zlev(config = 'amm7',
 
                 if reload_ns:
                     mld_ns_slice_dict = None
-                    mld_ns_slice_dict = reload_ns_data_comb(ii,jj, data_inst_mld, lon_d[1], lat_d[1], grid_dict, var_dim[MLD_var],regrid_meth, iijj_ind,Dataset_lst,configd)
+                    #mld_ns_slice_dict = reload_ns_data_comb(ii,jj, data_inst_mld, lon_d[1], lat_d[1], grid_dict, var_dim[MLD_var],regrid_meth, iijj_ind,Dataset_lst,configd)
+                    mld_ns_slice_dict = reload_ns_data_comb(ii,jj, data_inst_mld, lon_d, lat_d, grid_dict, var_dim[MLD_var],regrid_meth, iijj_ind,Dataset_lst,configd)
                 if reload_ew:
                     mld_ew_slice_dict = None
-                    mld_ew_slice_dict = reload_ew_data_comb(ii,jj, data_inst_mld, lon_d[1], lat_d[1], grid_dict, var_dim[MLD_var],regrid_meth, iijj_ind,Dataset_lst,configd)
+                    #mld_ew_slice_dict = reload_ew_data_comb(ii,jj, data_inst_mld, lon_d[1], lat_d[1], grid_dict, var_dim[MLD_var],regrid_meth, iijj_ind,Dataset_lst,configd)
+                    mld_ew_slice_dict = reload_ew_data_comb(ii,jj, data_inst_mld, lon_d, lat_d, grid_dict, var_dim[MLD_var],regrid_meth, iijj_ind,Dataset_lst,configd)
  
                 if do_memory & do_timer: timer_lst.append(('Reloaded MLD ns&ew slices',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                     
             if reload_ew:
                 if var_dim[var] == 4:
-                    ew_slice_dict = reload_ew_data_comb(ii,jj, data_inst, lon_d[1], lat_d[1], grid_dict, var_dim[var], regrid_meth,iijj_ind,Dataset_lst,configd)
+                    ew_slice_dict = reload_ew_data_comb(ii,jj, data_inst, lon_d, lat_d, grid_dict, var_dim[var], regrid_meth,iijj_ind,Dataset_lst,configd)
 
                     if do_grad == 1:
-                        ew_slice_dict = grad_horiz_ew_data(thd,grid_dict,jj, ew_slice_dict,
-                                                           meth=grad_meth, abs_pre = grad_abs_pre, abs_post = grad_abs_post, regrid_xy = grad_regrid_xy,dx_d_dx = grad_dx_d_dx)
+                        ew_slice_dict = grad_horiz_ew_data(thd,grid_dict,jj, iijj_ind,ew_slice_dict,
+                                                           meth=grad_meth, abs_pre = grad_abs_pre, abs_post = grad_abs_post, 
+                                                           regrid_xy = grad_regrid_xy,dx_d_dx = grad_dx_d_dx,
+                                                           grad_horiz_vert_wgt = grad_horiz_vert_wgt,Sec_regrid_slice = Sec_regrid_slice)
                     if do_grad == 2:
                         ew_slice_dict = grad_vert_ew_data(ew_slice_dict,
-                                                          meth=grad_meth, abs_pre = grad_abs_pre, abs_post = grad_abs_post, regrid_xy = grad_regrid_xy,dx_d_dx = grad_dx_d_dx)
+                                                          meth=grad_meth, abs_pre = grad_abs_pre, abs_post = grad_abs_post, 
+                                                          regrid_xy = grad_regrid_xy,dx_d_dx = grad_dx_d_dx,
+                                                          Sec_regrid_slice = Sec_regrid_slice)
                 else:
-                    ew_slice_dict = reload_ew_data_comb(ii,jj, data_inst, lon_d[1], lat_d[1], grid_dict, var_dim[var], regrid_meth,iijj_ind,Dataset_lst,configd)
+                    ew_slice_dict = reload_ew_data_comb(ii,jj, data_inst, lon_d, lat_d, grid_dict, var_dim[var], regrid_meth,iijj_ind,Dataset_lst,configd)
 
                 reload_ew = False
 
@@ -2612,17 +2620,23 @@ def nemo_slice_zlev(config = 'amm7',
 
             if reload_ns:
                 if var_dim[var] == 4:               
-                    ns_slice_dict = reload_ns_data_comb(ii,jj, data_inst, lon_d[1], lat_d[1], grid_dict, var_dim[var],regrid_meth, iijj_ind,Dataset_lst,configd)
+                    #ns_slice_dict = reload_ns_data_comb(ii,jj, data_inst, lon_d[1], lat_d[1], grid_dict, var_dim[var],regrid_meth, iijj_ind,Dataset_lst,configd)
+                    ns_slice_dict = reload_ns_data_comb(ii,jj, data_inst, lon_d, lat_d, grid_dict, var_dim[var],regrid_meth, iijj_ind,Dataset_lst,configd)
  
                     if do_grad == 1:
-                        ns_slice_dict = grad_horiz_ns_data(thd,grid_dict,ii, ns_slice_dict,
-                                                           meth=grad_meth, abs_pre = grad_abs_pre, abs_post = grad_abs_post, regrid_xy = grad_regrid_xy,dx_d_dx = grad_dx_d_dx)
+                        ns_slice_dict = grad_horiz_ns_data(thd,grid_dict,ii, iijj_ind,ns_slice_dict,
+                                                           meth=grad_meth, abs_pre = grad_abs_pre, abs_post = grad_abs_post, 
+                                                           regrid_xy = grad_regrid_xy,dx_d_dx = grad_dx_d_dx,
+                                                           grad_horiz_vert_wgt = grad_horiz_vert_wgt,Sec_regrid_slice = Sec_regrid_slice)
                     if do_grad == 2:
                         ns_slice_dict = grad_vert_ns_data(ns_slice_dict,
-                                                          meth=grad_meth, abs_pre = grad_abs_pre, abs_post = grad_abs_post, regrid_xy = grad_regrid_xy,dx_d_dx = grad_dx_d_dx)
+                                                          meth=grad_meth, abs_pre = grad_abs_pre, abs_post = grad_abs_post, 
+                                                          regrid_xy = grad_regrid_xy,dx_d_dx = grad_dx_d_dx,
+                                                          Sec_regrid_slice = Sec_regrid_slice)
                 else:
 
-                    ns_slice_dict = reload_ns_data_comb(ii,jj, data_inst, lon_d[1], lat_d[1], grid_dict, var_dim[var],regrid_meth, iijj_ind,Dataset_lst,configd)
+                    #ns_slice_dict = reload_ns_data_comb(ii,jj, data_inst, lon_d[1], lat_d[1], grid_dict, var_dim[var],regrid_meth, iijj_ind,Dataset_lst,configd)
+                    ns_slice_dict = reload_ns_data_comb(ii,jj, data_inst, lon_d, lat_d, grid_dict, var_dim[var],regrid_meth, iijj_ind,Dataset_lst,configd)
  
                   
                 reload_ns = False
@@ -2761,12 +2775,24 @@ def nemo_slice_zlev(config = 'amm7',
                     map_dat = map_dat_dict[secdataset_proc + '_Sec_regrid']
 
                 if var_dim[var] == 4:
-                    #ns_slice_dat = ns_slice_dict[secdataset_proc]
-                    #ew_slice_dat = ew_slice_dict[secdataset_proc]
                     hov_dat = hov_dat_dict[secdataset_proc]
-
-                ns_slice_dat = ns_slice_dict[secdataset_proc]
-                ew_slice_dat = ew_slice_dict[secdataset_proc]
+                    
+                
+                if Sec_regrid_slice:
+                  #  pdb.set_trace()
+                    ns_slice_dat = ns_slice_dict['Sec Grid'][secdataset_proc]['data']
+                    ew_slice_dat = ew_slice_dict['Sec Grid'][secdataset_proc]['data']
+                    ns_slice_x = ns_slice_dict['Sec Grid'][secdataset_proc]['x']
+                    ew_slice_x = ew_slice_dict['Sec Grid'][secdataset_proc]['x']
+                    ns_slice_y = ns_slice_dict['Sec Grid'][secdataset_proc]['y']
+                    ew_slice_y = ew_slice_dict['Sec Grid'][secdataset_proc]['y']
+                else:
+                    ns_slice_dat = ns_slice_dict[secdataset_proc]
+                    ew_slice_dat = ew_slice_dict[secdataset_proc]
+                    ns_slice_x = ns_slice_dict['x']
+                    ew_slice_x = ew_slice_dict['x']
+                    ns_slice_y = ns_slice_dict['y']
+                    ew_slice_y = ew_slice_dict['y']
 
                 ts_dat = ts_dat_dict[secdataset_proc]
                 if vis_curr > 0:
@@ -2777,6 +2803,10 @@ def nemo_slice_zlev(config = 'amm7',
                 if do_MLD:
                     mld_ns_slice_dat = mld_ns_slice_dict[secdataset_proc]
                     mld_ew_slice_dat = mld_ew_slice_dict[secdataset_proc]
+                    mld_ns_slice_x = mld_ns_slice_dict['x']
+                    mld_ew_slice_x = mld_ew_slice_dict['x']
+                    mld_ns_slice_y = mld_ns_slice_dict['y']
+                    mld_ew_slice_y = mld_ew_slice_dict['y']
             else:
                 tmpdataset_1 = 'Dataset ' + secdataset_proc[3]
                 tmpdataset_2 = 'Dataset ' + secdataset_proc[8]
@@ -2784,14 +2814,18 @@ def nemo_slice_zlev(config = 'amm7',
                 if tmpdataset_oper == '-':
                     map_dat = map_dat_dict[tmpdataset_1] - map_dat_dict[tmpdataset_2]
                     if var_dim[var] == 4:
-                        ns_slice_dat = ns_slice_dict[tmpdataset_1] - ns_slice_dict[tmpdataset_2]
-                        ew_slice_dat = ew_slice_dict[tmpdataset_1] - ew_slice_dict[tmpdataset_2]
+                        #ns_slice_dat = ns_slice_dict[tmpdataset_1] - ns_slice_dict[tmpdataset_2]
+                        #ew_slice_dat = ew_slice_dict[tmpdataset_1] - ew_slice_dict[tmpdataset_2]
                         #pdb.set_trace()
                         hov_dat = hov_dat_dict[tmpdataset_1] - hov_dat_dict[tmpdataset_2]
 
-                    elif var_dim[var] == 3:
-                        ns_slice_dat = ns_slice_dict[tmpdataset_1] - ns_slice_dict[tmpdataset_2]
-                        ew_slice_dat = ew_slice_dict[tmpdataset_1] - ew_slice_dict[tmpdataset_2]
+                    #elif var_dim[var] == 3:
+                    ns_slice_dat = ns_slice_dict[tmpdataset_1] - ns_slice_dict[tmpdataset_2]
+                    ew_slice_dat = ew_slice_dict[tmpdataset_1] - ew_slice_dict[tmpdataset_2]
+                    ns_slice_x = ns_slice_dict['x']
+                    ew_slice_x = ew_slice_dict['x']
+                    ns_slice_y = ns_slice_dict['y']
+                    ew_slice_y = ew_slice_dict['y']
 
                     ts_dat = ts_dat_dict[tmpdataset_1] - ts_dat_dict[tmpdataset_2]
                     if vis_curr > 0:
@@ -2803,6 +2837,10 @@ def nemo_slice_zlev(config = 'amm7',
                 if do_MLD:  
                     mld_ns_slice_dat = mld_ns_slice_dict['Dataset 1'].copy()*0.
                     mld_ew_slice_dat = mld_ew_slice_dict['Dataset 1'].copy()*0.
+                    mld_ns_slice_x = mld_ns_slice_dict['x']
+                    mld_ew_slice_x = mld_ew_slice_dict['x']
+                    mld_ns_slice_y = mld_ns_slice_dict['y']
+                    mld_ew_slice_y = mld_ew_slice_dict['y']
                     
             # if in ensemble mode, and an ensmble stat is selected
             # Calculate the stat, and copy into map_dat for the map ax.
@@ -2834,7 +2872,7 @@ def nemo_slice_zlev(config = 'amm7',
                 if cur_xlim is None:
                     pdx = int(np.ceil(map_dat.shape[1]/pxy))
                 else:
-                    pdx = int(np.ceil(((ew_slice_dict['x']>cur_xlim[0]) &(ew_slice_dict['x']<cur_xlim[1]) ).sum()/pxy))
+                    pdx = int(np.ceil(((ew_slice_x>cur_xlim[0]) &(ew_slice_x<cur_xlim[1]) ).sum()/pxy))
 
                 if cur_ylim is None:
                     pdy = int(np.ceil(map_dat.shape[0]/pxy))
@@ -2860,8 +2898,8 @@ def nemo_slice_zlev(config = 'amm7',
                 pax.append(ax[0].pcolormesh(map_dat_dict['x'][::pdy,::pdx],map_dat_dict['y'][::pdy,::pdx],map_dat[::pdy,::pdx],cmap = curr_cmap,norm = climnorm, rasterized = True))
             if var_dim[var] == 4:
                 #pdb.set_trace()
-                pax.append(ax[1].pcolormesh(ew_slice_dict['x'][::pdx],ew_slice_dict['y'][:,::pdx],ew_slice_dat[:,::pdx],cmap = curr_cmap,norm = climnorm, rasterized = True))
-                pax.append(ax[2].pcolormesh(ns_slice_dict['x'][::pdy],ns_slice_dict['y'][:,::pdy],ns_slice_dat[:,::pdy],cmap = curr_cmap,norm = climnorm, rasterized = True))
+                pax.append(ax[1].pcolormesh(ew_slice_x[::pdx],ew_slice_y[:,::pdx],ew_slice_dat[:,::pdx],cmap = curr_cmap,norm = climnorm, rasterized = True))
+                pax.append(ax[2].pcolormesh(ns_slice_x[::pdy],ns_slice_y[:,::pdy],ns_slice_dat[:,::pdy],cmap = curr_cmap,norm = climnorm, rasterized = True))
                 pax.append(ax[3].pcolormesh(hov_dat_dict['x'],hov_dat_dict['y'],hov_dat,cmap = curr_cmap,norm = climnorm, rasterized = True))
             elif var_dim[var] == 3:
 
@@ -2870,16 +2908,16 @@ def nemo_slice_zlev(config = 'amm7',
                     for dsi,tmp_datstr in enumerate(Dataset_lst):
                         tmplw = 0.5
                         if secdataset_proc == tmp_datstr:tmplw = 1
-                        pax2d.append(ax[1].plot(ew_slice_dict['x'],ew_slice_dict[tmp_datstr],Dataset_col[dsi], lw = tmplw))
-                        pax2d.append(ax[2].plot(ns_slice_dict['x'],ns_slice_dict[tmp_datstr],Dataset_col[dsi], lw = tmplw))
+                        pax2d.append(ax[1].plot(ew_slice_x,ew_slice_dict[tmp_datstr],Dataset_col[dsi], lw = tmplw))
+                        pax2d.append(ax[2].plot(ns_slice_x,ns_slice_dict[tmp_datstr],Dataset_col[dsi], lw = tmplw))
 
                         if do_ensemble:
-                            pax2d.append(ax[1].plot(ew_slice_dict['x'],ens_ew_slice_dat[0],'k', lw = 1))
-                            pax2d.append(ax[1].plot(ew_slice_dict['x'],ens_ew_slice_dat[1],'k', lw = 2))
-                            pax2d.append(ax[1].plot(ew_slice_dict['x'],ens_ew_slice_dat[2],'k', lw = 1))
-                            pax2d.append(ax[2].plot(ns_slice_dict['x'],ens_ns_slice_dat[0],'k', lw = 1))
-                            pax2d.append(ax[2].plot(ns_slice_dict['x'],ens_ns_slice_dat[1],'k', lw = 2))
-                            pax2d.append(ax[2].plot(ns_slice_dict['x'],ens_ns_slice_dat[2],'k', lw = 1))
+                            pax2d.append(ax[1].plot(ew_slice_x,ens_ew_slice_dat[0],'k', lw = 1))
+                            pax2d.append(ax[1].plot(ew_slice_x,ens_ew_slice_dat[1],'k', lw = 2))
+                            pax2d.append(ax[1].plot(ew_slice_x,ens_ew_slice_dat[2],'k', lw = 1))
+                            pax2d.append(ax[2].plot(ns_slice_x,ens_ns_slice_dat[0],'k', lw = 1))
+                            pax2d.append(ax[2].plot(ns_slice_x,ens_ns_slice_dat[1],'k', lw = 2))
+                            pax2d.append(ax[2].plot(ns_slice_x,ens_ns_slice_dat[2],'k', lw = 1))
                                 
                 else:
                     # only plot the current dataset difference
@@ -2889,11 +2927,11 @@ def nemo_slice_zlev(config = 'amm7',
                     if tmpdataset_oper == '-': 
                         
 
-                        pax2d.append(ax[1].plot(ew_slice_dict['x'],ew_slice_dict[tmpdataset_1] - ew_slice_dict[tmpdataset_2],Dataset_col_diff_dict[secdataset_proc]))
-                        pax2d.append(ax[1].plot(ew_slice_dict['x'],ew_slice_dict['Dataset 1']*0, color = '0.5', ls = '--'))
+                        pax2d.append(ax[1].plot(ew_slice_x,ew_slice_dict[tmpdataset_1] - ew_slice_dict[tmpdataset_2],Dataset_col_diff_dict[secdataset_proc]))
+                        pax2d.append(ax[1].plot(ew_slice_x,ew_slice_dict['Dataset 1']*0, color = '0.5', ls = '--'))
 
-                        pax2d.append(ax[2].plot(ns_slice_dict['x'],ns_slice_dict[tmpdataset_1] - ns_slice_dict[tmpdataset_2],Dataset_col_diff_dict[secdataset_proc]))
-                        pax2d.append(ax[2].plot(ns_slice_dict['x'],ns_slice_dict['Dataset 1']*0, color = '0.5', ls = '--'))
+                        pax2d.append(ax[2].plot(ns_slice_x,ns_slice_dict[tmpdataset_1] - ns_slice_dict[tmpdataset_2],Dataset_col_diff_dict[secdataset_proc]))
+                        pax2d.append(ax[2].plot(ns_slice_x,ns_slice_dict['Dataset 1']*0, color = '0.5', ls = '--'))
 
                         for tmp_datstr1 in Dataset_lst:
                             #th_d_ind1 = int(tmp_datstr1[-1])
@@ -2906,11 +2944,11 @@ def nemo_slice_zlev(config = 'amm7',
                                     tmplw = 0.5
                                     if secdataset_proc == tmp_diff_str_name:tmplw = 1
 
-                                    pax2d.append(ax[1].plot(ew_slice_dict['x'],ew_slice_dict[tmp_datstr1] - ew_slice_dict[tmp_datstr2],Dataset_col_diff_dict[tmp_diff_str_name], lw = tmplw))
-                                    pax2d.append(ax[2].plot(ns_slice_dict['x'],ns_slice_dict[tmp_datstr1] - ns_slice_dict[tmp_datstr2],Dataset_col_diff_dict[tmp_diff_str_name], lw = tmplw))
+                                    pax2d.append(ax[1].plot(ew_slice_x,ew_slice_dict[tmp_datstr1] - ew_slice_dict[tmp_datstr2],Dataset_col_diff_dict[tmp_diff_str_name], lw = tmplw))
+                                    pax2d.append(ax[2].plot(ns_slice_x,ns_slice_dict[tmp_datstr1] - ns_slice_dict[tmp_datstr2],Dataset_col_diff_dict[tmp_diff_str_name], lw = tmplw))
                                                 
-                            pax2d.append(ax[1].plot(ew_slice_dict['x'],ew_slice_dict['Dataset 1']*0, color = '0.5', ls = '--'))
-                            pax2d.append(ax[2].plot(ns_slice_dict['x'],ns_slice_dict['Dataset 1']*0, color = '0.5', ls = '--'))
+                            pax2d.append(ax[1].plot(ew_slice_x,ew_slice_dict['Dataset 1']*0, color = '0.5', ls = '--'))
+                            pax2d.append(ax[2].plot(ns_slice_x,ns_slice_dict['Dataset 1']*0, color = '0.5', ls = '--'))
 
 
 
@@ -2920,8 +2958,8 @@ def nemo_slice_zlev(config = 'amm7',
                 if MLD_show:
                     #pdb.set_trace()
                     if var_dim[var]== 4:
-                        mldax_lst.append(ax[1].plot(mld_ew_slice_dict['x'],mld_ew_slice_dat,'k', lw = 0.5))
-                        mldax_lst.append(ax[2].plot(mld_ns_slice_dict['x'],mld_ns_slice_dat,'k', lw = 0.5))
+                        mldax_lst.append(ax[1].plot(mld_ew_slice_x,mld_ew_slice_dat,'k', lw = 0.5))
+                        mldax_lst.append(ax[2].plot(mld_ns_slice_x,mld_ns_slice_dat,'k', lw = 0.5))
 
             tsax_lst = []
             #Dataset_col = ['r','b','darkgreen','gold']
@@ -3233,13 +3271,13 @@ def nemo_slice_zlev(config = 'amm7',
             if zlim_max == None:
                 tmpew_xlim = ax[1].get_xlim()
                 tmpns_xlim = ax[2].get_xlim()
-                tmpew_visible_ind = (ew_slice_dict['x']>=tmpew_xlim[0]) & (ew_slice_dict['x']<=tmpew_xlim[1]) 
-                tmpns_visible_ind = (ns_slice_dict['x']>=tmpns_xlim[0]) & (ns_slice_dict['x']<=tmpns_xlim[1]) 
+                tmpew_visible_ind = (ew_slice_x>=tmpew_xlim[0]) & (ew_slice_x<=tmpew_xlim[1]) 
+                tmpns_visible_ind = (ns_slice_x>=tmpns_xlim[0]) & (ns_slice_x<=tmpns_xlim[1]) 
 
                 tmp_ew_ylim = [0,zlim_min]
                 tmp_ns_ylim = [0,zlim_min]
-                if tmpew_visible_ind.any(): tmp_ew_ylim = [ew_slice_dict['y'][:,tmpew_visible_ind].max(),zlim_min]
-                if tmpns_visible_ind.any(): tmp_ns_ylim = [ns_slice_dict['y'][:,tmpns_visible_ind].max(),zlim_min]
+                if tmpew_visible_ind.any(): tmp_ew_ylim = [ew_slice_y[:,tmpew_visible_ind].max(),zlim_min]
+                if tmpns_visible_ind.any(): tmp_ns_ylim = [ns_slice_y[:,tmpns_visible_ind].max(),zlim_min]
                 tmp_hov_ylim = [hov_dat_dict['y'].max(),zlim_min]
                 if var_dim[var] == 4:
                     ax[1].set_ylim(tmp_ew_ylim)
@@ -3265,28 +3303,17 @@ def nemo_slice_zlev(config = 'amm7',
             if var_dim[var] == 3:
                 tmpew_xlim = ax[1].get_xlim()
                 tmpns_xlim = ax[2].get_xlim()
-                tmpew_visible_ind = (ew_slice_dict['x']>=tmpew_xlim[0]) & (ew_slice_dict['x']<=tmpew_xlim[1]) 
-                tmpns_visible_ind = (ns_slice_dict['x']>=tmpns_xlim[0]) & (ns_slice_dict['x']<=tmpns_xlim[1]) 
+                tmpew_visible_ind = (ew_slice_x>=tmpew_xlim[0]) & (ew_slice_x<=tmpew_xlim[1]) 
+                tmpns_visible_ind = (ns_slice_x>=tmpns_xlim[0]) & (ns_slice_x<=tmpns_xlim[1]) 
                 # catch edgecase where cross hairs don't pass through any water
                 tmp_ew_slice_subset = ew_slice_dat[tmpew_visible_ind]
                 tmp_ns_slice_subset = ns_slice_dat[tmpns_visible_ind]
                 if (tmp_ew_slice_subset.size>0)&(not tmp_ew_slice_subset.mask.all()):
-                    #tmp_ew_ylim = np.array([ew_slice_dat[tmpew_visible_ind].min(),ew_slice_dat[tmpew_visible_ind].max()])
                     tmp_ew_ylim = np.array([tmp_ew_slice_subset.min(),tmp_ew_slice_subset.max()])
                     ax[1].set_ylim(tmp_ew_ylim)
-                    #try:
-                    #    ax[1].set_ylim(tmp_ew_ylim)
-                    #except:
-                    #    pdb.set_trace()
                 if (tmp_ns_slice_subset.size>0)&(not tmp_ns_slice_subset.mask.all()):
-                    #tmp_ns_ylim = np.array([ns_slice_dat[tmpns_visible_ind].min(),ns_slice_dat[tmpns_visible_ind].max()])
                     tmp_ns_ylim = np.array([tmp_ns_slice_subset.min(),tmp_ns_slice_subset.max()])
                     ax[2].set_ylim(tmp_ns_ylim)
-                    #try: 
-                    #    ax[2].set_ylim(tmp_ns_ylim)
-                    #except: 
-                    #    pdb.set_trace()
-                        
                 del(tmp_ew_slice_subset)
                 del(tmp_ns_slice_subset)
         
@@ -3304,9 +3331,10 @@ def nemo_slice_zlev(config = 'amm7',
 
             if verbose_debugging: print('Reset colour limits', datetime.now())
             try:
+                test_clim_code  = False
 
-                if load_second_files & (clim_pair == True)&(secdataset_proc  in Dataset_lst) :
-
+                if load_second_files & (clim_pair == True)&(secdataset_proc in Dataset_lst) :
+                    if test_clim_code: print('load_second_files & (clim_pair == True)&(secdataset_proc in Dataset_lst)')
                     '''
                     # if no xlim present using those from the map.
                     tmpxlim = cur_xlim
@@ -3319,12 +3347,15 @@ def nemo_slice_zlev(config = 'amm7',
 
                     tmp_map_dat_clim_lst = []
                     for tmp_datstr in Dataset_lst:
+                        if test_clim_code: print('tmp_datstr')
                         
                         tmp_map_dat_clim = map_dat_dict[tmp_datstr][map_dat_reg_mask_1]
                         tmp_map_dat_clim = tmp_map_dat_clim[tmp_map_dat_clim.mask == False]
 
                         if len(tmp_map_dat_clim)>2:
                             tmp_map_dat_clim_lst.append(np.percentile(tmp_map_dat_clim,(5,95)))
+                        
+                        if test_clim_code: print('tmp_map_dat_clim_lst.append(np.percentile(tmp_map_dat_clim,(5,95)))')
                         
                         
                     tmp_map_dat_clim_mat = np.ma.array(tmp_map_dat_clim_lst).ravel()
@@ -3335,24 +3366,63 @@ def nemo_slice_zlev(config = 'amm7',
                         if map_clim.mask.any() == False: set_clim_pcolor(map_clim, ax = ax[0])
 
                     
+                    if test_clim_code: print('if map_clim.mask.any() == False: set_clim_pcolor(map_clim, ax = ax[0])')
                     # only apply to ns and ew slices, and hov if 3d variable. 
 
                     if var_dim[var] == 4:
 
+                        if test_clim_code: print('if var_dim[var] == 4:')
+                        '''
+                        
+                        ew_dat_reg_mask_1 = (ew_slice_x>tmpxlim[0]) & (ew_slice_x<tmpxlim[1]) 
+                        ns_dat_reg_mask_1 = (ns_slice_x>tmpylim[0]) & (ns_slice_x<tmpylim[1])
+                        
+                        ns_slice_x = ns_slice_dict['x']
+                        ew_slice_x = ew_slice_dict['x']
+                        ns_slice_y = ns_slice_dict['y']
+                        ew_slice_y = ew_slice_dict['y']
+                        '''
+
+                        # Not updated for Sec_regrid_slice
                         ew_dat_reg_mask_1 = (ew_slice_dict['x']>tmpxlim[0]) & (ew_slice_dict['x']<tmpxlim[1]) 
                         ns_dat_reg_mask_1 = (ns_slice_dict['x']>tmpylim[0]) & (ns_slice_dict['x']<tmpylim[1])
+                        if test_clim_code: print("'ns_dat_reg_mask_1 = (ns_slice_dict['x']>tmpylim[0]) & (ns_slice_dict['x']<tmpylim[1])'")
                         
                         tmp_ew_dat_clim_lst,tmp_ns_dat_clim_lst, tmp_hov_dat_clim_lst = [],[],[]
 
                         for tmp_datstr in Dataset_lst:
+                            if test_clim_code: print('for tmp_datstr in Dataset_lst:',tmp_datstr)
 
-                            tmp_ew_dat_clim = ew_slice_dict[tmp_datstr][:,ew_dat_reg_mask_1]
-                            tmp_ns_dat_clim = ns_slice_dict[tmp_datstr][:,ns_dat_reg_mask_1]
-                            tmp_hov_dat_clim = hov_dat_dict[tmp_datstr].copy()
+                            tmp_ew_slice_dict = ew_slice_dict[tmp_datstr]
+                            tmp_ns_slice_dict = ns_slice_dict[tmp_datstr]
+                            tmp_hov_dat_dict = hov_dat_dict[tmp_datstr]
+
+                            if Sec_regrid_slice:
+
+                                tmp_ew_slice_dict = ew_slice_dict['Sec Grid'][tmp_datstr]['data'].copy()
+                                tmp_ns_slice_dict = ns_slice_dict['Sec Grid'][tmp_datstr]['data'].copy()
+                                #tmp_hov_dat_dict = hov_dat_dict['Sec Grid'][tmp_datstr]['data'].copy()
+
+
+                                #if tmp_datstr != Dataset_lst[0]:
+                                ew_dat_reg_mask_1 = (ew_slice_dict['Sec Grid'][tmp_datstr]['x']>tmpxlim[0]) & (ew_slice_dict['Sec Grid'][tmp_datstr]['x']<tmpxlim[1]) 
+                                ns_dat_reg_mask_1 = (ns_slice_dict['Sec Grid'][tmp_datstr]['x']>tmpylim[0]) & (ns_slice_dict['Sec Grid'][tmp_datstr]['x']<tmpylim[1])
+                                #ew_slice_dict['Sec Grid'][tmp_datstr]['x']
+
+
+                            #tmp_ew_dat_clim = ew_slice_dict[tmp_datstr][:,ew_dat_reg_mask_1]
+                            #tmp_ns_dat_clim = ns_slice_dict[tmp_datstr][:,ns_dat_reg_mask_1]
+                            #tmp_hov_dat_clim = hov_dat_dict[tmp_datstr].copy()
+
+                            tmp_ew_dat_clim = tmp_ew_slice_dict[:,ew_dat_reg_mask_1]
+                            tmp_ns_dat_clim = tmp_ns_slice_dict[:,ns_dat_reg_mask_1]
+                            tmp_hov_dat_clim = tmp_hov_dat_dict.copy()
+                            if test_clim_code: print('tmp_hov_dat_clim = hov_dat_dict[tmp_datstr].copy()',tmp_datstr)
 
                             tmp_ew_dat_clim = tmp_ew_dat_clim[tmp_ew_dat_clim.mask == False]
                             tmp_ns_dat_clim = tmp_ns_dat_clim[tmp_ns_dat_clim.mask == False]
                             tmp_hov_dat_clim = tmp_hov_dat_clim[tmp_hov_dat_clim.mask == False]
+                            if test_clim_code: print('tmp_hov_dat_clim = tmp_hov_dat_clim[tmp_hov_dat_clim.mask == False]',tmp_datstr)
 
 
                             if len(tmp_ew_dat_clim)>2:   
@@ -3365,11 +3435,13 @@ def nemo_slice_zlev(config = 'amm7',
                                 tmp_hov_dat_clim_lst.append(np.percentile(tmp_hov_dat_clim,(5,95)))
 
 
+                            if test_clim_code: print('tmp_hov_dat_clim_lst.append(np.percentile(tmp_hov_dat_clim,(5,95)))',tmp_datstr)
 
 
                         tmp_ew_dat_clim_mat =  np.ma.array(tmp_ew_dat_clim_lst).ravel()
                         tmp_ns_dat_clim_mat =  np.ma.array(tmp_ns_dat_clim_lst).ravel()
                         tmp_hov_dat_clim_mat = np.ma.array(tmp_hov_dat_clim_lst).ravel()
+                        if test_clim_code: print('tmp_hov_dat_clim_mat')
 
 
                         if tmp_ew_dat_clim_mat.size>1:
@@ -3377,28 +3449,40 @@ def nemo_slice_zlev(config = 'amm7',
                             if clim_sym: ew_clim = np.ma.array([-1,1])*np.abs(ew_clim).max()
                             if ew_clim.mask.any() == False: set_clim_pcolor(ew_clim, ax = ax[1])
 
+                        if test_clim_code: print('ew_clim')
+
                         if tmp_ns_dat_clim_mat.size>1:
                             ns_clim = np.ma.array([tmp_ns_dat_clim_mat.min(),tmp_ns_dat_clim_mat.max()])
                             if clim_sym: ns_clim = np.ma.array([-1,1])*np.abs(ns_clim).max()
                             if ns_clim.mask.any() == False: set_clim_pcolor(ns_clim, ax = ax[2])
 
+                        if test_clim_code: print('ns_clim')
+
                         if tmp_hov_dat_clim_mat.size>1:
                             hov_clim = np.ma.array([tmp_hov_dat_clim_mat.min(),tmp_hov_dat_clim_mat.max()])
                             if clim_sym: hov_clim = np.ma.array([-1,1])*np.abs(hov_clim).max()
                             if hov_clim.mask.any() == False: set_clim_pcolor(hov_clim, ax = ax[3])
+                        if test_clim_code: print('hov_clim')
 #
                             
                 else:
+                    if test_clim_code: print('else')
                     if (clim is None)| (secdataset_proc not in Dataset_lst):
+                        if test_clim_code: print('(clim is None)| (secdataset_proc not in Dataset_lst):')
                         for tmpax in ax[:-1]:set_perc_clim_pcolor_in_region(5,95, ax = tmpax,sym = clim_sym)
+                        if test_clim_code: print('set_perc_clim_pcolor_in_region(5,95, ax = tmpax,sym = clim_sym)')
+                        
                         
                     elif clim is not None:
+                        if test_clim_code: print('elif clim is not None:')
                         if len(clim)>2:
                             for ai,tmpax in enumerate(ax):set_clim_pcolor((clim[2*ai:2*ai+1+1]), ax = tmpax)
                             set_clim_pcolor((clim[:2]), ax = ax[0])
+                        if test_clim_code: print('set_clim_pcolor((clim[:2]), ax = ax[0])')
                         elif len(clim)==2:
                             for ai,tmpax in enumerate(ax):set_clim_pcolor((clim), ax = tmpax)
                             set_clim_pcolor((clim), ax = ax[0])
+                        if test_clim_code: print('set_clim_pcolor((clim), ax = ax[0])')
             except:
                 print("An exception occured - probably 'IndexError: cannot do a non-empty take from an empty axes.'")
                 pdb.set_trace()
@@ -3417,9 +3501,28 @@ def nemo_slice_zlev(config = 'amm7',
             
             ## add lines to show current point. 
             # using plot for the map to show lines if on a rotated grid (amm15) etc.
+            
+
+            crshr_ax = []
+            crshr_ax.append(ax[0].plot(lon_d[1][jj,:],lat_d[1][jj,:],color = '0.5', alpha = 0.5))
+            crshr_ax.append(ax[0].plot(lon_d[1][:,ii],lat_d[1][:,ii],color = '0.5', alpha = 0.5))
+            if Sec_regrid_slice:
+                if secdataset_proc in Dataset_lst[1:]:
+                    crshr_ax.append(ax[0].plot(ew_slice_dict['Sec Grid'][secdataset_proc]['lon'],ew_slice_dict['Sec Grid'][secdataset_proc]['lat'],color = '0.5', alpha = 0.5, ls = '--'))
+                    crshr_ax.append(ax[0].plot(ns_slice_dict['Sec Grid'][secdataset_proc]['lon'],ns_slice_dict['Sec Grid'][secdataset_proc]['lat'],color = '0.5', alpha = 0.5, ls = '--'))
+            
+            '''
             cs_plot_1 = ax[0].plot(lon_d[1][jj,:],lat_d[1][jj,:],color = '0.5', alpha = 0.5) 
             cs_plot_2 = ax[0].plot(lon_d[1][:,ii],lat_d[1][:,ii],color = '0.5', alpha = 0.5)
+            if Sec_regrid_slice:
+                if secdataset_proc in Dataset_lst[1:]:
+                    csrg_plot_1 = ax[0].plot(ew_slice_dict['Sec Grid']['Dataset 1']['lon'],ew_slice_dict['Sec Grid']['Dataset 1']['lat'],color = '0.5', alpha = 0.5, ls = '--') 
+                    csrg_plot_2 = ax[0].plot(ns_slice_dict['Sec Grid']['Dataset 1']['lon'],ns_slice_dict['Sec Grid']['Dataset 1']['lat'],color = '0.5', alpha = 0.5, ls = '--')
+            
+            '''
             cs_line = []
+
+
             # using axhline, axvline, for slices, hov, time series
             cs_line.append(ax[1].axvline(lon_d[1][jj,ii],color = '0.5', alpha = 0.5))
             cs_line.append(ax[2].axvline(lat_d[1][jj,ii],color = '0.5', alpha = 0.5))
@@ -3479,8 +3582,8 @@ def nemo_slice_zlev(config = 'amm7',
                 
                 
                 if var_dim[var] == 4: 
-                    conax.append(ax[1].contour(np.tile(ew_slice_dict['x'],(nz,1)),ew_slice_dict['y'],ew_slice_dat,cont_val_lst[1], colors = contcols, linewidths = contlws, alphas = contalphas))
-                    conax.append(ax[2].contour(np.tile(ns_slice_dict['x'],(nz,1)),ns_slice_dict['y'],ns_slice_dat,cont_val_lst[2], colors = contcols, linewidths = contlws, alphas = contalphas))
+                    conax.append(ax[1].contour(np.tile(ew_slice_x,(nz,1)),ew_slice_y,ew_slice_dat,cont_val_lst[1], colors = contcols, linewidths = contlws, alphas = contalphas))
+                    conax.append(ax[2].contour(np.tile(ns_slice_x,(nz,1)),ns_slice_y,ns_slice_dat,cont_val_lst[2], colors = contcols, linewidths = contlws, alphas = contalphas))
                     if hov_time & ntime>1:
                         conax.append(ax[3].contour(hov_dat_dict['x'],hov_dat_dict['y'],hov_dat,cont_val_lst[3], colors = contcols, linewidths = contlws, alphas = contalphas))
 
@@ -5343,14 +5446,21 @@ def nemo_slice_zlev(config = 'amm7',
 
                         elif but_name == 'Sec Grid':
                             if Sec_regrid:
-                                    Sec_regrid = False
-                                    func_but_text_han['Sec Grid'].set_color('k')
+                                Sec_regrid = False
+                                Sec_regrid_slice = False
+                                func_but_text_han['Sec Grid'].set_color('k')
                             else:
                                 Sec_regrid = True
+                                Sec_regrid_slice = True
                                 func_but_text_han['Sec Grid'].set_color('darkgreen')
+                                # when loading with Sec Grid, there is another field in the map_dat_dict
+                                #   if its not there, reload.
+                                # don't need to check other datasets, as if its in 2, itll be in all secondary datasets?
                                 if 'Dataset 2_Sec_Grid' not in map_dat_dict.keys():
                                     reload_map = True
                                     reload_UV_map = True
+
+                            
                         elif but_name == 'Time Diff':
 
                             if ti == 0:
@@ -5621,14 +5731,24 @@ def nemo_slice_zlev(config = 'amm7',
             #rem_loc2 = tsax2.pop(0)
             #rem_loc2.remove()
 
-
+            '''
             cs_plot_1_pop = cs_plot_1.pop()
             cs_plot_1_pop.remove()
             cs_plot_2_pop = cs_plot_2.pop()
             cs_plot_2_pop.remove()
 
-            
+            if Sec_regrid_slice:
+                if secdataset_proc in Dataset_lst[1:]:                    
+                    csrg_plot_1_pop = csrg_plot_1.pop()
+                    csrg_plot_1_pop.remove()
+                    csrg_plot_2_pop = csrg_plot_2.pop()
+                    csrg_plot_2_pop.remove()
+            '''
 
+            
+            for tmpcrshr_ax in crshr_ax:
+                rem_loc = tmpcrshr_ax.pop(0)
+                rem_loc.remove()
             
             # sometime when it crashes, it adds additional colorbars. WE can catch this be removing any colorbars from the figure... 
             #   however, this doesn't reset the axes size, so when the new colorbar is added, the axes is reduced in size. 
