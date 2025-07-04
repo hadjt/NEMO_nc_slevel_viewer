@@ -2835,8 +2835,8 @@ def reload_hov_data_comb_time(var,var_mat,var_grid,var_dim,deriv_var,ldi,thd,tim
 
     hov_dat = {}
 
-    hov_dat['x'] = time_datetime
-    hov_dat['y'] = grid_dict['Dataset 1']['gdept'][:,jj_in,ii_in]
+    hov_dat['x'] = time_datetime.copy()
+    hov_dat['y'] = grid_dict['Dataset 1']['gdept'][:,jj_in,ii_in].copy()
     hov_dat['Sec Grid'] = {}
     for tmp_datstr in Dataset_lst:
         hov_dat['Sec Grid'][tmp_datstr] = {}
@@ -2846,7 +2846,7 @@ def reload_hov_data_comb_time(var,var_mat,var_grid,var_dim,deriv_var,ldi,thd,tim
         ############################
         tmp_cur_var_grid = update_cur_var_grid(var,tmp_datstr,ldi, var_grid[tmp_datstr], xarr_dict )
             
-        hov_dat['Sec Grid'][tmp_datstr]['x'] = time_d[tmp_datstr][tmp_grid]['datetime']
+        hov_dat['Sec Grid'][tmp_datstr]['x'] = time_d[tmp_datstr][tmp_grid]['datetime'].copy()
         ############################
 
     
@@ -3001,6 +3001,8 @@ def reload_hov_data_comb_time(var,var_mat,var_grid,var_dim,deriv_var,ldi,thd,tim
                 # find equivalent iijj coord
                 ii,jj = iijj_ind[tmp_datstr]['ii'],iijj_ind[tmp_datstr]['jj']
 
+            #save orig_ii,orig_jj, as gdept not on LBC grid
+            orig_ii,orig_jj = ii,jj
 
             cur_var_grid = None
 
@@ -3049,9 +3051,10 @@ def reload_hov_data_comb_time(var,var_mat,var_grid,var_dim,deriv_var,ldi,thd,tim
 
                             else:
                                 # if point in more than one grid, stop
+                                print(ii,cur_var_grid)
                                 pdb.set_trace()
 
-                            print(ii,cur_var_grid)
+                            #print(ii,cur_var_grid)
 
 
             #tmp_cur_var_grid = tmp_cur_var_grid[0]
@@ -3064,40 +3067,71 @@ def reload_hov_data_comb_time(var,var_mat,var_grid,var_dim,deriv_var,ldi,thd,tim
                 print('reload_hov_data_comb_time - var no in current grid')
                 pdb.set_trace()
 
+            # Copy to second grid
+            hov_dat['Sec Grid'][tmp_datstr]['x'] = time_d[tmp_datstr][cur_var_grid]['datetime'].copy()
+            #if np.ma.is_masked(ii*jj):
+            #    hov_dat['Sec Grid'][tmp_datstr]['y'] = np.linspace(0,1,grid_dict[tmp_datstr]['gdept'][:,0,0].size)
+            #else:
+            #    hov_dat['Sec Grid'][tmp_datstr]['y'] = grid_dict[tmp_datstr]['gdept'][:,ii,jj].copy()# [:,thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx'],thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy']][ii,jj].copy()
+                
+            if tmp_datstr == 'Dataset 1':
+                hov_dat['x'] = time_d[tmp_datstr][cur_var_grid]['datetime'].copy()
    
             if np.ma.is_masked(ii*jj):
+                hov_dat['Sec Grid'][tmp_datstr]['y'] = np.linspace(0,1,grid_dict[tmp_datstr]['gdept'][:,0,0].size)
+                Sec_Grid_ntime = hov_dat['Sec Grid'][tmp_datstr]['x'].size
                 if var_dim[var] == 4:
                     hov_dat[tmp_datstr] = np.ma.zeros((nz,ntime))*np.ma.masked
+                    hov_dat['Sec Grid'][tmp_datstr]['data']  = np.ma.zeros((nz,Sec_Grid_ntime))*np.ma.masked
                 else:
                     hov_dat[tmp_datstr] = np.ma.zeros((ntime))*np.ma.masked
+                    hov_dat['Sec Grid'][tmp_datstr]['data']  = np.ma.zeros((Sec_Grid_ntime))*np.ma.masked
             else:
+                
+                try:
+                    #use orig_ii,orig_jj, as gdepth not on LBC grid
+                    hov_dat['Sec Grid'][tmp_datstr]['y'] = grid_dict[tmp_datstr]['gdept'][:,orig_jj,orig_ii].copy()# [:,thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx'],thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy']][ii,jj].copy()
+                except:
+                    print('get gdepth exception')
+                    pdb.set_trace()
                 #hov_dat[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][cur_var_grid][ldi].variables[var][:,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,:,jj,ii].load()).T
                 hov_dat[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][cur_var_grid][ldi].variables[var].T[thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx'],thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy']][ii,jj].load())
+                hov_dat['Sec Grid'][tmp_datstr]['data'] = hov_dat[tmp_datstr].copy() #np.ma.masked_invalid(xarr_dict[tmp_datstr][cur_var_grid][ldi].variables[var].T[thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx'],thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy']][ii,jj].load())
             
+
+
+
+
+            print(tmp_datstr, hov_dat['Sec Grid'][tmp_datstr]['data'].shape, hov_dat['Sec Grid'][tmp_datstr]['x'].shape, hov_dat['Sec Grid'][tmp_datstr]['y'].shape, (hov_dat['Sec Grid'][tmp_datstr]['data'].mask == False).sum())
+    
             if do_mask_dict[tmp_datstr]:
                 try:
                 
-                    tmp_mask = grid_dict[tmp_datstr]['tmask'][:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,jj,ii] == 0
-                    if var_dim[var] == 4:
-                        hov_dat[tmp_datstr][tmp_mask,:] = np.ma.masked
-                    else:    
-                        hov_dat[tmp_datstr][tmp_mask[0]] = np.ma.masked
+                    if np.ma.is_masked(ii*jj) == False:
+                        tmp_mask = grid_dict[tmp_datstr]['tmask'][:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,orig_jj,orig_ii] == 0
+                        if var_dim[var] == 4:
+                            hov_dat[tmp_datstr][tmp_mask,:] = np.ma.masked
+                            hov_dat['Sec Grid'][tmp_datstr]['data'][tmp_mask,:] = np.ma.masked
+                        else:    
+                            hov_dat[tmp_datstr][tmp_mask[0]] = np.ma.masked
+                            hov_dat['Sec Grid'][tmp_datstr]['data'][tmp_mask[0]] = np.ma.masked
                         
                 except:
+                    print('hov_time masked exception')
                     pdb.set_trace()
 
 
-            hov_dat['Sec Grid'][tmp_datstr]['x'] = time_d[tmp_datstr][cur_var_grid]['datetime']
-            if tmp_datstr == 'Dataset 1':
-                hov_dat['x'] = time_d[tmp_datstr][cur_var_grid]['datetime']
             
             #if the same config, extract same point. 
             #if configd[th_d_ind] == configd[1]: 
-            if (configd[th_d_ind].upper() == configd[1].upper())|(configd[th_d_ind].split('_')[0].upper() == configd[1].split('_')[0].upper()):
-            
-                print('')
+            #if (configd[th_d_ind].upper() == configd[1].upper())|(configd[th_d_ind].split('_')[0].upper() == configd[1].split('_')[0].upper()):
+            # 
+            #    print('')
             #if differnet config
-            else:
+            #else:
+
+            # if the config is different from thefirst one, we need to interpolate the depths (and time)
+            if ((configd[th_d_ind].upper() == configd[1].upper())|(configd[th_d_ind].split('_')[0].upper() == configd[1].split('_')[0].upper()))==False:
                 #pdb.set_trace()
                 ## find equivalent iijj coord
                 #ii_2nd_ind,jj_2nd_ind = iijj_ind[tmp_datstr]['ii'],iijj_ind[tmp_datstr]['jj']
@@ -3121,7 +3155,7 @@ def reload_hov_data_comb_time(var,var_mat,var_grid,var_dim,deriv_var,ldi,thd,tim
                         hov_dat[tmp_datstr] = np.ma.zeros((nz,ntime))*np.ma.masked
 
                         if do_mask_dict[tmp_datstr]:
-                            tmp_mask = grid_dict[tmp_datstr]['tmask'][:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,jj,ii] == 0
+                            tmp_mask = grid_dict[tmp_datstr]['tmask'][:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,orig_jj,orig_ii] == 0
                             tmpdat_hov[tmp_mask,:] = np.ma.masked
                             #pdb.set_trace()
 
@@ -3131,20 +3165,37 @@ def reload_hov_data_comb_time(var,var_mat,var_grid,var_dim,deriv_var,ldi,thd,tim
 
                         # need to regrid vertically to the original grid
                         #   by filling a dummy array, you effectively ensure current dataset is the same size as the new one. 
-                        tmpdat_hov_gdept =  grid_dict[tmp_datstr]['gdept'][:,jj,ii]               
+                        tmpdat_hov_gdept =  grid_dict[tmp_datstr]['gdept'][:,orig_jj,orig_ii]               
                         #for i_i,(tmpdat) in enumerate(tmpdat_hov):hov_dat[tmp_datstr][:,i_i] = np.ma.masked_invalid(np.interp(hov_dat['y'], tmpdat_hov_gdept, tmpdat.filled(np.nan)))
                         for i_i,(tmpdat) in enumerate(tmpdat_hov):tmpdat_hov_zlev[:,i_i] = np.ma.masked_invalid(np.interp(hov_dat['y'], tmpdat_hov_gdept, tmpdat.filled(np.nan)))
                         
                         hov_dat[tmp_datstr]= tmpdat_hov_zlev
+                        #hov_dat['Sec Grid'][tmp_datstr]['x']= time_d[tmp_datstr][cur_var_grid]['datetime'].copy()
+                        #hov_dat['Sec Grid'][tmp_datstr]['y']= tmpdat_hov_gdept.copy()
+                        #hov_dat['Sec Grid'][tmp_datstr]['data']= tmpdat_hov.copy()
                     else: #elif len(tmpdat_hov.shape)==1:
 
                         if do_mask_dict[tmp_datstr]:
-                            tmp_mask = grid_dict[tmp_datstr]['tmask'][0,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,jj,ii] == 0
+                            tmp_mask = grid_dict[tmp_datstr]['tmask'][0,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,orig_jj,orig_ii] == 0
                             tmpdat_hov[tmp_mask] = np.ma.masked
                         hov_dat[tmp_datstr]= tmpdat_hov
+                else:
+                    print('iijj masked',tmp_datstr)
+                    #hov_dat['Sec Grid'][tmp_datstr]['x'] = hov_dat['x'].copy()
+                    #hov_dat['Sec Grid'][tmp_datstr]['y']= tmpdat_hov_gdept.copy()
+                    if var_dim[var] == 4:#if hov_dat_2d:
+                        hov_dat[tmp_datstr] = np.ma.zeros((nz,ntime))*np.ma.masked
+                        #hov_dat['Sec Grid'][tmp_datstr]['data'] = np.ma.zeros((nz,ntime))*np.ma.masked
+                    else:
+                        hov_dat[tmp_datstr] = np.ma.zeros((ntime))*np.ma.masked
+                        #hov_dat['Sec Grid'][tmp_datstr]['data'] = np.ma.zeros((ntime))*np.ma.masked
 
                 #hov_dat['Sec Grid'][tmp_datstr]['data'] = hov_dat[tmp_datstr].copy()
-    else:   
+            #else:
+            #    print('I think we can now natively show hov_time from other configs')
+            #    pdb.set_trace()
+    else: # var not in  var_mat or deriv_var
+
         for tmp_datstr in Dataset_lst: 
             if var_dim[var] == 4:#if hov_dat_2d:
                 hov_dat[tmp_datstr] = np.ma.zeros((nz,ntime))*np.ma.masked
@@ -3154,8 +3205,12 @@ def reload_hov_data_comb_time(var,var_mat,var_grid,var_dim,deriv_var,ldi,thd,tim
     hov_stop = datetime.now()
     
 
+    '''
     for tmp_datstr in Dataset_lst:
-        hov_dat['Sec Grid'][tmp_datstr]['data'] = hov_dat[tmp_datstr].copy()
+        if 'data' not in hov_dat['Sec Grid'][tmp_datstr].keys(): 
+            print("Adding hov_dat['Sec Grid'][tmp_datstr]['data']")
+            hov_dat['Sec Grid'][tmp_datstr]['data'] = hov_dat[tmp_datstr].copy()
+    '''
 
 
     #hov_dat_2d = True
@@ -3180,20 +3235,29 @@ def reload_hov_data_comb_time(var,var_mat,var_grid,var_dim,deriv_var,ldi,thd,tim
 
 
     for tmp_datstr in Dataset_lst:
+        print(tmp_datstr, hov_dat['Sec Grid'][tmp_datstr]['data'].shape, hov_dat['Sec Grid'][tmp_datstr]['x'].shape, hov_dat['Sec Grid'][tmp_datstr]['y'].shape, (hov_dat['Sec Grid'][tmp_datstr]['data'].mask == False).sum())
+            
+
+
+        if 'data' not in hov_dat['Sec Grid'][tmp_datstr].keys():
+            pdb.set_trace()
+
         if var_dim[var] == 4: # if Hov_dat is 2d
             if hov_dat['Sec Grid'][tmp_datstr]['data'].shape[1] != hov_dat['Sec Grid'][tmp_datstr]['x'].size:
                 print("hov_dat['Sec Grid'][tmp_datstr]['data'] is 2d, and doesn't match hov_dat['Sec Grid'][tmp_datstr]['x']",tmp_datstr,hov_dat['Sec Grid'][tmp_datstr]['data'].shape,hov_dat['Sec Grid'][tmp_datstr]['x'].size )
+                for tmp_datstr in Dataset_lst:tmp_datstr,hov_dat['Sec Grid'][tmp_datstr]['x'].shape, hov_dat['Sec Grid'][tmp_datstr]['data'].shape
                 pdb.set_trace()
         else: # if Hov_dat is 1d
             if hov_dat['Sec Grid'][tmp_datstr]['data'].size != hov_dat['Sec Grid'][tmp_datstr]['x'].size:
-                print("hov_dat['Sec Grid'][tmp_datstr]['data'] is 2d, and doesn't match hov_dat['Sec Grid'][tmp_datstr]['x']",tmp_datstr,hov_dat['Sec Grid'][tmp_datstr]['data'].shape,hov_dat['Sec Grid'][tmp_datstr]['x'].size )
+                print("hov_dat['Sec Grid'][tmp_datstr]['data'] is 1d, and doesn't match hov_dat['Sec Grid'][tmp_datstr]['x']",tmp_datstr,hov_dat['Sec Grid'][tmp_datstr]['data'].shape,hov_dat['Sec Grid'][tmp_datstr]['x'].size )
+                for tmp_datstr in Dataset_lst:tmp_datstr,hov_dat['Sec Grid'][tmp_datstr]['x'].shape, hov_dat['Sec Grid'][tmp_datstr]['data'].shape
                 pdb.set_trace()
     
     # temporally regrid the hov data onto the the Dataset 1
     tmpx_1 = hov_dat['x']
     #pdb.set_trace()
     # create a time stamp, time since an origin.
-    #if 360 day calendar, hov_dat['x'] isn;t a datetime
+    #if 360 day calendar, hov_dat['x'] isn';'t a datetime
     #do_match_time = False
 
     hov_date_datetime = True
@@ -3205,25 +3269,39 @@ def reload_hov_data_comb_time(var,var_mat,var_grid,var_dim,deriv_var,ldi,thd,tim
         tmp_timestamp_1 = np.array([ss.timestamp() for ss in hov_dat['x']])
     else:
         tmp_timestamp_1 = hov_dat['x'].copy()
-        
+
+    
+    #Estimate a threshold of allowable time differences.     
     curr_d_offset_threshold = np.median(np.diff(tmp_timestamp_1))
     if curr_d_offset_threshold!=curr_d_offset_threshold:
         curr_d_offset_threshold = 86400
 
-    nhovt = tmpx_1# hov_dat['Dataset 1'].shape[1]
+
+    #nhovt = tmpx_1# hov_dat['Dataset 1'].shape[1]
+
+    #Cyle through the datasets
     for tmp_datstr in Dataset_lst[1:]: 
+        #take the time array for that dataset
         tmpx = hov_dat['Sec Grid'][tmp_datstr]['x']
+        # convert to timestamp, dependng on calendar
         if hov_date_datetime:
             tmp_timestamp = np.array([ss.timestamp() for ss in tmpx])
         else:
             tmp_timestamp =tmpx.copy()
+
+
         # if the 2 time series are the same length, and the same, don't need to regrid. 
         if (hov_dat['Sec Grid']['Dataset 1']['x'].size == tmpx.size):
             if (hov_dat['Sec Grid']['Dataset 1']['x'] == tmpx).all():
                 continue
 
+
+        
         tmpdat = hov_dat['Sec Grid'][tmp_datstr]['data']
         tmpdat_tint = hov_dat['Dataset 1'].copy()*np.ma.masked
+        #tmpdat_tint = np.ma.ones(hov_dat['Sec Grid'][tmp_datstr]['y'].shape + hov_dat['x'].shape)*np.ma.masked
+
+
         #pdb.set_trace()
         
         for curr_tind,curr_timestamp in enumerate(tmp_timestamp_1): #curr_tind = 3; curr_timestamp = tmp_timestamp_1[curr_tind]
@@ -3247,11 +3325,26 @@ def reload_hov_data_comb_time(var,var_mat,var_grid,var_dim,deriv_var,ldi,thd,tim
                     curr_load_data = False
 
             try:
-                if curr_load_data:
-                    if var_dim[var] == 4: # if Hov_dat is 2d
-                        tmpdat_tint[:,curr_tind] = tmpdat[:,curr_ti]
-                    else:
-                        tmpdat_tint[curr_tind] = tmpdat[curr_ti]
+                tmp_vert_interp = True
+                if hov_dat['Sec Grid'][tmp_datstr]['y'].size == hov_dat['y'].size:
+                    if (hov_dat['Sec Grid'][tmp_datstr]['y'] == hov_dat['y']).all():
+                        tmp_vert_interp = False
+
+                if tmp_vert_interp == False:
+                    if curr_load_data:
+                        if var_dim[var] == 4: # if Hov_dat is 2d
+                            tmpdat_tint[:,curr_tind] = tmpdat[:,curr_ti]
+                        else:
+                            tmpdat_tint[curr_tind] = tmpdat[curr_ti]
+                else:
+                    if curr_load_data:
+                        if var_dim[var] == 4: # if Hov_dat is 2d
+
+                            #np.ma.masked_invalid(np.interp(hov_dat['y'], hov_dat['Sec Grid'][tmp_datstr]['y'], tmpdat[:,curr_ti].filled(np.nan)))
+                        
+                            tmpdat_tint[:,curr_tind] = np.ma.masked_invalid(np.interp(hov_dat['y'], hov_dat['Sec Grid'][tmp_datstr]['y'], tmpdat[:,curr_ti].filled(np.nan)))
+                        else:
+                            tmpdat_tint[curr_tind] = np.ma.masked_invalid(np.interp(hov_dat['y'], hov_dat['Sec Grid'][tmp_datstr]['y'], tmpdat[curr_ti].filled(np.nan)))
             #else:
             #    pdb.set_trace()
             except: 
