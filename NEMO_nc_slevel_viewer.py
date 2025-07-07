@@ -33,6 +33,7 @@ from NEMO_nc_slevel_viewer_lib import extract_time_from_xarr,resample_xarray
 from NEMO_nc_slevel_viewer_lib import reload_data_instances_time,reload_hov_data_comb_time,reload_ts_data_comb_time
 from NEMO_nc_slevel_viewer_lib import reload_map_data_comb,reload_ew_data_comb,reload_ns_data_comb,reload_pf_data_comb
 #from NEMO_nc_slevel_viewer_lib import reload_hov_data_comb,reload_ts_data_comb
+from NEMO_nc_slevel_viewer_lib import reload_time_dist_data_comb_time
 
 
 # Data processing modules
@@ -1431,7 +1432,7 @@ def nemo_slice_zlev(config = 'amm7',
                       'Zoom',
                       'Axis', 'ColScl', 'Clim: Zoom','Clim: pair','Clim: sym',
                       'Surface', 'Near-Bed', 'Surface-Bed','Depth-Mean','Depth level',
-                      'Contours','Grad','Time Diff','Sec Grid','TS Diag','LD time','Fcst Diag','Vis curr','MLD','Obs','Xsect','Save Figure','Help','Quit'] 
+                      'Contours','Grad','Time Diff','Sec Grid','TS Diag','LD time','Fcst Diag','Vis curr','MLD','Obs','Xsect','Time-Dist','Save Figure','Help','Quit'] 
     #'Reset zoom','Obs: sel','Obs: opt','Clim: Reset','Clim: Expand',
     
     Sec_regrid = False
@@ -1449,6 +1450,7 @@ def nemo_slice_zlev(config = 'amm7',
     else:
         figxs = None
 
+    figtd = None
 
 
     
@@ -4584,7 +4586,110 @@ def nemo_slice_zlev(config = 'amm7',
 
                                 reload_Obs = True
                         
+                        elif but_name == 'Time-Dist':
 
+                            try:
+                                timdist_dat_dict = reload_time_dist_data_comb_time(var,var_d[1]['mat'],var_grid,var_dim,var_d['d'],ldi,thd, time_datetime,time_d, ii,jj,iijj_ind,nz,ntime, grid_dict,lon_d,lat_d,xarr_dict,do_mask_dict,load_second_files,Dataset_lst,configd,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d,do_match_time=do_match_time,secdataset_proc = secdataset_proc)
+
+                                if figtd is not None:
+                                    if plt.fignum_exists(figtd.number):
+                                        plt.close(figtd)
+
+                                #secdataset_proc
+                                figtd = plt.figure()
+                                figtd.set_figheight(10*1.2)
+                                figtd.set_figwidth(8*1.5)
+                                figtd.suptitle('%s Time-Distance for %s'%(nice_varname_dict[var], fig_lab_d[secdataset_proc]), fontsize = 20)
+                                plt.subplots_adjust(top=0.90,bottom=0.05,left=0.05,right=1,hspace=0.25,wspace=0.6)
+                                axtd = [plt.subplot(211),plt.subplot(212)]
+                                paxtd = []
+                                #paxtd.append(axtd[0].pcolormesh(timdist_dat_dict['x']['t'], timdist_dat_dict['x']['x'],timdist_dat_dict['x'][secdataset_proc][:,0,:].T))
+                                #paxtd.append(axtd[1].pcolormesh(timdist_dat_dict['y']['t'], timdist_dat_dict['y']['x'],timdist_dat_dict['y'][secdataset_proc][:,0,:].T))
+                                if var_dim[var] == 4:
+                                    paxtd.append(axtd[0].pcolormesh(timdist_dat_dict['x']['Sec Grid'][secdataset_proc]['t'], timdist_dat_dict['x']['Sec Grid'][secdataset_proc]['x'],timdist_dat_dict['x']['Sec Grid'][secdataset_proc]['data'][:,0,:].T))
+                                    paxtd.append(axtd[1].pcolormesh(timdist_dat_dict['y']['Sec Grid'][secdataset_proc]['t'], timdist_dat_dict['y']['Sec Grid'][secdataset_proc]['x'],timdist_dat_dict['y']['Sec Grid'][secdataset_proc]['data'][:,0,:].T))
+                                elif var_dim[var] == 3:
+                                    paxtd.append(axtd[0].pcolormesh(timdist_dat_dict['x']['Sec Grid'][secdataset_proc]['t'], timdist_dat_dict['x']['Sec Grid'][secdataset_proc]['x'],timdist_dat_dict['x']['Sec Grid'][secdataset_proc]['data'][:,:].T))
+                                    paxtd.append(axtd[1].pcolormesh(timdist_dat_dict['y']['Sec Grid'][secdataset_proc]['t'], timdist_dat_dict['y']['Sec Grid'][secdataset_proc]['x'],timdist_dat_dict['y']['Sec Grid'][secdataset_proc]['data'][:,:].T))
+                                plt.colorbar(paxtd[0], ax = axtd[0])
+                                plt.colorbar(paxtd[1], ax = axtd[1])
+                                axtd[0].set_ylim(cur_xlim)
+                                axtd[1].set_ylim(cur_ylim)
+
+                                set_perc_clim_pcolor_in_region(5,95,ax = axtd[0])
+                                set_perc_clim_pcolor_in_region(5,95,ax = axtd[1])
+
+                                figtd.show()
+
+
+                                td_close_win_meth = 1
+                                # 1: closes when you click on it
+                                # 2: stays open till you close it
+
+                                if td_close_win_meth == 1:
+                                    xclickax = figtd.add_axes([0,0,1,1], frameon=False)
+                                    xclickax.axis('off')
+
+                                # redraw canvas
+                                figtd.canvas.draw()
+                                
+                                #flush canvas
+                                figtd.canvas.flush_events()
+                                
+                                # Show plot, and set it as the current figure and axis
+                                figtd.show()
+                                plt.figure(figtd.figure)
+                                
+
+                                if td_close_win_meth == 1:
+                                    plt.sca(xclickax)
+                                
+                                    ###################################
+                                    # Close on button press: #JT COBP #
+                                    ###################################
+
+
+                                    close_tdax = False
+                                    while close_tdax == False:
+
+                                        # get click location
+                                        tmptdbutloc = plt.ginput(1, timeout = 3) #[(0.3078781362007169, 0.19398809523809524)]
+                                                
+                                        #pdb.set_trace()
+                                        if len(tmptdbutloc)!=1:
+                                            #print('tmptdbutloc len != 1',tmptdbutloc )
+                                            #close_tdax = True
+                                            continue
+                                            #pdb.set_trace()
+                                        else:
+                                            if len(tmptdbutloc[0])!=2:
+                                                close_tdax = True
+                                                #print('tmptdbutloc[0] len != 2',tmptdbutloc )
+                                                continue
+                                                #pdb.set_trace()
+                                            # was a button clicked?
+                                            # if so, record which and allow the window to close
+                                            if (tmptdbutloc[0][0] >= 0) & (tmptdbutloc[0][0] <= 1) & (tmptdbutloc[0][1] >= 0) & (tmptdbutloc[0][1] <= 1):
+                                                #pdb.set_trace()
+                                                close_tdax = True
+
+                                        # quit of option box is closed without button press.
+                                        if plt.fignum_exists(figtd) == False:
+                                            close_tdax = True
+                                            
+                                    
+                                    # close figure
+                                    if close_tdax:
+                                        if figtd is not None:
+                                            if plt.fignum_exists(figtd.number):
+                                                plt.close(figtd)
+
+
+
+                            except:
+                                print('time-distance plot failed')
+                                pdb.set_trace()
+                    
                         elif but_name == 'Xsect':
                             
                             xsect_secdataset_proc = secdataset_proc
