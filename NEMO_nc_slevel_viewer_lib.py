@@ -2821,7 +2821,7 @@ def reload_pf_data_comb(data_inst,var,var_dim,ii,jj,nz,grid_dict,Dataset_lst,con
 
 
 def reload_time_dist_data_comb_time(var,var_mat,var_grid,var_dim,deriv_var,ldi,thd,time_datetime,time_d,
-                              ii_in,jj_in,iijj_ind,nz,ntime,grid_dict,lon_d,lat_d,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd,
+                              ii_in,jj_in,iijj_ind,nz,ntime,grid_dict,z_meth,zz,zi,lon_d,lat_d,xarr_dict,do_mask_dict,load_2nd_files,Dataset_lst,configd,
                               do_LBC = None, do_LBC_d = None,LBC_coord_d = None, EOS_d = None,do_match_time = True,secdataset_proc = None):       
     #Dataset_lst = [ss for ss in xarr_dict.keys()]   
     # #do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d   
@@ -3018,6 +3018,7 @@ def reload_time_dist_data_comb_time(var,var_mat,var_grid,var_dim,deriv_var,ldi,t
                     if tmp_datstr != secdataset_proc: continue
                 
                 th_d_ind = int(tmp_datstr[8:]) 
+                #th_d_ind = int(tmp_datstr[8:])
 
                 tmp_cur_var_grid = update_cur_var_grid(var,tmp_datstr,ldi, var_grid[tmp_datstr], xarr_dict )
 
@@ -3101,11 +3102,11 @@ def reload_time_dist_data_comb_time(var,var_mat,var_grid,var_dim,deriv_var,ldi,t
 
                 #pdb.set_trace()
 
-                if (do_LBC is None)|(do_LBC == False):
+                if (do_LBC is None)|(do_LBC == False)|(do_LBC & do_LBC_d[th_d_ind] == False):
 
 
 
-                    if not np.ma.is_masked(ii*jj):
+                    if not np.ma.is_masked(ii*jj): # if it is masked, don't need to do anything as preallocated masked array
 
 
                         if xy == 'x':
@@ -3116,14 +3117,13 @@ def reload_time_dist_data_comb_time(var,var_mat,var_grid,var_dim,deriv_var,ldi,t
                             #timdist_dat[xy]['Sec Grid'][tmp_datstr]['data'] = timdist_dat[xy][tmp_datstr].copy() #np.ma.masked_invalid(xarr_dict[tmp_datstr][cur_var_grid][ldi].variables[var].T[thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx'],thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy']][ii,jj].load())
                         timdist_dat[xy]['Sec Grid'][tmp_datstr]['data'] = timdist_dat[xy][tmp_datstr].copy() #np.ma.masked_invalid(xarr_dict[tmp_datstr][cur_var_grid][ldi].variables[var].T[thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx'],thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy']][ii,jj].load())
                     
-                
+
 
 
                 else:
 
                     if do_LBC:
                         #tmp_datstr = 'Dataset 1'
-                        th_d_ind = int(tmp_datstr[8:])
                         if do_LBC_d[th_d_ind]:
                             cur_var_grid_ii_lst = []
                             for tmp_LBC_grid in tmp_cur_var_grid:
@@ -3361,17 +3361,130 @@ def reload_time_dist_data_comb_time(var,var_mat,var_grid,var_dim,deriv_var,ldi,t
 
 
 
+                if var_dim[var] == 4:
+                    for timdist_ext_ind in [0,1]:
+
+                        if timdist_ext_ind == 0:
+                            tmp_timdist_dat = timdist_dat[xy][tmp_datstr].copy()
+                            if xy == 'x':
+                                ts_e3t_1 = np.ma.array(grid_dict['Dataset 1']['e3t'][:,jj_in,:], mask = tmp_timdist_dat[0].mask)
+                            elif xy == 'y':
+                                ts_e3t_1 = np.ma.array(grid_dict['Dataset 1']['e3t'][:,:,ii_in], mask = tmp_timdist_dat[0].mask)
+                        else:
+                            tmp_timdist_dat = timdist_dat[xy]['Sec Grid'][tmp_datstr]['data'].copy()
+                            if xy == 'x':
+                                ts_e3t_1 = np.ma.array(grid_dict[tmp_datstr]['e3t'][:,jj_in,:], mask = tmp_timdist_dat[0].mask)
+                            elif xy == 'y':
+                                ts_e3t_1 = np.ma.array(grid_dict[tmp_datstr]['e3t'][:,:,ii_in], mask = tmp_timdist_dat[0].mask)
+                        #pdb.set_trace()
+                        if z_meth in ['ss','nb','df','zm','zx','zn','zd','zs']:
+                            if z_meth == 'ss':
+                                ss_ts_dat_1 = tmp_timdist_dat[:,0,:].copy()
+                            elif z_meth == 'nb':
+                                timdist_nb_ind_1 = (tmp_timdist_dat[0].mask == False).sum(axis = 0)-1
+                                nb_ts_dat_1 = np.ma.array([tmp_timdist_dat[:,nb_i,i_i] for i_i,nb_i in enumerate( timdist_nb_ind_1)]).T
+                            elif z_meth == 'df':
+                                ss_ts_dat_1 = tmp_timdist_dat[:,0,:].copy()
+                                timdist_nb_ind_1 = (tmp_timdist_dat[0].mask == False).sum(axis = 0)-1
+                                nb_ts_dat_1 = np.ma.array([tmp_timdist_dat[:,nb_i,i_i] for i_i,nb_i in enumerate( timdist_nb_ind_1)]).T
+                                df_ts_dat_1 = ss_ts_dat_1 - nb_ts_dat_1
+                            elif z_meth == 'zm':
+                                # We are working on the native time grid, but we have interpolated to Dataset 1 depths, so 
+                                # we should use e3t from Dataset 1
+                                #if xy == 'x':
+                                #    ts_e3t_1 = np.ma.array(grid_dict['Dataset 1']['e3t'][:,jj_in,:], mask = tmp_timdist_dat[0].mask)
+                                #elif xy == 'y':
+                                #    ts_e3t_1 = np.ma.array(grid_dict['Dataset 1']['e3t'][:,:,ii_in], mask = tmp_timdist_dat[0].mask)
+
+                                ts_dm_wgt_1 = ts_e3t_1/ts_e3t_1.sum(axis = 0)
+                                zm_ts_dat_1 = ((tmp_timdist_dat*ts_dm_wgt_1)).sum(axis =1)
+                            elif z_meth == 'zx':
+                                zx_ts_dat_1 = tmp_timdist_dat[:].max(axis = 1).copy()
+                                #mx_ts_dat_1 = tmp_timdist_dat[:-3].max(axis = 0).copy()
+                            elif z_meth == 'zn':
+                                zn_ts_dat_1 = tmp_timdist_dat.min(axis = 1).copy()
+                            elif z_meth == 'zd': #z depsike
+                                #effectively high pass filter the data
+                                tmp_timdist_dat_1_hpf = tmp_timdist_dat[:,1:-1] - ((tmp_timdist_dat[:,0:-2] + 2*tmp_timdist_dat[:,1:-1] + tmp_timdist_dat[:,2:])/4)
+                                
+                                zzzwgt = np.ones((tmp_timdist_dat_1_hpf.shape[1]))
+                                zzzwgt[1::2] = -1
+                                #zd_ts_dat_1 = np.abs((     tmp_timdist_dat_1_hpf.T*zzzwgt).T.mean(axis = 0))
+
+                                zd_ts_dat_1 = np.abs((tmp_timdist_dat_1_hpf.transpose(0,2,1)*zzzwgt).mean(axis = 2))
+                                del(tmp_timdist_dat_1_hpf)
+                            elif z_meth == 'zs':
+                                zs_ts_dat_1 = tmp_timdist_dat.std(axis = 1).copy()
+                            
+
+                            if z_meth == 'ss':
+                                tmp_ts_dat_dict_out = ss_ts_dat_1
+                            elif z_meth == 'nb':
+                                tmp_ts_dat_dict_out = nb_ts_dat_1
+                            elif z_meth == 'df':
+                                tmp_ts_dat_dict_out = df_ts_dat_1
+                            elif z_meth == 'zm':
+                                # We are working on the native time grid, but we have interpolated to Dataset 1 depths, so 
+                                # we should use e3t from Dataset 1
+                                #ts_e3t_1 = np.ma.array(grid_dict['Dataset 1']['e3t'][:,jj,ii], mask = tmp_timdist_dat[:,0].mask)
+                                #ts_dm_wgt_1 = ts_e3t_1/ts_e3t_1.sum()
+                                #ts_dat_dict[tmp_datstr] = ((tmp_timdist_dat.T*ts_dm_wgt_1).T).sum(axis = 0)
+                                tmp_ts_dat_dict_out = zm_ts_dat_1
+                            elif z_meth == 'zx':
+                                tmp_ts_dat_dict_out = zx_ts_dat_1
+                            elif z_meth == 'zn':
+                                tmp_ts_dat_dict_out = zn_ts_dat_1
+                            elif z_meth == 'zd':
+                                tmp_ts_dat_dict_out = zd_ts_dat_1
+                            elif z_meth == 'zs':
+                                tmp_ts_dat_dict_out = zs_ts_dat_1
+
+                        elif z_meth == 'z_slice':
+                            #for tmp_datstr in Dataset_lst:
+                            #tmp_timdist_dat = timdist_dat_dict['Sec Grid'][tmp_datstr]['data']
+                            timdist_zi = (np.abs(zz - timdist_dat[xy]['z'])).argmin(axis = 0)
+                            #ts_dat_dict[tmp_datstr] = tmp_timdist_dat[timdist_zi,:].copy()
+                            #tmp_ts_dat_dict_out = tmp_timdist_dat[xy][timdist_zi,:].copy()
+                            tmp_ts_dat_dict_out = np.ma.array([tmp_timdist_dat[:,zm_i,i_i] for i_i,zm_i in enumerate( timdist_zi)]).T
+
+
+                        elif z_meth == 'z_index':
+                            #for tmp_datstr in Dataset_lst:
+
+                            #tmp_timdist_dat = timdist_dat_dict['Sec Grid'][tmp_datstr]['data']
+
+                            #ts_dat_dict[tmp_datstr] = tmp_timdist_dat[zi,:]
+                            tmp_ts_dat_dict_out = tmp_timdist_dat[:,zi,:].copy()
+                        else:
+                            print('reload_ts_data_comb_time z_meth not recognised')
+                            pdb.set_trace()
+
+                    
+                        if timdist_ext_ind == 0:
+                            timdist_dat[xy][tmp_datstr] = tmp_ts_dat_dict_out.copy()
+                        else:
+                            timdist_dat[xy]['Sec Grid'][tmp_datstr]['data'] = tmp_ts_dat_dict_out.copy()
+                        del(tmp_ts_dat_dict_out)
+                            
+
+
+
+
+
+
 
         else: # var not in  var_mat or deriv_var
 
 
             print('not set for no var')
             pdb.set_trace()
+            '''
             for tmp_datstr in Dataset_lst: 
                 if var_dim[var] == 4:#if timdist_dat_2d:
                     timdist_dat[xy][tmp_datstr] = np.ma.zeros((nz,ntime))*np.ma.masked
                 else:
                     timdist_dat[xy][tmp_datstr] = np.ma.zeros((ntime))*np.ma.masked
+            '''
             
         timdist_stop = datetime.now()
         
@@ -3588,6 +3701,11 @@ def reload_time_dist_data_comb_time(var,var_mat,var_grid,var_dim,deriv_var,ldi,t
                             timdist_dat[tmp_datstr] = EOS_convert_EOS80_2_TEOS10_T(timdist_dat[tmp_datstr],timdist_dat_S_dict[tmp_datstr], dep, lon, lat,tmp_datstr = tmp_datstr)
                             
         """
+
+
+
+
+
     #pdb.set_trace()
     return timdist_dat
           
