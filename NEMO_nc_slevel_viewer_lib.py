@@ -107,19 +107,32 @@ def load_nc_dims(tmp_data):
 
 def load_nc_var_name_list(tmp_data,x_dim, y_dim, z_dim,t_dim):
 
+
+    do_addtimedim = False
     # what are the4d variable names, and how many are there?
     #var_4d_mat = np.array([ss for ss in tmp_data.variables.keys() if len(tmp_data.variables[ss].dims) == 4])
-    var_4d_mat = np.array([ss for ss in tmp_data.variables.keys() if tmp_data.variables[ss].dims == (t_dim, z_dim,y_dim, x_dim)])
+
+    var_4d_lst = [ss for ss in tmp_data.variables.keys() if tmp_data.variables[ss].dims == (t_dim, z_dim,y_dim, x_dim)]
+    if do_addtimedim:
+        var_4d_lst_notime = [ss for ss in tmp_data.variables.keys() if tmp_data.variables[ss].dims == (z_dim,y_dim, x_dim)]
+        var_4d_mat = np.array(var_4d_lst + var_4d_lst_notime)
+    else:
+        var_4d_mat = np.array(var_4d_lst)
     nvar4d = var_4d_mat.size
     #pdb.set_trace()
     #var_3d_mat = np.array([ss for ss in tmp_data.variables.keys() if len(tmp_data.variables[ss].dims) == 3])
-    var_3d_mat = np.array([ss for ss in tmp_data.variables.keys() if tmp_data.variables[ss].dims == (t_dim, y_dim, x_dim)])
+    var_3d_lst = np.array([ss for ss in tmp_data.variables.keys() if tmp_data.variables[ss].dims == (t_dim, y_dim, x_dim)])
+    if do_addtimedim:
+        var_3d_lst_notime = np.array([ss for ss in tmp_data.variables.keys() if tmp_data.variables[ss].dims == (y_dim, x_dim)])
+        var_3d_mat = np.array(var_3d_lst + var_3d_lst_notime)
+    else:
+        var_3d_mat = np.array(var_3d_lst)
     nvar3d = var_3d_mat.size
 
     var_mat = np.append(var_4d_mat, var_3d_mat)
     nvar = var_mat.size
 
-
+    
     var_dim = {}
     for vi,var_dat in enumerate(var_4d_mat): var_dim[var_dat] = 4
     for vi,var_dat in enumerate(var_3d_mat): var_dim[var_dat] = 3
@@ -5177,10 +5190,10 @@ def grad_vert_hov_prof_data(hov_dat_dict, meth=0, abs_pre = False, abs_post = Fa
 
 
 def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_mat, ld_lab_mat,ld_nctvar,
-    force_dim_d = None,xarr_rename_master_dict=None,gr_1st = 'T'):
+    force_dim_d = None,xarr_rename_master_dict=None,gr_1st = 'T',do_addtimedim = None):
     # connect to files with xarray, and create dictionaries with vars, dims, grids, time etc. 
 
-    
+    do_addtimedim = True
 
     WW3_var_lst = ['hs','tp','t0m1','dp','spr','uwnd','vwnd']
     # NB xarr_dict is not passed back.
@@ -5382,7 +5395,49 @@ def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_m
                 tmp_xarr_data.assign_coords(t = time_d[tmp_datstr][tmpgrid]['datetime'])
                 xarr_dict[tmp_datstr][tmpgrid].append(tmp_xarr_data)
 
+            
 
+            if do_addtimedim:
+                for tmpldi in range(len(xarr_dict[tmp_datstr][tmpgrid])):
+                    # You could be comparing a file with a time dimension with one that doesn't have one,
+                    # so check if this dataset has a time dimension - don't add if already there
+                    poss_tdims = ['time_counter','time','t']
+                    tmp_addtimedim = True
+                    for ss in xarr_dict[tmp_datstr][tmpgrid][tmpldi].dims.keys():
+                        if ss.lower() in poss_tdims:
+                            tmp_addtimedim = False
+                    if tmp_addtimedim:
+                        #pdb.set_trace()
+                        xarr_dict[tmp_datstr][tmpgrid][tmpldi] = xarr_dict[tmp_datstr][tmpgrid][tmpldi].expand_dims(dim={"time_counter": 1})
+                        #pdb.set_trace()
+                        xarr_dict[tmp_datstr][tmpgrid][tmpldi]["time_counter"]=(['time_counter'],  [0.])
+                        xarr_dict[tmp_datstr][tmpgrid][tmpldi]["time_counter"].attrs = {'standard_name':"time",'long_name':"Time axis",'calendar':"gregorian",'units':"seconds since  2025-01-01 00:00:00",'time_origin':" 2025-01-01 00:00:00"}
+
+
+
+                    '''
+                    time_counter:least_significant_digit = 4 ;
+                    time_counter:axis = "T" ;
+                    time_counter:standard_name = "time" ;
+                    time_counter:long_name = "Time axis" ;
+                    time_counter:calendar = "gregorian" ;
+                    time_counter:units = "seconds since  2010-01-01 00:00:00" ;
+                    time_counter:time_origin = " 2010-01-01 00:00:00" ;
+                    time_counter:bounds = "time_counter_bounds" ;
+
+
+                    axis = "T" ;
+                    
+                    '''
+
+                    #xarr_dict[tmp_datstr][tmpgrid][tmpldi].["time_counter"] = tmpnctime
+
+                    #xarr_dict[tmp_datstr][tmpgrid][tmpldi].Dataset({"time_counter": [0]})
+                    #xarr_dict[tmp_datstr][tmpgrid][tmpldi].assign_attrs(units="Celsius", description="Temperature data
+
+            
+                #.expand_dims(dim={"t": 1})
+            #pdb.set_trace()
             
             # When comparing files/models, only variables that are common to both Datasets are shown. 
             # If comparing models with different names for the same variables, they won't be shown, 
@@ -5680,9 +5735,11 @@ def create_gdept_ncvarnames(config_fnames_dict,configd):
 
 def create_ncvar_lon_lat_time_dict(ncvar_d,gr_1st = None,check_var_name_present = True):
 
+    #do_addtimedim = True
+
     nav_lon_var_mat = ['nav_lon'.upper(),'lon'.upper(),'longitude'.upper(),'TLON'.upper(),'nav_lon_grid_T'.upper(),'nav_lon_grid_U'.upper(),'nav_lon_grid_V'.upper()]
     nav_lat_var_mat = ['nav_lat'.upper(),'lat'.upper(),'latitude'.upper(),'TLAT'.upper(),'nav_lat_grid_T'.upper(),'nav_lat_grid_U'.upper(),'nav_lat_grid_V'.upper()]
-    time_varname_mat = ['time_counter'.upper(),'time'.upper()]
+    time_varname_mat = ['time_counter'.upper(),'time'.upper(),'t'.upper()]
         # match def resample_xarray() to time_varname_mat, until generalised. 
 
     nav_lon_varname,nav_lat_varname,time_varname = None, None, None
@@ -5692,7 +5749,7 @@ def create_ncvar_lon_lat_time_dict(ncvar_d,gr_1st = None,check_var_name_present 
     nav_lon_varname_dict = {}
     nav_lat_varname_dict = {}
     time_varname_dict = {}
-
+    
 
     for tmp_datstr in ncvar_d.keys():#Dataset_lst:              
         #nav_lon_varname_dict[tmp_datstr] = {}            
@@ -5749,15 +5806,29 @@ def create_ncvar_lon_lat_time_dict(ncvar_d,gr_1st = None,check_var_name_present 
 
 
             if check_var_name_present:
-                if nav_lon_varname is None:pdb.set_trace()
-                if nav_lat_varname is None:pdb.set_trace()
-                if time_varname is None:pdb.set_trace()
+                if nav_lon_varname is None:
+                    print('\ncreate_ncvar_lon_lat_time_dict: nav_lon_varname is None,%s,%s\n\n'%(tmp_datstr,tmpgrid))
+                    pdb.set_trace()
+                if nav_lat_varname is None:
+                    print('\ncreate_ncvar_lon_lat_time_dict: nav_lat_varname is None,%s,%s\n\n'%(tmp_datstr,tmpgrid))
+                    pdb.set_trace()
+                #if  not do_addtimedim:
+                if time_varname is None:
+                    print('\ncreate_ncvar_lon_lat_time_dict: time_varname is None,%s,%s\n\n'%(tmp_datstr,tmpgrid))
+                    pdb.set_trace()
     
 
     if check_var_name_present:
-        if nav_lon_varname is None:pdb.set_trace()
-        if nav_lat_varname is None:pdb.set_trace()
-        if time_varname is None:pdb.set_trace()
+        if nav_lon_varname is None:
+            print('\ncreate_ncvar_lon_lat_time_dict: nav_lon_varname is None\n\n')
+            pdb.set_trace()
+        if nav_lat_varname is None:
+            print('\ncreate_ncvar_lon_lat_time_dict: nav_lat_varname is None\n\n')
+            pdb.set_trace()
+        #if  not do_addtimedim:
+        if time_varname is None:
+            print('\ncreate_ncvar_lon_lat_time_dict: time_varname is None\n\n')
+            pdb.set_trace()
     
     #pdb.set_trace()
 
@@ -6069,10 +6140,17 @@ def extract_time_from_xarr(xarr_dict_in,ex_fname_in,time_varname_in,t_dim,date_i
         time_varname = time_varname_in
     #pdb.set_trace()
     # Extract time variable (with attributes) from xarray
+
+
+    
+
     try:
         nctime = xarr_dict_in[0].variables[time_varname]
     except:
+
+
         pdb.set_trace()
+
 
     try:
 

@@ -108,7 +108,8 @@ def nemo_slice_zlev(config = 'amm7',
     do_MLD = True,do_mask = False,
     use_xarray_gdept = True,
     force_dim_d = None,xarr_rename_master_dict=None,
-    EOS_d = None,gr_1st = None,do_match_time = True):
+    EOS_d = None,gr_1st = None,do_match_time = True,
+    do_addtimedim = None):
 
     print('Initialise at ',datetime.now())
     init_timer = []
@@ -564,7 +565,10 @@ def nemo_slice_zlev(config = 'amm7',
 
     # connect to files with xarray, and create dictionaries with vars, dims, grids, time etc. S
     #pdb.set_trace()
-    var_d,var_dim,var_grid,ncvar_d,ncdim_d,time_d  = connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_mat, ld_lab_mat,ld_nctvar,force_dim_d = force_dim_d,xarr_rename_master_dict=xarr_rename_master_dict,gr_1st = gr_1st)
+    var_d,var_dim,var_grid,ncvar_d,ncdim_d,time_d  = connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_mat, 
+                                                                                  ld_lab_mat,ld_nctvar,force_dim_d = force_dim_d,
+                                                                                  xarr_rename_master_dict=xarr_rename_master_dict,
+                                                                                  gr_1st = gr_1st,do_addtimedim = do_addtimedim)
     
 
     # tmp = xarr_dict['Dataset 1']['T'][0].groupby('time_counter.year').groupby('time_counter.month').mean('time_counter') 
@@ -1625,9 +1629,6 @@ def nemo_slice_zlev(config = 'amm7',
 
         func_but_extent[tmp_funcname] = [tmp_lhs, tmp_rhs, tmp_bot,  tmp_top]
 
-
-
-    #pdb.set_trace()
 
     del(tmp_lhs)
     del(tmp_rhs)
@@ -6209,6 +6210,7 @@ def main():
         parser.add_argument('--do_ensemble', type=str, required=False)
         parser.add_argument('--do_mask', type=str, required=False)
         parser.add_argument('--do_match_time', type=str, required=False)
+        parser.add_argument('--do_addtimedim', type=str, required=False)
         parser.add_argument('--use_xarray_gdept', type=str, required=False)
 
         parser.add_argument('--Obs_dict', action='append', nargs='+')
@@ -6409,6 +6411,17 @@ def main():
                 do_match_time_in = bool(False)
             else:                
                 print('do_match_time',args.do_match_time)
+                pdb.set_trace()
+
+        if args.do_addtimedim is None:
+            do_addtimedim_in=False
+        elif args.do_addtimedim is not None:
+            if args.do_addtimedim.upper() in ['TRUE','T']:
+                do_addtimedim_in = bool(True)
+            elif args.do_addtimedim.upper() in ['FALSE','F']:
+                do_addtimedim_in = bool(False)
+            else:                
+                print('do_addtimedim',args.do_addtimedim)
                 pdb.set_trace()
 
 
@@ -6854,7 +6867,8 @@ def main():
             fig_dir = args.fig_dir, fig_lab = args.fig_lab,fig_cutout = fig_cutout_in,
             verbose_debugging = verbose_debugging_in,do_timer = do_timer_in,do_memory = do_memory_in,do_ensemble = do_ensemble_in,do_mask = do_mask_in,
             use_xarray_gdept = use_xarray_gdept_in,
-            force_dim_d = force_dim_d_in,xarr_rename_master_dict=xarr_rename_master_dict_in,EOS_d = EOS_d,gr_1st = gr_1st,do_match_time = do_match_time_in)
+            force_dim_d = force_dim_d_in,xarr_rename_master_dict=xarr_rename_master_dict_in,EOS_d = EOS_d,gr_1st = gr_1st,
+            do_match_time = do_match_time_in,do_addtimedim = do_addtimedim_in)
 
 
 
