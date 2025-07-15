@@ -2262,7 +2262,7 @@ def reload_data_instances_time(var,thd,ldi,ti,current_time_datetime_since_1970,t
     print('Reloaded data instances for ti = %i, var = %s %s = %s'%(ti,var,datetime.now(),datetime.now() - start_time_load_inst))
     #pdb.set_trace()
     if data_inst['Dataset 1'].mask.all():
-        print("data_inst['Dataset 1'].mask.all()")
+        print("\n\n%s: data_inst['Dataset 1'].mask.all()\n\n"%var)
         pdb.set_trace()
 
 

@@ -1358,7 +1358,7 @@ def nemo_slice_zlev(config = 'amm7',
     #for tmpax in ax[1:]: tmpax.set_yscale('log')
 
     # add hidden fill screen axes 
-    clickax = fig.add_axes([0,0,1,1], frameon=False)
+    clickax = fig.add_axes([0,0,1,1], frameon=False, zorder = -1)
     clickax.axis('off')
     
 
@@ -1858,6 +1858,7 @@ def nemo_slice_zlev(config = 'amm7',
         for ai,tmpax in enumerate(ax): # ai = 0; tmpax = ax[ai]
             tmppos =  tmpax.get_position()
             # was click within extent
+            #pdb.set_trace()
             if (clii >= tmppos.x0) & (clii <= tmppos.x1) & (cljj >= tmppos.y0) & (cljj <= tmppos.y1):
                 sel_ax = ai
 
@@ -1873,7 +1874,6 @@ def nemo_slice_zlev(config = 'amm7',
 
                 # what do the local coordiantes of the click mean in terms of the data to plot.
                 # if on the map, or the slices, need to covert from lon and lat to ii and jj, which is complex for amm15.
-
                 # if in map, covert lon lat to ii,jj
                 if ai == 0:
                     loni,latj= xlocval,ylocval
@@ -1935,8 +1935,8 @@ def nemo_slice_zlev(config = 'amm7',
                     pdb.set_trace()
 
 
-        
-        #return sel_ax,sel_ii,sel_jj,sel_ti,sel_zz
+        # print('indices_from_ginput:',clii,cljj,sel_ax,sel_ii,sel_jj,sel_ti,sel_zz,xlocval,ylocval)
+        # return sel_ax,sel_ii,sel_jj,sel_ti,sel_zz
         return sel_ax,sel_ii,sel_jj,sel_ti,sel_zz,xlocval,ylocval
 
 
@@ -3836,7 +3836,13 @@ def nemo_slice_zlev(config = 'amm7',
                     #tmp_press = plt.ginput(1)
                     buttonpress = True
                     while buttonpress: buttonpress = plt.waitforbuttonpress()
-                    tmp_press = [[mouse_info['xdata'],mouse_info['ydata']]]
+                    #tmp_press = [[mouse_info['xdata'],mouse_info['ydata']]]
+                    #print(tmp_press)
+                    #tmp_press = [[mouse_info['x']/(fig.get_figwidth()*fig.get_dpi()),mouse_info['y']/(fig.get_figheight()*fig.get_dpi())]]
+                    tmp_press = [[mouse_info['x']/(fig.get_window_extent().x1),mouse_info['y']/(fig.get_window_extent().y1)]]
+                    print(tmp_press)
+                    
+
                     del(buttonpress)
                     #pdb.set_trace()
                     #mouse_info = {'button':event.button,'x':event.x, 'y':event.y, 'xdata':event.xdata, 'ydata':event.ydata}
@@ -4160,7 +4166,8 @@ def nemo_slice_zlev(config = 'amm7',
 
                                 buttonpress = True
                                 while buttonpress: buttonpress = plt.waitforbuttonpress()
-                                tmpzoom0 = [[mouse_info['xdata'],mouse_info['ydata']]]
+                                #tmpzoom0 = [[mouse_info['xdata'],mouse_info['ydata']]]
+                                tmpzoom0 = [[mouse_info['x']/(fig.get_window_extent().x1),mouse_info['y']/(fig.get_window_extent().y1)]]
                                 del(buttonpress)
 
 
@@ -4193,7 +4200,8 @@ def nemo_slice_zlev(config = 'amm7',
                                     #tmpzoom1 = plt.ginput(1)
                                     buttonpress = True
                                     while buttonpress: buttonpress = plt.waitforbuttonpress()
-                                    tmpzoom1 = [[mouse_info['xdata'],mouse_info['ydata']]]
+                                    #tmpzoom1 = [[mouse_info['xdata'],mouse_info['ydata']]]
+                                    tmpzoom1 = [[mouse_info['x']/(fig.get_window_extent().x1),mouse_info['y']/(fig.get_window_extent().y1)]]
                                     del(buttonpress)
 
                                     zoom1_ax,zoom1_ii,zoom1_jj,zoom1_ti,zoom1_zz, zoom1_sel_xlocval,zoom1_sel_ylocval = indices_from_ginput_ax(ax,tmpzoom1[0][0],tmpzoom1[0][1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
@@ -4414,11 +4422,19 @@ def nemo_slice_zlev(config = 'amm7',
                                     obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel) = obs_reset_sel(Dataset_lst)
                                 # select the observation with ginput
                                 tmpobsloc = plt.ginput(1)
+                                #pdb.set_trace()
 
                                 # convert to the nearest model grid box
-                                
+                                # if fig zorder = -5
+                                obs_jj,obs_ii = ind_from_lon_lat('Dataset 1',configd,xypos_dict, lon_d,lat_d, thd,rot_dict,tmpobsloc[0][0],tmpobsloc[0][1])
+                                obs_ii = int(obs_ii)
+                                obs_jj = int(obs_jj)
+                                sel_xlocval, sel_ylocval = tmpobsloc[0][0],tmpobsloc[0][1]
+                                obs_ax = 0
+                                '''       
+                                # if fig zorder = 0      
                                 obs_ax,obs_ii,obs_jj,obs_ti,obs_zz, sel_xlocval,sel_ylocval = indices_from_ginput_ax(ax,tmpobsloc[0][0],tmpobsloc[0][1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
-                            
+                                '''
                                 
                                 # if the main map axis is selected, continue,
                                 if obs_ax == 0:
@@ -4734,7 +4750,16 @@ def nemo_slice_zlev(config = 'amm7',
                                 xsect_jj_pnt_lst = []
                                 
                                 for tmpxsectloc in xsectloc_lst: 
+                                    #### if fig zorder = 1
+                                    '''
                                     tmpxsect_ax,tmpxsect_ii,tmpxsect_jj,tmpxsect_ti,tmpxsect_zz, tmpxsect_sel_xlocval,tmpxsect_sel_ylocval = indices_from_ginput_ax(ax,tmpxsectloc[0],tmpxsectloc[1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
+                                    pdb.set_trace()
+                                    '''
+                                    #### if fig zorder = -5
+                                    tmpxsect_jj,tmpxsect_ii = ind_from_lon_lat('Dataset 1',configd,xypos_dict, lon_d,lat_d, thd,rot_dict,tmpxsectloc[0],tmpxsectloc[1])
+                                    tmpxsect_ii = int(tmpxsect_ii)
+                                    tmpxsect_jj = int(tmpxsect_jj)
+                                    tmpxsect_ax = 0
                                     if (tmpxsect_ax is None)|(tmpxsect_ii is None)|(tmpxsect_jj is None): 
                                         print('Xsect: selected point outside axis, skipping')
                                         continue
