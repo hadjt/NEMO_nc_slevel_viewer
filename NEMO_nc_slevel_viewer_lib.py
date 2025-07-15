@@ -758,7 +758,6 @@ def interp1dmat_create_weight(gdept,z_lev,use_xarray_gdept = False):
         wgt1[:,:]= 0.
         wgt2[:,:]= 1.
         #wgt_mask = gdept_ma[0] == 0.1
-        #wgt_mask = gdept_ma[0] == -12323430.1
         wgt_mask[:] = False
 
     return ind1, ind2, wgt1, wgt2, xind_mat,yind_mat, wgt_mask
@@ -7528,14 +7527,11 @@ def int_ind_wgt_from_xypos(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_d
     
 def int_ind_wgt_from_xypos_func(tmp_xypos_dict, loni,latj, tmp_lon_d_2,tmp_lat_d_2, tmp_thd_x0 = 0,tmp_thd_y0 = 0,tmp_thd_dx = 1,tmp_thd_dy = 1,tmp_thd_cutx0=0, tmp_thd_cuty0=0):
     '''
-
     #sel_bl_jj_out, sel_bl_ii_out, NWS_wgt, sel_jj_out, sel_ii_out = int_ind_wgt_from_xypos_func(tmp_xypos_dict, loni,latj, tmp_lon_d_2,tmp_lat_d_2, tmp_thd_x0 = 0,tmp_thd_y0 = 0,tmp_thd_dx = 1,tmp_thd_dy = 1):
-  
     
     For a given lon and lat (loni, latj), find the ii,jj index of a given dataset.
 
     If the xypos files are available, use them, otherwise, the method depends on the config.                   
-        
     '''
 
     
@@ -7886,6 +7882,10 @@ def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lo
         sel_jj_out-=thd[th_d_ind]['cuty0']
 
 
+        #Offset added as selected grid box is adjacent the clicked grid box
+        sel_ii_out-=1
+        sel_jj_out-=1
+        
         #ensure the indices are in the array
         sel_ii_out = np.ma.minimum(np.ma.maximum(sel_ii_out,0),ndatlon-1)
         sel_jj_out = np.ma.minimum(np.ma.maximum(sel_jj_out,0),ndatlat-1)
