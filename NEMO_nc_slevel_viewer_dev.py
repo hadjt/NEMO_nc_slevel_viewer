@@ -1878,7 +1878,7 @@ def nemo_slice_zlev(config = 'amm7',
                 if ai == 0:
                     loni,latj= xlocval,ylocval
 
-                    print(sel_ii,sel_jj)
+                    #print(sel_ii,sel_jj)
                     
                     sel_jj,sel_ii = ind_from_lon_lat('Dataset 1',configd,xypos_dict, lon_d,lat_d, thd,rot_dict,loni,latj)
 
@@ -3840,7 +3840,7 @@ def nemo_slice_zlev(config = 'amm7',
                     #print(tmp_press)
                     #tmp_press = [[mouse_info['x']/(fig.get_figwidth()*fig.get_dpi()),mouse_info['y']/(fig.get_figheight()*fig.get_dpi())]]
                     tmp_press = [[mouse_info['x']/(fig.get_window_extent().x1),mouse_info['y']/(fig.get_window_extent().y1)]]
-                    print(tmp_press)
+                    #print(tmp_press)
                     
 
                     del(buttonpress)

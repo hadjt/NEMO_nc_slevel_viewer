@@ -752,13 +752,14 @@ def interp1dmat_create_weight(gdept,z_lev,use_xarray_gdept = False):
 
     wgt_mask = (z_lev > gdept_ma_max) | (z_lev < gdept_ma_min) | (gdept_ma_ptp<1)
 
-
     if z_lev == 0:
         ind1[:,:]= 1
         ind2[:,:]= 0
         wgt1[:,:]= 0.
         wgt2[:,:]= 1.
-        wgt_mask = gdept_ma[0] == 0.1
+        #wgt_mask = gdept_ma[0] == 0.1
+        #wgt_mask = gdept_ma[0] == -12323430.1
+        wgt_mask[:] = False
 
     return ind1, ind2, wgt1, wgt2, xind_mat,yind_mat, wgt_mask
 
