@@ -84,7 +84,7 @@ import matplotlib.patheffects as pe
 
 def nemo_slice_zlev(config = 'amm7',  
     zlim_max = None,var = None,
-    fig_lab_d = None,configd = None,thd = None,fname_dict = None,load_second_files = False,
+    dataset_lab_d = None,configd = None,thd = None,fname_dict = None,load_second_files = False,
     xlim = None, ylim = None, tlim = None, clim = None,
     ii = None, jj = None, ti = None, zz = None, zi = None, 
     lon_in = None, lat_in = None, date_in_ind = None, date_fmt = '%Y%m%d',
@@ -326,10 +326,10 @@ def nemo_slice_zlev(config = 'amm7',
 
 
     for tmp_datstr in Dataset_lst:
-        if tmp_datstr in fig_lab_d.keys():
-            if fig_lab_d[tmp_datstr] is None: fig_lab_d[tmp_datstr] = tmp_datstr
+        if tmp_datstr in dataset_lab_d.keys():
+            if dataset_lab_d[tmp_datstr] is None: dataset_lab_d[tmp_datstr] = tmp_datstr
         else:
-            fig_lab_d[tmp_datstr] = tmp_datstr
+            dataset_lab_d[tmp_datstr] = tmp_datstr
 
 
     axis_scale = 'Auto'
@@ -1200,22 +1200,22 @@ def nemo_slice_zlev(config = 'amm7',
     ax = []
 
     fig_tit_str = 'Interactive figure, Select lat/lon in a); lon in b); lat  in c); depth in d) and time in e).\n'
-    #if fig_lab_d['Dataset 1'] is not None: fig_tit_str = fig_tit_str + ' Dataset 1 = %s;'%fig_lab_d['Dataset 1']
-    #if fig_lab_d['Dataset 2'] is not None: fig_tit_str = fig_tit_str + ' Dataset 2 = %s;'%fig_lab_d['Dataset 2']
+    #if dataset_lab_d['Dataset 1'] is not None: fig_tit_str = fig_tit_str + ' Dataset 1 = %s;'%dataset_lab_d['Dataset 1']
+    #if dataset_lab_d['Dataset 2'] is not None: fig_tit_str = fig_tit_str + ' Dataset 2 = %s;'%dataset_lab_d['Dataset 2']
 
     for tmp_datstr in Dataset_lst:
-        #if fig_lab_d[tmp_datstr] is not None: 
-        fig_tit_str = fig_tit_str + ' %s = %s;'%(tmp_datstr,fig_lab_d[tmp_datstr])
+        #if dataset_lab_d[tmp_datstr] is not None: 
+        fig_tit_str = fig_tit_str + ' %s = %s;'%(tmp_datstr,dataset_lab_d[tmp_datstr])
 
 
     fig_tit_str_int = 'Interactive figure, Select lat/lon in a); lon in b); lat  in c); depth in d) and time in e). %s[%i, %i, %i, %i] (thin = %i; thin_files = %i) '%(var,ii,jj,zz,ti, thd[1]['dx'], thd[1]['df'])
     fig_tit_str_lab = ''
-    #if fig_lab_d['Dataset 1'] is not None: fig_tit_str_lab = fig_tit_str_lab + ' Dataset 1 = %s;'%fig_lab_d['Dataset 1']
-    #if fig_lab_d['Dataset 2'] is not None: fig_tit_str_lab = fig_tit_str_lab + ' Dataset 2 = %s;'%fig_lab_d['Dataset 2']
+    #if dataset_lab_d['Dataset 1'] is not None: fig_tit_str_lab = fig_tit_str_lab + ' Dataset 1 = %s;'%dataset_lab_d['Dataset 1']
+    #if dataset_lab_d['Dataset 2'] is not None: fig_tit_str_lab = fig_tit_str_lab + ' Dataset 2 = %s;'%dataset_lab_d['Dataset 2']
     for tmp_datstr in Dataset_lst:
-        #if fig_lab_d[tmp_datstr] is not None: 
-        fig_tit_str_lab = fig_tit_str_lab + ' %s = %s;'%(tmp_datstr,fig_lab_d[tmp_datstr])
-    fig_tit_str_lab = fig_tit_str_lab + ' Showing %s.'%(fig_lab_d[tmp_datstr])
+        #if dataset_lab_d[tmp_datstr] is not None: 
+        fig_tit_str_lab = fig_tit_str_lab + ' %s = %s;'%(tmp_datstr,dataset_lab_d[tmp_datstr])
+    fig_tit_str_lab = fig_tit_str_lab + ' Showing %s.'%(dataset_lab_d[tmp_datstr])
 
     nvarbutcol = 16 # 18
     nvarbutcol = 22 # 18
@@ -1318,18 +1318,18 @@ def nemo_slice_zlev(config = 'amm7',
     tsaxtxd_lst = []
 
     if nDataset == 1:
-        tsaxtx_lst.append(ax[4].text(0.01,0.01,fig_lab_d['Dataset 1'], ha = 'left', va = 'bottom', transform=ax[4].transAxes, color = 'r', fontsize = 12,bbox=dict(facecolor='white', alpha=0.75, pad=1, edgecolor='none')))
+        tsaxtx_lst.append(ax[4].text(0.01,0.01,dataset_lab_d['Dataset 1'], ha = 'left', va = 'bottom', transform=ax[4].transAxes, color = 'r', fontsize = 12,bbox=dict(facecolor='white', alpha=0.75, pad=1, edgecolor='none')))
 
     elif nDataset ==2:
-        tsaxtx_lst.append(ax[4].text(0.01,0.01,fig_lab_d['Dataset 1'], ha = 'left', va = 'bottom', transform=ax[4].transAxes, color = 'r', fontsize = 12,bbox=dict(facecolor='white', alpha=0.75, pad=1, edgecolor='none')))
-        tsaxtx_lst.append(ax[4].text(0.99,0.01,fig_lab_d['Dataset 2'], ha = 'right', va = 'bottom', transform=ax[4].transAxes, color = 'b', fontsize = 12,bbox=dict(facecolor='white', alpha=0.75, pad=1, edgecolor='none')))
+        tsaxtx_lst.append(ax[4].text(0.01,0.01,dataset_lab_d['Dataset 1'], ha = 'left', va = 'bottom', transform=ax[4].transAxes, color = 'r', fontsize = 12,bbox=dict(facecolor='white', alpha=0.75, pad=1, edgecolor='none')))
+        tsaxtx_lst.append(ax[4].text(0.99,0.01,dataset_lab_d['Dataset 2'], ha = 'right', va = 'bottom', transform=ax[4].transAxes, color = 'b', fontsize = 12,bbox=dict(facecolor='white', alpha=0.75, pad=1, edgecolor='none')))
 
         tsaxtxd_lst.append(ax[4].text(0.99,0.975,'Dat2-Dat1', ha = 'right', va = 'top', transform=ax[4].transAxes, color = 'g', fontsize = 12,bbox=dict(facecolor='white', alpha=0.75, pad=1, edgecolor='none')))
     
     else:
         tmp_vlist = np.linspace(0.85,0.15,nDataset)
         for tdsi,tmp_datstr in enumerate(Dataset_lst):
-            tsaxtx_lst.append(ax[4].text(0.01,tmp_vlist[tdsi],fig_lab_d[tmp_datstr], ha = 'left', va = 'top', transform=ax[4].transAxes, color = Dataset_col[tdsi], fontsize = 12,bbox=dict(facecolor='white', alpha=0.75, pad=1, edgecolor='none')))
+            tsaxtx_lst.append(ax[4].text(0.01,tmp_vlist[tdsi],dataset_lab_d[tmp_datstr], ha = 'left', va = 'top', transform=ax[4].transAxes, color = Dataset_col[tdsi], fontsize = 12,bbox=dict(facecolor='white', alpha=0.75, pad=1, edgecolor='none')))
         del(tmp_vlist)
 
         
@@ -1347,7 +1347,7 @@ def nemo_slice_zlev(config = 'amm7',
 
 
     for tmp_datstr in Dataset_lst:        
-        fig_tit_str_lab = fig_tit_str_lab + ' %s = %s;'%(tmp_datstr,fig_lab_d[tmp_datstr])
+        fig_tit_str_lab = fig_tit_str_lab + ' %s = %s;'%(tmp_datstr,dataset_lab_d[tmp_datstr])
 
 
     init_timer.append((datetime.now(),'Figure, adding text'))
@@ -1972,24 +1972,24 @@ def nemo_slice_zlev(config = 'amm7',
         
 
         for tmp_datstr in Dataset_lst:
-            #if fig_lab_d[tmp_datstr] is not None: 
-            fig_out_name = fig_out_name + '_d%s_%s'%(tmp_datstr[-1],fig_lab_d[tmp_datstr])
+            #if dataset_lab_d[tmp_datstr] is not None: 
+            fig_out_name = fig_out_name + '_d%s_%s'%(tmp_datstr[-1],dataset_lab_d[tmp_datstr])
         
 
 
 
         fig_tit_str_lab = ''
         if load_second_files == False:
-            fig_tit_str_lab = fig_lab_d['Dataset 1']
+            fig_tit_str_lab = dataset_lab_d['Dataset 1']
         else:
             if secdataset_proc in Dataset_lst:
-                fig_tit_str_lab = '%s'%fig_lab_d[secdataset_proc]
+                fig_tit_str_lab = '%s'%dataset_lab_d[secdataset_proc]
             else:
                 tmpdataset_1 = 'Dataset ' + secdataset_proc[3]
                 tmpdataset_2 = 'Dataset ' + secdataset_proc[8]
                 tmpdataset_oper = secdataset_proc[4]
                 if tmpdataset_oper == '-':
-                    fig_tit_str_lab = '%s minus %s'%(fig_lab_d[tmpdataset_1],fig_lab_d[tmpdataset_2])
+                    fig_tit_str_lab = '%s minus %s'%(dataset_lab_d[tmpdataset_1],dataset_lab_d[tmpdataset_2])
         
         
         #fig.suptitle(fig_tit_str_int + '\n' + fig_tit_str_lab, fontsize=14)
@@ -2054,7 +2054,7 @@ def nemo_slice_zlev(config = 'amm7',
             if zlim_max is not None:arg_output_text = arg_output_text + ' --zlim_max %i'%zlim_max
             arg_output_text = arg_output_text + ' --thin %i'%thd[1]['dx']
             arg_output_text = arg_output_text + ' --thin_files %i'%thd[1]['df']
-            arg_output_text = arg_output_text + ' --fig_fname_lab %s'%fig_lab_d['Dataset 1']
+            arg_output_text = arg_output_text + ' --fig_fname_lab %s'%dataset_lab_d['Dataset 1']
             arg_output_text = arg_output_text + ' --lon %f'%lon_d[1][jj,ii]
             arg_output_text = arg_output_text + ' --lat %f'%lat_d[1][jj,ii]
             if cur_xlim is not None: arg_output_text = arg_output_text + ' --xlim %f %f'%(cur_xlim[0],cur_xlim[1])
@@ -2071,7 +2071,7 @@ def nemo_slice_zlev(config = 'amm7',
             if load_second_files:
                 #if configd[2] is not None: 
                 arg_output_text = arg_output_text + ' --config_2nd %s'%configd[2]
-                arg_output_text = arg_output_text + ' --fig_fname_lab_2nd %s'%fig_lab_d['Dataset 2']
+                arg_output_text = arg_output_text + ' --fig_fname_lab_2nd %s'%dataset_lab_d['Dataset 2']
                 arg_output_text = arg_output_text + ' --thin_2nd %i'%thd[2]['dx']
                 arg_output_text = arg_output_text + ' --secdataset_proc "%s"'%secdataset_proc
                 arg_output_text = arg_output_text + ' --fname_lst_2nd  "$flist2"'
@@ -3549,7 +3549,7 @@ def nemo_slice_zlev(config = 'amm7',
             ### add dataset labels
             ###################################################################################################
 
-            #if fig_lab_d['Dataset 1']: tsaxtx1.set_text(fig_lab_d['Dataset 1'])
+            #if dataset_lab_d['Dataset 1']: tsaxtx1.set_text(dataset_lab_d['Dataset 1'])
 
             if load_second_files:       
                 if secdataset_proc in Dataset_lst:
@@ -4614,10 +4614,10 @@ def nemo_slice_zlev(config = 'amm7',
 
 
                                 if var_dim[var] == 4:  
-                                    td_title_str = 'Time-Distance %s (%s) for %s (through %s)'%(nice_varname_dict[var],nice_lev, fig_lab_d[secdataset_proc],lon_lat_to_str(lon_d[1][jj,ii],lat_d[1][jj,ii])[0])
+                                    td_title_str = 'Time-Distance %s (%s) for %s (through %s)'%(nice_varname_dict[var],nice_lev, dataset_lab_d[secdataset_proc],lon_lat_to_str(lon_d[1][jj,ii],lat_d[1][jj,ii])[0])
                                 
                                 elif var_dim[var] == 3:
-                                    td_title_str = 'Time-Distance %s for %s (through %s)'%(nice_varname_dict[var],fig_lab_d[secdataset_proc],lon_lat_to_str(lon_d[1][jj,ii],lat_d[1][jj,ii])[0])
+                                    td_title_str = 'Time-Distance %s for %s (through %s)'%(nice_varname_dict[var],dataset_lab_d[secdataset_proc],lon_lat_to_str(lon_d[1][jj,ii],lat_d[1][jj,ii])[0])
                                 
 
 
@@ -4625,7 +4625,7 @@ def nemo_slice_zlev(config = 'amm7',
                                 figtd = plt.figure()
                                 figtd.set_figheight(10*1.2)
                                 figtd.set_figwidth(8*1.5)
-                                #figtd.suptitle('%s Time-Distance for %s'%(nice_varname_dict[var], fig_lab_d[secdataset_proc]), fontsize = 20)
+                                #figtd.suptitle('%s Time-Distance for %s'%(nice_varname_dict[var], dataset_lab_d[secdataset_proc]), fontsize = 20)
                                 figtd.suptitle(td_title_str, fontsize=figsuptitfontsize)
                                 plt.subplots_adjust(top=0.90,bottom=0.05,left=0.05,right=1,hspace=0.25,wspace=0.6)
                                 axtd = [plt.subplot(211),plt.subplot(212)]
@@ -4921,8 +4921,8 @@ def nemo_slice_zlev(config = 'amm7',
                                     for xi,tmp_datstr in enumerate(Dataset_lst): paxxs.append(axxs[xi].pcolormesh(tmp_xsect_x[tmp_datstr],tmp_xsect_z[tmp_datstr],tmp_xsect_dat[tmp_datstr]))
                                     paxxs.append(axxs[2].pcolormesh(tmp_xsect_x[xsect_secdataset_proc],tmp_xsect_z[xsect_secdataset_proc],tmp_xsect_dat[Dataset_lst[1]] - tmp_xsect_dat[Dataset_lst[0]], cmap = matplotlib.cm.seismic))
                                     for tmpax  in axxs: tmpax.invert_yaxis()
-                                    for xi,tmp_datstr in enumerate(Dataset_lst): axxs[xi].set_title(fig_lab_d[tmp_datstr])
-                                    axxs[2].set_title('%s - %s'%(fig_lab_d[Dataset_lst[1]],fig_lab_d[Dataset_lst[0]]))
+                                    for xi,tmp_datstr in enumerate(Dataset_lst): axxs[xi].set_title(dataset_lab_d[tmp_datstr])
+                                    axxs[2].set_title('%s - %s'%(dataset_lab_d[Dataset_lst[1]],dataset_lab_d[Dataset_lst[0]]))
                                     xs_ylim = np.array(axxs[0].get_ylim())
                                     xs_xlim = np.array(axxs[0].get_xlim())
                                     xs_ylim[0] = tmp_xsect_z[xsect_secdataset_proc][~(tmp_xsect_x[xsect_secdataset_proc]*tmp_xsect_z[xsect_secdataset_proc]*tmp_xsect_dat[xsect_secdataset_proc]).mask].max()
@@ -4974,7 +4974,7 @@ def nemo_slice_zlev(config = 'amm7',
                                     paxxs = []
                                     for xi,tmp_datstr in enumerate(Dataset_lst): paxxs.append(axxs[xi].pcolormesh(tmp_xsect_x[tmp_datstr],tmp_xsect_z[tmp_datstr],tmp_xsect_dat[tmp_datstr]))
                                     for tmpax  in axxs: tmpax.invert_yaxis()
-                                    for xi,tmp_datstr in enumerate(Dataset_lst): axxs[xi].set_title(fig_lab_d[tmp_datstr])
+                                    for xi,tmp_datstr in enumerate(Dataset_lst): axxs[xi].set_title(dataset_lab_d[tmp_datstr])
                                     xs_ylim = np.array(axxs[0].get_ylim())
                                     xs_xlim = np.array(axxs[0].get_xlim())
                                     tmp_xsect_zmat = tmp_xsect_z[tmp_datstr][~(tmp_xsect_x[tmp_datstr]*tmp_xsect_z[tmp_datstr]*tmp_xsect_dat[tmp_datstr]).mask]
@@ -5035,7 +5035,7 @@ def nemo_slice_zlev(config = 'amm7',
                                 elif var_dim[var] == 3:
                                     axxs[0].axhline(0,color = 'k', lw = 0.5) 
                                     
-                                    for xi,tmp_datstr in enumerate(Dataset_lst):axxs[0].plot(tmp_xsect_x[tmp_datstr],tmp_xsect_dat[tmp_datstr],label = fig_lab_d[tmp_datstr])
+                                    for xi,tmp_datstr in enumerate(Dataset_lst):axxs[0].plot(tmp_xsect_x[tmp_datstr],tmp_xsect_dat[tmp_datstr],label = dataset_lab_d[tmp_datstr])
                                     axxs[0].legend()
 
                                 xs_xlim = np.array(axxs[0].get_xlim())
@@ -5238,7 +5238,7 @@ def nemo_slice_zlev(config = 'amm7',
                                 #
                                 axtp = axsp.twiny()
                                 for dsi,tmp_datstr in enumerate(Dataset_lst):axtp.plot(tmp_T_data[tmp_datstr],tmp_gdept[tmp_datstr],color = 'r',  linestyle = linestyle_str[dsi])
-                                for dsi,tmp_datstr in enumerate(Dataset_lst):axtp.plot(np.ma.masked,color = 'k', label =  fig_lab_d[tmp_datstr], linestyle = linestyle_str[dsi])
+                                for dsi,tmp_datstr in enumerate(Dataset_lst):axtp.plot(np.ma.masked,color = 'k', label =  dataset_lab_d[tmp_datstr], linestyle = linestyle_str[dsi])
                                 plt.legend(loc = 'lower left', fancybox=True, framealpha=0.75)
                                 axtp.set_xlabel('Temperature')
                                 axtp.spines['top'].set_color('r')
@@ -5263,7 +5263,7 @@ def nemo_slice_zlev(config = 'amm7',
                                 axts.set_xlim(tmprhoxlim)
                                 axts.set_ylim(tmprhoylim)
                                 figts_lab_str = '%s\n\n%s'%(lon_lat_to_str(lon_d[1][jj,ii],lat_d[1][jj,ii])[0],time_datetime[ti])
-                                #for dsi,tmp_datstr in enumerate(Dataset_lst): figts_lab_str = figts_lab_str + '\n\n%s'%fig_lab_d[tmp_datstr]
+                                #for dsi,tmp_datstr in enumerate(Dataset_lst): figts_lab_str = figts_lab_str + '\n\n%s'%dataset_lab_d[tmp_datstr]
                                 #plt.text(0.5, 0.1, figts_lab_str, fontsize=14, transform=figts.transFigure, ha = 'left', va = 'bottom')
                                 plt.text(0.5, 0.9, figts_lab_str, fontsize=14, transform=figts.transFigure, ha = 'left', va = 'bottom')
 
@@ -5405,12 +5405,12 @@ def nemo_slice_zlev(config = 'amm7',
                                 axfc[0].plot(fsct_ts_x,fsct_ts_dat_dict['Dataset 1'][:,:], '0.5' )                   
                                 axfc[0].plot(fsct_ts_x[0,:],fsct_ts_dat_dict['Dataset 1'][0,:],'ro' )            
                                 axfc[0].plot(fsct_ts_x[-1,:],fsct_ts_dat_dict['Dataset 1'][-1,:],'x', color = '0.5')
-                                axfc[0].set_title(fig_lab_d['Dataset 1'])
+                                axfc[0].set_title(dataset_lab_d['Dataset 1'])
                                 if load_second_files:       
                                     axfc[1].plot(fsct_ts_x,fsct_ts_dat_dict['Dataset 2'][:,:], '0.5' )                   
                                     axfc[1].plot(fsct_ts_x[0,:],fsct_ts_dat_dict['Dataset 2'][0,:],'ro' )
                                     axfc[1].plot(fsct_ts_x[-1,:],fsct_ts_dat_dict['Dataset 2'][-1,:],'x', color = '0.5')
-                                    axfc[1].set_title(fig_lab_d['Dataset 2'])
+                                    axfc[1].set_title(dataset_lab_d['Dataset 2'])
                                 figfc.show()
 
                             #pdb.set_trace()
@@ -5654,25 +5654,25 @@ def nemo_slice_zlev(config = 'amm7',
                             
 
                             fig_tit_str_lab = ''
-                            #if fig_lab_d['Dataset 1'] is not None: fig_tit_str_lab = fig_tit_str_lab + ' Dataset 1 = %s;'%fig_lab_d['Dataset 1']
-                            #if fig_lab_d['Dataset 2'] is not None: fig_tit_str_lab = fig_tit_str_lab + ' Dataset 2 = %s;'%fig_lab_d['Dataset 2']
+                            #if dataset_lab_d['Dataset 1'] is not None: fig_tit_str_lab = fig_tit_str_lab + ' Dataset 1 = %s;'%dataset_lab_d['Dataset 1']
+                            #if dataset_lab_d['Dataset 2'] is not None: fig_tit_str_lab = fig_tit_str_lab + ' Dataset 2 = %s;'%dataset_lab_d['Dataset 2']
                             for tmp_datstr in Dataset_lst:
-                                #if fig_lab_d[tmp_datstr] is not None: 
-                                fig_tit_str_lab = fig_tit_str_lab + ' %s = %s;'%(tmp_datstr,fig_lab_d[tmp_datstr])
+                                #if dataset_lab_d[tmp_datstr] is not None: 
+                                fig_tit_str_lab = fig_tit_str_lab + ' %s = %s;'%(tmp_datstr,dataset_lab_d[tmp_datstr])
 
 
                             cur_fig_tit_str_lab = ''
                             if load_second_files == False:
-                                cur_fig_tit_str_lab = fig_lab_d['Dataset 1']
+                                cur_fig_tit_str_lab = dataset_lab_d['Dataset 1']
                             else:
                                 if secdataset_proc in Dataset_lst:
-                                    cur_fig_tit_str_lab = '%s'%fig_lab_d[secdataset_proc]
+                                    cur_fig_tit_str_lab = '%s'%dataset_lab_d[secdataset_proc]
                                 else:
                                     tmpdataset_1 = 'Dataset ' + secdataset_proc[3]
                                     tmpdataset_2 = 'Dataset ' + secdataset_proc[8]
                                     tmpdataset_oper = secdataset_proc[4]
                                     if tmpdataset_oper == '-':
-                                        cur_fig_tit_str_lab = '%s minus %s'%(fig_lab_d[tmpdataset_1],fig_lab_d[tmpdataset_2])
+                                        cur_fig_tit_str_lab = '%s minus %s'%(dataset_lab_d[tmpdataset_1],dataset_lab_d[tmpdataset_2])
                             
                             
                             fig_tit_str_lab = fig_tit_str_lab + ' Showing %s.'%(cur_fig_tit_str_lab)
@@ -6244,7 +6244,7 @@ def main():
         parser.add_argument('--configs', action='append', nargs='+')
         parser.add_argument('--th', action='append', nargs='+')
         parser.add_argument('--EOS', action='append', nargs='+')
-        parser.add_argument('--figlabs', action='append', nargs='+')
+        parser.add_argument('--datlabs', action='append', nargs='+')
         parser.add_argument('--forced_dim', action='append', nargs='+')
         parser.add_argument('--rename_var', action='append', nargs='+')
 
@@ -6607,11 +6607,11 @@ def main():
         nDataset = len(dataset_lst)
 
         configd = {}
-        fig_lab_d = {}
+        dataset_lab_d = {}
             #for tmp_datstr in dataset_lst:
         for ii, tmp_datstr in enumerate(dataset_lst):
             configd[ii+1] = args.config
-            fig_lab_d['Dataset %i'%(ii+1) ] = None
+            dataset_lab_d['Dataset %i'%(ii+1) ] = None
 
         if args.configs is not None:
             
@@ -6626,16 +6626,16 @@ def main():
 
     
 
-        if args.figlabs is not None:
-            fig_lab_d = {}
-            fig_lab_d['Dataset 1'] = None
+        if args.datlabs is not None:
+            dataset_lab_d = {}
+            dataset_lab_d['Dataset 1'] = None
 
-            for tmparr in args.figlabs:
+            for tmparr in args.datlabs:
                 if len(tmparr)!=2:
-                    print('arg error: (figlabs):', tmparr)
+                    print('arg error: (datlabs):', tmparr)
                 tmp_datstr = 'Dataset ' + tmparr[0]
                 #pdb.set_trace()
-                fig_lab_d[tmp_datstr] = tmparr[1]
+                dataset_lab_d[tmp_datstr] = tmparr[1]
 
 
 
@@ -6873,7 +6873,7 @@ def main():
 
         #pdb.set_trace()
         nemo_slice_zlev(zlim_max = args.zlim_max,
-            fig_lab_d = fig_lab_d,configd = configd,thd = thd,fname_dict = fname_dict,load_second_files = load_second_files,
+            dataset_lab_d = dataset_lab_d,configd = configd,thd = thd,fname_dict = fname_dict,load_second_files = load_second_files,
             clim_sym = clim_sym_in, clim = args.clim, clim_pair = clim_pair_in,hov_time = hov_time_in,
             allow_diff_time = allow_diff_time_in,preload_data = preload_data_in,
             do_grad = do_grad_in,do_cont = do_cont_in,trim_extra_files = trim_extra_files,trim_files = trim_files,

@@ -1738,17 +1738,18 @@ def reload_data_instances_time(var,thd,ldi,ti,current_time_datetime_since_1970,t
                 del(map_dat_2d_V_1)
             del(data_inst_U)
             del(data_inst_V)
+            
         else:
-
-
-                
+           
             for tmp_datstr in Dataset_lst:
                 th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
 
                 tmpdat_inst = np.ma.masked_invalid(xarr_dict[tmp_datstr][var_grid[tmp_datstr][var][0]][ldi].variables[var][ti,:].load()) 
 
                 data_inst[tmp_datstr] = np.ma.array(tmpdat_inst[grid_dict['WW3']['NWS_WW3_nn_ind']],mask = grid_dict['WW3']['AMM15_mask'])[thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']]
-       
+                
+                #if you want to use a non masked land value
+                #data_inst[tmp_datstr] = data_inst[tmp_datstr].filled(0)
         return data_inst,preload_data_ti,preload_data_var,preload_data_ldi
 
         #pdb.set_trace()
@@ -2180,7 +2181,7 @@ def reload_data_instances_time(var,thd,ldi,ti,current_time_datetime_since_1970,t
                     curr_load_data = curr_d_offset<=curr_d_offset_threshold
 
                     if curr_load_data == False:
-                        print('Not Loading data instance for %s as current time is %.2f days from available data, greater than the threshold of %.2f'%(tmp_datstr,curr_d_offset,curr_d_offset_threshold))
+                        print('\nNot Loading data instance for %s as current time is %.2f days from available data, greater than the threshold of %.2f\n\n'%(tmp_datstr,curr_d_offset,curr_d_offset_threshold))
 
                 else:
                     # Allow different times for differnt datasets - helpful for testing.
