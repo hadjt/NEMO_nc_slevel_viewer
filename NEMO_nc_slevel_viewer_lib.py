@@ -5247,7 +5247,7 @@ def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_m
                     ###WW3 time ncvar name
                     # may be required if a problem with WW3 having 25 instantaneous hours every 25 hours.
                     # if loading in many daily files, there will be repeated hours, so, only load the last 24 hours of the files. 
-                    if tmpgrid in 'WW3':
+                    if tmpgrid == 'WW3':
                         xarr_dict[tmp_datstr][tmpgrid].append(
                             xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], 
                             combine='by_coords',parallel = True, preprocess=lambda ds: ds[{WW3_ld_nctvar:slice(1,24+1)}]))    
@@ -5339,7 +5339,7 @@ def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_m
                     '''
                     ###WW3 time ncvar name
                     for li,(ldi,ldilab) in enumerate(zip(ldi_ind_mat, ld_lab_mat)): 
-                        if tmpgrid in 'WW3':
+                        if tmpgrid == 'WW3':
                             #xarr_dict[tmp_datstr][tmpgrid].append(
                             #xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid], 
                             #combine='by_coords',parallel = True, preprocess=lambda ds: ds[{WW3_ld_nctvar:slice(1,24+1)}]))    
