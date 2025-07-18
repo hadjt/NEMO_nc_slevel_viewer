@@ -109,7 +109,7 @@ def nemo_slice_zlev(config = 'amm7',
     use_xarray_gdept = True,
     force_dim_d = None,xarr_rename_master_dict=None,
     EOS_d = None,gr_1st = None,do_match_time = True,
-    do_addtimedim = None):
+    do_addtimedim = None, do_all_WW3 = False):
 
     print('Initialise at ',datetime.now())
     init_timer = []
@@ -568,7 +568,8 @@ def nemo_slice_zlev(config = 'amm7',
     var_d,var_dim,var_grid,ncvar_d,ncdim_d,time_d  = connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_mat, 
                                                                                   ld_lab_mat,ld_nctvar,force_dim_d = force_dim_d,
                                                                                   xarr_rename_master_dict=xarr_rename_master_dict,
-                                                                                  gr_1st = gr_1st,do_addtimedim = do_addtimedim)
+                                                                                  gr_1st = gr_1st,do_addtimedim = do_addtimedim,
+                                                                                  do_all_WW3 = do_all_WW3)
     
 
     # tmp = xarr_dict['Dataset 1']['T'][0].groupby('time_counter.year').groupby('time_counter.month').mean('time_counter') 
@@ -5211,12 +5212,20 @@ def nemo_slice_zlev(config = 'amm7',
                                         if 'mld25h_2' in var_d[th_d_ind]['mat']: tmp_mld2[tmp_datstr] = np.ma.masked_invalid(xarr_dict[tmp_datstr][gr_1st][ldi].variables['mld25h_2'][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][jj,ii].load())
 
                                     else:
-                                        if 'votemper' in var_d[th_d_ind]['mat']:tmp_T_data[tmp_datstr]  = np.ma.masked_invalid(xarr_dict[tmp_datstr][gr_1st][ldi].variables['votemper'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']].load())
-                                        if 'vosaline' in var_d[th_d_ind]['mat']:tmp_S_data[tmp_datstr]  = np.ma.masked_invalid(xarr_dict[tmp_datstr][gr_1st][ldi].variables['vosaline'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']].load())
-                                        if 'mld25h_1' in var_d[th_d_ind]['mat']:tmp_mld1[tmp_datstr]  = np.ma.masked_invalid(xarr_dict[tmp_datstr][gr_1st][ldi].variables['mld25h_1'][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']].load())
-                                        if 'mld25h_2' in var_d[th_d_ind]['mat']:tmp_mld2[tmp_datstr]  = np.ma.masked_invalid(xarr_dict[tmp_datstr][gr_1st][ldi].variables['mld25h_2'][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']].load())
-                                        tmp_gdept[tmp_datstr] =  np.array(grid_dict[tmp_datstr]['gdept'])[:,iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']]               
-
+                                        if not np.ma.is_masked(iijj_ind[tmp_datstr]['jj']*iijj_ind[tmp_datstr]['ii']):
+                                            if 'votemper' in var_d[th_d_ind]['mat']:tmp_T_data[tmp_datstr]  = np.ma.masked_invalid(xarr_dict[tmp_datstr][gr_1st][ldi].variables['votemper'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']].load())
+                                            if 'vosaline' in var_d[th_d_ind]['mat']:tmp_S_data[tmp_datstr]  = np.ma.masked_invalid(xarr_dict[tmp_datstr][gr_1st][ldi].variables['vosaline'][ti,:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']].load())
+                                            if 'mld25h_1' in var_d[th_d_ind]['mat']:tmp_mld1[tmp_datstr]  = np.ma.masked_invalid(xarr_dict[tmp_datstr][gr_1st][ldi].variables['mld25h_1'][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']].load())
+                                            if 'mld25h_2' in var_d[th_d_ind]['mat']:tmp_mld2[tmp_datstr]  = np.ma.masked_invalid(xarr_dict[tmp_datstr][gr_1st][ldi].variables['mld25h_2'][ti,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']].load())
+                                            tmp_gdept[tmp_datstr] =  np.array(grid_dict[tmp_datstr]['gdept'])[:,iijj_ind[tmp_datstr]['jj'],iijj_ind[tmp_datstr]['ii']]               
+                                        else:
+                                            if 'votemper' in var_d[th_d_ind]['mat']:tmp_T_data[tmp_datstr]  = np.ma.zeros((xarr_dict[tmp_datstr][gr_1st][ldi].variables['votemper'].shape[1]))*np.ma.masked
+                                            if 'vosaline' in var_d[th_d_ind]['mat']:tmp_S_data[tmp_datstr]  = np.ma.zeros((xarr_dict[tmp_datstr][gr_1st][ldi].variables['votemper'].shape[1]))*np.ma.masked
+                                            if 'mld25h_1' in var_d[th_d_ind]['mat']:tmp_mld1[tmp_datstr]  = np.ma.zeros((1))*np.ma.masked
+                                            if 'mld25h_2' in var_d[th_d_ind]['mat']:tmp_mld2[tmp_datstr]  = np.ma.zeros((1))*np.ma.masked
+                                            tmp_gdept[tmp_datstr] =  np.ma.arange(xarr_dict[tmp_datstr][gr_1st][ldi].variables['votemper'].shape[1]*1.)/xarr_dict[tmp_datstr][gr_1st][ldi].variables['votemper'].shape[1]
+                                 
+                                            #pdb.set_trace()
                                     
                                     tmp_sigma_density_data[tmp_datstr] = sw_dens(tmp_T_data[tmp_datstr],tmp_S_data[tmp_datstr])-1000.
                             
@@ -6236,6 +6245,7 @@ def main():
         parser.add_argument('--do_mask', type=str, required=False)
         parser.add_argument('--do_match_time', type=str, required=False)
         parser.add_argument('--do_addtimedim', type=str, required=False)
+        parser.add_argument('--do_all_WW3', type=str, required=False)
         parser.add_argument('--use_xarray_gdept', type=str, required=False)
 
         parser.add_argument('--Obs_dict', action='append', nargs='+')
@@ -6448,6 +6458,19 @@ def main():
             else:                
                 print('do_addtimedim',args.do_addtimedim)
                 pdb.set_trace()
+
+
+        if args.do_all_WW3 is None:
+            do_all_WW3_in=False
+        elif args.do_all_WW3 is not None:
+            if args.do_all_WW3.upper() in ['TRUE','T']:
+                do_all_WW3_in = bool(True)
+            elif args.do_all_WW3.upper() in ['FALSE','F']:
+                do_addtido_all_WW3_inmedim_in = bool(False)
+            else:                
+                print('do_all_WW3',args.do_all_WW3)
+                pdb.set_trace()
+
 
 
 
@@ -6893,7 +6916,7 @@ def main():
             verbose_debugging = verbose_debugging_in,do_timer = do_timer_in,do_memory = do_memory_in,do_ensemble = do_ensemble_in,do_mask = do_mask_in,
             use_xarray_gdept = use_xarray_gdept_in,
             force_dim_d = force_dim_d_in,xarr_rename_master_dict=xarr_rename_master_dict_in,EOS_d = EOS_d,gr_1st = gr_1st,
-            do_match_time = do_match_time_in,do_addtimedim = do_addtimedim_in)
+            do_match_time = do_match_time_in,do_addtimedim = do_addtimedim_in, do_all_WW3=do_all_WW3_in)
 
 
 

@@ -3381,9 +3381,11 @@ def reload_time_dist_data_comb_time(var,var_mat,var_grid,var_dim,deriv_var,ldi,t
                         if timdist_ext_ind == 0:
                             tmp_timdist_dat = timdist_dat[xy][tmp_datstr].copy()
                             if xy == 'x':
-                                ts_e3t_1 = np.ma.array(grid_dict['Dataset 1']['e3t'][:,jj_in,:], mask = tmp_timdist_dat[0].mask)
+                                #ts_e3t_1 = np.ma.array(grid_dict['Dataset 1']['e3t'][:,jj_in,:], mask = tmp_timdist_dat[0].mask)
+                                ts_e3t_1 = np.ma.array(grid_dict[tmp_datstr]['e3t'][:,jj_in,:], mask = tmp_timdist_dat[0].mask)
                             elif xy == 'y':
-                                ts_e3t_1 = np.ma.array(grid_dict['Dataset 1']['e3t'][:,:,ii_in], mask = tmp_timdist_dat[0].mask)
+                                #ts_e3t_1 = np.ma.array(grid_dict['Dataset 1']['e3t'][:,:,ii_in], mask = tmp_timdist_dat[0].mask)
+                                ts_e3t_1 = np.ma.array(grid_dict[tmp_datstr]['e3t'][:,:,ii_in], mask = tmp_timdist_dat[0].mask)
                         else:
                             tmp_timdist_dat = timdist_dat[xy]['Sec Grid'][tmp_datstr]['data'].copy()
                             if xy == 'x':
@@ -5191,12 +5193,12 @@ def grad_vert_hov_prof_data(hov_dat_dict, meth=0, abs_pre = False, abs_post = Fa
 
 
 def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_mat, ld_lab_mat,ld_nctvar,
-    force_dim_d = None,xarr_rename_master_dict=None,gr_1st = 'T',do_addtimedim = None):
+    force_dim_d = None,xarr_rename_master_dict=None,gr_1st = 'T',do_addtimedim = None, do_all_WW3 = False):
     # connect to files with xarray, and create dictionaries with vars, dims, grids, time etc. 
 
     do_addtimedim = True
 
-    WW3_var_lst = ['hs','tp','t0m1','dp','spr','uwnd','vwnd']
+    WW3_var_lst = ['hs','tp','t0m1','dp','spr','uwnd','vwnd','ucur','vcur',]
     # NB xarr_dict is not passed back.
     
     import xarray
@@ -5511,7 +5513,10 @@ def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_m
 
             if tmpgrid == 'WW3':
                 tmp_WW3_var_mat,  WW3_nvar, tmp_var_dim = load_nc_var_name_list_WW3(xarr_dict[tmp_datstr][tmpgrid][0],'seapoint',tmp_t_dim)
-                WW3_var_mat = [ss for ss in tmp_WW3_var_mat if ss in WW3_var_lst]
+                if do_all_WW3:
+                    WW3_var_mat = [ss for ss in tmp_WW3_var_mat]
+                else:
+                    WW3_var_mat = [ss for ss in tmp_WW3_var_mat if ss in WW3_var_lst]
                 var_d[th_d_ind][tmpgrid] = WW3_var_mat
                 #pdb.set_trace()
 
