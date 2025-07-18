@@ -3077,10 +3077,13 @@ def reload_time_dist_data_comb_time(var,var_mat,var_grid,var_dim,deriv_var,ldi,t
                     timdist_dat[xy]['t'] = time_d[tmp_datstr][cur_var_grid]['datetime'].copy()
 
 
-
+                tmpnz, tmpnj, tmpni = grid_dict[tmp_datstr]['gdept'][:,:,:].shape
 
                 if np.ma.is_masked(ii*jj):
-                    timdist_dat[xy]['Sec Grid'][tmp_datstr]['z'] = np.linspace(0,1,grid_dict[tmp_datstr]['gdept'][:,0,0].size)
+                    if xy == 'x':
+                        timdist_dat[xy]['Sec Grid'][tmp_datstr]['z'] = np.tile(np.linspace(0,1,grid_dict[tmp_datstr]['gdept'][:,0,0].size),(tmpni,1)).T
+                    elif xy == 'y':
+                        timdist_dat[xy]['Sec Grid'][tmp_datstr]['z'] = np.tile(np.linspace(0,1,grid_dict[tmp_datstr]['gdept'][:,0,0].size),(tmpnj,1)).T
                 else:
                     
                     try:
@@ -3319,41 +3322,7 @@ def reload_time_dist_data_comb_time(var,var_mat,var_grid,var_dim,deriv_var,ldi,t
                         
                         timdist_dat[xy][tmp_datstr] =tmpdat_timdist
 
-                        """
-                        # not regridding vertically 
-                        #timdist_dat_2d = True
-                        if var_dim[var] == 4:#if timdist_dat_2d: #len(tmpdat_timdist.shape)==2:
-                            # mask if necessary
 
-                            timdist_dat[xy][tmp_datstr] = np.ma.zeros((nz,ntime))*np.ma.masked
-
-                            if do_mask_dict[tmp_datstr]:
-                                tmp_mask = grid_dict[tmp_datstr]['tmask'][:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,orig_jj,orig_ii] == 0
-                                tmpdat_timdist[tmp_mask,:] = np.ma.masked
-                                #pdb.set_trace()
-
-                            #pdb.set_trace()
-                            tmpdat_timdist_zlev = np.ma.zeros((timdist_dat[xy]['z'].size,tmpdat_timdist.shape[0]))*np.ma.masked
-
-
-                            # need to regrid vertically to the original grid
-                            #   by filling a dummy array, you effectively ensure current dataset is the same size as the new one. 
-                            tmpdat_timdist_gdept =  grid_dict[tmp_datstr]['gdept'][:,orig_jj,orig_ii]               
-                            #for i_i,(tmpdat) in enumerate(tmpdat_timdist):timdist_dat[tmp_datstr][:,i_i] = np.ma.masked_invalid(np.interp(timdist_dat['z'], tmpdat_timdist_gdept, tmpdat.filled(np.nan)))
-                            for i_i,(tmpdat) in enumerate(tmpdat_timdist):tmpdat_timdist_zlev[:,i_i] = np.ma.masked_invalid(np.interp(timdist_dat[xy]['z'], tmpdat_timdist_gdept, tmpdat.filled(np.nan)))
-                            
-                            timdist_dat[xy][tmp_datstr]= tmpdat_timdist_zlev
-                            #timdist_dat['Sec Grid'][tmp_datstr]['t']= time_d[tmp_datstr][cur_var_grid]['datetime'].copy()
-                            #timdist_dat['Sec Grid'][tmp_datstr]['z']= tmpdat_timdist_gdept.copy()
-                            #timdist_dat['Sec Grid'][tmp_datstr]['data']= tmpdat_timdist.copy()
-                        else: #elif len(tmpdat_timdist.shape)==1:
-
-                            if do_mask_dict[tmp_datstr]:
-                                tmp_mask = grid_dict[tmp_datstr]['tmask'][0,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,orig_jj,orig_ii] == 0
-                                tmpdat_timdist[tmp_mask] = np.ma.masked
-                            timdist_dat[xy][tmp_datstr]= tmpdat_timdist
-
-                        """
                     else:
                         print('iijj masked',tmp_datstr)
                         #timdist_dat['Sec Grid'][tmp_datstr]['t'] = timdist_dat['t'].copy()
@@ -3362,8 +3331,8 @@ def reload_time_dist_data_comb_time(var,var_mat,var_grid,var_dim,deriv_var,ldi,t
 
 
                         if var_dim[var] == 4:#if timdist_dat_2d:
-                            timdist_dat[xy][tmp_datstr] = np.ma.zeros((nz,ntime,tmpnx))*np.ma.masked
-                            timdist_dat[xy]['Sec Grid'][tmp_datstr]['data'] = np.ma.zeros((nz,ntime,tmpnx))*np.ma.masked
+                            timdist_dat[xy][tmp_datstr] = np.ma.zeros((ntime,nz,tmpnx))*np.ma.masked
+                            timdist_dat[xy]['Sec Grid'][tmp_datstr]['data'] = np.ma.zeros((ntime,nz,tmpnx))*np.ma.masked
                         else:
                             timdist_dat[xy][tmp_datstr] = np.ma.zeros((ntime,tmpnx))*np.ma.masked
                             timdist_dat[xy]['Sec Grid'][tmp_datstr]['data'] = np.ma.zeros((ntime,tmpnx))*np.ma.masked
@@ -3373,13 +3342,14 @@ def reload_time_dist_data_comb_time(var,var_mat,var_grid,var_dim,deriv_var,ldi,t
                 #    print('I think we can now natively show timdist_time from other configs')
                 #    pdb.set_trace()
 
-
+                #pdb.set_trace()
 
                 if var_dim[var] == 4:
-                    for timdist_ext_ind in [0,1]:
+                    for timdist_ext_ind in [1]: # [0,1]: # original grid and secondary grid
 
                         if timdist_ext_ind == 0:
                             tmp_timdist_dat = timdist_dat[xy][tmp_datstr].copy()
+                            tmp_timdist_z = timdist_dat[xy]['z'].copy()
                             if xy == 'x':
                                 #ts_e3t_1 = np.ma.array(grid_dict['Dataset 1']['e3t'][:,jj_in,:], mask = tmp_timdist_dat[0].mask)
                                 ts_e3t_1 = np.ma.array(grid_dict[tmp_datstr]['e3t'][:,jj_in,:], mask = tmp_timdist_dat[0].mask)
@@ -3388,6 +3358,8 @@ def reload_time_dist_data_comb_time(var,var_mat,var_grid,var_dim,deriv_var,ldi,t
                                 ts_e3t_1 = np.ma.array(grid_dict[tmp_datstr]['e3t'][:,:,ii_in], mask = tmp_timdist_dat[0].mask)
                         else:
                             tmp_timdist_dat = timdist_dat[xy]['Sec Grid'][tmp_datstr]['data'].copy()
+                            tmp_timdist_z = timdist_dat[xy]['Sec Grid'][tmp_datstr]['z'].copy()
+                            #pdb.set_trace()
                             if xy == 'x':
                                 ts_e3t_1 = np.ma.array(grid_dict[tmp_datstr]['e3t'][:,jj_in,:], mask = tmp_timdist_dat[0].mask)
                             elif xy == 'y':
@@ -3458,11 +3430,13 @@ def reload_time_dist_data_comb_time(var,var_mat,var_grid,var_dim,deriv_var,ldi,t
                         elif z_meth == 'z_slice':
                             #for tmp_datstr in Dataset_lst:
                             #tmp_timdist_dat = timdist_dat_dict['Sec Grid'][tmp_datstr]['data']
-                            timdist_zi = (np.abs(zz - timdist_dat[xy]['z'])).argmin(axis = 0)
+                            timdist_zi = (np.abs(zz - tmp_timdist_z)).argmin(axis = 0)
                             #ts_dat_dict[tmp_datstr] = tmp_timdist_dat[timdist_zi,:].copy()
                             #tmp_ts_dat_dict_out = tmp_timdist_dat[xy][timdist_zi,:].copy()
-                            tmp_ts_dat_dict_out = np.ma.array([tmp_timdist_dat[:,zm_i,i_i] for i_i,zm_i in enumerate( timdist_zi)]).T
-
+                            try:
+                                tmp_ts_dat_dict_out = np.ma.array([tmp_timdist_dat[:,zm_i,i_i] for i_i,zm_i in enumerate( timdist_zi)]).T
+                            except:
+                                pdb.set_trace()
 
                         elif z_meth == 'z_index':
                             #for tmp_datstr in Dataset_lst:
@@ -3662,8 +3636,6 @@ def reload_time_dist_data_comb_time(var,var_mat,var_grid,var_dim,deriv_var,ldi,t
                 pdb.set_trace()
 
         """
-
-
         """
 
         #pdb.set_trace()
