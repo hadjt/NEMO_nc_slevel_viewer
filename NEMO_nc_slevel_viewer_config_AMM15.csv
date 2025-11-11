@@ -1,6 +1,4 @@
 mesh_file,/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/AMM15/amm15.mesh_mask.nc
 ncgdept,gdept_0
 z_meth_default,z_slice
-#regrid_amm15_amm7,/data/cr1/hadjt/data/reffiles/SSF/regrid_amm15_amm7_bilin_nn.nc
-#regrid_amm7_amm15,/data/cr1/hadjt/data/reffiles/SSF/regrid_amm7_amm15_bilin_nn.nc
 xypos_file,/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/AMM15/xypos_amm15.nc

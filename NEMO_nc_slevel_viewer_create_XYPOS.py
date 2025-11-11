@@ -344,12 +344,22 @@ def create_shmi_balmfc_xypos():
     create_xypos(mesh_file,xypos_file_out)
 
 
+
 def create_bsh_nwsmfc_my_xypos():
  
 
 
     mesh_file='/data/users/jonathan.tinker/shelf_seas/NEMO_nc_slevel_viewer_data/BSH/domain_cfg.nc'
     xypos_file_out='/data/users/jonathan.tinker/shelf_seas/NEMO_nc_slevel_viewer_data/BSH/tmp_out_xypos_BSH_NWSMFC_MY.nc'
+    create_xypos(mesh_file,xypos_file_out)
+
+
+def create_AMM15CMEMS_xypos():
+ 
+
+
+    mesh_file='/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/CopMarProd/NWS_MFC/amm15_CopMar_Prod_old.mesh_mask.nc'
+    xypos_file_out='/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/AMM15/xypos_CMEMSamm15.nc'
     create_xypos(mesh_file,xypos_file_out)
 
 
@@ -421,6 +431,7 @@ def test_xypos_interp():
 
 
 def main():
+    create_AMM15CMEMS_xypos()
 
     create_hires_amm15_xypos()
 

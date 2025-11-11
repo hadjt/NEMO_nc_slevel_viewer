@@ -7905,5 +7905,28 @@ def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lo
     return sel_jj_out,sel_ii_out
 
 
+
+
+def lonlat_iijj_amm15(loni_in,latj_in):
+    
+    loni,latj  =np.ma.array(loni_in),np.ma.array(latj_in)
+    from rotated_pole_grid import rotated_grid_from_amm15,reduce_rotamm15_grid #rotated_grid_to_amm15, 
+    lon_rotamm15,lat_rotamm15 = reduce_rotamm15_grid()
+
+    dlon_rotamm15 = (np.diff(lon_rotamm15)).mean()
+    dlat_rotamm15 = (np.diff(lat_rotamm15)).mean()
+    nlon_rotamm15 = lon_rotamm15.size
+    nlat_rotamm15 = lat_rotamm15.size
+
+    #do this for each set of loni and lati you need to convert... 
+    # these can be arrays
+    lon_mat_rot, lat_mat_rot  = rotated_grid_from_amm15(loni,latj)
+    ii = np.minimum(np.maximum(np.round((lon_mat_rot - lon_rotamm15.min())/dlon_rotamm15).astype('int'),0),nlon_rotamm15-1)
+    jj = np.minimum(np.maximum(np.round((lat_mat_rot - lat_rotamm15.min())/dlat_rotamm15).astype('int'),0),nlat_rotamm15-1)
+
+    return ii,jj
+
+
+
 if __name__ == "__main__":
     main()

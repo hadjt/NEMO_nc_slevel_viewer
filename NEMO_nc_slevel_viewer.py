@@ -3088,7 +3088,7 @@ def nemo_slice_zlev(config = 'amm7',
                                     #pdb.set_trace()
                                 # give id info for Obs
                                 if obs_stat_type_sel[tmp_datstr] is not None:
-                                    opaxtx_lst.append(ax[5].text(0.02,0.01,'ID = %s\nType: %i\n%s\n%s'%(obs_stat_id_sel[tmp_datstr] ,obs_stat_type_sel[tmp_datstr],obs_stat_time_sel[tmp_datstr].strftime('%Y/%m/%d %H:%M'), lon_lat_to_str(obs_lon_sel[tmp_datstr], obs_lat_sel[tmp_datstr])[0] ), ha = 'left', va = 'bottom', transform=ax[5].transAxes, color = 'k', fontsize = 10,bbox=dict(facecolor='white', alpha=0.5, pad=1, edgecolor='none')))
+                                    opaxtx_lst.append(ax[5].text(0.02,0.01,'ID = %s\nType: %i\n%s\n%s'%(obs_stat_id_sel[secdataset_proc] ,obs_stat_type_sel[secdataset_proc],obs_stat_time_sel[secdataset_proc].strftime('%Y/%m/%d %H:%M'), lon_lat_to_str(obs_lon_sel[secdataset_proc], obs_lat_sel[secdataset_proc])[0] ), ha = 'left', va = 'bottom', transform=ax[5].transAxes, color = 'k', fontsize = 10,bbox=dict(facecolor='white', alpha=0.5, pad=1, edgecolor='none')))
                                     #opaxtx = ax[5].text(0.02,0.01,'ID = %s\nType: %i'%(obs_stat_id_sel[tmp_datstr] ,obs_stat_type_sel[tmp_datstr] ), ha = 'left', va = 'bottom', transform=ax[5].transAxes, color = 'k', fontsize = 10,bbox=dict(facecolor='white', alpha=0.75, pad=1, edgecolor='none'))
 
                         
@@ -4514,12 +4514,12 @@ def nemo_slice_zlev(config = 'amm7',
                                             tmpobs_stat_type_sel[ob_var][tmp_datstr] = tmpobs_stat_type[tmp_obs_obs_ind]
                                             tmpobs_stat_time_sel[ob_var][tmp_datstr] = tmpobs_stat_time[tmp_obs_obs_ind]
 
-                                            tmpobs_dist_sel[ob_var] = tmp_obs_obs_dist
+                                            tmpobs_dist_sel[ob_var][tmp_datstr] = tmp_obs_obs_dist
                                     
                                     # put all distances into one array
-                                    obs_dist_sel_cf_mat = np.array([tmpobs_dist_sel[ob_var] for ob_var in Obs_var_lst_sub])
+                                    obs_dist_sel_cf_mat = np.array([tmpobs_dist_sel[ob_var][secdataset_proc] for ob_var in Obs_var_lst_sub])
 
-                                    if (obs_dist_sel_cf_mat).size >0:
+                                    if (obs_dist_sel_cf_mat).size>0:
                                         
                                         # select the Obs Obs type closest to the selected point
                                         sel_Obs_var = Obs_var_lst_sub[obs_dist_sel_cf_mat.argmin()]
@@ -6802,11 +6802,11 @@ def main():
         #for dsi in range(1,nDataset+1): print(thd[dsi])
 
         # ensure all configs have same thinning, use lowest dataset value
-        if nDataset > 1:
-            for tmpconfig in uniqconfig:
-                tmpconfigind = np.where(configlst == tmpconfig)[0] + 1
-                for dsi in tmpconfigind[1:]:
-                    thd[dsi] = thd[tmpconfigind[0]]
+        #if nDataset > 1:
+        #    for tmpconfig in uniqconfig:
+        #        tmpconfigind = np.where(configlst == tmpconfig)[0] + 1
+        #        for dsi in tmpconfigind[1:]:
+        #            thd[dsi] = thd[tmpconfigind[0]]
             
         # print out thd
         for dsi in range(1,nDataset+1): print(thd[dsi])
