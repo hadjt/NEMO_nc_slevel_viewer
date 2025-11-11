@@ -6785,13 +6785,15 @@ def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,nlon = 1458, nlat 
 
 
 
-def obs_reset_sel(Dataset_lst, Fill = True):
+def obs_reset_sel(Dataset_lst, Fill = True): #,reset_datstr = None):
 
 
     obs_z_sel,obs_obs_sel,obs_mod_sel,obs_lon_sel,obs_lat_sel = {},{},{},{},{}
     obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel = {},{},{}
 
     for tmp_datstr in Dataset_lst:
+        #if reset_datstr is not None:
+        #    if tmp_datstr != reset_datstr: continue
         obs_z_sel[tmp_datstr] = np.ma.zeros((1))*np.ma.masked
         obs_obs_sel[tmp_datstr] = np.ma.zeros((1))*np.ma.masked
         obs_mod_sel[tmp_datstr] = np.ma.zeros((1))*np.ma.masked

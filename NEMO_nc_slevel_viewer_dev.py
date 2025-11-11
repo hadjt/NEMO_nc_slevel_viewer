@@ -3678,7 +3678,6 @@ def nemo_slice_zlev(config = 'amm7',
                             if Obs_AbsAnom:
                                 oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS, edgecolors = Obs_scatEC ))
                             else:
-
                                 oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat, s = Obs_scatSS, edgecolors = Obs_scatEC, cmap = matplotlib.cm.seismic ))
                                 
 
@@ -4042,7 +4041,12 @@ def nemo_slice_zlev(config = 'amm7',
                 reload_ns = True
 
                 if do_Obs:
-                    reload_Obs = True
+                    # load the obs for the correct varible and time
+                    reload_Obs = True   
+
+                    # deselect the current observation
+                    (obs_z_sel,obs_obs_sel,obs_mod_sel,obs_lon_sel,obs_lat_sel,
+                        obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel) = obs_reset_sel(Dataset_lst)
                 if do_MLD:
                     reload_MLD = True
    
@@ -4119,7 +4123,13 @@ def nemo_slice_zlev(config = 'amm7',
                             reload_hov = True
                             reload_ts = True
                             if do_Obs:
-                                reload_Obs = True
+                                # load the obs for the correct varible and time
+                                reload_Obs = True   
+
+                                # deselect the current observation
+                                (obs_z_sel,obs_obs_sel,obs_mod_sel,obs_lon_sel,obs_lat_sel,
+                                    obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel) = obs_reset_sel(Dataset_lst)
+                                
 
                 ###################################################################################################
                 ### If function clicked, call function
@@ -4423,7 +4433,6 @@ def nemo_slice_zlev(config = 'amm7',
                                     obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel) = obs_reset_sel(Dataset_lst)
                                 # select the observation with ginput
                                 tmpobsloc = plt.ginput(1)
-                                #pdb.set_trace()
 
                                 # convert to the nearest model grid box
                                 # if fig zorder = -5
@@ -4515,9 +4524,80 @@ def nemo_slice_zlev(config = 'amm7',
                                             tmpobs_stat_time_sel[ob_var][tmp_datstr] = tmpobs_stat_time[tmp_obs_obs_ind]
 
                                             tmpobs_dist_sel[ob_var][tmp_datstr] = tmp_obs_obs_dist
+                                    '''
+                                    obs_dist_sel_cf_dict = {}
+                                    obs_dist_sel_cf_size_lst = []
+                                    for tmp_datstr in Dataset_lst:
+                                        obs_dist_sel_cf_dict[tmp_datstr] = np.array([tmpobs_dist_sel[ob_var][tmp_datstr] for ob_var in Obs_var_lst_sub])
+                                        obs_dist_sel_cf_size_lst.append(obs_dist_sel_cf_dict[tmp_datstr].size)
+
+                                    for tmp_datstr in Dataset_lst:
                                     
+                                        # put all distances into one array
+                                        obs_dist_sel_cf_mat = obs_dist_sel_cf_dict[tmp_datstr]
+                                        #obs_dist_sel_cf_dict = {}
+                                        #for tmp_datstr in Dataset_lst:obs_dist_sel_cf_dict[tmp_datstr] = np.array([tmpobs_dist_sel[ob_var][tmp_datstr] for ob_var in Obs_var_lst_sub])
+
+                                        #if (obs_dist_sel_cf_mat).size>0:
+                                        if (obs_dist_sel_cf_mat).size>0:
+                                            
+                                            # select the Obs Obs type closest to the selected point
+                                            sel_Obs_var = Obs_var_lst_sub[obs_dist_sel_cf_mat.argmin()]
+                                            
+                                            #select obs data from Obs type closest to the selected point
+                                            obs_z_sel[tmp_datstr] = tmpobs_z_sel[sel_Obs_var][tmp_datstr]
+                                            obs_obs_sel[tmp_datstr] = tmpobs_obs_sel[sel_Obs_var][tmp_datstr]
+                                            obs_mod_sel[tmp_datstr] = tmpobs_mod_sel[sel_Obs_var][tmp_datstr]
+                                            obs_lon_sel[tmp_datstr] = tmpobs_lon_sel[sel_Obs_var][tmp_datstr]
+                                            obs_lat_sel[tmp_datstr] = tmpobs_lat_sel[sel_Obs_var][tmp_datstr]
+
+                                            obs_stat_id_sel[tmp_datstr] = tmpobs_stat_id_sel[sel_Obs_var][tmp_datstr]
+                                            obs_stat_type_sel[tmp_datstr] = tmpobs_stat_type_sel[sel_Obs_var][tmp_datstr]
+                                            obs_stat_time_sel[tmp_datstr] = tmpobs_stat_time_sel[sel_Obs_var][tmp_datstr]
+                                        else:
+                                            obs_z_sel[tmp_datstr] = np.ma.masked
+                                            obs_obs_sel[tmp_datstr] = np.ma.masked
+                                            obs_mod_sel[tmp_datstr] = np.ma.masked
+                                            obs_lon_sel[tmp_datstr] = np.ma.masked
+                                            obs_lat_sel[tmp_datstr] = np.ma.masked
+
+                                            obs_stat_id_sel[tmp_datstr] = ''
+                                            obs_stat_type_sel[tmp_datstr] = None
+                                            obs_stat_time_sel[tmp_datstr] = ''
+                             
+
+                                    del(tmpobs_z_sel)
+                                    del(tmpobs_obs_sel)
+                                    del(tmpobs_mod_sel)
+                                    del(tmpobs_lon_sel)
+                                    del(tmpobs_lat_sel)
+                                    del(tmpobs_dist_sel)
+
+                                    del(tmpobs_stat_id_sel)
+                                    del(tmpobs_stat_type_sel)
+                                    del(tmpobs_stat_time_sel)
+
+
+                                            ## append this data to an array to help select x and y lims
+                                            #for tmp_datstr in Dataset_lst:
+                                            #    tmp_pf_ylim_dat = np.ma.append(np.array(tmp_py_ylim),obs_z_sel[tmp_datstr])
+                                            #    #tmp_pf_xlim_dat = np.ma.append(np.ma.append(np.array(pf_xlim),obs_mod_sel)[tmp_datstr],obs_obs_sel)
+                                            #    tmp_pf_xlim_dat = np.ma.append(np.ma.append(np.array(pf_xlim),obs_mod_sel[tmp_datstr]),obs_obs_sel[tmp_datstr])
+                                            
+                                        #else:
+                                    if (np.array(obs_dist_sel_cf_size_lst) == 0).all():
+                                        
+                                        (obs_z_sel,obs_obs_sel,obs_mod_sel,obs_lon_sel,obs_lat_sel,
+                                            obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel) = obs_reset_sel(Dataset_lst)
+
+
+                                    '''
+
+
                                     # put all distances into one array
                                     obs_dist_sel_cf_mat = np.array([tmpobs_dist_sel[ob_var][secdataset_proc] for ob_var in Obs_var_lst_sub])
+                                    #obs_dist_sel_cf_dict = {}
+                                    #for tmp_datstr in Dataset_lst:obs_dist_sel_cf_dict[tmp_datstr] = np.array([tmpobs_dist_sel[ob_var][tmp_datstr] for ob_var in Obs_var_lst_sub])
 
                                     if (obs_dist_sel_cf_mat).size>0:
                                         
@@ -4558,7 +4638,7 @@ def nemo_slice_zlev(config = 'amm7',
                                         
                                         (obs_z_sel,obs_obs_sel,obs_mod_sel,obs_lon_sel,obs_lat_sel,
                                             obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel) = obs_reset_sel(Dataset_lst)
-
+                                    
                             elif mouse_info['button'].name == 'RIGHT':
 
                                 # Bring up a options window for Obs
@@ -5688,6 +5768,8 @@ def nemo_slice_zlev(config = 'amm7',
                             
                             fig.suptitle(fig_tit_str_int + '\n' + fig_tit_str_lab, fontsize=figsuptitfontsize)
                             
+
+ 
 
                         #elif do_ensemble:
                         #    if but_name in ens_stat_lst:
