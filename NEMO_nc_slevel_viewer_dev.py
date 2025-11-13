@@ -6264,37 +6264,64 @@ def main():
 
 
         parser.add_argument('config', type=str, help="AMM7, AMM15, CO9P2, ORCA025, ORCA025EXT or ORCA12")# Parse the argument
-        parser.add_argument('fname_lst', type=str, help='Input file list, enclose in "" more than simple wild card')
+        parser.add_argument('fname_lst', type=str, help='Input file list, enclose in "" if contains wild cards')
 
-        parser.add_argument('--zlim_max', type=int, required=False)
-        parser.add_argument('--var', type=str)# Parse the argument
 
-        parser.add_argument('--preload_data', type=str, required=False)
+
+        parser.add_argument('--files', action='append', nargs='+',help = 'Files for a given dataset and grid. Requires: int(dataset number), str(grid), str(path to files)')
+        parser.add_argument('--configs', action='append', nargs='+',help = 'Configuration of other datasets. Requires: int(dataset number), str(config)')
+        parser.add_argument('--th', action='append', nargs='+',help = 'Thinning dataset options. Requires: int(dataset number), str(grid), str(thinning option), int(thinning value)')
+        parser.add_argument('--datlabs', action='append', nargs='+',help = 'Label for dataset. Requires: int(dataset number), str(grid), str(Dataset label)')
+
+        parser.add_argument('--var', type=str,help = 'Variable to initialise with . Requires: str(variable)')
+
+        #parser.add_argument('--preload_data', type=str, required=False) # deprecated
+
+
+        #### Display Options
+        #####################
+        # plotting limits: xlim, ylim, clim, max depth 
+        parser.add_argument('--xlim', type=float, required=False, nargs = 2,help = 'Display Options: xlim. Requires: flt(xlim min) flt(xlim max)')
+        parser.add_argument('--ylim', type=float, required=False, nargs = 2,help = 'Display Options: ylim. Requires: flt(ylim min) flt(ylim max)')
+        parser.add_argument('--clim', type=float, required=False, nargs = '+',help = 'Display Options: clim. Requires: flt(clim min) flt(clim max) or 2 values for each axis')
+        parser.add_argument('--zlim_max', type=int, required=False,help = 'Display Options: zlim_max - to set the maximum depth. Requires: flt(zlim_max)')
+
+        # Inital location
+        parser.add_argument('--ii', type=int, required=False, help = 'Initial Location Options - i index: ii. Requires: int(ii)')
+        parser.add_argument('--jj', type=int, required=False, help = 'Initial Location Options - j index:: jj. Requires: int(jj)')
+        parser.add_argument('--ti', type=int, required=False, help = 'Initial Location Options - time index: ti. Requires: int(ti)')
+        parser.add_argument('--zz', type=int, required=False, help = 'Initial Location Options - depth: zz. Requires: flt(zz)')
+
+        parser.add_argument('--lon', type=float, required=False, help = 'Initial Location Options - longitude: lon. Requires: flt(lon)')
+        parser.add_argument('--lat', type=float, required=False, help = 'Initial Location Options - latitude: lat. Requires: flt(lat)')
+        parser.add_argument('--date_ind', type=str, required=False, help = 'Initial Location Options - date: date_ind. e.g. "20220101" Requires: str(date_ind)')
+        parser.add_argument('--date_fmt', type=str, required=False, help = 'Initial Location Options - format of date: date_fmt. default: "%Y%m%d", Requires: str(date_fmt)')
+
+        # Depreciated, as take in form the config files
+        #parser.add_argument('--z_meth', type=str, help="z_slice, ss, nb, df, zm, zx, zn, zs, or z_index for z level models")# Parse the argument
+
+        # Display hov_time data, contours, and gradients
+        parser.add_argument('--hov_time', type=str, required=False, help = 'Initially show hov_time? default False. Requires: bool(hov_time)')
+        parser.add_argument('--do_cont', type=str, required=False, help = 'Initially show contours? default False. Requires: bool(do_cont)')
+        parser.add_argument('--do_grad', type=int, required=False, help = 'Initially show spatial gradients (>0) and what version (1, 2) ? default 0 Requires: int(do_grad)')
+
+
+        # Different Lead Times
+        parser.add_argument('--ld_lst', type=str, required=False, help = 'Lead time index numbers - str("0,1,2,3,4,5,6,7")')
+        parser.add_argument('--ld_lab_lst', type=str, required=False, help = 'Lead time labels - str("-36,-12,012,036,060,084,108,132")')
+        parser.add_argument('--ld_nctvar', type=str, required=False, help = 'Lead time netcdf variable time name - str(time_counter)')
+
+        # Output figure options
+
+        parser.add_argument('--fig_dir', type=str, required=False, help = 'Output figures: Location of output figures. Default to "$PWD/tmpfigs". Requires str(fig_dir)')
+        parser.add_argument('--fig_lab', type=str, required=False, help = 'Output figures: Label added to output figures. Default to "figs". Requires str(fig_lab)')
+        parser.add_argument('--fig_cutout', type=str, required=False, help = 'Output figures: Cutout figures to remove buttons Default to "True". Requires bool(fig_cutout)')
+        
+
         parser.add_argument('--allow_diff_time', type=str, required=False)
-
-
-        parser.add_argument('--xlim', type=float, required=False, nargs = 2)
-        parser.add_argument('--ylim', type=float, required=False, nargs = 2)
-        #parser.add_argument('--tlim', type=str, required=False)
-        parser.add_argument('--clim', type=float, required=False, nargs = '+')
-
-        parser.add_argument('--ii', type=int, required=False)
-        parser.add_argument('--jj', type=int, required=False)
-        parser.add_argument('--ti', type=int, required=False)
-        parser.add_argument('--zz', type=int, required=False)
-
-        parser.add_argument('--lon', type=float, required=False)
-        parser.add_argument('--lat', type=float, required=False)
-        parser.add_argument('--date_ind', type=str, required=False)
-        parser.add_argument('--date_fmt', type=str, required=False)
-
-        parser.add_argument('--z_meth', type=str, help="z_slice, ss, nb, df, zm, zx, zn, zs, or z_index for z level models")# Parse the argument
 
         parser.add_argument('--secdataset_proc', type=str, required=False)
 
-        parser.add_argument('--hov_time', type=str, required=False)
-        parser.add_argument('--do_cont', type=str, required=False)
-        parser.add_argument('--do_grad', type=int, required=False)
         parser.add_argument('--trim_extra_files', type=int, required=False)
         parser.add_argument('--trim_files', type=int, required=False)
 
@@ -6302,19 +6329,8 @@ def main():
         parser.add_argument('--clim_pair', type=str, required=False)
         parser.add_argument('--use_cmocean', type=str, required=False)
 
-        parser.add_argument('--resample_freq', type=str, required=False)
+        parser.add_argument('--resample_freq', type=str, required=False, help = 'Resample (temporal mean) dataset for a given period. Required: str(resample period), where resample period is a number and a letter (M, Y, D, Q for Month, year, decade (day??), quarter), e.g. 1d, 1m.')
 
-        parser.add_argument('--ld_lst', type=str, required=False)
-        parser.add_argument('--ld_lab_lst', type=str, required=False)
-        parser.add_argument('--ld_nctvar', type=str, required=False)
-
-
-
-        parser.add_argument('--fig_dir', type=str, required=False, help = 'if absent, will default to $PWD/tmpfigs')
-        parser.add_argument('--fig_lab', type=str, required=False, help = 'if absent, will default to figs')
-        parser.add_argument('--fig_cutout', type=str, required=False)
-        #parser.add_argument('--fig_cutout', type=str, required=False)
-        
         parser.add_argument('--justplot', type=str, required=False)
         parser.add_argument('--justplot_date_ind', type=str, required=False, help = 'comma separated values')
         parser.add_argument('--justplot_z_meth_zz', type=str, required=False, help = 'comma separated values, replace space with underscore - e.g. "Dataset_1"')
@@ -6323,20 +6339,20 @@ def main():
         parser.add_argument('--verbose_debugging', type=str, required=False)
         parser.add_argument('--do_timer', type=str, required=False)
         parser.add_argument('--do_memory', type=str, required=False)
+
         parser.add_argument('--do_ensemble', type=str, required=False)
+
         parser.add_argument('--do_mask', type=str, required=False)
         parser.add_argument('--do_match_time', type=str, required=False)
         parser.add_argument('--do_addtimedim', type=str, required=False)
+
         parser.add_argument('--do_all_WW3', type=str, required=False)
         parser.add_argument('--use_xarray_gdept', type=str, required=False)
 
         parser.add_argument('--Obs_dict', action='append', nargs='+')
         parser.add_argument('--Obs_hide', type=str, required=False)
-        parser.add_argument('--files', action='append', nargs='+')
-        parser.add_argument('--configs', action='append', nargs='+')
-        parser.add_argument('--th', action='append', nargs='+')
+
         parser.add_argument('--EOS', action='append', nargs='+')
-        parser.add_argument('--datlabs', action='append', nargs='+')
         parser.add_argument('--forced_dim', action='append', nargs='+')
         parser.add_argument('--rename_var', action='append', nargs='+')
 
@@ -6374,6 +6390,8 @@ def main():
 
             #pdb.set_trace()
 
+        '''
+        # preload_data option deprecated, option not to preload data no longer supported
         if args.preload_data is None:
             preload_data_in=True
         elif args.preload_data is not None:
@@ -6384,6 +6402,8 @@ def main():
             else:                
                 print('preload_data',args.preload_data)
                 pdb.set_trace()
+        '''
+        preload_data_in=True
 
         if args.allow_diff_time is None:
             allow_diff_time_in=False
@@ -6648,8 +6668,13 @@ def main():
         else:
             gr_1st = args.gr_1st
 
-
-
+        z_meth_in = None   
+        ''' 
+        if args.z_meth is None:
+            z_meth_in = None
+        else:
+            z_meth_in = args.z_meth
+        '''
 
         if (args.date_fmt) is None: args.date_fmt='%Y%m%d'
 
@@ -6814,7 +6839,7 @@ def main():
         thd[1]['cuty0'] = 0
         thd[1]['cuty1'] = None
             
-
+        # lat0, lat1, lon0, lon1, cutx0, cutx1, cuty0, cuty1
         #pdb.set_trace()
 
         # Copy dummy values for all datasets
@@ -6975,7 +7000,7 @@ def main():
                     nfdimlst=len(tmpfdimlst[1:])/2
                     for tfdi in range(int(nfdimlst)): force_dim_d_in[dsi][tmpdimgrid][tmpfdimlst[(tfdi*2)+1]] = tmpfdimlst[(tfdi*2)+2]
                 print(tmpfdimlst, force_dim_d_in)    
-
+        
         #pdb.set_trace()
         nemo_slice_zlev(zlim_max = args.zlim_max,
             dataset_lab_d = dataset_lab_d,configd = configd,thd = thd,fname_dict = fname_dict,load_second_files = load_second_files,
@@ -6988,7 +7013,7 @@ def main():
             justplot_z_meth_zz = args.justplot_z_meth_zz,
             ii = args.ii, jj = args.jj, ti = args.ti, zz = args.zz, 
             lon_in = args.lon, lat_in = args.lat, date_in_ind = args.date_ind,
-            var = args.var, z_meth = args.z_meth,
+            var = args.var, z_meth = z_meth_in,
             xlim = args.xlim,ylim = args.ylim,
             secdataset_proc = args.secdataset_proc,
             ld_lst = args.ld_lst, ld_lab_lst = args.ld_lab_lst, ld_nctvar = args.ld_nctvar,
