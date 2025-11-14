@@ -6027,7 +6027,6 @@ def main():
         # Load read command line keyword arguments 
         args = parser.parse_args()
 
-        preload_data_in=True
 
 
         ############################################################
@@ -6055,404 +6054,63 @@ def main():
         else:
             gr_1st = args.gr_1st
 
+
+        # Depreciated options
         z_meth_in = None   
-        ''' 
-        if args.z_meth is None:
-            z_meth_in = None
-        else:
-            z_meth_in = args.z_meth
-        '''
+        preload_data_in=True
 
-        if (args.date_fmt) is None: args.date_fmt='%Y%m%d'
-
-        #print('justplot',args.justplot)
         
-        #add files into fname_dict, allowing for \n separated lists (not handled by glob.glob)
+        
         print(args.fname_lst)
-        #fname_lst = glob.glob(args.fname_lst)
-        fname_lst_in = args.fname_lst
-        fname_lst = []
-        for sub_fname_lst_in in fname_lst_in.split('\n'):
-            sub_fname_lst = glob.glob(sub_fname_lst_in)
-            for ss in sub_fname_lst:fname_lst.append(ss)
-        
-        #pdb.set_trace()
 
-        fname_lst.sort()
-        
-        
-        fname_dict, load_second_files = process_argparse_fname_dict(args,gr_1st,fname_lst)
+        # setting up filename dictionary
+        fname_dict, load_second_files = process_argparse_fname_dict(args,gr_1st)
 
-
-        '''
-        fname_dict = {}
-        fname_dict['Dataset 1'] = {}
-
-        fname_dict['Dataset 1'][gr_1st] = fname_lst
-        
-        if args.files is not None:
-            #for ss in np.unique([tmparr[0] for tmparr in args.Obs_dict])
-            # cycle through input argument list elements
-            for tmparr in args.files:
-
-                #take the dataset name
-                tmp_datstr = 'Dataset ' + tmparr[0]
-                #Add sub dictionary if not present 
-                if tmp_datstr not in fname_dict.keys():fname_dict[tmp_datstr] = {}
-                if len(tmparr)!=3:
-                    print('arg error: (files):', tmparr)
-
-                tmp_grid = tmparr[1]
-                tmp_files = tmparr[2]
-
-
-                
-                #add files into fname_dict, allowing for \n separated lists (not handled by glob.glob)
-                sec_fname_lst_in = tmp_files
-                sec_fname_lst = []
-                for sub_sec_fname_lst_in in sec_fname_lst_in.split('\n'):
-                    sec_sub_fname_lst = glob.glob(sub_sec_fname_lst_in)
-                    for ss in sec_sub_fname_lst:sec_fname_lst.append(ss)
-                
-
-                fname_dict[tmp_datstr][tmp_grid] = np.sort(sec_fname_lst)
-                #pdb.set_trace()
-
-                if len(fname_dict[tmp_datstr][tmp_grid]) == 0: 
-                    print('\n\nNo Files for %s %s = %s\n\n'%(tmp_datstr,tmp_grid,tmp_files))
-                    pdb.set_trace()
-            if len(fname_dict.keys()) > 1:load_second_files = True
-
-        '''
         dataset_lst = [ ss for ss in fname_dict.keys() ] 
         nDataset = len(dataset_lst)
 
+        # setting up configs dictionary
         configd = process_argparse_configd(args,dataset_lst)
-        """
-        configd = {}
-            #for tmp_datstr in dataset_lst:
-        for ii, tmp_datstr in enumerate(dataset_lst):
-            configd[ii+1] = args.config
-            dataset_lab_d['Dataset %i'%(ii+1) ] = None
-
-        if args.configs is not None:
-            
-            for tmparr in args.configs:
-                if len(tmparr)!=2:
-                    print('arg error: (configs):', tmparr)
-                #pdb.set_trace()
-                configd[int(tmparr[0])] = tmparr[1]
-        """
 
 
         configlst = np.array([configd[ss] for ss in (configd)])
         uniqconfig = np.unique(configlst)
 
 
+        # setting up dataset label dictionary
         dataset_lab_d = process_argparse_dataset_lab_d(args)
-        """
-        if args.datlabs is not None:
-            dataset_lab_d = {}
-            dataset_lab_d['Dataset 1'] = None
 
-            for tmparr in args.datlabs:
-                if len(tmparr)!=2:
-                    print('arg error: (datlabs):', tmparr)
-                tmp_datstr = 'Dataset ' + tmparr[0]
-                #pdb.set_trace()
-                dataset_lab_d[tmp_datstr] = tmparr[1]
-        """
-
-
-
+        # setting up Thinning dictionary
         thd = process_argparse_thd(args,configd, dataset_lst, nDataset)
-
-        """
-        #pdb.set_trace() 
-        # set up empty th dictionary
-        thd = {}
-        thd[1] = {}
-        thd[1]['df'] = 1
-        thd[1]['f0'] = 0
-        thd[1]['f1'] = None
-
-        thd[1]['dx'] = 1
-        thd[1]['dy'] = 1
-        thd[1]['x0'] = 0
-        thd[1]['x1'] = None
-        thd[1]['y0'] = 0
-        thd[1]['y1'] = None
-        thd[1]['lat0'] = None
-        thd[1]['lat1'] = None
-        thd[1]['lon0'] = None
-        thd[1]['lon1'] = None
-
-        thd[1]['pxy'] = None
-
-        thd[1]['cutx0'] = 0
-        thd[1]['cutx1'] = None
-        thd[1]['cuty0'] = 0
-        thd[1]['cuty1'] = None
-            
-        # lat0, lat1, lon0, lon1, cutx0, cutx1, cuty0, cuty1
-        #pdb.set_trace()
-
-        # Copy dummy values for all datasets
-        for ii in range(len(dataset_lst)-1):
-            thd[ii+2] = thd[1].copy()
-
-
-
-        # update with arguements.
-        # if argument entered for one dataset, copy to all subsequent datasets with the same config
-        if args.th is not None:
-            th_args = (args.th)
-            th_args.sort()
-
-            print('th arguments:',th_args)
-            #for tmparr in args.th:
-            for tmparr in th_args:
-                #pdb.set_trace()
-                if len(tmparr)<3:
-                    print('arg error: (th):', tmparr)
-                #take the dataset name
-                tmp_datstr = int(tmparr[0])
-                tmpconfig = configd[tmp_datstr]
-                tmp_thvar = tmparr[1]
-                tmp_thval = tmparr[2]
-                if tmp_thvar.upper() in ['LON','LAT']:
-                    if len(tmparr)!=4:
-                        print('arg error: (th):', tmparr)
-                    
-                    tmp_thval_2 = tmparr[3]
-                else:
-                    if len(tmparr)!=3:
-                        print('arg error: (th):', tmparr)
-
-                if tmp_thval.lower() == 'none':
-                    tmp_thval = None
-                #else:
-                #    tmp_thval = int(tmp_thval)
-
-                for dsi in range(tmp_datstr,nDataset+1):
-                    if configd[dsi] == tmpconfig:
-                        #pdb.set_trace()
-                        if tmp_thvar.lower() in ['dxy','dx','dy']:
-                            thd[dsi]['dx'] = int(tmp_thval)
-                            thd[dsi]['dy'] = int(tmp_thval)
-                        elif tmp_thvar.upper() in ['LON']:
-                            thd[dsi]['lon0'] = float(tmp_thval)
-                            thd[dsi]['lon1'] = float(tmp_thval_2)
-                        elif tmp_thvar.upper() in ['LAT']:
-                            thd[dsi]['lat0'] = float(tmp_thval)
-                            thd[dsi]['lat1'] = float(tmp_thval_2)
-                        elif tmp_thvar.upper() in ['LON0','LON1','LAT0','LAT1']:
-                            thd[dsi][tmp_thvar.lower()] = float(tmp_thval)
-                        else:
-                            thd[dsi][tmp_thvar.lower()] = int(tmp_thval)
-        
-        # of orca model cut off upper values as non incrementing longitude
-        for cfi in configd.keys():
-            if configd[cfi] is None: continue
-            if configd[cfi].upper() in ['ORCA025','ORCA025EXT','ORCA025ICE']: 
-                if thd[cfi]['y1'] is None: thd[cfi]['y1'] = -2
-            if configd[cfi].upper() in ['ORCA12','ORCA12ICE']: 
-                if thd[cfi]['y1'] is None: thd[cfi]['y1'] = -200
-
-        #pdb.set_trace()
-        # print out thd
-        #for dsi in range(1,nDataset+1): print(thd[dsi])
-
-        # ensure all configs have same thinning, use lowest dataset value
-        #if nDataset > 1:
-        #    for tmpconfig in uniqconfig:
-        #        tmpconfigind = np.where(configlst == tmpconfig)[0] + 1
-        #        for dsi in tmpconfigind[1:]:
-        #            thd[dsi] = thd[tmpconfigind[0]]
-        """    
+       
         # print out thd
         for dsi in range(1,nDataset+1): print(thd[dsi])
 
-
-
+        # setting up Observations dictionary
         Obs_dict_in = process_argparse_Obs_dict(args)
-
-        """
-        
-        if args.Obs_dict is None:
-            Obs_dict_in = None
-        else:
-            Obs_dict_in = {}
-            #for ss in np.unique([tmparr[0] for tmparr in args.Obs_dict])
-            # cycle through input argument list elements
-            for tmparr in args.Obs_dict:
-
-                #take the dataset name
-                tmp_datstr = 'Dataset ' + tmparr[0]
-                #Add sub dictionary if not present 
-                if tmp_datstr not in Obs_dict_in.keys():Obs_dict_in[tmp_datstr] = {}
-
-                if len(tmparr)!=3:
-                    print('arg error: (Obs_dict):', tmparr)
-
-                tmp_datset = tmparr[1]
-                tmp_files = tmparr[2]
-                Obs_dict_in[tmp_datstr][tmp_datset] = tmp_files
-
-            #pdb.set_trace()
-
-        """
-
-
-
-        #configlst = np.array([configd[ss] for ss in (configd)])
-        #uniqconfig = np.unique(configlst)
-
-
-        xarr_rename_master_dict = process_argparse_rename_var(args)
-
-        """
-
-
+ 
         # When comparing files/models, only variables that are common to both Datasets are shown. 
         # If comparing models with different names for the same variables, they won't be shown, 
         # as temperature and votemper will be considered different.
-        #
+
         # We can use xarray to rename the variables as they are loaded to overcome this, using a rename_dictionary.
         # i.e. rename any variables called tmperature or temp to votemper etc.
         # to do this, we use the following command line arguments:
         # --rename_var votemper temperature temp --rename_var vosaline salinity sal 
         # where each variable has its own instance, and the first entry is what it will be renamed too, 
         # and the remaining entries are renamed. 
+        xarr_rename_master_dict = process_argparse_rename_var(args)
 
-
-        ## xarr_rename_master_dict = {'votemper':'temperature','vosaline':'salinity'}
-
-        xarr_rename_master_dict = None
-        if args.rename_var is not None:
-            xarr_rename_master_dict = {}
-            for tmpvarrenlst in args.rename_var:
-                
-                if len(tmpvarrenlst)<2:
-                    print('arg error: (rename_var):', tmpvarrenlst) 
-                for tvr in tmpvarrenlst[1:]: xarr_rename_master_dict[tvr] = tmpvarrenlst[0]
-
-        
-        """
-
-        force_dim_d_in = process_argparse_forced_dim(args, dataset_lst, nDataset)
-
-        """
-
+    
         # If files have more than grid, with differing dimension for each, you can enforce the dimenson for each grid.
         # For example, the SMHI BAL-MFC NRT system (BALMFCorig) hourly surface files hvae the T, U, V and T_inner grid in the same file. 
         # Load the smae file in for each grid:
-        # Nslvdev BALMFCorig NS01_SURF_2025020912_1-24H.nc 
-        # --files 1 U NS01_SURF_2025020912_1-24H.nc --files 1 V NS01_SURF_2025020912_1-24H.nc --files 1 Ti NS01_SURF_2025020912_1-24H.nc 
-        # .....   --th 1 dxy 
-        # and enforce which dimensions are used for the T, U, V and T_inner grid (x,y,z and T)
-        #--forced_dim U x x_grid_U y y_grid_U --forced_dim V x x_grid_V y y_grid_V --forced_dim T x x_grid_T y y_grid_T --forced_dim Ti x x_grid_T_inner y y_grid_T_inner
-        #
-        # force_dim_d_in = 
-        # {'U': {'x': 'x_grid_U', 'y': 'y_grid_U'}, 'V': {'x': 'x_grid_V', 'y': 'y_grid_V'}, 'T': {'x': 'x_grid_T', 'y': 'y_grid_T'}, 'x': {'x_grid_T_inner': 'y'}}
-        #
-        # If you are comparing different domains, and this only needs to be added to one dataset, add the dataset number before the grid:
-        #
-        # --forced_dim 1 U x x_grid_U y y_grid_U --forced_dim 1 V x x_grid_V y y_grid_V --forced_dim 1 T x x_grid_T y y_grid_T --forced_dim 1 Ti x x_grid_T_inner y y_grid_T_inner
-        # force_dim_d_in =
-        #   {1: {'1': {'Ti': 'x', 'x_grid_T_inner': 'y'}}, 2: {'1': {'Ti': 'x', 'x_grid_T_inner': 'y'}}}
-
-
-        #for ii, tmp_datstr in enumerate(dataset_lst):
-        #pdb.set_trace() 
-        force_dim_d_in = None
-        if args.forced_dim is not None:
-            force_dim_d_in = {}
-            for dsi in np.arange(1,nDataset+1): 
-                force_dim_d_in[dsi] = {}
-            #force_dim_d['all_grid'] = True
-            for tmpfdimlst in args.forced_dim:
-                
-                #if (len(tmpfdimlst)%2 != 1) | len(tmpfdimlst)<2:
-                #    print('arg error: (forced_dim):', tmpvarrenlst) 
-
-
-                if len(tmpfdimlst)<2:
-                    print('arg error: (forced_dim):', tmpvarrenlst) 
-                
-                
-                #if the first entry is not a dataset number
-                if tmpfdimlst[0] not in np.arange(nDataset):#
-                    tmpdimgrid = tmpfdimlst[0]
-                    tmp_dsi_lst = np.arange(1,nDataset+1)
-                # if the first entry is a datatset number:
-                else:
-                    tmpdimgrid = tmpfdimlst[1]
-                    tmp_dsi_lst = [tmpfdimlst[0]]
-                    tmpdimgrid = tmpdimgrid[1:]
-                
-                for dsi in tmp_dsi_lst: 
-                    force_dim_d_in[dsi][tmpdimgrid] = {}
-                    nfdimlst=len(tmpfdimlst[1:])/2
-                    for tfdi in range(int(nfdimlst)): force_dim_d_in[dsi][tmpdimgrid][tmpfdimlst[(tfdi*2)+1]] = tmpfdimlst[(tfdi*2)+2]
-                print(tmpfdimlst, force_dim_d_in)    
-        
-        #pdb.set_trace()
-
-        
-
-        """
-
-
-        EOS_d = process_argparse_EOS(args, dataset_lst)
-        """
+      
+        force_dim_d_in = process_argparse_forced_dim(args, dataset_lst, nDataset)
 
         # set up empty EOS dictionary
-        EOS_d = {}
-        EOS_d['do_TEOS_EOS_conv'] = False
-        if args.EOS is not None:
-            
-            EOS_d['do_TEOS_EOS_conv'] = 1==1
-            #EOS_d[1]='TEOS10_2_EOS80'
-            #EOS_d[1]='EOS80_2_TEOS10'
-            EOS_d['T']=2==2
-            EOS_d['S']=3==3
+        EOS_d = process_argparse_EOS(args, dataset_lst)
 
-            for ii in range(len(dataset_lst)):                 EOS_d[ii+1] = ('' + '.')[:-1]
-            #for ii in range(len(dataset_lst)): id(EOS_d[ii+1])
-            #for ss in EOS_d.keys():ss,id(EOS_d[ss])
-
-
-            #pdb.set_trace()
-
-            EOS_args = (args.EOS)
-            EOS_args.sort()
-
-            print('th arguments:',EOS_args)
-            #for tmparr in args.th:
-            for tmparr in EOS_args:
-                #pdb.set_trace()
-                if len(tmparr)!=2:
-                    print('arg error: (EOS):', tmparr)
-
-
-                if tmparr[0].upper() in ['T','S']:
-                    tmp_EOS_TS = tmparr[0].upper()
-                    if tmparr[1].upper() in ['TRUE','T']:
-                        EOS_d[tmp_EOS_TS] = bool(True)
-                    elif tmparr[1].upper() in ['FALSE','F']:
-                        EOS_d[tmp_EOS_TS] = bool(False)
-                else:
-                    tmp_datstr = int(tmparr[0])
-                    if tmparr[1].upper() in ['TEOS10_2_EOS80', 'T2E']:
-                        EOS_d[tmp_datstr] = 'TEOS10_2_EOS80'
-                    elif tmparr[1].upper() in ['EOS80_2_TEOS10', 'E2T']:
-                        EOS_d[tmp_datstr] = 'EOS80_2_TEOS10'
-
-        #--EOS 1 T2E
-
-
-        """
         #pdb.set_trace()
         nemo_slice_zlev(zlim_max = args.zlim_max,
             dataset_lab_d = dataset_lab_d,configd = configd,thd = thd,fname_dict = fname_dict,
@@ -6479,34 +6137,6 @@ def main():
             force_dim_d = force_dim_d_in,xarr_rename_master_dict=xarr_rename_master_dict,EOS_d = EOS_d,gr_1st = gr_1st,
             do_match_time = argparse_bool_dict['do_match_time'],do_addtimedim = argparse_bool_dict['do_addtimedim'], do_all_WW3=argparse_bool_dict['do_all_WW3'])
 
-        '''
-        
-        nemo_slice_zlev(zlim_max = args.zlim_max,
-            dataset_lab_d = dataset_lab_d,configd = configd,thd = thd,fname_dict = fname_dict,load_second_files = load_second_files,
-            clim_sym = clim_sym_in, clim = args.clim, clim_pair = clim_pair_in,hov_time = hov_time_in,
-            allow_diff_time = allow_diff_time_in,preload_data = preload_data_in,
-            do_grad = do_grad_in,do_cont = do_cont_in,trim_extra_files = trim_extra_files,trim_files = trim_files,
-            use_cmocean = use_cmocean_in, date_fmt = args.date_fmt,
-            justplot = justplot_in,justplot_date_ind = args.justplot_date_ind,
-            justplot_secdataset_proc = args.justplot_secdataset_proc,
-            justplot_z_meth_zz = args.justplot_z_meth_zz,
-            ii = args.ii, jj = args.jj, ti = args.ti, zz = args.zz, 
-            lon_in = args.lon, lat_in = args.lat, date_in_ind = args.date_ind,
-            var = args.var, z_meth = z_meth_in,
-            xlim = args.xlim,ylim = args.ylim,
-            secdataset_proc = args.secdataset_proc,
-            ld_lst = args.ld_lst, ld_lab_lst = args.ld_lab_lst, ld_nctvar = args.ld_nctvar,
-            resample_freq = args.resample_freq,
-            Obs_dict = Obs_dict_in,Obs_hide = Obs_hide_in,
-            fig_dir = args.fig_dir, fig_lab = args.fig_lab,fig_cutout = fig_cutout_in,
-            verbose_debugging = verbose_debugging_in,do_timer = do_timer_in,do_memory = do_memory_in,
-            do_ensemble = do_ensemble_in,do_mask = do_mask_in,
-            use_xarray_gdept = use_xarray_gdept_in,
-            force_dim_d = force_dim_d_in,xarr_rename_master_dict=xarr_rename_master_dict,EOS_d = EOS_d,gr_1st = gr_1st,
-            do_match_time = do_match_time_in,do_addtimedim = do_addtimedim_in, do_all_WW3=do_all_WW3_in)
-
-
-        '''
 
         exit()
 

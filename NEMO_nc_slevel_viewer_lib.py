@@ -8274,7 +8274,7 @@ def load_NEMO_nc_viewer_parser(nemo_slice_zlev_helptext):
     parser.add_argument('--lon', type=float, required=False, help = 'Initial Location Options - longitude: lon. Requires: flt(lon)')
     parser.add_argument('--lat', type=float, required=False, help = 'Initial Location Options - latitude: lat. Requires: flt(lat)')
     parser.add_argument('--date_ind', type=str, required=False, help = 'Initial Location Options - date: date_ind. e.g. "20220101" Requires: str(date_ind)')
-    parser.add_argument('--date_fmt', type=str, required=False, help = 'Initial Location Options - format of date: date_fmt. default: "%Y%m%d", Requires: str(date_fmt)')
+    parser.add_argument('--date_fmt', type=str, required=False, default = '%Y%m%d',help = 'Initial Location Options - format of date: date_fmt. default: "%Y%m%d", Requires: str(date_fmt)')
 
     parser.add_argument('--secdataset_proc', type=str, required=False)
 
@@ -8371,252 +8371,6 @@ def load_NEMO_nc_viewer_parser(nemo_slice_zlev_helptext):
 
 
 
-    '''
-            
-            
-            if args.allow_diff_time is None:
-                allow_diff_time_in=False
-            elif args.allow_diff_time is not None:
-                if args.allow_diff_time.upper() in ['TRUE','T']:
-                    allow_diff_time_in = bool(True)
-                elif args.allow_diff_time.upper() in ['FALSE','F']:
-                    allow_diff_time_in = bool(False)
-                else:                
-                    print('allow_diff_time',args.allow_diff_time)
-                    pdb.set_trace()
-
-            if args.clim_sym is None:
-                clim_sym_in=False
-            elif args.clim_sym is not None:
-                if args.clim_sym.upper() in ['TRUE','T']:
-                    clim_sym_in = bool(True)
-                elif args.clim_sym.upper() in ['FALSE','F']:
-                    clim_sym_in = bool(False)
-                else:                
-                    print('clim_sym',args.clim_sym)
-                    pdb.set_trace()
-
-            if args.clim_pair is None:
-                clim_pair_in=True
-            elif args.clim_pair is not None:
-                if args.clim_pair.upper() in ['TRUE','T']:
-                    clim_pair_in = bool(True)
-                elif args.clim_pair.upper() in ['FALSE','F']:
-                    clim_pair_in = bool(False)
-                else:                
-                    print('clim_pair',args.clim_pair)
-                    pdb.set_trace()
-
-            if args.hov_time is None:
-                hov_time_in=False
-            elif args.hov_time is not None:
-                if args.hov_time.upper() in ['TRUE','T']:
-                    hov_time_in = bool(True)
-                elif args.hov_time.upper() in ['FALSE','F']:
-                    hov_time_in = bool(False)
-                else:                
-                    print('hov_time',args.hov_time)
-                    pdb.set_trace()
-
-            if args.fig_cutout is None:
-                fig_cutout_in=True
-            elif args.fig_cutout is not None:
-                if args.fig_cutout.upper() in ['TRUE','T']:
-                    fig_cutout_in = bool(True)
-                elif args.fig_cutout.upper() in ['FALSE','F']:
-                    fig_cutout_in = bool(False)
-                else:                
-                    print('fig_cutout',args.fig_cutout)
-                    pdb.set_trace()
-
-            if args.justplot is None:
-                justplot_in=False
-            elif args.justplot is not None:
-                if args.justplot.upper() in ['TRUE','T']:
-                    justplot_in = bool(True)
-                elif args.justplot.upper() in ['FALSE','F']:
-                    justplot_in = bool(False)
-                else:                
-                    print('justplot',args.justplot)
-                    pdb.set_trace()
-
-            if args.use_cmocean is None:
-                use_cmocean_in=False
-            elif args.use_cmocean is not None:
-                if args.use_cmocean.upper() in ['TRUE','T']:
-                    use_cmocean_in = bool(True)
-                elif args.use_cmocean.upper() in ['FALSE','F']:
-                    use_cmocean_in = bool(False)
-                else:                
-                    print('use_cmocean',args.use_cmocean)
-                    pdb.set_trace()
-
-            if args.verbose_debugging is None:
-                verbose_debugging_in=False
-            elif args.verbose_debugging is not None:
-                if args.verbose_debugging.upper() in ['TRUE','T']:
-                    verbose_debugging_in = bool(True)
-                elif args.verbose_debugging.upper() in ['FALSE','F']:
-                    verbose_debugging_in = bool(False)
-                else:                
-                    print('verbose_debugging: ',args.verbose_debugging)
-                    pdb.set_trace()
-
-            if args.do_timer is None:
-                do_timer_in=False
-            elif args.do_timer is not None:
-                if args.do_timer.upper() in ['TRUE','T']:
-                    do_timer_in = bool(True)
-                elif args.do_timer.upper() in ['FALSE','F']:
-                    do_timer_in = bool(False)
-                else:                
-                    print('do_timer',args.do_timer)
-                    pdb.set_trace()
-    
-
-            if args.do_memory is None:
-                do_memory_in=False
-            elif args.do_memory is not None:
-                if args.do_memory.upper() in ['TRUE','T']:
-                    do_memory_in = bool(True)
-                elif args.do_memory.upper() in ['FALSE','F']:
-                    do_memory_in = bool(False)
-                else:                
-                    print('do_timer',args.do_memory)
-                    pdb.set_trace()
-
-            if args.do_ensemble is None:
-                do_ensemble_in=False
-            elif args.do_ensemble is not None:
-                if args.do_ensemble.upper() in ['TRUE','T']:
-                    do_ensemble_in = bool(True)
-                elif args.do_ensemble.upper() in ['FALSE','F']:
-                    do_ensemble_in = bool(False)
-                else:                
-                    print('do_timer',args.do_timer)
-                    pdb.set_trace()
-    
-    
-            if args.do_mask is None:
-                do_mask_in=False
-            elif args.do_mask is not None:
-                if args.do_mask.upper() in ['TRUE','T']:
-                    do_mask_in = bool(True)
-                elif args.do_mask.upper() in ['FALSE','F']:
-                    do_mask_in = bool(False)
-                else:                
-                    print('do_mask',args.do_mask)
-                    pdb.set_trace()
-
-            if args.do_match_time is None:
-                do_match_time_in=True
-            elif args.do_match_time is not None:
-                if args.do_match_time.upper() in ['TRUE','T']:
-                    do_match_time_in = bool(True)
-                elif args.do_match_time.upper() in ['FALSE','F']:
-                    do_match_time_in = bool(False)
-                else:                
-                    print('do_match_time',args.do_match_time)
-                    pdb.set_trace()
-
-            if args.do_addtimedim is None:
-                do_addtimedim_in=False
-            elif args.do_addtimedim is not None:
-                if args.do_addtimedim.upper() in ['TRUE','T']:
-                    do_addtimedim_in = bool(True)
-                elif args.do_addtimedim.upper() in ['FALSE','F']:
-                    do_addtimedim_in = bool(False)
-                else:                
-                    print('do_addtimedim',args.do_addtimedim)
-                    pdb.set_trace()
-
-
-            if args.do_all_WW3 is None:
-                do_all_WW3_in=False
-            elif args.do_all_WW3 is not None:
-                if args.do_all_WW3.upper() in ['TRUE','T']:
-                    do_all_WW3_in = bool(True)
-                elif args.do_all_WW3.upper() in ['FALSE','F']:
-                    do_addtido_all_WW3_inmedim_in = bool(False)
-                else:                
-                    print('do_all_WW3',args.do_all_WW3)
-                    pdb.set_trace()
-
-
-
-
-
-            if args.do_grad is None:
-                do_grad_in=0
-            else:
-                do_grad_in=args.do_grad
-
-            if args.do_cont is None:
-                do_cont_in=False
-            elif args.do_cont is not None:
-                if args.do_cont.upper() in ['TRUE','T']:
-                    do_cont_in = bool(True)
-                elif args.do_cont.upper() in ['FALSE','F']:
-                    do_cont_in = bool(False)
-                else:                
-                    print('do_cont',args.do_cont)
-                    pdb.set_trace()
-
-
-
-            if args.trim_extra_files is None:
-                trim_extra_files=False
-            elif args.trim_extra_files is not None:
-                if args.trim_extra_files.upper() in ['TRUE','T']:
-                    trim_extra_files = bool(True)
-                elif args.trim_extra_files.upper() in ['FALSE','F']:
-                    trim_extra_files = bool(False)
-                else:                
-                    print('trim_extra_files',args.trim_extra_files)
-                    pdb.set_trace()
-    
-
-
-            if args.trim_files is None:
-                trim_files=True
-            elif args.trim_files is not None:
-                if args.trim_files.upper() in ['TRUE','T']:
-                    trim_files = bool(True)
-                elif args.trim_files.upper() in ['FALSE','F']:
-                    trim_files = bool(False)
-                else:                
-                    print('trim_files',args.trim_files)
-                    pdb.set_trace()
-    
-
-
-
-            if args.Obs_hide is None:
-                Obs_hide_in=False
-            elif args.Obs_hide is not None:
-                if args.Obs_hide.upper() in ['TRUE','T']:
-                    Obs_hide_in = bool(True)
-                elif args.Obs_hide.upper() in ['FALSE','F']:
-                    Obs_hide_in = bool(False)
-                else:                
-                    print('Obs_hide',args.Obs_hide)
-                    pdb.set_trace()
-
-            if args.use_xarray_gdept is None:
-                use_xarray_gdept_in=False
-            elif args.use_xarray_gdept is not None:
-                if args.use_xarray_gdept.upper() in ['TRUE','T']:
-                    use_xarray_gdept_in = bool(True)
-                elif args.use_xarray_gdept.upper() in ['FALSE','F']:
-                    use_xarray_gdept_in = bool(False)
-                else:                
-                    print('use_xarray_gdept',args.use_xarray_gdept)
-                    pdb.set_trace()
-
-            #set default values for None
-
-
-    '''
 
 def process_argparse_bool(args,argparse_bool_T,argparse_bool_F):
     # Handling of Bool variable types
@@ -8663,9 +8417,20 @@ def process_argparse_ensure_t_or_f(bool_text, argparse_arg):
         print('exiting')
         exit(1)
 
-def process_argparse_fname_dict(args,gr_1st,fname_lst):
+def process_argparse_fname_dict(args,gr_1st):
 
     load_second_files = False
+
+    #add files into fname_dict, allowing for \n separated lists (not handled by glob.glob)
+
+    fname_lst_in = args.fname_lst
+    fname_lst = []
+    for sub_fname_lst_in in fname_lst_in.split('\n'):
+        sub_fname_lst = glob.glob(sub_fname_lst_in)
+        for ss in sub_fname_lst:fname_lst.append(ss)
+    
+
+    fname_lst.sort()
 
     fname_dict = {}
     fname_dict['Dataset 1'] = {}
