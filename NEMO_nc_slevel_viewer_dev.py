@@ -68,7 +68,7 @@ from NEMO_nc_slevel_viewer_lib import process_argparse_forced_dim,process_argpar
 
 from NEMO_nc_slevel_viewer_lib import obs_reset_sel # load_ops_prof_TS, load_ops_2D_xarray
 from NEMO_nc_slevel_viewer_lib import Obs_load_init_files_dict,Obs_set_empty_dict,Obs_setup_Obs_vis_d,Obs_setup_Obs_JULD_datetime_dict
-from NEMO_nc_slevel_viewer_lib import Obs_reload_obs
+from NEMO_nc_slevel_viewer_lib import Obs_reload_obs,obs_load_selected_point
 
 letter_mat = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
 
@@ -1157,7 +1157,7 @@ def nemo_slice_zlev(config = 'amm7',
         '''
         # set up empty profile dictionaries for plotting
         (obs_z_sel,obs_obs_sel,obs_mod_sel,obs_lon_sel,obs_lat_sel,
-            obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel) = obs_reset_sel(Dataset_lst)
+            obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel,obs_load_sel) = obs_reset_sel(Dataset_lst)
 
         # set reload Obs to true
         reload_Obs = True
@@ -3044,25 +3044,34 @@ def nemo_slice_zlev(config = 'amm7',
                         if do_Obs:
                             if Obs_hide == False:
                             
-                                # add obs data to pf_xvals to help choose y lims
+                                '''# add obs data to pf_xvals to help choose y lims
                                 for tmp_datstr in Dataset_lst:
+                                    #if Obs_dat_dict[tmp_datstr][ob_var]['loaded']:
                                     for pfi in obs_obs_sel[tmp_datstr]:pf_xvals.append(pfi)
                                     for pfi in obs_mod_sel[tmp_datstr]:pf_xvals.append(pfi)
-
-                                #plot Obs profile
-                                if len(obs_obs_sel[secdataset_proc])==1:
-                                    opax_lst.append([ax[5].axvline(obs_obs_sel[secdataset_proc],color = Obs_vis_d['Prof_obs_col'], ls = Obs_vis_d['Prof_obs_ls_2d'], lw = Obs_vis_d['Prof_obs_lw_2d'])])
-                                    opax_lst.append([ax[5].axvline(obs_mod_sel[secdataset_proc],color = Obs_vis_d['Prof_mod_col'], ls = Obs_vis_d['Prof_mod_ls_2d'], lw = Obs_vis_d['Prof_mod_lw_2d'])])
-                                    
-                                else:
-                                    
-                                    opax_lst.append(ax[5].plot(obs_obs_sel[secdataset_proc], obs_z_sel[secdataset_proc], color=Obs_vis_d['Prof_obs_col'], marker=Obs_vis_d['Prof_obs_ms'], linestyle=Obs_vis_d['Prof_obs_ls'], lw = Obs_vis_d['Prof_obs_lw']))
-                                    opax_lst.append(ax[5].plot(obs_mod_sel[secdataset_proc], obs_z_sel[secdataset_proc], color=Obs_vis_d['Prof_mod_col'], marker=Obs_vis_d['Prof_mod_ms'], linestyle=Obs_vis_d['Prof_mod_ls'], lw = Obs_vis_d['Prof_mod_lw']))
-                                    #pdb.set_trace()
-                                # give id info for Obs
-                                if obs_stat_type_sel[tmp_datstr] is not None:
-                                    opaxtx_lst.append(ax[5].text(0.02,0.01,'ID = %s\nType: %i\n%s\n%s'%(obs_stat_id_sel[secdataset_proc] ,obs_stat_type_sel[secdataset_proc],obs_stat_time_sel[secdataset_proc].strftime('%Y/%m/%d %H:%M'), lon_lat_to_str(obs_lon_sel[secdataset_proc], obs_lat_sel[secdataset_proc])[0] ), ha = 'left', va = 'bottom', transform=ax[5].transAxes, color = 'k', fontsize = 10,bbox=dict(facecolor='white', alpha=0.5, pad=1, edgecolor='none')))
-                                    #opaxtx = ax[5].text(0.02,0.01,'ID = %s\nType: %i'%(obs_stat_id_sel[tmp_datstr] ,obs_stat_type_sel[tmp_datstr] ), ha = 'left', va = 'bottom', transform=ax[5].transAxes, color = 'k', fontsize = 10,bbox=dict(facecolor='white', alpha=0.75, pad=1, edgecolor='none'))
+                                    '''
+                                # add obs data to pf_xvals to help choose y lims
+                                #if Obs_dat_dict[tmp_datstr][ob_var]['loaded']:
+                                if obs_load_sel[secdataset_proc]:
+                                    try:
+                                        for pfi in obs_obs_sel[secdataset_proc]:pf_xvals.append(pfi)
+                                        for pfi in obs_mod_sel[secdataset_proc]:pf_xvals.append(pfi)
+                                    except:
+                                        pdb.set_trace()
+                                    #plot Obs profile
+                                    if len(obs_obs_sel[secdataset_proc])==1:
+                                        opax_lst.append([ax[5].axvline(obs_obs_sel[secdataset_proc],color = Obs_vis_d['Prof_obs_col'], ls = Obs_vis_d['Prof_obs_ls_2d'], lw = Obs_vis_d['Prof_obs_lw_2d'])])
+                                        opax_lst.append([ax[5].axvline(obs_mod_sel[secdataset_proc],color = Obs_vis_d['Prof_mod_col'], ls = Obs_vis_d['Prof_mod_ls_2d'], lw = Obs_vis_d['Prof_mod_lw_2d'])])
+                                        
+                                    else:
+                                        
+                                        opax_lst.append(ax[5].plot(obs_obs_sel[secdataset_proc], obs_z_sel[secdataset_proc], color=Obs_vis_d['Prof_obs_col'], marker=Obs_vis_d['Prof_obs_ms'], linestyle=Obs_vis_d['Prof_obs_ls'], lw = Obs_vis_d['Prof_obs_lw']))
+                                        opax_lst.append(ax[5].plot(obs_mod_sel[secdataset_proc], obs_z_sel[secdataset_proc], color=Obs_vis_d['Prof_mod_col'], marker=Obs_vis_d['Prof_mod_ms'], linestyle=Obs_vis_d['Prof_mod_ls'], lw = Obs_vis_d['Prof_mod_lw']))
+                                        #pdb.set_trace()
+                                    # give id info for Obs
+                                    if obs_stat_type_sel[secdataset_proc] is not None:
+                                        opaxtx_lst.append(ax[5].text(0.02,0.01,'ID = %s\nType: %i\n%s\n%s'%(obs_stat_id_sel[secdataset_proc] ,obs_stat_type_sel[secdataset_proc],obs_stat_time_sel[secdataset_proc].strftime('%Y/%m/%d %H:%M'), lon_lat_to_str(obs_lon_sel[secdataset_proc], obs_lat_sel[secdataset_proc])[0] ), ha = 'left', va = 'bottom', transform=ax[5].transAxes, color = 'k', fontsize = 10,bbox=dict(facecolor='white', alpha=0.5, pad=1, edgecolor='none')))
+                                        #opaxtx = ax[5].text(0.02,0.01,'ID = %s\nType: %i'%(obs_stat_id_sel[tmp_datstr] ,obs_stat_type_sel[tmp_datstr] ), ha = 'left', va = 'bottom', transform=ax[5].transAxes, color = 'k', fontsize = 10,bbox=dict(facecolor='white', alpha=0.75, pad=1, edgecolor='none'))
 
                         
                 else:
@@ -3577,86 +3586,87 @@ def nemo_slice_zlev(config = 'amm7',
                 oax_lst = []
                 tmp_obs_lst,tmp_obs_llind_lst = [],[]
                 # if selected a dataset, rather than the difference between datasets
-                if secdataset_proc in Dataset_lst:
+                if (secdataset_proc in Dataset_lst):
                     # get current colorlimits
                     obs_clim = get_clim_pcolor(ax = ax[0])
 
                     
                     # for each Obs obs type, 
                     for obvi,ob_var in enumerate(Obs_var_lst_sub):
-                        #extract the lon, lat, z and OBS
-                        #pdb.set_trace()
-                        tmpobsx = Obs_dat_dict[secdataset_proc][ob_var]['LONGITUDE']
-                        tmpobsy = Obs_dat_dict[secdataset_proc][ob_var]['LATITUDE']
-                        tmpobsz = Obs_dat_dict[secdataset_proc][ob_var]['DEPTH']
-                        if Obs_AbsAnom:
-                            tmpobsdat_mat = Obs_dat_dict[secdataset_proc][ob_var]['OBS']
-                        else:
-                            tmpobsdat_mat = Obs_dat_dict[secdataset_proc][ob_var]['MOD_HX'] - Obs_dat_dict[secdataset_proc][ob_var]['OBS']
-
-                        Obs_scatSS = Obs_vis_d['Scat_symsize'][ob_var] 
-                        if Obs_hide_edges:
-                            Obs_scatEC = None
-                        else:
-                            Obs_scatEC = Obs_vis_d['Scat_edgecol'][ob_var] 
-
-                        # mask z levels where observations are masked. 
-                        tmpobsz.mask = tmpobsz.mask |tmpobsdat_mat.mask
-
-
-
-                        # if Obs variable is a 2d var
-                        if len(tmpobsdat_mat.shape) == 1:
-
-                            tmpobsz = tmpobsz.reshape(-1,1)
-                            tmpobsdat_mat = tmpobsdat_mat.reshape(-1,1)
-
-                        # choose the obs to plot, depending on the current depth (surface, zslice etc.)
-                        if z_meth in ['z_slice','ss','z_index']:
-                            if z_meth == 'z_slice':  obs_tmp_zz = zz
-                            if z_meth == 'z_index': 
-                                obs_tmp_zz = zz
-                                print('check ops for z_index')
-                            # find the obs nearst to depth zi, or surface
-                            obs_obs_zi_lst = np.ma.abs(tmpobsz - zz).argmin(axis = 1)
-                            tmpobsdat = np.ma.array([tmpobsdat_mat[tmpzi,tmpzz] for tmpzi, tmpzz in enumerate(obs_obs_zi_lst)])
-                        elif z_meth == 'nb':
-                            # find deepest obs
-                            obs_obs_zi_lst = tmpobsz.argmax(axis = 1)
-                            tmpobsdat = np.ma.array([tmpobsdat_mat[tmpzi,tmpzz] for tmpzi, tmpzz in enumerate(obs_obs_zi_lst)])
-                        elif z_meth == 'df':
-                            # find deepest and shallowst obs for df
-                            obs_obs_zi_lst = np.ma.abs(tmpobsz - 0).argmin(axis = 1)
-                            tmpobsdat_ss = np.ma.array([tmpobsdat_mat[tmpzi,tmpzz] for tmpzi, tmpzz in enumerate(obs_obs_zi_lst)])
-                            obs_obs_zi_lst = tmpobsz.argmax(axis = 1)
-                            tmpobsdat_nb = np.ma.array([tmpobsdat_mat[tmpzi,tmpzz] for tmpzi, tmpzz in enumerate(obs_obs_zi_lst)])
-                            tmpobsdat = tmpobsdat_ss - tmpobsdat_nb
-                        elif z_meth in ['zm','zd']:
-                            #depth mean obs if zm.
-                            tmpobsdat = tmpobsdat_mat.mean(axis = 1)
-                        elif z_meth == 'zx':
-                            #depth mean obs if zm.
-                            tmpobsdat = tmpobsdat_mat.max(axis = 1)
-                        elif z_meth == 'zn':
-                            #depth mean obs if zm.
-                            tmpobsdat = tmpobsdat_mat.min(axis = 1)
-                        elif z_meth == 'zs':
-                            #depth mean obs if zm.
-                            tmpobsdat = tmpobsdat_mat.std(axis = 1)
-                        else:
-
-                            pdb.set_trace()
-                        #pdb.set_trace()
-                        tmpobslatlonind = (tmpobsx>tmpxlim[0]) & (tmpobsx<tmpxlim[1]) & (tmpobsy>tmpylim[0]) & (tmpobsy<tmpylim[1]) 
-                        tmp_obs_lst.append(tmpobsdat)
-                        tmp_obs_llind_lst.append(tmpobslatlonind)
-                        #scatter plot them
-                        if Obs_hide == False:
+                        if Obs_dat_dict[secdataset_proc][ob_var]['loaded']:
+                            
+                            #extract the lon, lat, z and OBS
+                            #pdb.set_trace()
+                            tmpobsx = Obs_dat_dict[secdataset_proc][ob_var]['LONGITUDE']
+                            tmpobsy = Obs_dat_dict[secdataset_proc][ob_var]['LATITUDE']
+                            tmpobsz = Obs_dat_dict[secdataset_proc][ob_var]['DEPTH']
                             if Obs_AbsAnom:
-                                oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS, edgecolors = Obs_scatEC ))
+                                tmpobsdat_mat = Obs_dat_dict[secdataset_proc][ob_var]['OBS']
                             else:
-                                oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat, s = Obs_scatSS, edgecolors = Obs_scatEC, cmap = matplotlib.cm.seismic ))
-                                
+                                tmpobsdat_mat = Obs_dat_dict[secdataset_proc][ob_var]['MOD_HX'] - Obs_dat_dict[secdataset_proc][ob_var]['OBS']
+
+                            Obs_scatSS = Obs_vis_d['Scat_symsize'][ob_var] 
+                            if Obs_hide_edges:
+                                Obs_scatEC = None
+                            else:
+                                Obs_scatEC = Obs_vis_d['Scat_edgecol'][ob_var] 
+
+                            # mask z levels where observations are masked. 
+                            tmpobsz.mask = tmpobsz.mask |tmpobsdat_mat.mask
+
+
+
+                            # if Obs variable is a 2d var
+                            if len(tmpobsdat_mat.shape) == 1:
+
+                                tmpobsz = tmpobsz.reshape(-1,1)
+                                tmpobsdat_mat = tmpobsdat_mat.reshape(-1,1)
+
+                            # choose the obs to plot, depending on the current depth (surface, zslice etc.)
+                            if z_meth in ['z_slice','ss','z_index']:
+                                if z_meth == 'z_slice':  obs_tmp_zz = zz
+                                if z_meth == 'z_index': 
+                                    obs_tmp_zz = zz
+                                    print('check ops for z_index')
+                                # find the obs nearst to depth zi, or surface
+                                obs_obs_zi_lst = np.ma.abs(tmpobsz - zz).argmin(axis = 1)
+                                tmpobsdat = np.ma.array([tmpobsdat_mat[tmpzi,tmpzz] for tmpzi, tmpzz in enumerate(obs_obs_zi_lst)])
+                            elif z_meth == 'nb':
+                                # find deepest obs
+                                obs_obs_zi_lst = tmpobsz.argmax(axis = 1)
+                                tmpobsdat = np.ma.array([tmpobsdat_mat[tmpzi,tmpzz] for tmpzi, tmpzz in enumerate(obs_obs_zi_lst)])
+                            elif z_meth == 'df':
+                                # find deepest and shallowst obs for df
+                                obs_obs_zi_lst = np.ma.abs(tmpobsz - 0).argmin(axis = 1)
+                                tmpobsdat_ss = np.ma.array([tmpobsdat_mat[tmpzi,tmpzz] for tmpzi, tmpzz in enumerate(obs_obs_zi_lst)])
+                                obs_obs_zi_lst = tmpobsz.argmax(axis = 1)
+                                tmpobsdat_nb = np.ma.array([tmpobsdat_mat[tmpzi,tmpzz] for tmpzi, tmpzz in enumerate(obs_obs_zi_lst)])
+                                tmpobsdat = tmpobsdat_ss - tmpobsdat_nb
+                            elif z_meth in ['zm','zd']:
+                                #depth mean obs if zm.
+                                tmpobsdat = tmpobsdat_mat.mean(axis = 1)
+                            elif z_meth == 'zx':
+                                #depth mean obs if zm.
+                                tmpobsdat = tmpobsdat_mat.max(axis = 1)
+                            elif z_meth == 'zn':
+                                #depth mean obs if zm.
+                                tmpobsdat = tmpobsdat_mat.min(axis = 1)
+                            elif z_meth == 'zs':
+                                #depth mean obs if zm.
+                                tmpobsdat = tmpobsdat_mat.std(axis = 1)
+                            else:
+                                pdb.set_trace()
+                            #pdb.set_trace()
+                            tmpobslatlonind = (tmpobsx>tmpxlim[0]) & (tmpobsx<tmpxlim[1]) & (tmpobsy>tmpylim[0]) & (tmpobsy<tmpylim[1]) 
+                            tmp_obs_lst.append(tmpobsdat)
+                            tmp_obs_llind_lst.append(tmpobslatlonind)
+                            #scatter plot them
+                            if Obs_hide == False:
+                                if Obs_AbsAnom:
+                                    oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS, edgecolors = Obs_scatEC ))
+                                else:
+                                    oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat, s = Obs_scatSS, edgecolors = Obs_scatEC, cmap = matplotlib.cm.seismic ))
+                                    
 
                     if (len(tmp_obs_lst)>0)& (Obs_AbsAnom==False) & (Obs_hide ==  False):
                         #try:
@@ -4023,7 +4033,7 @@ def nemo_slice_zlev(config = 'amm7',
 
                     # deselect the current observation
                     (obs_z_sel,obs_obs_sel,obs_mod_sel,obs_lon_sel,obs_lat_sel,
-                        obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel) = obs_reset_sel(Dataset_lst)
+                        obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel,obs_load_sel) = obs_reset_sel(Dataset_lst)
                 if do_MLD:
                     reload_MLD = True
    
@@ -4105,7 +4115,7 @@ def nemo_slice_zlev(config = 'amm7',
 
                                 # deselect the current observation
                                 (obs_z_sel,obs_obs_sel,obs_mod_sel,obs_lon_sel,obs_lat_sel,
-                                    obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel) = obs_reset_sel(Dataset_lst)
+                                    obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel,obs_load_sel) = obs_reset_sel(Dataset_lst)
                                 
 
                 ###################################################################################################
@@ -4407,7 +4417,7 @@ def nemo_slice_zlev(config = 'amm7',
                                 # predefine dictionaries
 
                                 (obs_z_sel,obs_obs_sel,obs_mod_sel,obs_lon_sel,obs_lat_sel,
-                                    obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel) = obs_reset_sel(Dataset_lst)
+                                    obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel,obs_load_sel) = obs_reset_sel(Dataset_lst)
                                 # select the observation with ginput
                                 tmpobsloc = plt.ginput(1)
 
@@ -4422,7 +4432,6 @@ def nemo_slice_zlev(config = 'amm7',
                                 # if fig zorder = 0      
                                 obs_ax,obs_ii,obs_jj,obs_ti,obs_zz, sel_xlocval,sel_ylocval = indices_from_ginput_ax(ax,tmpobsloc[0][0],tmpobsloc[0][1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
                                 '''
-                                
                                 # if the main map axis is selected, continue,
                                 if obs_ax == 0:
                                     #if True:
@@ -4444,13 +4453,19 @@ def nemo_slice_zlev(config = 'amm7',
 
                                     # set some tmp dictionaries
                                     #(obs_z_sel,obs_obs_sel,obs_mod_sel,obs_lon_sel,obs_lat_sel,
-                                    #    obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel) = obs_reset_sel(Dataset_lst, Fill = False)
-                                    
+                                    #    obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel,obs_load_sel) = obs_reset_sel(Dataset_lst, Fill = False)
+
+
+                                    obs_z_sel,obs_obs_sel,obs_mod_sel,obs_lon_sel,obs_lat_sel,obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel,obs_load_sel = obs_load_selected_point(secdataset_proc, Dataset_lst, Obs_var_lst_sub, Obs_dat_dict, obs_lon, obs_lat)
+                                    """
                                     tmpobs_dist_sel = {}
                                     (tmpobs_z_sel,tmpobs_obs_sel,tmpobs_mod_sel,tmpobs_lon_sel,tmpobs_lat_sel,
-                                        tmpobs_stat_id_sel,tmpobs_stat_type_sel,tmpobs_stat_time_sel) = obs_reset_sel(Dataset_lst, Fill = False)
+                                        tmpobs_stat_id_sel,tmpobs_stat_type_sel,tmpobs_stat_time_sel,obs_load_sel) = obs_reset_sel(Dataset_lst, Fill = False)
 
                                     
+
+
+
                                     # cycle through available Obs types
                                     for ob_var in Obs_var_lst_sub:
                                         tmpobs_z_sel[ob_var] = {}
@@ -4465,42 +4480,59 @@ def nemo_slice_zlev(config = 'amm7',
                                         tmpobs_stat_time_sel[ob_var] = {}
                                         # and data sets.
                                         for tmp_datstr in Dataset_lst:
-                                            # extract Obs: lon, lat, z OBS, mod,, stations info 
-                                            tmpobsx = Obs_dat_dict[tmp_datstr][ob_var]['LONGITUDE']
-                                            tmpobsy = Obs_dat_dict[tmp_datstr][ob_var]['LATITUDE']
-                                            tmpobs_obs = Obs_dat_dict[tmp_datstr][ob_var]['OBS'][:] 
-                                            tmpobs_mod = Obs_dat_dict[tmp_datstr][ob_var]['MOD_HX'][:] 
-                                            tmpobs_z = Obs_dat_dict[tmp_datstr][ob_var]['DEPTH'][:] 
-                                            tmpobs_stat_id = Obs_dat_dict[tmp_datstr][ob_var]['STATION_IDENTIFIER'][:] 
-                                            tmpobs_stat_type = Obs_dat_dict[tmp_datstr][ob_var]['STATION_TYPE'][:] 
-                                            tmpobs_stat_time = Obs_dat_dict[tmp_datstr][ob_var]['JULD_datetime'][:] 
-                                            tmpobs_z = Obs_dat_dict[tmp_datstr][ob_var]['DEPTH'][:] 
 
-                                            # if Obs data is 2d data, reshape to match 3d profile data. 
-                                            if len(tmpobs_obs.shape) == 1:
-
-                                                tmpobs_obs = tmpobs_obs.reshape(-1,1)
-                                                tmpobs_mod = tmpobs_mod.reshape(-1,1)
-                                                tmpobs_z = tmpobs_z.reshape(-1,1)
-                                            # find distance from selected point to all obs in this Obs type    
-                                            tmp_obs_dist = np.sqrt((tmpobsx - obs_lon)**2 +(tmpobsy - obs_lat)**2)
-                                        
-                                            # find the minimum value and index
-                                            tmp_obs_obs_dist = tmp_obs_dist.min()
-                                            tmp_obs_obs_ind = tmp_obs_dist.argmin()
-
-                                            #record the profile and distance for that Obs
-                                            tmpobs_z_sel[ob_var][tmp_datstr] = tmpobs_z[tmp_obs_obs_ind]
-                                            tmpobs_obs_sel[ob_var][tmp_datstr] = tmpobs_obs[tmp_obs_obs_ind]
-                                            tmpobs_mod_sel[ob_var][tmp_datstr] = tmpobs_mod[tmp_obs_obs_ind]
-                                            tmpobs_lon_sel[ob_var][tmp_datstr] = tmpobsx[tmp_obs_obs_ind]
-                                            tmpobs_lat_sel[ob_var][tmp_datstr] = tmpobsy[tmp_obs_obs_ind]
+                                            tmpobs_z_sel[ob_var][tmp_datstr] = np.ma.zeros((1))*np.ma.masked
+                                            tmpobs_obs_sel[ob_var][tmp_datstr] = np.ma.zeros((1))*np.ma.masked
+                                            tmpobs_mod_sel[ob_var][tmp_datstr] = np.ma.zeros((1))*np.ma.masked
+                                            tmpobs_lon_sel[ob_var][tmp_datstr] = np.ma.zeros((1))*np.ma.masked
+                                            tmpobs_lat_sel[ob_var][tmp_datstr] = np.ma.zeros((1))*np.ma.masked
                                             #pdb.set_trace()
-                                            tmpobs_stat_id_sel[ob_var][tmp_datstr] = tmpobs_stat_id[tmp_obs_obs_ind].strip()
-                                            tmpobs_stat_type_sel[ob_var][tmp_datstr] = tmpobs_stat_type[tmp_obs_obs_ind]
-                                            tmpobs_stat_time_sel[ob_var][tmp_datstr] = tmpobs_stat_time[tmp_obs_obs_ind]
+                                            tmpobs_stat_id_sel[ob_var][tmp_datstr] = ''
+                                            tmpobs_stat_type_sel[ob_var][tmp_datstr] = np.ma.zeros((1))*np.ma.masked
+                                            tmpobs_stat_time_sel[ob_var][tmp_datstr] = np.ma.zeros((1))*np.ma.masked
 
                                             tmpobs_dist_sel[ob_var][tmp_datstr] = tmp_obs_obs_dist
+
+
+
+                                            if Obs_dat_dict[tmp_datstr][ob_var]['loaded']:
+                                                # extract Obs: lon, lat, z OBS, mod,, stations info 
+
+                                                tmpobsx = Obs_dat_dict[tmp_datstr][ob_var]['LONGITUDE']
+                                                tmpobsy = Obs_dat_dict[tmp_datstr][ob_var]['LATITUDE']
+                                                tmpobs_obs = Obs_dat_dict[tmp_datstr][ob_var]['OBS'][:] 
+                                                tmpobs_mod = Obs_dat_dict[tmp_datstr][ob_var]['MOD_HX'][:] 
+                                                tmpobs_z = Obs_dat_dict[tmp_datstr][ob_var]['DEPTH'][:] 
+                                                tmpobs_stat_id = Obs_dat_dict[tmp_datstr][ob_var]['STATION_IDENTIFIER'][:] 
+                                                tmpobs_stat_type = Obs_dat_dict[tmp_datstr][ob_var]['STATION_TYPE'][:] 
+                                                tmpobs_stat_time = Obs_dat_dict[tmp_datstr][ob_var]['JULD_datetime'][:] 
+                                                tmpobs_z = Obs_dat_dict[tmp_datstr][ob_var]['DEPTH'][:] 
+
+                                                # if Obs data is 2d data, reshape to match 3d profile data. 
+                                                if len(tmpobs_obs.shape) == 1:
+
+                                                    tmpobs_obs = tmpobs_obs.reshape(-1,1)
+                                                    tmpobs_mod = tmpobs_mod.reshape(-1,1)
+                                                    tmpobs_z = tmpobs_z.reshape(-1,1)
+                                                # find distance from selected point to all obs in this Obs type    
+                                                tmp_obs_dist = np.sqrt((tmpobsx - obs_lon)**2 +(tmpobsy - obs_lat)**2)
+                                            
+                                                # find the minimum value and index
+                                                tmp_obs_obs_dist = tmp_obs_dist.min()
+                                                tmp_obs_obs_ind = tmp_obs_dist.argmin()
+
+                                                #record the profile and distance for that Obs
+                                                tmpobs_z_sel[ob_var][tmp_datstr] = tmpobs_z[tmp_obs_obs_ind]
+                                                tmpobs_obs_sel[ob_var][tmp_datstr] = tmpobs_obs[tmp_obs_obs_ind]
+                                                tmpobs_mod_sel[ob_var][tmp_datstr] = tmpobs_mod[tmp_obs_obs_ind]
+                                                tmpobs_lon_sel[ob_var][tmp_datstr] = tmpobsx[tmp_obs_obs_ind]
+                                                tmpobs_lat_sel[ob_var][tmp_datstr] = tmpobsy[tmp_obs_obs_ind]
+                                                #pdb.set_trace()
+                                                tmpobs_stat_id_sel[ob_var][tmp_datstr] = tmpobs_stat_id[tmp_obs_obs_ind].strip()
+                                                tmpobs_stat_type_sel[ob_var][tmp_datstr] = tmpobs_stat_type[tmp_obs_obs_ind]
+                                                tmpobs_stat_time_sel[ob_var][tmp_datstr] = tmpobs_stat_time[tmp_obs_obs_ind]
+
+                                                tmpobs_dist_sel[ob_var][tmp_datstr] = tmp_obs_obs_dist
                                     '''
                                     obs_dist_sel_cf_dict = {}
                                     obs_dist_sel_cf_size_lst = []
@@ -4569,14 +4601,22 @@ def nemo_slice_zlev(config = 'amm7',
 
 
                                     '''
-
-
+                                    #if Obs_dat_dict[secdataset_proc][ob_var]['loaded']:
+                                    #pdb.set_trace()
                                     # put all distances into one array
-                                    obs_dist_sel_cf_mat = np.array([tmpobs_dist_sel[ob_var][secdataset_proc] for ob_var in Obs_var_lst_sub])
+                                    #obs_dist_sel_cf_mat = np.array([tmpobs_dist_sel[ob_var][secdataset_proc] for ob_var in Obs_var_lst_sub])
+                                    obs_dist_sel_cf_lst = []
+                                    for ob_var in Obs_var_lst_sub:
+                                        if Obs_dat_dict[secdataset_proc][ob_var]['loaded']:
+                                            obs_dist_sel_cf_lst.append(tmpobs_dist_sel[ob_var][secdataset_proc])
+                                        else:
+                                            obs_dist_sel_cf_lst.append(np.ma.masked)
+                                    obs_dist_sel_cf_mat = np.ma.array(obs_dist_sel_cf_lst)
+
                                     #obs_dist_sel_cf_dict = {}
                                     #for tmp_datstr in Dataset_lst:obs_dist_sel_cf_dict[tmp_datstr] = np.array([tmpobs_dist_sel[ob_var][tmp_datstr] for ob_var in Obs_var_lst_sub])
 
-                                    if (obs_dist_sel_cf_mat).size>0:
+                                    if ((obs_dist_sel_cf_mat).size>0) & (~obs_dist_sel_cf_mat.mask.any()):
                                         
                                         # select the Obs Obs type closest to the selected point
                                         sel_Obs_var = Obs_var_lst_sub[obs_dist_sel_cf_mat.argmin()]
@@ -4604,18 +4644,20 @@ def nemo_slice_zlev(config = 'amm7',
                                         del(tmpobs_stat_type_sel)
                                         del(tmpobs_stat_time_sel)
 
-
+                                        '''
+                                        pdb.set_trace()
                                         # append this data to an array to help select x and y lims
                                         for tmp_datstr in Dataset_lst:
                                             tmp_pf_ylim_dat = np.ma.append(np.array(tmp_py_ylim),obs_z_sel[tmp_datstr])
                                             #tmp_pf_xlim_dat = np.ma.append(np.ma.append(np.array(pf_xlim),obs_mod_sel)[tmp_datstr],obs_obs_sel)
                                             tmp_pf_xlim_dat = np.ma.append(np.ma.append(np.array(pf_xlim),obs_mod_sel[tmp_datstr]),obs_obs_sel[tmp_datstr])
+                                        '''
                                         
                                     else:
                                         
                                         (obs_z_sel,obs_obs_sel,obs_mod_sel,obs_lon_sel,obs_lat_sel,
                                             obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel) = obs_reset_sel(Dataset_lst)
-                                    
+                                    """
                             elif mouse_info['button'].name == 'RIGHT':
 
                                 # Bring up a options window for Obs
@@ -5709,6 +5751,7 @@ def nemo_slice_zlev(config = 'amm7',
                         elif but_name in secdataset_proc_list:
                             secdataset_proc = but_name 
 
+                            #obs_load_sel[secdataset_proc] = False
 
                             for tmpsecdataset_proc in secdataset_proc_list: func_but_text_han[tmpsecdataset_proc].set_color('k')
 
