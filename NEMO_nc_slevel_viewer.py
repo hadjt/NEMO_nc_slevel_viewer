@@ -51,7 +51,6 @@ from NEMO_nc_slevel_viewer_lib import get_clim_pcolor, set_clim_pcolor,set_perc_
 from NEMO_nc_slevel_viewer_lib import scale_color_map,lon_lat_to_str,current_barb,get_pnts_pcolor_in_region
 from NEMO_nc_slevel_viewer_lib import profile_line
 
-from NEMO_nc_slevel_viewer_lib import load_ops_prof_TS, load_ops_2D_xarray, obs_reset_sel
 from NEMO_nc_slevel_viewer_lib import pop_up_opt_window,pop_up_info_window,get_help_text,jjii_from_lon_lat
 
 from NEMO_nc_slevel_viewer_lib import calc_ens_stat_2d, calc_ens_stat_3d,calc_ens_stat_map
@@ -65,6 +64,11 @@ from NEMO_nc_slevel_viewer_lib import process_argparse_fname_dict,process_argpar
 from NEMO_nc_slevel_viewer_lib import process_argparse_dataset_lab_d,process_argparse_thd
 from NEMO_nc_slevel_viewer_lib import process_argparse_Obs_dict,process_argparse_rename_var
 from NEMO_nc_slevel_viewer_lib import process_argparse_forced_dim,process_argparse_EOS
+
+
+from NEMO_nc_slevel_viewer_lib import obs_reset_sel # load_ops_prof_TS, load_ops_2D_xarray
+from NEMO_nc_slevel_viewer_lib import Obs_load_init_files_dict,Obs_set_empty_dict,Obs_setup_Obs_vis_d,Obs_setup_Obs_JULD_datetime_dict
+from NEMO_nc_slevel_viewer_lib import Obs_reload_obs
 
 letter_mat = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
 
@@ -180,31 +184,29 @@ def nemo_slice_zlev(config = 'amm7',
     ens_stat_lst = ['EnsMean','EnsStd','EnsVar','EnsCnt']
     if do_ensemble:
         Ens_stat = None
-    #    ens_stat_lst = ['EnsMean','EnsStd','EnsVar','EnsCnt']
-    #else:
-    #    ens_stat_lst = []
 
     # if arguement Obs_dict is not None, set do_Obs to true
-    #Obs_dict = Obs_fname
+    
     if Obs_dict is None:
         do_Obs = False
     else:
         do_Obs = True
         #pdb.set_trace()
         
+        # check if Obs_dict values are strings (for file names), or a dictionaries (i.e. obs loaded externally)
         for tmp_datstr in Obs_dict.keys():
             for ob_var in Obs_dict[tmp_datstr].keys():
+                # True if string (i.e. path to file name)
                 Obs_dict_is_str = isinstance(Obs_dict[tmp_datstr][ob_var] , str)
-
+        
+        #Obs_dict_is_str defaults to 2. 
         if Obs_dict_is_str== False:
             Obs_reloadmeth = -1
         elif Obs_dict_is_str:
-            Obs_fname = Obs_dict
+            # if Obs_dict_is_str == True (path to obs files), keep Obs_dict_is_str=2, and chnage copy Obs_dict to Obs_fname
+            Obs_fname = Obs_dict.copy()
 
             
-
-            Obs_dict = {}
-
 
             for tmp_datstr in Obs_fname.keys():
                 for ob_var in Obs_fname[tmp_datstr].keys():
@@ -212,10 +214,14 @@ def nemo_slice_zlev(config = 'amm7',
 
 
 
+
+            #Obs_dict = {}
+
             
             if Obs_reloadmeth == 0:
-
-                        
+                Obs_dict = Obs_load_init_files_dict(Obs_fname)
+                '''       
+                Obs_dict = {}
                 for tmp_datstr in Obs_fname.keys():
                     Obs_dict[tmp_datstr] = {}
                     for ob_var in Obs_fname[tmp_datstr].keys():
@@ -234,50 +240,14 @@ def nemo_slice_zlev(config = 'amm7',
                                 tmptimetupel = datetime(*(Obs_dict[tmp_datstr][ob_var]['Obs'][-1]['JULD_datetime'][0]).timetuple()[:3])
                                 Obs_dict[tmp_datstr][ob_var]['JULD'].append(  tmptimetupel  )
 
-                            '''
-                            if  ob_var == 'ChlA':
-                                print(datetime.now(),tmpObsfname)
-                                tmp_Obs = load_ops_2D_xarray(tmpObsfname,'ChlA',excl_qc = False)
-                                Obs_dict[tmp_datstr]['ChlA']['Obs'].append(tmp_Obs)  
-                                if len(tmp_Obs['JULD_datetime'])>0:
-                                    Obs_dict[tmp_datstr]['ChlA']['JULD'].append(datetime(tmp_Obs['JULD_datetime'][0].year,tmp_Obs['JULD_datetime'][0].month,tmp_Obs['JULD_datetime'][0].day)) 
-                                else:
-                                    Obs_dict[tmp_datstr]['ChlA']['JULD'].append(Obs_dict[tmp_datstr]['ChlA']['JULD'][-1] + timedelta(1)) 
-                                del(tmp_Obs)
-                            elif  ob_var == 'ProfT':
-                                print(datetime.now(),tmpObsfname)
-                                tmp_Obs = load_ops_prof_TS(tmpObsfname,'T',excl_qc = True)
-                                Obs_dict[tmp_datstr]['ProfT']['Obs'].append(tmp_Obs)  
-                                Obs_dict[tmp_datstr]['ProfT']['JULD'].append(datetime(tmp_Obs['JULD_datetime'][0].year,tmp_Obs['JULD_datetime'][0].month,tmp_Obs['JULD_datetime'][0].day)) 
-                            elif  ob_var =='ProfS' :
-                                print(datetime.now(),tmpObsfname)
-                                tmp_Obs = load_ops_prof_TS(tmpObsfname,'S',excl_qc = True)
-                                Obs_dict[tmp_datstr]['ProfS']['Obs'].append(tmp_Obs)  
-                                Obs_dict[tmp_datstr]['ProfS']['JULD'].append(datetime(tmp_Obs['JULD_datetime'][0].year,tmp_Obs['JULD_datetime'][0].month,tmp_Obs['JULD_datetime'][0].day))
-                                del(tmp_Obs)
-                            elif  ob_var =='SST_ins' :
-                                print(datetime.now(),tmpObsfname)
-                                tmp_Obs = load_ops_2D_xarray(tmpObsfname,'SST_ins',excl_qc = False)
-                                Obs_dict[tmp_datstr]['SST_ins']['Obs'].append(tmp_Obs)  
-                                Obs_dict[tmp_datstr]['SST_ins']['JULD'].append(datetime(tmp_Obs['JULD_datetime'][0].year,tmp_Obs['JULD_datetime'][0].month,tmp_Obs['JULD_datetime'][0].day))
-                                del(tmp_Obs)
-                            elif  ob_var =='SST_sat' :
-                                print(datetime.now(),tmpObsfname)
-                                tmp_Obs = load_ops_2D_xarray(tmpObsfname,'SST_sat',excl_qc = False)
-                                Obs_dict[tmp_datstr]['SST_sat']['Obs'].append(tmp_Obs)  
-                                Obs_dict[tmp_datstr]['SST_sat']['JULD'].append(datetime(tmp_Obs['JULD_datetime'][0].year,tmp_Obs['JULD_datetime'][0].month,tmp_Obs['JULD_datetime'][0].day))
-                                del(tmp_Obs)
-                            elif  ob_var =='SLA' :
-                                print(datetime.now(),tmpObsfname)
-                                tmp_Obs = load_ops_2D_xarray(tmpObsfname,'SLA',excl_qc = False)
-                                Obs_dict[tmp_datstr]['SLA']['Obs'].append(tmp_Obs)  
-                                Obs_dict[tmp_datstr]['SLA']['JULD'].append(datetime(tmp_Obs['JULD_datetime'][0].year,tmp_Obs['JULD_datetime'][0].month,tmp_Obs['JULD_datetime'][0].day))
-                                del(tmp_Obs)
-                            '''
                         Obs_dict[tmp_datstr][ob_var]['JULD'] = np.array(Obs_dict[tmp_datstr][ob_var]['JULD'])
             
-                
+                '''
             elif Obs_reloadmeth > 0:
+
+                Obs_dict = Obs_set_empty_dict(Obs_fname)
+                '''
+                Obs_dict = {}
                 for tmp_datstr in Obs_fname.keys():
                     Obs_dict[tmp_datstr] = {}
                     for ob_var in Obs_fname[tmp_datstr].keys():
@@ -302,10 +272,8 @@ def nemo_slice_zlev(config = 'amm7',
 
                         Obs_dict[tmp_datstr][ob_var]['JULD'] = np.array(Obs_dict[tmp_datstr][ob_var]['JULD'])
         
-                #pdb.set_trace()
 
-            #pdb.set_trace()
-
+                '''
     if do_memory:
         do_timer = True
  
@@ -467,7 +435,7 @@ def nemo_slice_zlev(config = 'amm7',
 
     print('thin: %i; thin_files: %i; hov_time: %s; '%(thd[1]['dx'],thd[1]['df'],hov_time))
     pxy = thd[1]['pxy']
-    print('maximum pixels plotted in x and y dir pxy:',pxy)
+    print('maximum pixels plotted in x and y directions pxy:',pxy)
 
     nlon_amm7 = 297
     nlat_amm7 = 375
@@ -1122,7 +1090,6 @@ def nemo_slice_zlev(config = 'amm7',
     if do_Obs:
         ob_ti = ti
 
-        #Obs_hide = False
         Obs_hide_edges = False
         Obs_pair_loc = True
         Obs_AbsAnom = True
@@ -1135,6 +1102,10 @@ def nemo_slice_zlev(config = 'amm7',
         #Obs_obstype_hide = ['ProfT','ProfS','SST_ins','SST_sat','SLA', 'ChlA']
         #Obs_obstype_hide = ['SST_sat']
 
+        Obs_JULD_datetime_dict = Obs_setup_Obs_JULD_datetime_dict(Dataset_lst,Obs_varlst,Obs_dict)
+   
+        '''
+        
         # a dictionary of Obs datetimes, assuming midday of each day. 
         Obs_JULD_datetime_dict = {}
         for tmp_datstr in Dataset_lst:
@@ -1142,6 +1113,7 @@ def nemo_slice_zlev(config = 'amm7',
             for ob_var in Obs_varlst:
                 Obs_JULD_datetime_dict[tmp_datstr][ob_var] = Obs_dict[tmp_datstr][ob_var]['JULD']
 
+        '''
 
         # Obs plotting options 
         Obs_scatEC = None
@@ -1150,6 +1122,9 @@ def nemo_slice_zlev(config = 'amm7',
         Obs_scatSS = 100 # matplotlib.rcParams['lines.markersize'] ** 2
         Obs_scatSS = 250 # matplotlib.rcParams['lines.markersize'] ** 2
 
+        Obs_vis_d = Obs_setup_Obs_vis_d(Obs_varlst)
+        '''
+        
         Obs_vis_d = {}
         Obs_vis_d['Scat_symsize'] ={}
         Obs_vis_d['Scat_edgecol'] = {}
@@ -1179,31 +1154,10 @@ def nemo_slice_zlev(config = 'amm7',
         Obs_vis_d['Prof_mod_lw_2d'] = 1
         Obs_vis_d['Prof_mod_ls_2d'] = '--'
 
+        '''
         # set up empty profile dictionaries for plotting
         (obs_z_sel,obs_obs_sel,obs_mod_sel,obs_lon_sel,obs_lat_sel,
             obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel) = obs_reset_sel(Dataset_lst)
-        '''
-        obs_z_sel = {}
-        obs_obs_sel = {}
-        obs_mod_sel = {}
-        obs_lon_sel = {}
-        obs_lat_sel = {}
-
-        obs_stat_id_sel = {}
-        obs_stat_type_sel = {}
-        obs_stat_time_sel = {}
-                    
-
-        for tmp_datstr in Dataset_lst:
-            obs_z_sel[tmp_datstr] = np.ma.zeros((1))*np.ma.masked
-            obs_obs_sel[tmp_datstr] = np.ma.zeros((1))*np.ma.masked
-            obs_mod_sel[tmp_datstr] = np.ma.zeros((1))*np.ma.masked
-            obs_lon_sel[tmp_datstr] = np.ma.zeros((1))*np.ma.masked
-            obs_lat_sel[tmp_datstr] = np.ma.zeros((1))*np.ma.masked
-            obs_stat_id_sel[tmp_datstr] = ''
-            obs_stat_time_sel[tmp_datstr] = ''
-            obs_stat_type_sel[tmp_datstr] = None
-        '''
 
         # set reload Obs to true
         reload_Obs = True
@@ -2680,6 +2634,10 @@ def nemo_slice_zlev(config = 'amm7',
             #if Obs and reloading,  
             if do_Obs:
                 if reload_Obs:
+
+
+                    Obs_dat_dict,Obs_var_lst_sub = Obs_reload_obs(var,Dataset_lst,tmp_current_time,ob_ti,Obs_dict,Obs_fname,Obs_JULD_datetime_dict,Obs_vis_d,Obs_varlst,Obs_reloadmeth)
+                    '''
                     
                     #for a given variable, what obs types to use
                     if var.lower() in ['votemper','votempis','votemper_bot','votempis_bot']:
@@ -2738,6 +2696,8 @@ def nemo_slice_zlev(config = 'amm7',
                                     Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = load_ops_2D_xarray(tmpObsfname,ob_var,excl_qc = False)   
                             Obs_dat_dict[tmp_datstr][ob_var] = Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti]
                     #once reloaded, set to False
+                    '''
+
                     reload_Obs = False
 
                     if do_memory & do_timer: timer_lst.append(('Reloaded Obs',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
@@ -3639,6 +3599,10 @@ def nemo_slice_zlev(config = 'amm7',
                             Obs_scatEC = None
                         else:
                             Obs_scatEC = Obs_vis_d['Scat_edgecol'][ob_var] 
+
+                        # mask z levels where observations are masked. 
+                        tmpobsz.mask = tmpobsz.mask |tmpobsdat_mat.mask
+
 
 
                         # if Obs variable is a 2d var
