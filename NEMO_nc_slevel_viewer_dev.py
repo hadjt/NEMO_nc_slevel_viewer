@@ -59,6 +59,13 @@ from NEMO_nc_slevel_viewer_lib import calc_ens_stat_2d, calc_ens_stat_3d,calc_en
 from NEMO_nc_slevel_viewer_lib import int_ind_wgt_from_xypos, ind_from_lon_lat
 
 
+from NEMO_nc_slevel_viewer_lib import load_nemo_slice_zlev_helptext, load_NEMO_nc_viewer_parser
+from NEMO_nc_slevel_viewer_lib import process_argparse_bool 
+from NEMO_nc_slevel_viewer_lib import process_argparse_fname_dict,process_argparse_configd
+from NEMO_nc_slevel_viewer_lib import process_argparse_dataset_lab_d,process_argparse_thd
+from NEMO_nc_slevel_viewer_lib import process_argparse_Obs_dict,process_argparse_rename_var
+from NEMO_nc_slevel_viewer_lib import process_argparse_forced_dim,process_argparse_EOS
+
 letter_mat = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
 
 import socket
@@ -80,6 +87,8 @@ import matplotlib.patheffects as pe
 #matplotlib.use('Qt5Agg')
 #def mon_mean(x):
 #    return x.groupby('time.month').mean('time')
+
+
 
 
 def nemo_slice_zlev(config = 'amm7',  
@@ -571,7 +580,7 @@ def nemo_slice_zlev(config = 'amm7',
                                                                                   gr_1st = gr_1st,do_addtimedim = do_addtimedim,
                                                                                   do_all_WW3 = do_all_WW3)
     
-
+    #pdb.set_trace()
     # tmp = xarr_dict['Dataset 1']['T'][0].groupby('time_counter.year').groupby('time_counter.month').mean('time_counter') 
     
     #nctime = xarr_dict['Dataset 1']['T'][0].variables['time_counter']
@@ -1088,8 +1097,12 @@ def nemo_slice_zlev(config = 'amm7',
         for var_but in var_but_mat:var_but_mat_order.append(np.where(var_d[1]['mat'] == var_but )[0][0])
         var_but_mat = var_but_mat[np.argsort(var_but_mat_order)]
 
-    nbutvar = var_but_mat.size
+        if var_but_mat.size == 0:
+            print('No common variable loaded across the Datasets, so nbutvar == 0')
+            pdb.set_trace()
 
+
+    nbutvar = var_but_mat.size
 
     #pdb.set_trace()
 
@@ -1823,7 +1836,7 @@ def nemo_slice_zlev(config = 'amm7',
 
     mouse_click_id = fig.canvas.mpl_connect('button_press_event', onclick)
 
-    
+    #pdb.set_trace()
     but_text_han[var].set_color('r')
 
     if verbose_debugging: print('Added functions boxes', datetime.now())
@@ -5359,6 +5372,8 @@ def nemo_slice_zlev(config = 'amm7',
                                 
                                 TSfig_out_name = '%s/output_TSDiag_%s_%s_%s'%(fig_dir,fig_lab,lon_lat_to_str(lon_d[1][jj,ii],lat_d[1][jj,ii])[3],time_datetime[ti].strftime('%Y%m%dT%H%MZ'))
                                 
+                                if not os.path.exists(fig_dir):
+                                    os.makedirs(fig_dir)
                                 figts.savefig(TSfig_out_name + '.png')
                                 figts.show()
 
@@ -6001,659 +6016,31 @@ def nemo_slice_zlev(config = 'amm7',
 
 def main():
 
-
-    nemo_slice_zlev_helptext=textwrap.dedent('''\
-    Interactive NEMO ncfile viewer.
-    ===============================
-    Developed by Jonathan Tinker Met Office, UK, December 2023
-    ==========================================================
-    
-    When calling from the command line, it uses a mix of positional values, and keyword value pairs, via argparse.
-
-    The first two positional keywords are the NEMO configuration "config", 
-    and the second is the list of input file names "fname_lst" - this is the for the first 
-    data set, for the T grid other file list are provided with the --files argument - see later.
-    
-    config: should be AMM7, AMM15, CO9p2, ORCA025, ORCA12. Other configurations will be supported soon. 
-    fname_lst: supports wild cards, but should be  enclosed in quotes.
-    e.g.
-    python NEMO_nc_slevel_viewer_dev.py amm15 "/directory/to/some/files/prodm_op_am-dm.gridT*-36.nc" 
-
-    if using a variable in the file list use:
-
-
-        expt1=dataset1
-        expt2=dataset2
-
-        flist1=$(echo "/directory/to/some/files/${expt1}/prodm_op_am-dm.gridT*-36.nc)
-        flist2=$(echo "/directory/to/some/files/${expt2}/prodm_op_am-dm.gridT*-36.nc)
-
-    Optional arguments are give as keyword value pairs, with the keyword following a double hypen.
-    for some argements, (th, files etc.), there are mulitple values given                                         
-    We will list the most useful options first.
-
-    
-    --fnames - additional file list for differnt datasets and grid, e.g. to show the different 
-        between two sets of files. 
-        
-        --files is followed by the data set number, and the grid, before the file list,  
-        enclose in quotes. Make sure this has the same number of files, with the same dates as 
-        fname_lst. This will be checked in later upgrades, but will currently fail if the files
-        are inconsistent
-
-    
-    --fnames 1 U - specify a consistent set of U and V files, to calculate a drived variable current magintude. 
-        assumes the variable vozocrtx is present. Later upgrade will allow other current variable names. 
-        Must have both U_fname_lst and V_fname_lst.
-    --fnames 1 V - specify a consistent set of U and V files, to calculate a drived variable current magintude. 
-        assumes the variable vomecrty is present. Later upgrade will allow other current variable names. 
-        Must have both U_fname_lst and V_fname_lst.
-        
-    --fnames 2 U as above for a second data set
-    --fnames 2 V as above for a second data set
-                                             
-    --fnames 1 WW3 for WW3 data on the AMM15 grid, in netcdf files
-    --fnames 2 WW3 as above for a second data set
-                                             
-    --fnames 1 I for NEMOVAR incremnt data 
-    --fnames 2 I as above for a second data set
-                                             
-    --configs - it is now possible to compare two differnt amm7 and amm15 data
-    the positional config keyword is enters as --config 1 
-    secondary configs are entered as:
-    --configs 2
-    available configs include:
-        AMM7, AMM15, CO9P2, ORCA025, ORCA025EXT,  ORCA12, GCOAST, AMM7CMEMS or AMM15CMEMS
-                                             
-    --ii            initial ii value
-    --jj            initial jj value
-    --ti            initial ti value
-    --zz            initial zz value
-    --lon           initial lon value
-    --lat           initial lat value
-    --date_ind      initial date value in '%Y%m%d' format, or a differnt format with --date_fmt
-    --date_fmt      format for reading dates
-    
-    When displaying large datasets it can take a long time to load the file (connecting with xarray vis open_mfdataset). 
-    When a button press requires new data to be display that can also take time. The slowest part to read new data is 
-    when loading time series of data through files - uses in the hovmuller plots and the time series. There is a button
-    to turn on and off reloading of these data, which can speed up the response. To speed up the initial display, 
-    this can also be turned off at the command line with:
-    
-    --hov_time False
-
-    --zlim_max - maximum depth to show, often set to 200. Default is None
-
-    Data Thinning
-    =============
-    To speed up handling of large files and datasets, you can "thin" the data, only loading every x row and column of the data:
-        data[thd[1]['y0']:thd[1]['y1']:thd[1]['dy'],thd[1]['x0']:thd[1]['x1']:thd[1]['dx']]
-
-    When commparing two data sets, you can thin them separately
-
-    You can also thin how many files are read in, skipping files, and setting the first and last file in the file list,
-    
-    The argument is --th, followed by the dataset number (1, 2, 3...), the thinning option, and the value
-
-    the first thinning option for the first data set are applied to all datasets, and then replaced if present.
-
-    use the option --th 1 xy 5, --th xy 5, --th 1 df 5
-
-    e.g.
-    
-    --th 1 dxy 5 thin the data, to only load the 5th row and column
-    --th 1 dx 5  thin the data, to only load the 5th row
-    --th 1 dy 5  thin the data, to only load the 5th column
-                                           
-    --th 2 dx 5  thin the data of the second data set, if of a differnt configuration.
-    
-    or thinned temporally, skipping some of the files: 
-    
-    --th 1 df    thin the data, to only load the xth file
-    --th 1 f0    thin the data, to only load the files after the xth
-    --th 1 f1    thin the data, to only load the files before the xth
-    
-    It is also possible to only load a reduced region:
-    
-    --th 1 x0    first row to load
-    --th 1 x1    last row to load
-    --th 1 y0    first column to load
-    --th 1 y1    last column to load
-    
-    --th 2 x0    first row to load of the second data set, if of a differnt configuration.
-    --th 2 x1    last row to load of the second data set, if of a differnt configuration.
-    --th 2 y0    first column to load of the second data set, if of a differnt configuration.
-    --th 2 y1    last column to load of the second data set, if of a differnt configuration.
-    
-    When displaying large files, it is often the plotting that reduces the responisveness. AMM15 is
-    ~1500*1500, but most of this detail is not visible. You can reduce the number of pixels
-    displayed in the map plot to pxy pixels x pxy, which often speeds up the plotting.
-                                             
-    --th 1 pxy    Maximum pixels displayed (500 is a good starting point)
-                                             
-    
-    It is possible to save figures, these will also have text files with the settings to recreate the figure
-    at a higher resolution (more files, less thining) with just plot
-
-    --fig_dir - directory for figure output
-    --fig_lab - label to add to filesnames, so can compare runs.
-    --fig_cutout - save full screen, or cut off the buttons - this is the defaulted to True
-
-    --clim_sym use a symetrical colourbar -defaulted to False
-    --clim_pair use the same color limits between datasets. Can be changed with a button click
-    --use_cmocean - use cmocean colormaps -defaulted to False
-
-    --verbose_debugging - prints out lots of statements at run time, to help debug -defaulted to False
-
-    
-    Overview
-    ========
-    When the viewer loads, there is a series of variable buttons on the left hand side, fuction buttons on the right hand side, and subplots.
-    The main subplot is on the left, which is  2d lon lat surface plot. The right hand plots (top to bottom) show a zonal and meridonial slice, 
-    a hovmoller plot and a timeseries. The active location is showns as crosshairs on each subplot. 
-                                             
-    When you click, text will appear in the top right hand saying waiting, which will then update with the function/variable name.
-    this shows that it is working.  When you click zoom, the zoom button with turn red after the first click, and then back to 
-    black after the second click. 
-
-    Changing the current location
-    =============================
-    You can change the horizontal location by clicking on the map, or the either of the slices. YOu can change the depth by clicking on the hovmuller plots, 
-    and change the time by clicking on the time series. 
-
-    The viewer initially shows the surface slice, and the viewer is in depth level mode (Note the Depth Level button is red on the right hand side). 
-    When you change the depth by clicking on the hovmuller diagram, you take a z slice though AMM scoorinates, therefore the coastline 
-    changes when you go deeper. If you want to see the surface, the bed, or the surface minus bed, you can click the buttons on the right hand side.
-    these will change to red depending on your choice - remembering to click twice.  When you wnat to go back to the depth level, click back on depth level.
-    
-    
-    Changing variables
-    ==================
-    You can change variables by clicking (twice) on the variable buttons on the left hand side. the current variable is in red. 3d variables are have black boxes
-    2d variables have green boxes, derived variables have blue boxes
-    
-    Changing Datasets
-    ==================
-    You can load two data sets using --fname_lst_2nd, and then switch between the dataset, and show there differnce with the "Dataset 1", "Dataset 2", "Dat1-Dat2", "Dat2-Dat1" buttons.
-
-    Loop and Click Modes
-    ==================
-    The default mode is "Click", to use the mouse to click the buttons, and figures... in this mode, the program awaits a mouse click to continue. 
-    The other mode is "Loop", where the timeslices are looped throught. This mode does not await a mouse click to continue, 
-    and so clickng on the other buttons will not exit this mode. Instead, we track the mouse location, and see when you point to the "Click" button, and wait.
-    The next iteration will allow you to click on "Click" to continue. 
-    
-    Zooming
-    =======
-
-    You can zoom, by .
-        1) clicking on the zoom button, 
-        2) clicking on the map at the bottom left hand point of your area of interest, 
-        3) clicking on the map at the top right hand point of your area of interest, 
-        4) clicking on some white space.
-
-    Yo 
-
-    Colour Zooming
-    ==============
-    The default colormap limits are based on the 5th and 95th percentile value that occurs within the subplot.
-    If you can want tighter colour limits you can zoom the colorbar, reset to the original default values, or zoom out.
-    
-    To zoom in on the colourbar
-        1)  Click Clim: Zoom
-        2)  Click on the colorbar of the map (left hand subplot) at the desired lower colour limit
-        3)  Click on the desired upper colour limit of the colorbar.
-        4)  Click on white space.
-
-    To zoom out of the colorbar (double the colorbar range, with the same middle value)
-        1) Click Clim: Expand
-        2) Click whitespace
-    
-    To reset the default colorbar limits
-        1) Click Clim: Reset
-    
-    Colourmap scaling
-    =================
-    You can set the colorbar to logarithmic or normal.
-    However there appears to be a matplotlib bug with logarithmic colorbars
-        All the colorbars share the same colour limits when in log scale. 
-
-    It doesn't appear to work when comparing two sets of files.
-    It doens't handle negative values very well. 
-    
-
-
-    Saving figures
-    ==============
-    You can take snap shots of the screen by clicking Save Figure, and then clicking white space. 
-    Files will be saved in the dirertory given with the --fig_dir option.
-    Figures will be named based on the variable, ii,jj, ti and zz location, and with a figure label
-    given with the --fig_lab option. By default, the savedfigure will exclude the buttons. If you want
-    the full screen (or the cut out is not optimised) use  the --fig_cutout False option.
-
-    Just plotting
-    =============
-    When analysing large datasets, the loading and interactivity can be slow. thinnig the data allows 
-    reasonable performance at reduce resolution. One approach is to use this low-res option to find 
-    intersting features, then save the figure and the options in an text files. These can then be edited
-    (e.g. reducing the thinning), and the viewer can be run in "justplot" mode, where it loads the data
-    and saves the figures without any interactivity. This can even be run on spice.
-    
-    --justplot True                 Just plot mode
-    --justplot_date_ind             additional dates to plot
-    --justplot_secdataset_proc      datasets to plot
-    --justplot_z_meth_zz            depths to plot
-
-    Quit
-    ====
-    Click quit, then white space. The figure should close. 
-
-
-    Developed by Jonathan Tinker Met Office, UK, December 2023
-    ==========================================================
-    
-    ''')
+    # Load help text
+    nemo_slice_zlev_helptext = load_nemo_slice_zlev_helptext()
 
     if sys.argv.__len__() > 1:
 
-        #https://towardsdatascience.com/a-simple-guide-to-command-line-arguments-with-argparse-6824c30ab1c3
-        parser = argparse.ArgumentParser(description='An interactive tool for plotting NEMO data',
-            formatter_class=argparse.RawDescriptionHelpFormatter,  
-            epilog=nemo_slice_zlev_helptext)
+        # Load argparse parser, setting all the command line keyword arguments
+        parser = load_NEMO_nc_viewer_parser(nemo_slice_zlev_helptext)
 
+        # Load read command line keyword arguments 
+        args = parser.parse_args()
 
-
-        parser.add_argument('config', type=str, help="AMM7, AMM15, CO9P2, ORCA025, ORCA025EXT or ORCA12")# Parse the argument
-        parser.add_argument('fname_lst', type=str, help='Input file list, enclose in "" if contains wild cards')
-
-
-
-        parser.add_argument('--files', action='append', nargs='+',help = 'Files for a given dataset and grid. Requires: int(dataset number), str(grid), str(path to files)')
-        parser.add_argument('--configs', action='append', nargs='+',help = 'Configuration of other datasets. Requires: int(dataset number), str(config)')
-        parser.add_argument('--th', action='append', nargs='+',help = 'Thinning dataset options. Requires: int(dataset number), str(grid), str(thinning option), int(thinning value)')
-        parser.add_argument('--datlabs', action='append', nargs='+',help = 'Label for dataset. Requires: int(dataset number), str(grid), str(Dataset label)')
-
-        parser.add_argument('--var', type=str,help = 'Variable to initialise with . Requires: str(variable)')
-
-        #parser.add_argument('--preload_data', type=str, required=False) # deprecated
-
-
-        #### Display Options
-        #####################
-        # plotting limits: xlim, ylim, clim, max depth 
-        parser.add_argument('--xlim', type=float, required=False, nargs = 2,help = 'Display Options: xlim. Requires: flt(xlim min) flt(xlim max)')
-        parser.add_argument('--ylim', type=float, required=False, nargs = 2,help = 'Display Options: ylim. Requires: flt(ylim min) flt(ylim max)')
-        parser.add_argument('--clim', type=float, required=False, nargs = '+',help = 'Display Options: clim. Requires: flt(clim min) flt(clim max) or 2 values for each axis')
-        parser.add_argument('--zlim_max', type=int, required=False,help = 'Display Options: zlim_max - to set the maximum depth. Requires: flt(zlim_max)')
-
-        # Inital location
-        parser.add_argument('--ii', type=int, required=False, help = 'Initial Location Options - i index: ii. Requires: int(ii)')
-        parser.add_argument('--jj', type=int, required=False, help = 'Initial Location Options - j index:: jj. Requires: int(jj)')
-        parser.add_argument('--ti', type=int, required=False, help = 'Initial Location Options - time index: ti. Requires: int(ti)')
-        parser.add_argument('--zz', type=int, required=False, help = 'Initial Location Options - depth: zz. Requires: flt(zz)')
-
-        parser.add_argument('--lon', type=float, required=False, help = 'Initial Location Options - longitude: lon. Requires: flt(lon)')
-        parser.add_argument('--lat', type=float, required=False, help = 'Initial Location Options - latitude: lat. Requires: flt(lat)')
-        parser.add_argument('--date_ind', type=str, required=False, help = 'Initial Location Options - date: date_ind. e.g. "20220101" Requires: str(date_ind)')
-        parser.add_argument('--date_fmt', type=str, required=False, help = 'Initial Location Options - format of date: date_fmt. default: "%Y%m%d", Requires: str(date_fmt)')
-
-        # Depreciated, as take in form the config files
-        #parser.add_argument('--z_meth', type=str, help="z_slice, ss, nb, df, zm, zx, zn, zs, or z_index for z level models")# Parse the argument
-
-        # Display hov_time data, contours, and gradients
-        parser.add_argument('--hov_time', type=str, required=False, help = 'Initially show hov_time? default False. Requires: bool(hov_time)')
-        parser.add_argument('--do_cont', type=str, required=False, help = 'Initially show contours? default False. Requires: bool(do_cont)')
-        parser.add_argument('--do_grad', type=int, required=False, help = 'Initially show spatial gradients (>0) and what version (1, 2) ? default 0 Requires: int(do_grad)')
-
-
-        # Different Lead Times
-        parser.add_argument('--ld_lst', type=str, required=False, help = 'Lead time index numbers - str("0,1,2,3,4,5,6,7")')
-        parser.add_argument('--ld_lab_lst', type=str, required=False, help = 'Lead time labels - str("-36,-12,012,036,060,084,108,132")')
-        parser.add_argument('--ld_nctvar', type=str, required=False, help = 'Lead time netcdf variable time name - str(time_counter)')
-
-        # Output figure options
-
-        parser.add_argument('--fig_dir', type=str, required=False, help = 'Output figures: Location of output figures. Default to "$PWD/tmpfigs". Requires str(fig_dir)')
-        parser.add_argument('--fig_lab', type=str, required=False, help = 'Output figures: Label added to output figures. Default to "figs". Requires str(fig_lab)')
-        parser.add_argument('--fig_cutout', type=str, required=False, help = 'Output figures: Cutout figures to remove buttons Default to "True". Requires bool(fig_cutout)')
-        
-
-        parser.add_argument('--allow_diff_time', type=str, required=False)
-
-        parser.add_argument('--secdataset_proc', type=str, required=False)
-
-        parser.add_argument('--trim_extra_files', type=int, required=False)
-        parser.add_argument('--trim_files', type=int, required=False)
-
-        parser.add_argument('--clim_sym', type=str, required=False)
-        parser.add_argument('--clim_pair', type=str, required=False)
-        parser.add_argument('--use_cmocean', type=str, required=False)
-
-        parser.add_argument('--resample_freq', type=str, required=False, help = 'Resample (temporal mean) dataset for a given period. Required: str(resample period), where resample period is a number and a letter (M, Y, D, Q for Month, year, decade (day??), quarter), e.g. 1d, 1m.')
-
-        parser.add_argument('--justplot', type=str, required=False)
-        parser.add_argument('--justplot_date_ind', type=str, required=False, help = 'comma separated values')
-        parser.add_argument('--justplot_z_meth_zz', type=str, required=False, help = 'comma separated values, replace space with underscore - e.g. "Dataset_1"')
-        parser.add_argument('--justplot_secdataset_proc', type=str, required=False, help = 'comma separated values')
-
-        parser.add_argument('--verbose_debugging', type=str, required=False)
-        parser.add_argument('--do_timer', type=str, required=False)
-        parser.add_argument('--do_memory', type=str, required=False)
-
-        parser.add_argument('--do_ensemble', type=str, required=False)
-
-        parser.add_argument('--do_mask', type=str, required=False)
-        parser.add_argument('--do_match_time', type=str, required=False)
-        parser.add_argument('--do_addtimedim', type=str, required=False)
-
-        parser.add_argument('--do_all_WW3', type=str, required=False)
-        parser.add_argument('--use_xarray_gdept', type=str, required=False)
-
-        parser.add_argument('--Obs_dict', action='append', nargs='+')
-        parser.add_argument('--Obs_hide', type=str, required=False)
-
-        parser.add_argument('--EOS', action='append', nargs='+')
-        parser.add_argument('--forced_dim', action='append', nargs='+')
-        parser.add_argument('--rename_var', action='append', nargs='+')
-
-        parser.add_argument('--gr_1st', type=str, required=False)
-
-
-
-        args = parser.parse_args()# Print "Hello" + the user input argument
-
-
-        
-        # Handling of Bool variable types
-        #
-
-        
-        if args.Obs_dict is None:
-            Obs_dict_in = None
-        else:
-            Obs_dict_in = {}
-            #for ss in np.unique([tmparr[0] for tmparr in args.Obs_dict])
-            # cycle through input argument list elements
-            for tmparr in args.Obs_dict:
-
-                #take the dataset name
-                tmp_datstr = 'Dataset ' + tmparr[0]
-                #Add sub dictionary if not present 
-                if tmp_datstr not in Obs_dict_in.keys():Obs_dict_in[tmp_datstr] = {}
-
-                if len(tmparr)!=3:
-                    print('arg error: (Obs_dict):', tmparr)
-
-                tmp_datset = tmparr[1]
-                tmp_files = tmparr[2]
-                Obs_dict_in[tmp_datstr][tmp_datset] = tmp_files
-
-            #pdb.set_trace()
-
-        '''
-        # preload_data option deprecated, option not to preload data no longer supported
-        if args.preload_data is None:
-            preload_data_in=True
-        elif args.preload_data is not None:
-            if args.preload_data.upper() in ['TRUE','T']:
-                preload_data_in = bool(True)
-            elif args.preload_data.upper() in ['FALSE','F']:
-                preload_data_in = bool(False)
-            else:                
-                print('preload_data',args.preload_data)
-                pdb.set_trace()
-        '''
         preload_data_in=True
 
-        if args.allow_diff_time is None:
-            allow_diff_time_in=False
-        elif args.allow_diff_time is not None:
-            if args.allow_diff_time.upper() in ['TRUE','T']:
-                allow_diff_time_in = bool(True)
-            elif args.allow_diff_time.upper() in ['FALSE','F']:
-                allow_diff_time_in = bool(False)
-            else:                
-                print('allow_diff_time',args.allow_diff_time)
-                pdb.set_trace()
 
-        if args.clim_sym is None:
-            clim_sym_in=False
-        elif args.clim_sym is not None:
-            if args.clim_sym.upper() in ['TRUE','T']:
-                clim_sym_in = bool(True)
-            elif args.clim_sym.upper() in ['FALSE','F']:
-                clim_sym_in = bool(False)
-            else:                
-                print('clim_sym',args.clim_sym)
-                pdb.set_trace()
-
-        if args.clim_pair is None:
-            clim_pair_in=True
-        elif args.clim_pair is not None:
-            if args.clim_pair.upper() in ['TRUE','T']:
-                clim_pair_in = bool(True)
-            elif args.clim_pair.upper() in ['FALSE','F']:
-                clim_pair_in = bool(False)
-            else:                
-                print('clim_pair',args.clim_pair)
-                pdb.set_trace()
-
-        if args.hov_time is None:
-            hov_time_in=False
-        elif args.hov_time is not None:
-            if args.hov_time.upper() in ['TRUE','T']:
-                hov_time_in = bool(True)
-            elif args.hov_time.upper() in ['FALSE','F']:
-                hov_time_in = bool(False)
-            else:                
-                print('hov_time',args.hov_time)
-                pdb.set_trace()
-
-        if args.fig_cutout is None:
-            fig_cutout_in=True
-        elif args.fig_cutout is not None:
-            if args.fig_cutout.upper() in ['TRUE','T']:
-                fig_cutout_in = bool(True)
-            elif args.fig_cutout.upper() in ['FALSE','F']:
-                fig_cutout_in = bool(False)
-            else:                
-                print('fig_cutout',args.fig_cutout)
-                pdb.set_trace()
-
-        if args.justplot is None:
-            justplot_in=False
-        elif args.justplot is not None:
-            if args.justplot.upper() in ['TRUE','T']:
-                justplot_in = bool(True)
-            elif args.justplot.upper() in ['FALSE','F']:
-                justplot_in = bool(False)
-            else:                
-                print('justplot',args.justplot)
-                pdb.set_trace()
-
-        if args.use_cmocean is None:
-            use_cmocean_in=False
-        elif args.use_cmocean is not None:
-            if args.use_cmocean.upper() in ['TRUE','T']:
-                use_cmocean_in = bool(True)
-            elif args.use_cmocean.upper() in ['FALSE','F']:
-                use_cmocean_in = bool(False)
-            else:                
-                print('use_cmocean',args.use_cmocean)
-                pdb.set_trace()
-
-        if args.verbose_debugging is None:
-            verbose_debugging_in=False
-        elif args.verbose_debugging is not None:
-            if args.verbose_debugging.upper() in ['TRUE','T']:
-                verbose_debugging_in = bool(True)
-            elif args.verbose_debugging.upper() in ['FALSE','F']:
-                verbose_debugging_in = bool(False)
-            else:                
-                print('verbose_debugging: ',args.verbose_debugging)
-                pdb.set_trace()
-
-        if args.do_timer is None:
-            do_timer_in=False
-        elif args.do_timer is not None:
-            if args.do_timer.upper() in ['TRUE','T']:
-                do_timer_in = bool(True)
-            elif args.do_timer.upper() in ['FALSE','F']:
-                do_timer_in = bool(False)
-            else:                
-                print('do_timer',args.do_timer)
-                pdb.set_trace()
- 
-
-        if args.do_memory is None:
-            do_memory_in=False
-        elif args.do_memory is not None:
-            if args.do_memory.upper() in ['TRUE','T']:
-                do_memory_in = bool(True)
-            elif args.do_memory.upper() in ['FALSE','F']:
-                do_memory_in = bool(False)
-            else:                
-                print('do_timer',args.do_memory)
-                pdb.set_trace()
-
-        if args.do_ensemble is None:
-            do_ensemble_in=False
-        elif args.do_ensemble is not None:
-            if args.do_ensemble.upper() in ['TRUE','T']:
-                do_ensemble_in = bool(True)
-            elif args.do_ensemble.upper() in ['FALSE','F']:
-                do_ensemble_in = bool(False)
-            else:                
-                print('do_timer',args.do_timer)
-                pdb.set_trace()
- 
- 
-        if args.do_mask is None:
-            do_mask_in=False
-        elif args.do_mask is not None:
-            if args.do_mask.upper() in ['TRUE','T']:
-                do_mask_in = bool(True)
-            elif args.do_mask.upper() in ['FALSE','F']:
-                do_mask_in = bool(False)
-            else:                
-                print('do_mask',args.do_mask)
-                pdb.set_trace()
-
-        if args.do_match_time is None:
-            do_match_time_in=True
-        elif args.do_match_time is not None:
-            if args.do_match_time.upper() in ['TRUE','T']:
-                do_match_time_in = bool(True)
-            elif args.do_match_time.upper() in ['FALSE','F']:
-                do_match_time_in = bool(False)
-            else:                
-                print('do_match_time',args.do_match_time)
-                pdb.set_trace()
-
-        if args.do_addtimedim is None:
-            do_addtimedim_in=False
-        elif args.do_addtimedim is not None:
-            if args.do_addtimedim.upper() in ['TRUE','T']:
-                do_addtimedim_in = bool(True)
-            elif args.do_addtimedim.upper() in ['FALSE','F']:
-                do_addtimedim_in = bool(False)
-            else:                
-                print('do_addtimedim',args.do_addtimedim)
-                pdb.set_trace()
-
-
-        if args.do_all_WW3 is None:
-            do_all_WW3_in=False
-        elif args.do_all_WW3 is not None:
-            if args.do_all_WW3.upper() in ['TRUE','T']:
-                do_all_WW3_in = bool(True)
-            elif args.do_all_WW3.upper() in ['FALSE','F']:
-                do_addtido_all_WW3_inmedim_in = bool(False)
-            else:                
-                print('do_all_WW3',args.do_all_WW3)
-                pdb.set_trace()
-
-
-
-
-
-        if args.do_grad is None:
-            do_grad_in=0
-        else:
-            do_grad_in=args.do_grad
-
-        if args.do_cont is None:
-            do_cont_in=False
-        elif args.do_cont is not None:
-            if args.do_cont.upper() in ['TRUE','T']:
-                do_cont_in = bool(True)
-            elif args.do_cont.upper() in ['FALSE','F']:
-                do_cont_in = bool(False)
-            else:                
-                print('do_cont',args.do_cont)
-                pdb.set_trace()
-
-
-
-        if args.trim_extra_files is None:
-            trim_extra_files=False
-        elif args.trim_extra_files is not None:
-            if args.trim_extra_files.upper() in ['TRUE','T']:
-                trim_extra_files = bool(True)
-            elif args.trim_extra_files.upper() in ['FALSE','F']:
-                trim_extra_files = bool(False)
-            else:                
-                print('trim_extra_files',args.trim_extra_files)
-                pdb.set_trace()
- 
-
-
-        if args.trim_files is None:
-            trim_files=True
-        elif args.trim_files is not None:
-            if args.trim_files.upper() in ['TRUE','T']:
-                trim_files = bool(True)
-            elif args.trim_files.upper() in ['FALSE','F']:
-                trim_files = bool(False)
-            else:                
-                print('trim_files',args.trim_files)
-                pdb.set_trace()
- 
-
-
-
-        if args.Obs_hide is None:
-            Obs_hide_in=False
-        elif args.Obs_hide is not None:
-            if args.Obs_hide.upper() in ['TRUE','T']:
-                Obs_hide_in = bool(True)
-            elif args.Obs_hide.upper() in ['FALSE','F']:
-                Obs_hide_in = bool(False)
-            else:                
-                print('Obs_hide',args.Obs_hide)
-                pdb.set_trace()
-
-        if args.use_xarray_gdept is None:
-            use_xarray_gdept_in=False
-        elif args.use_xarray_gdept is not None:
-            if args.use_xarray_gdept.upper() in ['TRUE','T']:
-                use_xarray_gdept_in = bool(True)
-            elif args.use_xarray_gdept.upper() in ['FALSE','F']:
-                use_xarray_gdept_in = bool(False)
-            else:                
-                print('use_xarray_gdept',args.use_xarray_gdept)
-                pdb.set_trace()
-
-        #set default values for None
-
-
-        #pdb.set_trace()
-
-
-        #if (args.fig_dir) is None: args.fig_dir=script_dir + '/tmpfigs'
-        if (args.fig_dir) is None: args.fig_dir='./tmpfigs'
-        if (args.fig_lab) is None: args.fig_lab='figs'
-        if (args.ld_nctvar) is None: args.ld_nctvar='time_counter'
+        ############################################################
+        # Handling of Bool variable types
+        #
+        # manage the handling of the boolean argpass options, and fill in a dictionary of their values
+        # separating those that default to True
+        argparse_bool_T = ['clim_pair','fig_cutout','do_match_time','trim_files']
+        # from those that default to False
+        argparse_bool_F = ['allow_diff_time','clim_sym','hov_time','justplot','use_cmocean','verbose_debugging','do_timer','do_memory','do_ensemble','do_mask','do_addtimedim','do_all_WW3','do_cont','trim_extra_files','Obs_hide','use_xarray_gdept']
+        
+        argparse_bool_dict = process_argparse_bool(args,argparse_bool_T,argparse_bool_F)
+        ############################################################
 
 
         # Assume the first dataset (in the positional argument) is on the T grid.
@@ -6693,7 +6080,11 @@ def main():
 
         fname_lst.sort()
         
-        load_second_files = False
+        
+        fname_dict, load_second_files = process_argparse_fname_dict(args,gr_1st,fname_lst)
+
+
+        '''
         fname_dict = {}
         fname_dict['Dataset 1'] = {}
 
@@ -6732,12 +6123,13 @@ def main():
                     pdb.set_trace()
             if len(fname_dict.keys()) > 1:load_second_files = True
 
-
+        '''
         dataset_lst = [ ss for ss in fname_dict.keys() ] 
         nDataset = len(dataset_lst)
 
+        configd = process_argparse_configd(args,dataset_lst)
+        """
         configd = {}
-        dataset_lab_d = {}
             #for tmp_datstr in dataset_lst:
         for ii, tmp_datstr in enumerate(dataset_lst):
             configd[ii+1] = args.config
@@ -6750,12 +6142,15 @@ def main():
                     print('arg error: (configs):', tmparr)
                 #pdb.set_trace()
                 configd[int(tmparr[0])] = tmparr[1]
+        """
+
 
         configlst = np.array([configd[ss] for ss in (configd)])
         uniqconfig = np.unique(configlst)
 
-    
 
+        dataset_lab_d = process_argparse_dataset_lab_d(args)
+        """
         if args.datlabs is not None:
             dataset_lab_d = {}
             dataset_lab_d['Dataset 1'] = None
@@ -6766,53 +6161,13 @@ def main():
                 tmp_datstr = 'Dataset ' + tmparr[0]
                 #pdb.set_trace()
                 dataset_lab_d[tmp_datstr] = tmparr[1]
+        """
 
 
 
+        thd = process_argparse_thd(args,configd, dataset_lst, nDataset)
 
-        # set up empty EOS dictionary
-        EOS_d = {}
-        EOS_d['do_TEOS_EOS_conv'] = False
-        if args.EOS is not None:
-            
-            EOS_d['do_TEOS_EOS_conv'] = 1==1
-            #EOS_d[1]='TEOS10_2_EOS80'
-            #EOS_d[1]='EOS80_2_TEOS10'
-            EOS_d['T']=2==2
-            EOS_d['S']=3==3
-
-            for ii in range(len(dataset_lst)):                 EOS_d[ii+1] = ('' + '.')[:-1]
-            #for ii in range(len(dataset_lst)): id(EOS_d[ii+1])
-            #for ss in EOS_d.keys():ss,id(EOS_d[ss])
-
-
-            #pdb.set_trace()
-
-            EOS_args = (args.EOS)
-            EOS_args.sort()
-
-            print('th arguments:',EOS_args)
-            #for tmparr in args.th:
-            for tmparr in EOS_args:
-                #pdb.set_trace()
-                if len(tmparr)!=2:
-                    print('arg error: (EOS):', tmparr)
-
-
-                if tmparr[0].upper() in ['T','S']:
-                    tmp_EOS_TS = tmparr[0].upper()
-                    if tmparr[1].upper() in ['TRUE','T']:
-                        EOS_d[tmp_EOS_TS] = bool(True)
-                    elif tmparr[1].upper() in ['FALSE','F']:
-                        EOS_d[tmp_EOS_TS] = bool(False)
-                else:
-                    tmp_datstr = int(tmparr[0])
-                    if tmparr[1].upper() in ['TEOS10_2_EOS80', 'T2E']:
-                        EOS_d[tmp_datstr] = 'TEOS10_2_EOS80'
-                    elif tmparr[1].upper() in ['EOS80_2_TEOS10', 'E2T']:
-                        EOS_d[tmp_datstr] = 'EOS80_2_TEOS10'
-
-        #--EOS 1 T2E
+        """
         #pdb.set_trace() 
         # set up empty th dictionary
         thd = {}
@@ -6914,13 +6269,49 @@ def main():
         #        tmpconfigind = np.where(configlst == tmpconfig)[0] + 1
         #        for dsi in tmpconfigind[1:]:
         #            thd[dsi] = thd[tmpconfigind[0]]
-            
+        """    
         # print out thd
         for dsi in range(1,nDataset+1): print(thd[dsi])
 
 
+
+        Obs_dict_in = process_argparse_Obs_dict(args)
+
+        """
+        
+        if args.Obs_dict is None:
+            Obs_dict_in = None
+        else:
+            Obs_dict_in = {}
+            #for ss in np.unique([tmparr[0] for tmparr in args.Obs_dict])
+            # cycle through input argument list elements
+            for tmparr in args.Obs_dict:
+
+                #take the dataset name
+                tmp_datstr = 'Dataset ' + tmparr[0]
+                #Add sub dictionary if not present 
+                if tmp_datstr not in Obs_dict_in.keys():Obs_dict_in[tmp_datstr] = {}
+
+                if len(tmparr)!=3:
+                    print('arg error: (Obs_dict):', tmparr)
+
+                tmp_datset = tmparr[1]
+                tmp_files = tmparr[2]
+                Obs_dict_in[tmp_datstr][tmp_datset] = tmp_files
+
+            #pdb.set_trace()
+
+        """
+
+
+
         #configlst = np.array([configd[ss] for ss in (configd)])
         #uniqconfig = np.unique(configlst)
+
+
+        xarr_rename_master_dict = process_argparse_rename_var(args)
+
+        """
 
 
         # When comparing files/models, only variables that are common to both Datasets are shown. 
@@ -6937,16 +6328,21 @@ def main():
 
         ## xarr_rename_master_dict = {'votemper':'temperature','vosaline':'salinity'}
 
-        xarr_rename_master_dict_in = None
+        xarr_rename_master_dict = None
         if args.rename_var is not None:
-            xarr_rename_master_dict_in = {}
+            xarr_rename_master_dict = {}
             for tmpvarrenlst in args.rename_var:
                 
                 if len(tmpvarrenlst)<2:
                     print('arg error: (rename_var):', tmpvarrenlst) 
-                for tvr in tmpvarrenlst[1:]: xarr_rename_master_dict_in[tvr] = tmpvarrenlst[0]
+                for tvr in tmpvarrenlst[1:]: xarr_rename_master_dict[tvr] = tmpvarrenlst[0]
 
         
+        """
+
+        force_dim_d_in = process_argparse_forced_dim(args, dataset_lst, nDataset)
+
+        """
 
         # If files have more than grid, with differing dimension for each, you can enforce the dimenson for each grid.
         # For example, the SMHI BAL-MFC NRT system (BALMFCorig) hourly surface files hvae the T, U, V and T_inner grid in the same file. 
@@ -7002,6 +6398,89 @@ def main():
                 print(tmpfdimlst, force_dim_d_in)    
         
         #pdb.set_trace()
+
+        
+
+        """
+
+
+        EOS_d = process_argparse_EOS(args, dataset_lst)
+        """
+
+        # set up empty EOS dictionary
+        EOS_d = {}
+        EOS_d['do_TEOS_EOS_conv'] = False
+        if args.EOS is not None:
+            
+            EOS_d['do_TEOS_EOS_conv'] = 1==1
+            #EOS_d[1]='TEOS10_2_EOS80'
+            #EOS_d[1]='EOS80_2_TEOS10'
+            EOS_d['T']=2==2
+            EOS_d['S']=3==3
+
+            for ii in range(len(dataset_lst)):                 EOS_d[ii+1] = ('' + '.')[:-1]
+            #for ii in range(len(dataset_lst)): id(EOS_d[ii+1])
+            #for ss in EOS_d.keys():ss,id(EOS_d[ss])
+
+
+            #pdb.set_trace()
+
+            EOS_args = (args.EOS)
+            EOS_args.sort()
+
+            print('th arguments:',EOS_args)
+            #for tmparr in args.th:
+            for tmparr in EOS_args:
+                #pdb.set_trace()
+                if len(tmparr)!=2:
+                    print('arg error: (EOS):', tmparr)
+
+
+                if tmparr[0].upper() in ['T','S']:
+                    tmp_EOS_TS = tmparr[0].upper()
+                    if tmparr[1].upper() in ['TRUE','T']:
+                        EOS_d[tmp_EOS_TS] = bool(True)
+                    elif tmparr[1].upper() in ['FALSE','F']:
+                        EOS_d[tmp_EOS_TS] = bool(False)
+                else:
+                    tmp_datstr = int(tmparr[0])
+                    if tmparr[1].upper() in ['TEOS10_2_EOS80', 'T2E']:
+                        EOS_d[tmp_datstr] = 'TEOS10_2_EOS80'
+                    elif tmparr[1].upper() in ['EOS80_2_TEOS10', 'E2T']:
+                        EOS_d[tmp_datstr] = 'EOS80_2_TEOS10'
+
+        #--EOS 1 T2E
+
+
+        """
+        #pdb.set_trace()
+        nemo_slice_zlev(zlim_max = args.zlim_max,
+            dataset_lab_d = dataset_lab_d,configd = configd,thd = thd,fname_dict = fname_dict,
+            load_second_files = load_second_files,
+            clim_sym = argparse_bool_dict['clim_sym'], clim = args.clim, clim_pair = argparse_bool_dict['clim_pair'],hov_time = argparse_bool_dict['hov_time'],
+            allow_diff_time = argparse_bool_dict['allow_diff_time'],preload_data = preload_data_in,
+            do_grad = args.do_grad,do_cont = argparse_bool_dict['do_cont'],trim_extra_files = argparse_bool_dict['trim_extra_files'],trim_files = argparse_bool_dict['trim_files'],
+            use_cmocean = argparse_bool_dict['use_cmocean'], date_fmt = args.date_fmt,
+            justplot = argparse_bool_dict['justplot'],justplot_date_ind = args.justplot_date_ind,
+            justplot_secdataset_proc = args.justplot_secdataset_proc,
+            justplot_z_meth_zz = args.justplot_z_meth_zz,
+            ii = args.ii, jj = args.jj, ti = args.ti, zz = args.zz, 
+            lon_in = args.lon, lat_in = args.lat, date_in_ind = args.date_ind,
+            var = args.var, z_meth = z_meth_in,
+            xlim = args.xlim,ylim = args.ylim,
+            secdataset_proc = args.secdataset_proc,
+            ld_lst = args.ld_lst, ld_lab_lst = args.ld_lab_lst, ld_nctvar = args.ld_nctvar,
+            resample_freq = args.resample_freq,
+            Obs_dict = Obs_dict_in,Obs_hide = argparse_bool_dict['Obs_hide'],
+            fig_dir = args.fig_dir, fig_lab = args.fig_lab,fig_cutout = argparse_bool_dict['fig_cutout'],
+            verbose_debugging = argparse_bool_dict['verbose_debugging'],do_timer = argparse_bool_dict['do_mask'],do_memory = argparse_bool_dict['do_memory'],
+            do_ensemble = argparse_bool_dict['do_ensemble'],do_mask = argparse_bool_dict['do_mask'],
+            use_xarray_gdept = argparse_bool_dict['use_xarray_gdept'],
+            force_dim_d = force_dim_d_in,xarr_rename_master_dict=xarr_rename_master_dict,EOS_d = EOS_d,gr_1st = gr_1st,
+            do_match_time = argparse_bool_dict['do_match_time'],do_addtimedim = argparse_bool_dict['do_addtimedim'], do_all_WW3=argparse_bool_dict['do_all_WW3'])
+
+        '''
+        
         nemo_slice_zlev(zlim_max = args.zlim_max,
             dataset_lab_d = dataset_lab_d,configd = configd,thd = thd,fname_dict = fname_dict,load_second_files = load_second_files,
             clim_sym = clim_sym_in, clim = args.clim, clim_pair = clim_pair_in,hov_time = hov_time_in,
@@ -7020,16 +6499,17 @@ def main():
             resample_freq = args.resample_freq,
             Obs_dict = Obs_dict_in,Obs_hide = Obs_hide_in,
             fig_dir = args.fig_dir, fig_lab = args.fig_lab,fig_cutout = fig_cutout_in,
-            verbose_debugging = verbose_debugging_in,do_timer = do_timer_in,do_memory = do_memory_in,do_ensemble = do_ensemble_in,do_mask = do_mask_in,
+            verbose_debugging = verbose_debugging_in,do_timer = do_timer_in,do_memory = do_memory_in,
+            do_ensemble = do_ensemble_in,do_mask = do_mask_in,
             use_xarray_gdept = use_xarray_gdept_in,
-            force_dim_d = force_dim_d_in,xarr_rename_master_dict=xarr_rename_master_dict_in,EOS_d = EOS_d,gr_1st = gr_1st,
+            force_dim_d = force_dim_d_in,xarr_rename_master_dict=xarr_rename_master_dict,EOS_d = EOS_d,gr_1st = gr_1st,
             do_match_time = do_match_time_in,do_addtimedim = do_addtimedim_in, do_all_WW3=do_all_WW3_in)
 
 
+        '''
 
         exit()
 
     
 if __name__ == "__main__":
     main()
-
