@@ -6569,7 +6569,7 @@ def cut_down_xypos(xypos_dict, lonmin, latmin,lonmax, latmax):
     return reduced_xypos_dict
 
 def int_ind_wgt_from_xypos(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,loni,latj):
-
+    # use xypos to regrid between configs.
 
     #Numeric code of the dataset
     th_d_ind = int(tmp_datstr[8:])
@@ -6634,7 +6634,7 @@ def int_ind_wgt_from_xypos_func(tmp_xypos_dict, loni,latj, tmp_lon_d_2,tmp_lat_d
     #   find its i,j for the Dataset 2 lon/lat array
     sel_ii_out = np.floor((tmp_xypos_dict['XPOS'][xy_j_ind,xy_i_ind] - tmp_thd_x0)/tmp_thd_dx).astype('int')
     sel_jj_out = np.floor((tmp_xypos_dict['YPOS'][xy_j_ind,xy_i_ind] - tmp_thd_y0)/tmp_thd_dy).astype('int')
-
+    #pdb.set_trace()
     # As were in the indices of the Dataset 2 lon/lat array, we need to consider cut outs
     sel_ii_out-=tmp_thd_cutx0
     sel_jj_out-=tmp_thd_cuty0
@@ -6831,7 +6831,7 @@ def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lo
     XYPOS_ind_extended_NN = True
 
 
-    #meth = 'nearest'
+    meth = 'nearest'
 
 
     #Numeric code of the dataset
@@ -6852,19 +6852,19 @@ def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lo
         xy_i_ind = np.ma.minimum(np.ma.maximum(xy_i_ind,0),nxylon-1)
         xy_j_ind = np.ma.minimum(np.ma.maximum(xy_j_ind,0),nxylat-1)
 
-
+        #pdb.set_trace()
         # Convert indices to lon and lats with the XYPOS file
         #
         if meth == 'nearest':
+
             if XYPOS_ind_extended_NN:
                 #Use XYPOS ind array extended with a nearest neighbour interpolation - so no masked values
-                sel_ii_out = np.floor((xypos_dict[tmp_datstr]['XPOS_NN'][xy_j_ind,xy_i_ind] - thd[th_d_ind]['x0'])/thd[th_d_ind]['dx']).astype('int')
-                sel_jj_out = np.floor((xypos_dict[tmp_datstr]['YPOS_NN'][xy_j_ind,xy_i_ind] - thd[th_d_ind]['y0'])/thd[th_d_ind]['dy']).astype('int')
+                sel_ii_out = np.floor((xypos_dict[tmp_datstr]['XPOS_NN'][xy_j_ind,xy_i_ind] - thd[th_d_ind]['x0'] - thd[th_d_ind]['cutx0'] )/thd[th_d_ind]['dx']).astype('int')
+                sel_jj_out = np.floor((xypos_dict[tmp_datstr]['YPOS_NN'][xy_j_ind,xy_i_ind] - thd[th_d_ind]['y0'] - thd[th_d_ind]['cuty0'])/thd[th_d_ind]['dy']).astype('int')
             else:
-                sel_ii_out = np.floor((xypos_dict[tmp_datstr]['XPOS'][xy_j_ind,xy_i_ind] - thd[th_d_ind]['x0'])/thd[th_d_ind]['dx']).astype('int')
-                sel_jj_out = np.floor((xypos_dict[tmp_datstr]['YPOS'][xy_j_ind,xy_i_ind] - thd[th_d_ind]['y0'])/thd[th_d_ind]['dy']).astype('int')
+                sel_ii_out = np.floor((xypos_dict[tmp_datstr]['XPOS'][xy_j_ind,xy_i_ind] - thd[th_d_ind]['x0'] - thd[th_d_ind]['cutx0'])/thd[th_d_ind]['dx']).astype('int')
+                sel_jj_out = np.floor((xypos_dict[tmp_datstr]['YPOS'][xy_j_ind,xy_i_ind] - thd[th_d_ind]['y0'] - thd[th_d_ind]['cuty0'])/thd[th_d_ind]['dy']).astype('int')
             
-        
         elif meth == 'bilin':
 
 
@@ -6932,6 +6932,9 @@ def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lo
                 sel_ii_out_flt = xypos_dict[tmp_datstr]['XPOS'][xy_j_ind_flt_0,xy_i_ind_flt_0]*xy_wgt_0 + xypos_dict[tmp_datstr]['XPOS'][xy_j_ind_flt_0,xy_i_ind_flt_1]*xy_wgt_1 + xypos_dict[tmp_datstr]['XPOS'][xy_j_ind_flt_1,xy_i_ind_flt_0]*xy_wgt_2 + xypos_dict[tmp_datstr]['XPOS'][xy_j_ind_flt_1,xy_i_ind_flt_1]*xy_wgt_3
                 sel_jj_out_flt = xypos_dict[tmp_datstr]['YPOS'][xy_j_ind_flt_0,xy_i_ind_flt_0]*xy_wgt_0 + xypos_dict[tmp_datstr]['YPOS'][xy_j_ind_flt_0,xy_i_ind_flt_1]*xy_wgt_1 + xypos_dict[tmp_datstr]['YPOS'][xy_j_ind_flt_1,xy_i_ind_flt_0]*xy_wgt_2 + xypos_dict[tmp_datstr]['YPOS'][xy_j_ind_flt_1,xy_i_ind_flt_1]*xy_wgt_3
            
+            sel_ii_out_flt-=thd[th_d_ind]['cutx0'] #JT 
+            sel_jj_out_flt-=thd[th_d_ind]['cuty0'] #JT 
+
 
 
             sel_ii_out = np.floor((sel_ii_out_flt - thd[th_d_ind]['x0'])/thd[th_d_ind]['dx']).astype('int')
@@ -6945,9 +6948,6 @@ def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lo
             #sel_jj_out = np.round(sel_jj_out_flt).astype('int')
             if verbose: print(sel_ii_out,sel_jj_out)
 
-
-        sel_ii_out-=thd[th_d_ind]['cutx0']
-        sel_jj_out-=thd[th_d_ind]['cuty0']
 
 
         #Offset added as selected grid box is adjacent the clicked grid box
