@@ -4704,15 +4704,14 @@ def nemo_slice_zlev(config = 'amm7',
                                 reload_Obs = True
                         
                         elif but_name == 'Time-Dist':
-                            if True:
-                            #try:
+                            if secdataset_proc in Dataset_lst:
                                 timdist_dat_dict = reload_time_dist_data_comb_time(var,var_d[1]['mat'],var_grid,var_dim,var_d['d'],ldi,thd, time_datetime,time_d, ii,jj,iijj_ind,nz,ntime, grid_dict,z_meth,zz,zi,lon_d,lat_d,xarr_dict,do_mask_dict,load_second_files,Dataset_lst,configd,do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d,do_match_time=do_match_time,secdataset_proc = secdataset_proc)
 
                                 if figtd is not None:
                                     if plt.fignum_exists(figtd.number):
                                         plt.close(figtd)
 
-
+                                
                                 if var_dim[var] == 4:  
                                     td_title_str = 'Time-Distance %s (%s) for %s (through %s)'%(nice_varname_dict[var],nice_lev, dataset_lab_d[secdataset_proc],lon_lat_to_str(lon_d[1][jj,ii],lat_d[1][jj,ii])[0])
                                 
