@@ -721,7 +721,7 @@ def nemo_slice_zlev(config = 'amm7',
             #pdb.set_trace()
             var = var_d[1]['mat'][0]
 
-    if var not in var_d[1]['mat']: var = var_d[1]['mat'][0]
+    ## if var not in var_d[1]['mat']: var = var_d[1]['mat'][0]
 
     nice_varname_dict = {}
     for tmpvar in var_d[1]['mat']: nice_varname_dict[tmpvar] = tmpvar
@@ -932,13 +932,18 @@ def nemo_slice_zlev(config = 'amm7',
         njust_plt_cnt = 0
 
         if (justplot_date_ind is None)|(justplot_date_ind == 'None'):
-             justplot_date_ind = time_datetime[ti].strftime(date_fmt)
+             
+             #justplot_date_ind = time_datetime[ti].strftime(date_fmt)
+             justplot_date_ind = ','.join(['%i'% ii for ii in range(ntime)])
 
         if (justplot_z_meth_zz is None)|(justplot_z_meth_zz == 'None'):
              justplot_z_meth_zz = 'ss:0,nb:0,df:0'
 
         if (justplot_secdataset_proc is None)|(justplot_secdataset_proc == 'None'):
-             justplot_secdataset_proc = 'Dataset_1,Dataset_2,Dat2-Dat1'
+             if nDataset == 1:
+                justplot_secdataset_proc = 'Dataset_1'
+             else:
+                justplot_secdataset_proc = 'Dataset_1,Dataset_2,Dat2-Dat1'
 
         justplot_secdataset_proc = justplot_secdataset_proc.replace('_',' ')
 
@@ -976,7 +981,11 @@ def nemo_slice_zlev(config = 'amm7',
     # add derived variables
     var_d,var_dim, var_grid = add_derived_vars(var_d,var_dim, var_grid, Dataset_lst)
 
-    # add derived variales to nice names if mising. 
+
+    if var not in var_d[1]['mat']: var = var_d[1]['mat'][0]
+
+
+    # add derived variables to nice names if mising. 
 
     for ss in var_d['d']: 
         if ss not in nice_varname_dict.keys():
@@ -2013,7 +2022,7 @@ def nemo_slice_zlev(config = 'amm7',
             arg_output_text = 'flist1=$(echo "/dir1/file0[4-7]??_*.nc")\n'
             arg_output_text = arg_output_text + 'flist2=$(echo "/dir2/file0[4-7]??_*.nc")\n'
             arg_output_text = arg_output_text + '\n'
-            arg_output_text = arg_output_text + "justplot_date_ind='%s'\n"%time_datetime[ti].strftime(date_fmt)
+            arg_output_text = arg_output_text + "justplot_date_ind='%s,%s'\n"%(time_datetime[ti].strftime(date_fmt),time_datetime[ti].strftime(date_fmt))
             
             arg_output_text = arg_output_text + '\n\n\n'
 
@@ -2030,22 +2039,24 @@ def nemo_slice_zlev(config = 'amm7',
             arg_output_text = arg_output_text + ' --date_ind %s'%time_datetime[ti].strftime(date_fmt)
             arg_output_text = arg_output_text + ' --date_fmt %s'%date_fmt
             arg_output_text = arg_output_text + ' --var %s'%var
-            arg_output_text = arg_output_text + ' --z_meth %s'%z_meth
+            #arg_output_text = arg_output_text + ' --z_meth %s'%z_meth
             arg_output_text = arg_output_text + ' --zz %s'%zz
             arg_output_text = arg_output_text + ' --do_grad %1i'%do_grad
             arg_output_text = arg_output_text + ' --clim_sym %s'%clim_sym
+            arg_output_text = arg_output_text + ' --vis_curr %s'%vis_curr
+            
             #if xlim is not None:arg_output_text = arg_output_text + ' --xlim %f %f'%tuple(xlim)
             #if ylim is not None:arg_output_text = arg_output_text + ' --ylim %f %f'%tuple(ylim)
             if load_second_files:
                 #if configd[2] is not None: 
                 arg_output_text = arg_output_text + ' --config_2nd %s'%configd[2]
                 arg_output_text = arg_output_text + ' --fig_fname_lab_2nd %s'%dataset_lab_d['Dataset 2']
-                arg_output_text = arg_output_text + ' --thin_2nd %i'%thd[2]['dx']
+                #arg_output_text = arg_output_text + ' --thin_2nd %i'%thd[2]['dx']
                 arg_output_text = arg_output_text + ' --secdataset_proc "%s"'%secdataset_proc
                 arg_output_text = arg_output_text + ' --fname_lst_2nd  "$flist2"'
                 arg_output_text = arg_output_text + ' --clim_pair %s'%clim_pair
 
-            arg_output_text = arg_output_text + " --justplot_date_ind '$justplot_date_ind'"
+            arg_output_text = arg_output_text + ' --justplot_date_ind "$justplot_date_ind"'
             #arg_output_text = arg_output_text + " --justplot_date_ind '%s'"%time_datetime[ti].strftime(date_fmt)
             arg_output_text = arg_output_text + " --justplot_secdataset_proc '%s'"%justplot_secdataset_proc
             arg_output_text = arg_output_text + " --justplot_z_meth_zz '%s'"%justplot_z_meth_zz
@@ -2368,12 +2379,14 @@ def nemo_slice_zlev(config = 'amm7',
                 else:
                     if Time_Diff:
                         func_but_text_han['Time Diff'].set_color('darkgreen')
+                        pdb.set_trace()
 
                         if (data_inst_Tm1['Dataset 1'] is None)|(preload_data_ti_Tm1 != (ti-1))|(preload_data_var_Tm1 != var)|(preload_data_ldi_Tm1 != ldi):
 
-                            (data_inst_Tm1,preload_data_ti_Tm1,preload_data_var_Tm1,preload_data_ldi_Tm1) = reload_data_instances_time(var,thd,ldi,ti-1,
+                            (data_inst_Tm1,preload_data_ti_Tm1,preload_data_var_Tm1,preload_data_ldi_Tm1) = reload_data_instances_time(var,thd,ldi,ti-1,  
                                 time_datetime_since_1970[ti],time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files,
                                 do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d,do_match_time=do_match_time)
+                            # for tmp_datstr in Dataset_lst:  (data_inst[tmp_datstr] == data_inst_Tm1[tmp_datstr]).all()
                             if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_Tm1',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                         #print('   Time_Diff_cnt_hovtime =',Time_Diff_cnt_hovtime)
                         #print('   preload_data_ii_Tm1',preload_data_ii_Tm1,ii,preload_data_jj_Tm1,jj,preload_data_zz_Tm1,zz)
@@ -2409,7 +2422,7 @@ def nemo_slice_zlev(config = 'amm7',
                                 reload_ts = True
 
                         if Time_Diff_cnt == 0:
-                            for tmp_datstr in  Dataset_lst:
+                            for tmp_datstr in Dataset_lst:
                                 data_inst[tmp_datstr] = data_inst[tmp_datstr] - data_inst_Tm1[tmp_datstr]
 
                             Time_Diff_cnt -= 1
@@ -2417,7 +2430,7 @@ def nemo_slice_zlev(config = 'amm7',
 
                         if Time_Diff_cnt_hovtime == 0:
                             if hov_time:
-                                for tmp_datstr in  Dataset_lst:
+                                for tmp_datstr in Dataset_lst:
                                     #print('   subtract hovtime_Tm1')
                                     hov_dat_dict[tmp_datstr] = hov_dat_dict[tmp_datstr] - hov_dat_dict_Tm1[tmp_datstr]
                                     ts_dat_dict[tmp_datstr] = ts_dat_dict[tmp_datstr] - ts_dat_dict_Tm1[tmp_datstr]
@@ -3113,7 +3126,7 @@ def nemo_slice_zlev(config = 'amm7',
                 pf_xvals_min = np.ma.array(pf_xvals).ravel().min()
                 pf_xvals_max = np.ma.array(pf_xvals).ravel().max()
                 #pf_xvals_ptp = np.ma.array(pf_xvals).ravel().ptp()
-                pf_xvals_ptp = np.ptp(np.ma.array(pf_xvals).ravel())
+                pf_xvals_ptp = np.ma.ptp(np.ma.array(pf_xvals).ravel())
                 #pf_xlim = np.ma.array([np.ma.array(pf_xvals).ravel().min(), np.ma.array(pf_xvals).ravel().max()])
                 pf_xlim = np.ma.array([pf_xvals_min-(0.05*pf_xvals_ptp),pf_xvals_max+(0.05*pf_xvals_ptp)])
                 #try:
@@ -3271,6 +3284,7 @@ def nemo_slice_zlev(config = 'amm7',
                 ax[3].set_ylim(tmp_hov_ylim)
 
                 if profvis:
+                    #pdb.set_trace()
                     tmp_py_ylim = [pf_dat_dict['y'].max(),zlim_min]
                     ax[5].set_ylim(tmp_py_ylim)
                     ax[5].set_xlim(pf_xlim)
@@ -3904,6 +3918,7 @@ def nemo_slice_zlev(config = 'amm7',
                 try:
                     tmp_date_in_ind_ind = int(tmp_date_in_ind)
                 except:
+                    print('justplot_date_ind = %s'%tmp_date_in_ind)
                     pdb.set_trace()
 
                 if tmp_date_in_ind_ind > 10000:
@@ -6131,6 +6146,7 @@ def main():
             ii = args.ii, jj = args.jj, ti = args.ti, zz = args.zz, 
             lon_in = args.lon, lat_in = args.lat, date_in_ind = args.date_ind,
             var = args.var, z_meth = z_meth_in,
+            vis_curr = args.vis_curr,
             xlim = args.xlim,ylim = args.ylim,
             secdataset_proc = args.secdataset_proc,
             ld_lst = args.ld_lst, ld_lab_lst = args.ld_lab_lst, ld_nctvar = args.ld_nctvar,

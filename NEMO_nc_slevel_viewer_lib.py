@@ -6949,6 +6949,9 @@ def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lo
             if verbose: print(sel_ii_out,sel_jj_out)
 
 
+        #JT sel_ii_out-=thd[th_d_ind]['cutx0']
+        #JT sel_jj_out-=thd[th_d_ind]['cuty0']
+
 
         #Offset added as selected grid box is adjacent the clicked grid box
         sel_ii_out-=1
@@ -7318,6 +7321,7 @@ def load_NEMO_nc_viewer_parser(nemo_slice_zlev_helptext):
     parser.add_argument('--ylim', type=float, required=False, nargs = 2,help = 'Display Options: ylim. Requires: flt(ylim min) flt(ylim max)')
     parser.add_argument('--clim', type=float, required=False, nargs = '+',help = 'Display Options: clim. Requires: flt(clim min) flt(clim max) or 2 values for each axis')
     parser.add_argument('--zlim_max', type=int, required=False,help = 'Display Options: zlim_max - to set the maximum depth. Requires: flt(zlim_max)')
+    parser.add_argument('--vis_curr', type=int, required=False,default = -1,help = 'Display Options: vis_curr - 1 to visualise currents. Requires: int(vis_curr)')
 
     # Inital location
     parser.add_argument('--ii', type=int, required=False, help = 'Initial Location Options - i index: ii. Requires: int(ii)')
@@ -7387,9 +7391,9 @@ def load_NEMO_nc_viewer_parser(nemo_slice_zlev_helptext):
     parser.add_argument('--justplot_date_ind', type=str, required=False, 
                         help = 'comma separated values')
     parser.add_argument('--justplot_z_meth_zz', type=str, required=False, 
-                        help = 'comma separated values, replace space with underscore - e.g. "Dataset_1"')
+                        help = 'comma separated values, replace space with underscore - e.g. "ss:0,nb:0,df:0"')
     parser.add_argument('--justplot_secdataset_proc', type=str, required=False, 
-                        help = 'comma separated values')
+                        help = "comma separated values, e.g. justplot_secdataset_proc = 'Dataset_1,Dataset_2,Dat2-Dat1'")
 
     parser.add_argument('--verbose_debugging', type=str, required=False)
     parser.add_argument('--do_timer', type=str, required=False)
