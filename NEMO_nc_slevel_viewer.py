@@ -2379,12 +2379,11 @@ def nemo_slice_zlev(config = 'amm7',
                 else:
                     if Time_Diff:
                         func_but_text_han['Time Diff'].set_color('darkgreen')
-                        pdb.set_trace()
-
+                        
                         if (data_inst_Tm1['Dataset 1'] is None)|(preload_data_ti_Tm1 != (ti-1))|(preload_data_var_Tm1 != var)|(preload_data_ldi_Tm1 != ldi):
 
                             (data_inst_Tm1,preload_data_ti_Tm1,preload_data_var_Tm1,preload_data_ldi_Tm1) = reload_data_instances_time(var,thd,ldi,ti-1,  
-                                time_datetime_since_1970[ti],time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files,
+                                time_datetime_since_1970[ti-1],time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files,
                                 do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d,do_match_time=do_match_time)
                             # for tmp_datstr in Dataset_lst:  (data_inst[tmp_datstr] == data_inst_Tm1[tmp_datstr]).all()
                             if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_Tm1',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))

@@ -5005,16 +5005,55 @@ def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_m
                     '''
             #elif tmpgrid == 'I':
             else: # elif tmpgrid in  ['I','In','Ic']: # 
-                #pdb.set_trace()
-                #tmp_T_time_datetime,tmp_T_time_datetime_since_1970,ntime,ti, nctime_calendar_type = extract_time_from_xarr(xarr_dict['Dataset 1']['T'],fname_dict['Dataset 1']['T'][0],'time_counter','time_counter',None,'%Y%m%d',1,False)
-                tmp_T_time_datetime,tmp_T_time_datetime_since_1970,ntime,ti, nctime_calendar_type = extract_time_from_xarr(xarr_dict['Dataset 1'][gr_1st],fname_dict['Dataset 1'][gr_1st][0],'time_counter','time_counter',None,'%Y%m%d',1,False)
-                if tmp_T_time_datetime.size == len(fname_dict[tmp_datstr][tmpgrid]):
-                    inc_T_time_datetime = tmp_T_time_datetime
-                    inc_T_time_datetime_since_1970 = tmp_T_time_datetime_since_1970
-                else:
-                    inc_T_time_datetime = [tmp_T_time_datetime[0] + timedelta(days = i_i) for i_i in range(len(fname_dict[tmp_datstr][tmpgrid]))]
-                    tmp_T_time_datetime_since_1970 = [tmp_T_time_datetime_since_1970[0] + i_i*86400 for i_i in range(len(fname_dict[tmp_datstr][tmpgrid]))]
+
+                # if you are loading increments, without T grid data (i.e. using gr_1st), and you're
+                # loading more than one time, you need to add the time, but you need to load the times from the 
+                # files first. 
                 
+                if len(xarr_dict['Dataset 1'][gr_1st]) == 0:
+                    #if len(xarr_dict['Dataset 1'][gr_1st]) == 0:
+                    tmp_T_time_datetime_lst,tmp_T_time_datetime_since_1970_lst = [],[]
+                    for tmp_ii in range(len(fname_dict[tmp_datstr][tmpgrid])):
+                        tmpxarr = xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid][tmp_ii], combine='by_coords',parallel = True)
+
+                        tmp_tmp_T_time_datetime,tmp_tmp_T_time_datetime_since_1970,ntime,ti, nctime_calendar_type = extract_time_from_xarr([tmpxarr],fname_dict['Dataset 1'][gr_1st][tmp_ii],'time_counter','time_counter',None,'%Y%m%d',1,False)
+                        tmp_T_time_datetime_lst.append(tmp_tmp_T_time_datetime[0])
+                        tmp_T_time_datetime_since_1970_lst.append(tmp_tmp_T_time_datetime_since_1970[0])
+                    inc_T_time_datetime =  np.array(tmp_T_time_datetime_lst)
+                    tmp_T_time_datetime_since_1970 = np.array(tmp_T_time_datetime_since_1970_lst)
+
+                else:
+                    #tmp_T_time_datetime,tmp_T_time_datetime_since_1970,ntime,ti, nctime_calendar_type = extract_time_from_xarr(xarr_dict['Dataset 1']['T'],fname_dict['Dataset 1']['T'][0],'time_counter','time_counter',None,'%Y%m%d',1,False)
+                    tmp_T_time_datetime,tmp_T_time_datetime_since_1970,ntime,ti, nctime_calendar_type = extract_time_from_xarr(xarr_dict['Dataset 1'][gr_1st],fname_dict['Dataset 1'][gr_1st][0],'time_counter','time_counter',None,'%Y%m%d',1,False)
+                    if tmp_T_time_datetime.size == len(fname_dict[tmp_datstr][tmpgrid]):
+                        inc_T_time_datetime = tmp_T_time_datetime
+                        inc_T_time_datetime_since_1970 = tmp_T_time_datetime_since_1970
+                    else:
+                        inc_T_time_datetime = [tmp_T_time_datetime[0] + timedelta(days = i_i) for i_i in range(len(fname_dict[tmp_datstr][tmpgrid]))]
+                        tmp_T_time_datetime_since_1970 = [tmp_T_time_datetime_since_1970[0] + i_i*86400 for i_i in range(len(fname_dict[tmp_datstr][tmpgrid]))]
+                '''
+                try:
+                #tmp_T_time_datetime,tmp_T_time_datetime_since_1970,ntime,ti, nctime_calendar_type = extract_time_from_xarr(xarr_dict['Dataset 1']['T'],fname_dict['Dataset 1']['T'][0],'time_counter','time_counter',None,'%Y%m%d',1,False)
+                    tmp_T_time_datetime,tmp_T_time_datetime_since_1970,ntime,ti, nctime_calendar_type = extract_time_from_xarr(xarr_dict['Dataset 1'][gr_1st],fname_dict['Dataset 1'][gr_1st][0],'time_counter','time_counter',None,'%Y%m%d',1,False)
+                    if tmp_T_time_datetime.size == len(fname_dict[tmp_datstr][tmpgrid]):
+                        inc_T_time_datetime = tmp_T_time_datetime
+                        inc_T_time_datetime_since_1970 = tmp_T_time_datetime_since_1970
+                    else:
+                        inc_T_time_datetime = [tmp_T_time_datetime[0] + timedelta(days = i_i) for i_i in range(len(fname_dict[tmp_datstr][tmpgrid]))]
+                        tmp_T_time_datetime_since_1970 = [tmp_T_time_datetime_since_1970[0] + i_i*86400 for i_i in range(len(fname_dict[tmp_datstr][tmpgrid]))]
+                except:
+                    #if len(xarr_dict['Dataset 1'][gr_1st]) == 0:
+                    tmp_T_time_datetime_lst,tmp_T_time_datetime_since_1970_lst = [],[]
+                    for tmp_ii in range(len(fname_dict[tmp_datstr][tmpgrid])):
+                        tmpxarr = xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid][tmp_ii], combine='by_coords',parallel = True)
+
+                        tmp_tmp_T_time_datetime,tmp_tmp_T_time_datetime_since_1970,ntime,ti, nctime_calendar_type = extract_time_from_xarr([tmpxarr],fname_dict['Dataset 1'][gr_1st][tmp_ii],'time_counter','time_counter',None,'%Y%m%d',1,False)
+                        tmp_T_time_datetime_lst.append(tmp_tmp_T_time_datetime[0])
+                        tmp_T_time_datetime_since_1970_lst.append(tmp_tmp_T_time_datetime_since_1970[0])
+                    inc_T_time_datetime =  np.array(tmp_T_time_datetime_lst)
+                    tmp_T_time_datetime_since_1970 = np.array(tmp_T_time_datetime_since_1970_lst)
+                pdb.set_trace()
+                '''
                 time_d[tmp_datstr][tmpgrid]['datetime'] = np.array(inc_T_time_datetime)
                 time_d[tmp_datstr][tmpgrid]['datetime_since_1970'] = np.array(tmp_T_time_datetime_since_1970)
 
