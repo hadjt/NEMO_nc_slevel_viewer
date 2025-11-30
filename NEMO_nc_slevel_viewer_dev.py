@@ -200,7 +200,7 @@ def nemo_slice_zlev(config = 'amm7',
                 Obs_dict_is_str = isinstance(Obs_dict[tmp_datstr][ob_var] , str)
         
         #Obs_dict_is_str defaults to 2. 
-        if Obs_dict_is_str== False:
+        if Obs_dict_is_str == False:
             Obs_reloadmeth = -1
         elif Obs_dict_is_str:
             # if Obs_dict_is_str == True (path to obs files), keep Obs_dict_is_str=2, and chnage copy Obs_dict to Obs_fname
@@ -211,6 +211,8 @@ def nemo_slice_zlev(config = 'amm7',
             for tmp_datstr in Obs_fname.keys():
                 for ob_var in Obs_fname[tmp_datstr].keys():
                     Obs_fname[tmp_datstr][ob_var] = np.sort(glob.glob(Obs_fname[tmp_datstr][ob_var]))
+                    if len(Obs_fname[tmp_datstr][ob_var]) == 0: print('\n\nNo Obs files found in %s %s: %s\n\n'%(tmp_datstr,ob_var,  Obs_fname[tmp_datstr][ob_var]))
+           
 
 
 

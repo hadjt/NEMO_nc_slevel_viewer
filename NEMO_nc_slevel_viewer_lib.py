@@ -5006,9 +5006,57 @@ def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_m
             #elif tmpgrid == 'I':
             else: # elif tmpgrid in  ['I','In','Ic']: # 
 
+
+                ######################################################################
+                ######################################################################
+                ######################################################################
+
+                tmp_xarr_data = xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid],combine='nested', concat_dim='t', parallel = True)
+                tmp_T_time_datetime,tmp_T_time_datetime_since_1970,ntime,ti, nctime_calendar_type = extract_time_from_xarr([tmp_xarr_data],fname_dict['Dataset 1'][gr_1st][0],'time_counter','time_counter',None,'%Y%m%d',1,False)
+                if tmp_T_time_datetime.size == len(fname_dict[tmp_datstr][tmpgrid]):
+                    inc_T_time_datetime = tmp_T_time_datetime
+                    inc_T_time_datetime_since_1970 = tmp_T_time_datetime_since_1970
+                else:
+                    inc_T_time_datetime = [tmp_T_time_datetime[0] + timedelta(days = i_i) for i_i in range(len(fname_dict[tmp_datstr][tmpgrid]))]
+                    tmp_T_time_datetime_since_1970 = [tmp_T_time_datetime_since_1970[0] + i_i*86400 for i_i in range(len(fname_dict[tmp_datstr][tmpgrid]))]
+
+                time_d[tmp_datstr][tmpgrid]['datetime'] = np.array(inc_T_time_datetime)
+                time_d[tmp_datstr][tmpgrid]['datetime_since_1970'] = np.array(tmp_T_time_datetime_since_1970)
+                
+                tmp_xarr_data.assign_coords(t = time_d[tmp_datstr][tmpgrid]['datetime'])
+                xarr_dict[tmp_datstr][tmpgrid].append(tmp_xarr_data)
+
+
+                """
+                ######################################################################
+                ######################################################################
+                ######################################################################
+                try:
+                    #tmp_T_time_datetime,tmp_T_time_datetime_since_1970,ntime,ti, nctime_calendar_type = extract_time_from_xarr(xarr_dict['Dataset 1']['T'],fname_dict['Dataset 1']['T'][0],'time_counter','time_counter',None,'%Y%m%d',1,False)
+
+                    tmp_T_time_datetime,tmp_T_time_datetime_since_1970,ntime,ti, nctime_calendar_type = extract_time_from_xarr(xarr_dict['Dataset 1'][gr_1st],fname_dict['Dataset 1'][gr_1st][0],'time_counter','time_counter',None,'%Y%m%d',1,False)
+                    if tmp_T_time_datetime.size == len(fname_dict[tmp_datstr][tmpgrid]):
+                        inc_T_time_datetime = tmp_T_time_datetime
+                        inc_T_time_datetime_since_1970 = tmp_T_time_datetime_since_1970
+                    else:
+                        inc_T_time_datetime = [tmp_T_time_datetime[0] + timedelta(days = i_i) for i_i in range(len(fname_dict[tmp_datstr][tmpgrid]))]
+                        tmp_T_time_datetime_since_1970 = [tmp_T_time_datetime_since_1970[0] + i_i*86400 for i_i in range(len(fname_dict[tmp_datstr][tmpgrid]))]
+
+                    time_d[tmp_datstr][tmpgrid]['datetime'] = np.array(inc_T_time_datetime)
+                    time_d[tmp_datstr][tmpgrid]['datetime_since_1970'] = np.array(tmp_T_time_datetime_since_1970)
+
+                    inc_time_done = True
+                except:
+                    inc_time_done = False
+
+
                 # if you are loading increments, without T grid data (i.e. using gr_1st), and you're
                 # loading more than one time, you need to add the time, but you need to load the times from the 
                 # files first. 
+
+
+
+                '''
                 
                 if len(xarr_dict['Dataset 1'][gr_1st]) == 0:
                     #if len(xarr_dict['Dataset 1'][gr_1st]) == 0:
@@ -5021,6 +5069,7 @@ def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_m
                         tmp_T_time_datetime_since_1970_lst.append(tmp_tmp_T_time_datetime_since_1970[0])
                     inc_T_time_datetime =  np.array(tmp_T_time_datetime_lst)
                     tmp_T_time_datetime_since_1970 = np.array(tmp_T_time_datetime_since_1970_lst)
+                    pdb.set_trace()
 
                 else:
                     #tmp_T_time_datetime,tmp_T_time_datetime_since_1970,ntime,ti, nctime_calendar_type = extract_time_from_xarr(xarr_dict['Dataset 1']['T'],fname_dict['Dataset 1']['T'][0],'time_counter','time_counter',None,'%Y%m%d',1,False)
@@ -5031,6 +5080,9 @@ def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_m
                     else:
                         inc_T_time_datetime = [tmp_T_time_datetime[0] + timedelta(days = i_i) for i_i in range(len(fname_dict[tmp_datstr][tmpgrid]))]
                         tmp_T_time_datetime_since_1970 = [tmp_T_time_datetime_since_1970[0] + i_i*86400 for i_i in range(len(fname_dict[tmp_datstr][tmpgrid]))]
+                '''
+
+
                 '''
                 try:
                 #tmp_T_time_datetime,tmp_T_time_datetime_since_1970,ntime,ti, nctime_calendar_type = extract_time_from_xarr(xarr_dict['Dataset 1']['T'],fname_dict['Dataset 1']['T'][0],'time_counter','time_counter',None,'%Y%m%d',1,False)
@@ -5054,13 +5106,26 @@ def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_m
                     tmp_T_time_datetime_since_1970 = np.array(tmp_T_time_datetime_since_1970_lst)
                 pdb.set_trace()
                 '''
-                time_d[tmp_datstr][tmpgrid]['datetime'] = np.array(inc_T_time_datetime)
-                time_d[tmp_datstr][tmpgrid]['datetime_since_1970'] = np.array(tmp_T_time_datetime_since_1970)
+                #time_d[tmp_datstr][tmpgrid]['datetime'] = np.array(inc_T_time_datetime)
+                #time_d[tmp_datstr][tmpgrid]['datetime_since_1970'] = np.array(tmp_T_time_datetime_since_1970)
 
                 tmp_xarr_data = xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid],combine='nested', concat_dim='t', parallel = True)
+
+                if not inc_time_done:
+                    tmp_T_time_datetime,tmp_T_time_datetime_since_1970,ntime,ti, nctime_calendar_type = extract_time_from_xarr([tmp_xarr_data],fname_dict['Dataset 1'][gr_1st][0],'time_counter','time_counter',None,'%Y%m%d',1,False)
+                    #pdb.set_trace()
+                    time_d[tmp_datstr][tmpgrid]['datetime'] = np.array(tmp_T_time_datetime)
+                    time_d[tmp_datstr][tmpgrid]['datetime_since_1970'] = np.array(tmp_T_time_datetime_since_1970)
                 tmp_xarr_data.assign_coords(t = time_d[tmp_datstr][tmpgrid]['datetime'])
                 xarr_dict[tmp_datstr][tmpgrid].append(tmp_xarr_data)
 
+
+                """
+
+
+                ######################################################################
+                ######################################################################
+                ######################################################################
             
 
             if do_addtimedim:
@@ -5744,8 +5809,11 @@ def resample_xarray(xarr_dict,resample_freq,time_varname_dict):
     return xarr_dict
 
 
-def extract_time_from_xarr(xarr_dict_in,ex_fname_in,time_varname_in,t_dim,date_in_ind,date_fmt,ti,verbose_debugging):
-
+def extract_time_from_xarr(xarr_dict_in,ex_fname_in,time_varname_in,t_dim,
+                           date_in_ind,date_fmt,ti,verbose_debugging,                      
+                           #missing_time_baseline = datetime(*datetime.now().timetuple()[:3]),
+                           missing_time_baseline = datetime(2022,1,1),  
+                           missing_time_freq_hr = 24):
     '''
     
     time_datetime,time_datetime_since_1970,ntime = extract_time_from_xarr(xarr_dict['Dataset 1']['T'],fname_dict['Dataset 1']['T'][0],date_in_ind,date_fmt,verbose_debugging)
@@ -5797,16 +5865,24 @@ def extract_time_from_xarr(xarr_dict_in,ex_fname_in,time_varname_in,t_dim,date_i
             print('Interpreted time info class:',type(nctime.to_numpy()[0]))
             # create dummy time data, starting with today, and going forward one day for each time.
 
+
+            tmpdatetime_now = datetime.now()
+            
+            
+            #missing_time_baseline = datetime(2022,1,1)
+            #missing_time_freq_hr = 24.
+            tmp_ntime = len(nctime)
             # today
             tmpdatetime_now = datetime.now()
             tmpdate_now = datetime(tmpdatetime_now.year, tmpdatetime_now.month, tmpdatetime_now.day)
-
+            #pdb.set_trace()
             #time values in array: if all are zero, increment, otherwise use. 
             nctime_in_array = nctime.to_numpy()
             if (nctime_in_array == 0).all():
                 nctime_in_array = np.arange( len(nctime))
             
-            time_datetime = np.array([tmpdate_now + timedelta(days = int(i_i)) for i_i in nctime_in_array])
+            #time_datetime = np.array([tmpdate_now + timedelta(days = int(i_i)) for i_i in nctime_in_array])
+            time_datetime = np.array([missing_time_baseline + timedelta(hours = int(missing_time_freq_hr*i_i)) for i_i in range(tmp_ntime)])
             time_datetime_since_1970 = np.array([(ss - datetime(1970,1,1,0,0)).total_seconds()/86400 for ss in time_datetime])
 
 
@@ -5857,9 +5933,15 @@ def extract_time_from_xarr(xarr_dict_in,ex_fname_in,time_varname_in,t_dim,date_i
                 all_time_0 = True
 
             if all_time_0:
-
+                #pdb.set_trace()
                 # add time data as daily from the current day.
-                time_datetime = np.array([datetime(datetime.now().year, datetime.now().month, datetime.now().day) + timedelta(days = i_i) for i_i in range( xarr_dict_in[0].dims[t_dim])])
+                #time_datetime = np.array([datetime(datetime.now().year, datetime.now().month, datetime.now().day) + timedelta(days = i_i) for i_i in range( xarr_dict_in[0].dims[t_dim])])
+                missing_time_baseline = datetime.now()
+                #missing_time_baseline = datetime(2022,1,1)
+                #missing_time_freq_hr = 24
+                tmp_ntime = xarr_dict_in[0].dims[t_dim]
+                missing_time_baseline = datetime(missing_time_baseline.year, missing_time_baseline.month, datetime.now().day)
+                time_datetime = np.array([missing_time_baseline + timedelta(hours = missing_time_freq_hr*i_i) for i_i in range(tmp_ntime)])
                 print("xarr_dict_in[0].dims[t_dim]")
                 #except:
                 #    time_datetime = np.array([datetime(datetime.now().year, datetime.now().month, datetime.now().day) + timedelta(days = i_i) for i_i in range( xarr_dict_in[0][0].dims[t_dim])])
@@ -7524,6 +7606,7 @@ def process_argparse_fname_dict(args,gr_1st):
     fname_lst = []
     for sub_fname_lst_in in fname_lst_in.split('\n'):
         sub_fname_lst = glob.glob(sub_fname_lst_in)
+        if len(sub_fname_lst) == 0: print('\n\nNo files found in %s\n\n'%sub_fname_lst_in)
         for ss in sub_fname_lst:fname_lst.append(ss)
     
 
@@ -7556,6 +7639,7 @@ def process_argparse_fname_dict(args,gr_1st):
             sec_fname_lst = []
             for sub_sec_fname_lst_in in sec_fname_lst_in.split('\n'):
                 sec_sub_fname_lst = glob.glob(sub_sec_fname_lst_in)
+                if len(sec_sub_fname_lst) == 0: print('\n\nNo files found in --file %s %s = %s\n\n'%(tmp_grid,tmp_files,sub_sec_fname_lst_in))
                 for ss in sec_sub_fname_lst:sec_fname_lst.append(ss)
             
 
@@ -8033,9 +8117,10 @@ def Obs_reload_obs(var,Dataset_lst,tmp_current_time,ob_ti,Obs_dict,Obs_fname,Obs
     for tmp_datstr in Dataset_lst:
         Obs_dat_dict[tmp_datstr] = {}
         for ob_var in Obs_var_lst_sub:
+            #pdb.set_trace()
 
             # for a give model data time (ti) find nearest Obs data time (ob_ti)
-            Obs_noon_time_minus_current_time =  [(tmpObsdatetime - tmp_current_time).total_seconds() +86400/2 
+            Obs_noon_time_minus_current_time =  [(tmpObsdatetime - tmp_current_time).total_seconds() +86400/2  
                                                  for tmpObsdatetime in  Obs_JULD_datetime_dict[tmp_datstr][ob_var]]
             
             ob_ti = np.abs(Obs_noon_time_minus_current_time).argmin()
