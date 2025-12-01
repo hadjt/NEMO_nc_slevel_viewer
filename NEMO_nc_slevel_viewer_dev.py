@@ -25,7 +25,7 @@ from NEMO_nc_slevel_viewer_lib import create_lon_lat_dict,create_ncvar_lon_lat_t
 from NEMO_nc_slevel_viewer_lib import trim_file_dict,remove_extra_end_file_dict,add_derived_vars
 from NEMO_nc_slevel_viewer_lib import connect_to_files_with_xarray,load_grid_dict
 
-from NEMO_nc_slevel_viewer_lib import add_default_nice_varname
+from NEMO_nc_slevel_viewer_lib import add_default_nice_varname, process_argparse_define_time
 
 from NEMO_nc_slevel_viewer_lib import extract_time_from_xarr,resample_xarray
 
@@ -106,7 +106,7 @@ def nemo_slice_zlev(config = 'amm7',
     z_meth = None,
     secdataset_proc = 'Dataset 1',
     hov_time = False, do_cont = False, do_grad = 0,
-    allow_diff_time = False,
+    allow_diff_time = False,define_time_dict = None, 
     preload_data = True,
     ld_lst = None, ld_nctvar = 'time_counter',ld_lab_lst = '-36,-12,012,036,060,084,108,132',
     clim_sym = None, clim_pair = True,use_cmocean = False,
@@ -549,7 +549,8 @@ def nemo_slice_zlev(config = 'amm7',
                                                                                   ld_lab_mat,ld_nctvar,force_dim_d = force_dim_d,
                                                                                   xarr_rename_master_dict=xarr_rename_master_dict,
                                                                                   gr_1st = gr_1st,do_addtimedim = do_addtimedim,
-                                                                                  do_all_WW3 = do_all_WW3)
+                                                                                  do_all_WW3 = do_all_WW3,
+                                                                                  define_time_dict = define_time_dict)
     
     #pdb.set_trace()
     # tmp = xarr_dict['Dataset 1']['T'][0].groupby('time_counter.year').groupby('time_counter.month').mean('time_counter') 
@@ -744,7 +745,7 @@ def nemo_slice_zlev(config = 'amm7',
     init_timer.append((datetime.now(),'nc time started'))
 
     #pdb.set_trace()
-    time_datetime,time_datetime_since_1970,ntime,ti, nctime_calendar_type = extract_time_from_xarr(xarr_dict['Dataset 1'][gr_1st],fname_dict['Dataset 1'][gr_1st][0],time_varname_dict['Dataset 1'][gr_1st],ncdim_d['Dataset 1'][gr_1st]['t'],date_in_ind,date_fmt,ti,verbose_debugging)
+    time_datetime,time_datetime_since_1970,ntime,ti, nctime_calendar_type = extract_time_from_xarr(xarr_dict['Dataset 1'][gr_1st],fname_dict['Dataset 1'][gr_1st][0],time_varname_dict['Dataset 1'][gr_1st],ncdim_d['Dataset 1'][gr_1st]['t'],date_in_ind,date_fmt,ti,verbose_debugging, curr_define_time_dict = define_time_dict['Dataset 1'][gr_1st])
 
     init_timer.append((datetime.now(),'nc time completed'))
 
@@ -801,7 +802,7 @@ def nemo_slice_zlev(config = 'amm7',
     for tmp_datstr in Dataset_lst: # xarr_dict.keys():
         #time_d[tmp_datstr] = {}
         for tmpgrid in xarr_dict[tmp_datstr].keys():
-            (time_d[tmp_datstr][tmpgrid]['datetime'],time_d[tmp_datstr][tmpgrid]['datetime_since_1970'],tmp_ntime,tmp_ti, nctime_calendar_type) =  extract_time_from_xarr(xarr_dict[tmp_datstr][tmpgrid],fname_dict[tmp_datstr][tmpgrid][0], time_varname_dict[tmp_datstr][tmpgrid],ncdim_d[tmp_datstr][tmpgrid]['t'],date_in_ind,date_fmt,ti,verbose_debugging)
+            (time_d[tmp_datstr][tmpgrid]['datetime'],time_d[tmp_datstr][tmpgrid]['datetime_since_1970'],tmp_ntime,tmp_ti, nctime_calendar_type) =  extract_time_from_xarr(xarr_dict[tmp_datstr][tmpgrid],fname_dict[tmp_datstr][tmpgrid][0], time_varname_dict[tmp_datstr][tmpgrid],ncdim_d[tmp_datstr][tmpgrid]['t'],date_in_ind,date_fmt,ti,verbose_debugging, curr_define_time_dict = define_time_dict[tmp_datstr][tmpgrid])
     print ('xarray start reading nctime',datetime.now())
     # add derived variables
     var_d,var_dim, var_grid = add_derived_vars(var_d,var_dim, var_grid, Dataset_lst)
@@ -5956,6 +5957,9 @@ def main():
         # set up empty EOS dictionary
         EOS_d = process_argparse_EOS(args, dataset_lst)
 
+
+        define_time_dict = process_argparse_define_time(args, dataset_lst, fname_dict)
+
         #pdb.set_trace()
         nemo_slice_zlev(zlim_max = args.zlim_max,
             dataset_lab_d = dataset_lab_d,configd = configd,thd = thd,fname_dict = fname_dict,
@@ -5964,6 +5968,7 @@ def main():
             allow_diff_time = argparse_bool_dict['allow_diff_time'],preload_data = preload_data_in,
             do_grad = args.do_grad,do_cont = argparse_bool_dict['do_cont'],trim_extra_files = argparse_bool_dict['trim_extra_files'],trim_files = argparse_bool_dict['trim_files'],
             use_cmocean = argparse_bool_dict['use_cmocean'], date_fmt = args.date_fmt,
+            define_time_dict = define_time_dict,
             justplot = argparse_bool_dict['justplot'],justplot_date_ind = args.justplot_date_ind,
             justplot_secdataset_proc = args.justplot_secdataset_proc,
             justplot_z_meth_zz = args.justplot_z_meth_zz,

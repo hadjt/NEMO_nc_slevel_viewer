@@ -2158,7 +2158,10 @@ def reload_data_instances_time(var,thd,ldi,ti,current_time_datetime_since_1970,t
 
                 tmp_cur_var_grid = update_cur_var_grid(var,tmp_datstr,ldi, var_grid[tmp_datstr], xarr_dict )
                 if len(tmp_cur_var_grid)!=1:
+                    print('Current variable (%s) is in two grids (%s)'%(var,tmp_cur_var_grid ))
+                    print('Use %s in first grid (%s), and continue?'%(var,tmp_cur_var_grid[0] ))
                     pdb.set_trace()
+                    tmp_cur_var_grid = tmp_cur_var_grid[0]
                 else:
                     tmp_cur_var_grid = tmp_cur_var_grid[0]
 
@@ -3661,7 +3664,7 @@ def reload_hov_data_comb_time(var,var_mat,var_grid,var_dim,deriv_var,ldi,thd,tim
             #if differnet config
             #else:
 
-            # if the config is different from thefirst one, we need to interpolate the depths (and time)
+            # if the config is different from the first one, we need to interpolate the depths (and time)
             if ((configd[th_d_ind].upper() == configd[1].upper())|(configd[th_d_ind].split('_')[0].upper() == configd[1].split('_')[0].upper()))==False:
                 #pdb.set_trace()
                 ## find equivalent iijj coord
@@ -5005,7 +5008,12 @@ def grad_vert_hov_prof_data(hov_dat_dict, meth=0, abs_pre = False, abs_post = Fa
 
 
 def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_mat, ld_lab_mat,ld_nctvar,
-    force_dim_d = None,xarr_rename_master_dict=None,gr_1st = 'T',do_addtimedim = None, do_all_WW3 = False):
+        force_dim_d = None,
+        xarr_rename_master_dict=None,
+        gr_1st = 'T',
+        do_addtimedim = None,
+        do_all_WW3 = False,
+        define_time_dict = None):
     # connect to files with xarray, and create dictionaries with vars, dims, grids, time etc. 
 
     do_addtimedim = True
@@ -5200,7 +5208,7 @@ def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_m
                 ######################################################################
 
                 tmp_xarr_data = xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid],combine='nested', concat_dim='t', parallel = True)
-                tmp_T_time_datetime,tmp_T_time_datetime_since_1970,ntime,ti, nctime_calendar_type = extract_time_from_xarr([tmp_xarr_data],fname_dict['Dataset 1'][gr_1st][0],'time_counter','time_counter',None,'%Y%m%d',1,False)
+                tmp_T_time_datetime,tmp_T_time_datetime_since_1970,ntime,ti, nctime_calendar_type = extract_time_from_xarr([tmp_xarr_data],fname_dict['Dataset 1'][gr_1st][0],'time_counter','time_counter',None,'%Y%m%d',1,False, curr_define_time_dict = define_time_dict['Dataset 1'][gr_1st])
                 if tmp_T_time_datetime.size == len(fname_dict[tmp_datstr][tmpgrid]):
                     inc_T_time_datetime = tmp_T_time_datetime
                     inc_T_time_datetime_since_1970 = tmp_T_time_datetime_since_1970
@@ -6000,14 +6008,24 @@ def resample_xarray(xarr_dict,resample_freq,time_varname_dict):
 def extract_time_from_xarr(xarr_dict_in,ex_fname_in,time_varname_in,t_dim,
                            date_in_ind,date_fmt,ti,verbose_debugging,                      
                            #missing_time_baseline = datetime(*datetime.now().timetuple()[:3]),
-                           missing_time_baseline = datetime(2022,1,1),  
-                           missing_time_freq_hr = 24):
+                           curr_define_time_dict = None):
     '''
     
     time_datetime,time_datetime_since_1970,ntime = extract_time_from_xarr(xarr_dict['Dataset 1']['T'],fname_dict['Dataset 1']['T'][0],date_in_ind,date_fmt,verbose_debugging)
     '''
     #pdb.set_trace()
+    '''
+    missing_time_baseline = datetime(*datetime.now().timetuple()[:3])  
+    missing_time_freq_hr = 24
+
     
+    '''
+    if curr_define_time_dict is None:
+        missing_time_baseline = datetime(*datetime.now().timetuple()[:3])  
+        missing_time_freq_hr = 24
+    else:
+        missing_time_baseline = curr_define_time_dict[0]
+        missing_time_freq_hr = curr_define_time_dict[1]
     #print ('xarray start reading nctime',datetime.now())
 
 
@@ -7683,6 +7701,10 @@ def load_NEMO_nc_viewer_parser(nemo_slice_zlev_helptext):
     parser.add_argument('--do_match_time', type=str, required=False)
     parser.add_argument('--do_addtimedim', type=str, required=False)
 
+    parser.add_argument('--define_time', action='append', nargs='+',help = 'Allow time variable to be defined (intial time: "%Y%m%d%H%M%S"; freq(hr): 24) for files without info in time_counter (i.e. increment files). Requires: int(dataset number)#, str(grid)#, str(inial time), int(time freq) - # grid, or dataset and grid are optional.')
+    
+    
+
     parser.add_argument('--trim_extra_files', type=int, required=False)
     parser.add_argument('--trim_files', type=int, required=False)
 
@@ -8098,6 +8120,59 @@ def process_argparse_forced_dim(args, dataset_lst, nDataset):
     #pdb.set_trace()
 
     return force_dim_d_in
+
+
+def process_argparse_define_time(args, dataset_lst, fname_dict):
+
+
+    # If files dont have a useable time variable, you can define it, by giving a first time, 
+    # and a time spacing (in hours). This be for all datasets, a specific dataset, or a specific grid and dataset.
+    #
+    # initial date in the form of '20220101000000', temporal resolution in form of 24
+
+    #for ii, tmp_datstr in enumerate(dataset_lst):
+    #pdb.set_trace() 
+
+    #initialise time_init_dict
+    define_time_dict = {}
+    for tmp_datstr in dataset_lst:
+        define_time_dict[tmp_datstr] = {}
+        for tmpgrid in fname_dict[tmp_datstr].keys():
+            define_time_dict[tmp_datstr][tmpgrid] = None
+        
+    if args.define_time is not None:
+        for tmpfdimlst in args.define_time:
+            #if len(tmpfdimlst) is 2, one time definition of all dataset and grid
+            try:
+
+                if len(tmpfdimlst) == 2:
+                    for tmp_datstr in dataset_lst:
+                        for tmpgrid in fname_dict[tmp_datstr].keys():
+                            define_time_dict[tmp_datstr][tmpgrid] = (datetime.strptime(tmpfdimlst[0],'%Y%m%d%H%M%S'),float(tmpfdimlst[1]))
+                #if len(tmpfdimlst) is 3, one time definition of all grid for each dataset.
+                elif len(tmpfdimlst) == 3:
+                    #tmp_datstr = 'Dataset %i'%tmpfdimlst[0]
+                    tmp_datstr = 'Dataset %i'%int(tmpfdimlst[0])
+                    for tmpgrid in fname_dict[tmp_datstr].keys():
+                        define_time_dict[tmp_datstr][tmpgrid] = (datetime.strptime(tmpfdimlst[1],'%Y%m%d%H%M%S'),float(tmpfdimlst[2]))
+                #if len(tmpfdimlst) is 3, one time definition of all grid for each dataset.
+                elif len(tmpfdimlst) == 4:
+                    #tmp_datstr = 'Dataset %i'%tmpfdimlst[0]
+                    tmp_datstr = 'Dataset %i'%int(tmpfdimlst[0])
+                    tmpgrid = tmpfdimlst[1]
+                    define_time_dict[tmp_datstr][tmpgrid] = (datetime.strptime(tmpfdimlst[2],'%Y%m%d%H%M%S'),float(tmpfdimlst[3]))
+            except:
+                print('\n\n')
+                print('Argument error: --define_time given as %s, so not implemented'%tmpfdimlst)
+                print('must be of the format:')
+                print('    --define_time 20220101T000000 to apply to all datasets and grid or')
+                print('    --define_time 1 20220101T000000 to apply to all grids of a given datasets')
+                print('    --define_time 1 T 20220101T000000 to apply to a specific grids and datasets')
+                pdb.set_trace()
+
+
+    return define_time_dict
+
 
 def process_argparse_EOS(args, dataset_lst):
 
