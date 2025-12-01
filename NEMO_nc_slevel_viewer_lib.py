@@ -3636,13 +3636,14 @@ def reload_hov_data_comb_time(var,var_mat,var_grid,var_dim,deriv_var,ldi,thd,tim
 
 
 
-            print(tmp_datstr, hov_dat['Sec Grid'][tmp_datstr]['data'].shape, hov_dat['Sec Grid'][tmp_datstr]['x'].shape, hov_dat['Sec Grid'][tmp_datstr]['y'].shape, (hov_dat['Sec Grid'][tmp_datstr]['data'].mask == False).sum())
+            #print(tmp_datstr, hov_dat['Sec Grid'][tmp_datstr]['data'].shape, hov_dat['Sec Grid'][tmp_datstr]['x'].shape, hov_dat['Sec Grid'][tmp_datstr]['y'].shape, (hov_dat['Sec Grid'][tmp_datstr]['data'].mask == False).sum())
     
             if do_mask_dict[tmp_datstr]:
                 try:
                 
                     if np.ma.is_masked(ii*jj) == False:
-                        tmp_mask = grid_dict[tmp_datstr]['tmask'][:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,orig_jj,orig_ii] == 0
+                        #tmp_mask = grid_dict[tmp_datstr]['tmask'][:,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']][:,orig_jj,orig_ii] == 0
+                        tmp_mask = grid_dict[tmp_datstr]['tmask'][:,orig_jj,orig_ii] == 0
                         if var_dim[var] == 4:
                             hov_dat[tmp_datstr][tmp_mask,:] = np.ma.masked
                             hov_dat['Sec Grid'][tmp_datstr]['data'][tmp_mask,:] = np.ma.masked
