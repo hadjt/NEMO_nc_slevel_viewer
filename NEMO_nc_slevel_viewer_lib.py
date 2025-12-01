@@ -5203,11 +5203,11 @@ def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_m
             #elif tmpgrid == 'I':
             else: # elif tmpgrid in  ['I','In','Ic']: # 
 
-
+                #pdb.set_trace()
                 ######################################################################
                 ######################################################################
                 ######################################################################
-
+                
                 tmp_xarr_data = xarray.open_mfdataset(fname_dict[tmp_datstr][tmpgrid],combine='nested', concat_dim='t', parallel = True)
                 tmp_T_time_datetime,tmp_T_time_datetime_since_1970,ntime,ti, nctime_calendar_type = extract_time_from_xarr([tmp_xarr_data],fname_dict['Dataset 1'][gr_1st][0],'time_counter','time_counter',None,'%Y%m%d',1,False, curr_define_time_dict = define_time_dict['Dataset 1'][gr_1st])
                 if tmp_T_time_datetime.size == len(fname_dict[tmp_datstr][tmpgrid]):

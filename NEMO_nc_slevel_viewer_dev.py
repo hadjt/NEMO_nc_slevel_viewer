@@ -757,7 +757,7 @@ def nemo_slice_zlev(config = 'amm7',
         just_plt_cnt = 0
         njust_plt_cnt = 0
 
-        if (justplot_date_ind is None)|(justplot_date_ind == 'None'):
+        if (justplot_date_ind is None)|(justplot_date_ind == 'None')|(justplot_date_ind == ''):
              
              #justplot_date_ind = time_datetime[ti].strftime(date_fmt)
              justplot_date_ind = ','.join(['%i'% ii for ii in range(ntime)])
@@ -790,7 +790,7 @@ def nemo_slice_zlev(config = 'amm7',
                 justplot_zz = int(justplot_zz_str)
                 #  cycle through datasets, nothing needs reloading. 
                 for jpspi, secdataset_proc in enumerate(justplot_secdataset_proc_lst): 
-                    just_plt_vals.append((secdataset_proc,justplot_date_ind_str, justplot_z_meth,justplot_zz, True, True, True, False, True))
+                    just_plt_vals.append((secdataset_proc,justplot_date_ind_str, justplot_z_meth,justplot_zz, True, True, True, False, True, True))
                     njust_plt_cnt+=1
     init_timer.append((datetime.now(),'justplot prepared'))
     # repeat if comparing two time series. 
@@ -1059,6 +1059,8 @@ def nemo_slice_zlev(config = 'amm7',
 
     cbwid,cbgap = 0.01,0.01
     wgap = 0.06
+    wgap = 0.10
+    wgap = 0.08
     hgap = 0.04
     dyhig = 0.17
     axwid = 0.4
@@ -1855,9 +1857,9 @@ def nemo_slice_zlev(config = 'amm7',
             arg_output_text = arg_output_text + 'python NEMO_nc_slevel_viewer.py %s'%configd[1]
             arg_output_text = arg_output_text + ' "$flist1" '
             if zlim_max is not None:arg_output_text = arg_output_text + ' --zlim_max %i'%zlim_max
-            arg_output_text = arg_output_text + ' --thin %i'%thd[1]['dx']
-            arg_output_text = arg_output_text + ' --thin_files %i'%thd[1]['df']
-            arg_output_text = arg_output_text + ' --fig_fname_lab %s'%dataset_lab_d['Dataset 1']
+            arg_output_text = arg_output_text + ' --th 1 dxy %i'%thd[1]['dx']
+            arg_output_text = arg_output_text + ' --th 1 df %i'%thd[1]['df']
+            arg_output_text = arg_output_text + ' --datlab 1 %s'%dataset_lab_d['Dataset 1']
             arg_output_text = arg_output_text + ' --lon %f'%lon_d[1][jj,ii]
             arg_output_text = arg_output_text + ' --lat %f'%lat_d[1][jj,ii]
             if cur_xlim is not None: arg_output_text = arg_output_text + ' --xlim %f %f'%(cur_xlim[0],cur_xlim[1])
@@ -1888,6 +1890,30 @@ def nemo_slice_zlev(config = 'amm7',
             arg_output_text = arg_output_text + " --justplot_z_meth_zz '%s'"%justplot_z_meth_zz
             arg_output_text = arg_output_text + ' --justplot True'       
             arg_output_text = arg_output_text + '\n\n\n'       
+
+
+
+            arg_output_text = arg_output_text + '\n\n\n'
+
+            if zlim_max is not None:arg_output_text = arg_output_text + ' --zlim_max %i'%zlim_max
+            arg_output_text = arg_output_text + ' --lon %f'%lon_d[1][jj,ii]
+            arg_output_text = arg_output_text + ' --lat %f'%lat_d[1][jj,ii]
+            if cur_xlim is not None: arg_output_text = arg_output_text + ' --xlim %f %f'%(cur_xlim[0],cur_xlim[1])
+            if cur_ylim is not None: arg_output_text = arg_output_text + ' --ylim %f %f'%(cur_ylim[0],cur_ylim[1])
+            arg_output_text = arg_output_text + ' --var %s'%var
+            arg_output_text = arg_output_text + ' --zz %s'%zz
+            arg_output_text = arg_output_text + ' --do_grad %1i'%do_grad
+            arg_output_text = arg_output_text + ' --clim_sym %s'%clim_sym
+            arg_output_text = arg_output_text + ' --vis_curr %s'%vis_curr
+            
+            arg_output_text = arg_output_text + ' --clim_pair %s'%clim_pair
+
+            arg_output_text = arg_output_text + ' --justplot_date_ind "$justplot_date_ind"'
+            #arg_output_text = arg_output_text + " --justplot_date_ind '%s'"%time_datetime[ti].strftime(date_fmt)
+            arg_output_text = arg_output_text + " --justplot_secdataset_proc '%s'"%justplot_secdataset_proc
+            arg_output_text = arg_output_text + " --justplot_z_meth_zz '%s'"%justplot_z_meth_zz
+            arg_output_text = arg_output_text + ' --justplot True' 
+
             fid = open(fig_out_name + '.txt','w')
             fid.write(arg_output_text)
             fid.close()
@@ -3740,6 +3766,8 @@ def nemo_slice_zlev(config = 'amm7',
                 reload_ns = just_plt_vals[just_plt_cnt][6]
                 reload_hov = just_plt_vals[just_plt_cnt][7]
                 reload_ts = just_plt_vals[just_plt_cnt][8]
+                if do_Obs:
+                    reload_Obs = just_plt_vals[just_plt_cnt][9]
                 try:
                     tmp_date_in_ind_ind = int(tmp_date_in_ind)
                 except:
