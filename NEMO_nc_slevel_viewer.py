@@ -102,6 +102,7 @@ def nemo_slice_zlev(config = 'amm7',
     xlim = None, ylim = None, tlim = None, clim = None,
     ii = None, jj = None, ti = None, zz = None, zi = None, 
     lon_in = None, lat_in = None, date_in_ind = None, date_fmt = '%Y%m%d',
+    Time_Diff = None,
     cutxind = None, cutyind=None,
     z_meth = None,
     secdataset_proc = 'Dataset 1',
@@ -112,13 +113,14 @@ def nemo_slice_zlev(config = 'amm7',
     clim_sym = None, clim_pair = True,use_cmocean = False,
     fig_dir = None,fig_lab = 'figs',fig_cutout = True, 
     justplot = False, justplot_date_ind = None,justplot_z_meth_zz = None,justplot_secdataset_proc = None,
-    fig_fname_lab = None, fig_fname_lab_2nd = None,
+    fig_fname_lab = None, 
     trim_files = True,
     trim_extra_files = False,
     vis_curr = -1, vis_curr_meth = 'barb',
     resample_freq = None,
     verbose_debugging = False,do_timer = True,do_memory = True,do_ensemble = False,
     Obs_dict = None, Obs_reloadmeth = 2,Obs_hide = False,
+    Obs_hide_edges = None, Obs_pair_loc = None, Obs_AbsAnom = None,Obs_anom_clim = None,
     do_MLD = True,do_mask = False,
     use_xarray_gdept = True,
     force_dim_d = None,xarr_rename_master_dict=None,
@@ -925,9 +927,15 @@ def nemo_slice_zlev(config = 'amm7',
     if do_Obs:
         ob_ti = ti
 
-        Obs_hide_edges = False
-        Obs_pair_loc = True
-        Obs_AbsAnom = True
+
+        if Obs_hide_edges is None: Obs_hide_edges = False
+        if Obs_pair_loc is None: Obs_pair_loc = True
+        if Obs_AbsAnom is None: Obs_AbsAnom = True
+
+        Obs_Type_argo = True
+        Obs_Type_ships = True
+        Obs_Type_drifter = True
+        Obs_Type_moored = True
         
 
         #Available Obs data types
@@ -1306,7 +1314,7 @@ def nemo_slice_zlev(config = 'amm7',
 
     if vis_curr == -1:
         func_names_lst.remove('Vis curr')
-
+    #Time_Diff = True
     # For T Diff
     if ntime < 2: # no point being able to change lead time database if only one 
         func_names_lst.remove('Time Diff')
@@ -1314,7 +1322,12 @@ def nemo_slice_zlev(config = 'amm7',
     else:
         do_Tdiff = True
 
-        Time_Diff = False
+        if Time_Diff is None:            
+            Time_Diff = False
+        else:
+            if Time_Diff:
+                if ti == 0: ti=1 
+
         data_inst_Tm1 = {}
         #data_inst_Tm1['Dataset 1'],data_inst_Tm1['Dataset 2'] = None,None
         preload_data_ti_Tm1,preload_data_var_Tm1,preload_data_ldi_Tm1 = 0.5,'None',0.5
@@ -1809,6 +1822,9 @@ def nemo_slice_zlev(config = 'amm7',
         print(func_but_line_han.keys())
 
 
+        if fig_fname_lab is not None:
+            fig_out_name = '%s_%s'%(fig_out_name,fig_fname_lab)
+
         #pdb.set_trace()
 
         for ss in func_but_line_han.keys():func_but_line_han[ss][0].set_visible(False)
@@ -1816,16 +1832,28 @@ def nemo_slice_zlev(config = 'amm7',
 
     
         if fig_cutout:
+            fig_also_cutout_map_only = True
 
 
             bbox_cutout_pos = [[(but_x1+0.01), (0.066)],[(func_but_x0-0.01),0.965]]
-            #bbox_cutout_pos_inches = [[fig.get_figwidth()*(but_x1+0.01), fig.get_figheight()*(0.066)],[fig.get_figwidth()*(func_but_x0-0.01),fig.get_figheight()*(0.965)]]
-            #bbox_cutout_pos_inches = [[fig.get_figwidth()*(but_x1+0.01), fig.get_figheight()*(0.066)],[fig.get_figwidth()*(func_but_x0-0.01),fig.get_figheight()]]
+                                     #            
             bbox_cutout_pos_inches = [[fig.get_figwidth()*(but_x1+0.01), fig.get_figheight()*(0.066)],[fig.get_figwidth()*(func_but_x0),fig.get_figheight()]]
             bbox_inches =  matplotlib.transforms.Bbox(bbox_cutout_pos_inches)
             
             if verbose_debugging: print('Save Figure: bbox_cutout_pos',bbox_cutout_pos, datetime.now())
             fig.savefig(fig_out_name+ '.png',bbox_inches = bbox_inches, dpi = figdpi)
+            if fig_also_cutout_map_only:
+
+                #half way between the left edge of the Map axes, and the hov axes
+                map_x1_midpoint = (fig.axes[0].get_position().x1 + fig.axes[3].get_position().x0)/2 
+                
+                bbox_cutout_pos_inches_map_only = [[fig.get_figwidth()*(but_x1+0.01), fig.get_figheight()*(0.066)],[fig.get_figwidth()*(map_x1_midpoint),fig.get_figheight()*((fig.axes[0].get_position().y1+1)/2)]]
+                bbox_inches_map_only =  matplotlib.transforms.Bbox(bbox_cutout_pos_inches_map_only)
+                
+                #if verbose_debugging: print('Save Figure: bbox_cutout_pos_',bbox_cutout_pos, datetime.now())
+                fig.savefig(fig_out_name+ '_map_only.png',bbox_inches = bbox_inches_map_only, dpi = figdpi)
+          
+
         else:
             fig.savefig(fig_out_name+ '.png', dpi = figdpi)
 
@@ -1878,7 +1906,6 @@ def nemo_slice_zlev(config = 'amm7',
             if load_second_files:
                 #if configd[2] is not None: 
                 arg_output_text = arg_output_text + ' --config_2nd %s'%configd[2]
-                arg_output_text = arg_output_text + ' --fig_fname_lab_2nd %s'%dataset_lab_d['Dataset 2']
                 #arg_output_text = arg_output_text + ' --thin_2nd %i'%thd[2]['dx']
                 arg_output_text = arg_output_text + ' --secdataset_proc "%s"'%secdataset_proc
                 arg_output_text = arg_output_text + ' --fname_lst_2nd  "$flist2"'
@@ -1907,12 +1934,21 @@ def nemo_slice_zlev(config = 'amm7',
             arg_output_text = arg_output_text + ' --vis_curr %s'%vis_curr
             
             arg_output_text = arg_output_text + ' --clim_pair %s'%clim_pair
+            arg_output_text = arg_output_text + ' --clim %s'%clim
+            arg_output_text = arg_output_text + ' --Time_Diff %s'%Time_Diff
+            if do_Obs:
+                arg_output_text = arg_output_text + ' --Obs_hide_edges %s'%Obs_AbsAnom
+                arg_output_text = arg_output_text + ' --Obs_pair_loc %s'%Obs_pair_loc
+                arg_output_text = arg_output_text + ' --Obs_AbsAnom %s'%Obs_AbsAnom
+
+
 
             arg_output_text = arg_output_text + ' --justplot_date_ind "$justplot_date_ind"'
             #arg_output_text = arg_output_text + " --justplot_date_ind '%s'"%time_datetime[ti].strftime(date_fmt)
             arg_output_text = arg_output_text + " --justplot_secdataset_proc '%s'"%justplot_secdataset_proc
             arg_output_text = arg_output_text + " --justplot_z_meth_zz '%s'"%justplot_z_meth_zz
             arg_output_text = arg_output_text + ' --justplot True' 
+
 
             fid = open(fig_out_name + '.txt','w')
             fid.write(arg_output_text)
@@ -1921,6 +1957,8 @@ def nemo_slice_zlev(config = 'amm7',
             print(' ')
             print(fig_out_name + '.png')
             print(fig_out_name + '.txt')
+            if fig_also_cutout_map_only:
+                print(fig_out_name + '_map_only.png')
             print(' ')
 
         except:
@@ -3538,12 +3576,17 @@ def nemo_slice_zlev(config = 'amm7',
 
                         tmp_obs_mat=np.ma.concatenate(tmp_obs_lst)
                         tmp_obs_llind_mat=np.ma.concatenate(tmp_obs_llind_lst)
-                        if tmp_obs_llind_mat.sum()>3:
-                            obs_OmB_clim = np.percentile(np.abs(tmp_obs_mat[(tmp_obs_mat.mask == False) & tmp_obs_llind_mat]),95)*np.array([-1,1])    
+                        if Obs_anom_clim is None:
+                            if tmp_obs_llind_mat.sum()>3:
+                                obs_OmB_clim = np.percentile(np.abs(tmp_obs_mat[(tmp_obs_mat.mask == False) & tmp_obs_llind_mat]),95)*np.array([-1,1])    
+                            else:
+                                obs_OmB_clim = np.percentile(np.abs(tmp_obs_mat[tmp_obs_mat.mask == False]),95)*np.array([-1,1])    
                         else:
-                            obs_OmB_clim = np.percentile(np.abs(tmp_obs_mat[tmp_obs_mat.mask == False]),95)*np.array([-1,1])    
+                            obs_OmB_clim = Obs_anom_clim
+
                         for tmp_oax_lst in oax_lst: tmp_oax_lst.set_clim(obs_OmB_clim)          
-                        cbarobsax = [fig.add_axes([0.305,0.11, 0.15,0.02])]
+                        #cbarobsax = [fig.add_axes([0.305,0.11, 0.15,0.02])]     
+                        cbarobsax = [fig.add_axes([0.295,0.11, 0.15,0.02])]
                         #cbarobsax[0].tick_params(top=True, labeltop=True, bottom=False, labelbottom=False)
                         cax.append(plt.colorbar(oax_lst[0], ax = ax[0], cax = cbarobsax[0], orientation = 'horizontal'))
                         cax[-1].ax.xaxis.set_ticks_position('top')
@@ -4531,7 +4574,10 @@ def nemo_slice_zlev(config = 'amm7',
                                 # Bring up a options window for Obs
                                 
                                 # button names                            
-                                obs_but_names = ['ProfT','SST_ins','SST_sat','ProfS','SLA','ChlA','Hide_Obs','Edges','Loc','AbsAnom','Close']
+                                obs_but_names = ['ProfT','SST_ins','SST_sat','ProfS','SLA','ChlA',
+                                                 'Hide_Obs','Edges','Loc','AbsAnom',
+                                                 'Obs_Type_argo','Obs_Type_ships','Obs_Type_drifter','Obs_Type_moored',
+                                                 'Close']
                                 
                                 
                                 # button switches  
@@ -4542,11 +4588,16 @@ def nemo_slice_zlev(config = 'amm7',
                                 obs_but_sw['Edges'] = {'v':Obs_hide_edges, 'T':'Show Edges','F': 'Hide Edges'}
                                 obs_but_sw['Loc'] = {'v':Obs_pair_loc, 'T':"Don't Selected point",'F': 'Move Selected point'}
                                 obs_but_sw['AbsAnom'] = {'v':Obs_AbsAnom, 'T':"Observed Values",'F': 'Model - Obs'}
-                                #for ob_var in Obs_var_lst_sub:  obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var + ' hidden'}
-                                #for ob_var in Obs_varlst:  obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var + ' hidden'}
+                                obs_but_sw['Obs_Type_argo'] = {'v':Obs_Type_argo, 'T':"Show Argo TS",'F': 'Hide Argo TS'}
+                                obs_but_sw['Obs_Type_ships'] = {'v':Obs_Type_ships, 'T':"Show ships SST",'F': 'Hide ships SST'}
+                                obs_but_sw['Obs_Type_drifter'] = {'v':Obs_Type_drifter, 'T':"Show drifter SST",'F': 'Hide drifter SST'}
+                                obs_but_sw['Obs_Type_moored'] = {'v':Obs_Type_moored, 'T':"Show moored SST",'F': 'Hide moored SST'}
+                                
+                                # Add obs variable type
                                 for ob_var in Obs_var_lst_sub:  obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var,'T_col':'k','F_col':'0.5'}
-                                #for ob_var in Obs_var_lst_sub:  obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var + ' hidden'}
-                                for ob_var in Obs_varlst:  obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var,'T_col':'k','F_col':'0.5'}
+                                
+                                # Add all obs types
+                                for ob_var in Obs_varlst:       obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var,'T_col':'k','F_col':'0.5'}
 
                                 obbut_sel = pop_up_opt_window(obs_but_names, opt_but_sw = obs_but_sw)
 
@@ -4566,6 +4617,10 @@ def nemo_slice_zlev(config = 'amm7',
                                 if obbut_sel == 'Edges':    Obs_hide_edges = not Obs_hide_edges
                                 if obbut_sel == 'Loc':      Obs_pair_loc = not Obs_pair_loc
                                 if obbut_sel == 'AbsAnom':      Obs_AbsAnom = not Obs_AbsAnom
+                                if obbut_sel == 'Obs_Type_argo':    Obs_Type_argo    = not Obs_Type_argo
+                                if obbut_sel == 'Obs_Type_ships':   Obs_Type_ships   = not Obs_Type_ships
+                                if obbut_sel == 'Obs_Type_drifter': Obs_Type_drifter = not Obs_Type_drifter
+                                if obbut_sel == 'Obs_Type_moored':  Obs_Type_moored  = not Obs_Type_moored
 
 
 
@@ -5877,7 +5932,7 @@ def nemo_slice_zlev(config = 'amm7',
             
             # sometime when it crashes, it adds additional colorbars. WE can catch this be removing any colorbars from the figure... 
             #   however, this doesn't reset the axes size, so when the new colorbar is added, the axes is reduced in size. 
-            #   maybe better to specify axes and colobar location, rathar than using subplot, and colorbar().
+            #   maybe better to specify axes and colorbar location, rathar than using subplot, and colorbar().
             for child in fig.get_children():
                 child.__class__.__name__
                 if child.get_label() == '<colorbar>': child.remove()
@@ -5908,10 +5963,12 @@ def main():
         #
         # manage the handling of the boolean argpass options, and fill in a dictionary of their values
         # separating those that default to True
-        argparse_bool_T = ['clim_pair','fig_cutout','do_match_time','trim_files']
+        argparse_bool_T = ['clim_pair','fig_cutout','do_match_time','trim_files','Obs_pair_loc','Obs_AbsAnom']
         # from those that default to False
-        argparse_bool_F = ['allow_diff_time','clim_sym','hov_time','justplot','use_cmocean','verbose_debugging','do_timer','do_memory','do_ensemble','do_mask','do_addtimedim','do_all_WW3','do_cont','trim_extra_files','Obs_hide','use_xarray_gdept']
+        argparse_bool_F = ['allow_diff_time','clim_sym','hov_time','justplot','use_cmocean','verbose_debugging','do_timer','do_memory','do_ensemble','do_mask','do_addtimedim','do_all_WW3','do_cont','trim_extra_files','Obs_hide','use_xarray_gdept','Obs_hide_edges','Obs_AbsAnom','Time_Diff']
         
+
+
         argparse_bool_dict = process_argparse_bool(args,argparse_bool_T,argparse_bool_F)
         ############################################################
 
@@ -5996,7 +6053,9 @@ def main():
             allow_diff_time = argparse_bool_dict['allow_diff_time'],preload_data = preload_data_in,
             do_grad = args.do_grad,do_cont = argparse_bool_dict['do_cont'],trim_extra_files = argparse_bool_dict['trim_extra_files'],trim_files = argparse_bool_dict['trim_files'],
             use_cmocean = argparse_bool_dict['use_cmocean'], date_fmt = args.date_fmt,
+            Time_Diff = argparse_bool_dict['Time_Diff'],
             define_time_dict = define_time_dict,
+            fig_fname_lab = args.fig_fname_lab,
             justplot = argparse_bool_dict['justplot'],justplot_date_ind = args.justplot_date_ind,
             justplot_secdataset_proc = args.justplot_secdataset_proc,
             justplot_z_meth_zz = args.justplot_z_meth_zz,
@@ -6009,6 +6068,8 @@ def main():
             ld_lst = args.ld_lst, ld_lab_lst = args.ld_lab_lst, ld_nctvar = args.ld_nctvar,
             resample_freq = args.resample_freq,
             Obs_dict = Obs_dict_in,Obs_hide = argparse_bool_dict['Obs_hide'],
+            Obs_AbsAnom = argparse_bool_dict['Obs_AbsAnom'], Obs_hide_edges = argparse_bool_dict['Obs_hide_edges'],
+            Obs_pair_loc = argparse_bool_dict['Obs_pair_loc'], Obs_anom_clim = args.Obs_anom_clim,
             fig_dir = args.fig_dir, fig_lab = args.fig_lab,fig_cutout = argparse_bool_dict['fig_cutout'],
             verbose_debugging = argparse_bool_dict['verbose_debugging'],do_timer = argparse_bool_dict['do_mask'],do_memory = argparse_bool_dict['do_memory'],
             do_ensemble = argparse_bool_dict['do_ensemble'],do_mask = argparse_bool_dict['do_mask'],

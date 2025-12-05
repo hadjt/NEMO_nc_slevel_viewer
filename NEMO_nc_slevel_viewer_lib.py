@@ -6362,34 +6362,79 @@ def pop_up_opt_window(opt_but_names,opt_but_sw = None):
 
 
     '''   
+    nbuts = len(opt_but_names)
+    
 
+    tmp_obsdx = 0.3 # width of button
+    tmp_obsdx_gap = 0.025 # horizontal gap between buttons
+
+    if nbuts<12:
+        popup_fig_height = 2.5
+        popup_fig_nrow = 4.
+        popup_fig_butheight = 1./(popup_fig_nrow+1)#00.2
+                            # (1 - 0.8)/(4+1)
+        popup_fig_butgap = (1 - (popup_fig_nrow*popup_fig_butheight))/(popup_fig_nrow+1)
+
+    elif nbuts in [13,14,15]:
+        popup_fig_height = 3.5
+        popup_fig_nrow = 5.
+        popup_fig_butheight = 1./(popup_fig_nrow+1)#00.2
+                            # (1 - 0.8)/(4+1)
+        popup_fig_butgap = (1 - (popup_fig_nrow*popup_fig_butheight))/(popup_fig_nrow+1)
+    else:
+        popup_fig_height = 5.
+        popup_fig_nrow = np.ceil(nbuts/3)
+        popup_fig_butheight = 1./(popup_fig_nrow+1)#00.2
+                            # (1 - 0.8)/(4+1)
+        popup_fig_butgap = (1 - (popup_fig_nrow*popup_fig_butheight))/(popup_fig_nrow+1)
+        
 
     # create Obs options figure
     figobsopt = plt.figure()
-    figobsopt.set_figheight(2.5)
+    figobsopt.set_figheight(popup_fig_height)
     figobsopt.set_figwidth(6)
     
     #add full screen axes
     obcax = figobsopt.add_axes([0,0,1,1], frameon=False)
     
     # Add buttons
-
+    #pdb.set_trace()
     #Create list of dictionaries with the name, and x and y ranges
     obsobbox_l = []
     for opt_i,opt_ss in enumerate(opt_but_names):
         #tmp_obsx0 = (( opt_i*0.2 + 0.1 )//0.8)*0.45 + 0.05
         #tmp_obsdx = 0.4
+        '''
         tmp_obsx0 = (( opt_i*0.2 + 0.1 )//0.8)*(0.3 + 0.025) + 0.025
-        tmp_obsdx = 0.3
+
+        tmp_obsx0 = (opt_i//4)*0.325 + 0.025
+        tmp_obsx0 = (opt_i//4)*(tmp_obsdx + tmp_obsdx_gap) + tmp_obsdx_gap
+
+        '''
+
+        #
+        tmp_obsx0 = (opt_i//popup_fig_nrow)*(tmp_obsdx + tmp_obsdx_gap) + tmp_obsdx_gap
+
+
+
         #tmp_obsy0 = (( opt_i*0.2 + 0.1 )%0.8)
         #tmp_obsdy = 0.15
         #tmp_obsy0 = 1-(( opt_i*0.2 + 0.1 )%0.8)
         #tmp_obsdy = -0.15
         #tmp_obsy0 = 1-(( opt_i*0.16 + 0.04 )%0.8)
+        '''
         tmp_obsdy = -0.2
+        tmp_obsdy_gap = 0.04
         tmp_obsy0 = 1-(( opt_i*0.24 + 0.04 )%(1-0.04))
+        '''
 
-        obsobbox_l.append({'x':np.array([tmp_obsx0,tmp_obsx0+tmp_obsdx]),'y':np.array([tmp_obsy0,tmp_obsy0+tmp_obsdy]),'name':opt_ss})
+
+        #tmp_obsdy = -popup_fig_butheight # -0.2
+        #tmp_obsdy_gap = popup_fig_butgap # 0.04
+        tmp_obsy0 = 1-(( (opt_i*(popup_fig_butheight + popup_fig_butgap)) + popup_fig_butgap) %(1-popup_fig_butgap))
+
+        #obsobbox_l.append({'x':np.array([tmp_obsx0,tmp_obsx0+tmp_obsdx]),'y':np.array([tmp_obsy0,tmp_obsy0+tmp_obsdy]),'name':opt_ss})
+        obsobbox_l.append({'x':np.array([tmp_obsx0,tmp_obsx0+tmp_obsdx]),'y':np.array([tmp_obsy0,tmp_obsy0-popup_fig_butheight]),'name':opt_ss})
 
 
     # draw buttons
@@ -7664,6 +7709,7 @@ def load_NEMO_nc_viewer_parser(nemo_slice_zlev_helptext):
 
     parser.add_argument('--secdataset_proc', type=str, required=False)
 
+    parser.add_argument('--Time_Diff', type=str, required=False)
     # Depreciated, as take in form the config files
     #parser.add_argument('--z_meth', type=str, help="z_slice, ss, nb, df, zm, zx, zn, zs, or z_index for z level models")# Parse the argument
 
@@ -7719,6 +7765,8 @@ def load_NEMO_nc_viewer_parser(nemo_slice_zlev_helptext):
                         'period is a number and a letter '
                         '(M, Y, D, Q for Month, year, decade (day??), quarter), e.g. 1d, 1m.')
 
+    parser.add_argument('--fig_fname_lab', type=str, required=False)
+
     parser.add_argument('--justplot', type=str, required=False)
     parser.add_argument('--justplot_date_ind', type=str, required=False, 
                         help = 'comma separated values')
@@ -7741,6 +7789,13 @@ def load_NEMO_nc_viewer_parser(nemo_slice_zlev_helptext):
 
     parser.add_argument('--Obs_dict', action='append', nargs='+')
     parser.add_argument('--Obs_hide', type=str, required=False)
+
+    parser.add_argument('--Obs_hide_edges', type=str, required=False)
+    parser.add_argument('--Obs_pair_loc', type=str, required=False)
+    parser.add_argument('--Obs_AbsAnom', type=str, required=False)
+    parser.add_argument('--Obs_anom_clim', type=float, required=False, nargs = 2,help = 'Display Options: clim. Requires: flt(ylim min) flt(ylim max)')
+    
+    
 
     parser.add_argument('--EOS', action='append', nargs='+', 
                         help = 'Change EOS between EOS80 (E) and TEOS10 (T) for a ' \
@@ -8440,7 +8495,7 @@ def Obs_reload_obs(var,Dataset_lst,tmp_current_time,ob_ti,Obs_dict,Obs_fname,Obs
     return Obs_dat_dict,Obs_var_lst_sub
 
 
-def load_ops_2D_xarray(OPSfname,vartype, nlon = 1458, nlat = 1345,  excl_qc = False, timing_in = 1):
+def load_ops_2D_xarray(OPSfname,vartype,stat_type_lst = None, stat_type_lst_exc = False, nlon = 1458, nlat = 1345,  excl_qc = False, timing_in = 1):
 
 
     timing = False
@@ -8456,21 +8511,22 @@ def load_ops_2D_xarray(OPSfname,vartype, nlon = 1458, nlat = 1345,  excl_qc = Fa
         tim_lst = []
 
     if vartype == 'ChlA':
-        stat_type_lst = [389]
+        if stat_type_lst is None: stat_type_lst = [389]
         ops_qc_var_good_1_lst = ['OBSERVATION_QC','SLCHLTOT_QC']#,'SLA_LEVEL_QC']
         iobsi = 'SLCHLTOT_IOBSI'
         iobsj = 'SLCHLTOT_IOBSJ'
         ops_output_var_mat = ['LONGITUDE', 'LATITUDE', 'DEPTH', 'JULD', 'SLCHLTOT_OBS', 'SLCHLTOT_Hx', 'SLCHLTOT_STD']#,'SLCHLTOT_GRID','MDT']
         ops_output_ind_mat = ['SLCHLTOT_IOBSI', 'SLCHLTOT_IOBSJ', 'SLCHLTOT_IOBSK']
     elif vartype == 'SST_ins':
-        stat_type_lst = [50,53,55]
+        if stat_type_lst is None: stat_type_lst = [50,53,55]
+        # 50 = ship, 53 = drifting buoy, 55 = moored buoy
         ops_qc_var_good_1_lst = ['OBSERVATION_QC','SST_QC']#,'SST_LEVEL_QC']
         iobsi = 'SST_IOBSI'
         iobsj = 'SST_IOBSJ'
         ops_output_var_mat = ['LONGITUDE', 'LATITUDE', 'DEPTH', 'JULD', 'SST_OBS', 'SST_Hx', 'SST_STD']
         ops_output_ind_mat = ['SST_IOBSI', 'SST_IOBSJ', 'SST_IOBSK']
     elif vartype == 'SST_sat':
-        stat_type_lst = np.arange(50)
+        if stat_type_lst is None: stat_type_lst = np.arange(50)
         ops_qc_var_good_1_lst = ['OBSERVATION_QC','SST_QC']#,'SST_LEVEL_QC']
         iobsi = 'SST_IOBSI'
         iobsj = 'SST_IOBSJ'
@@ -8478,7 +8534,7 @@ def load_ops_2D_xarray(OPSfname,vartype, nlon = 1458, nlat = 1345,  excl_qc = Fa
         ops_output_ind_mat = ['SST_IOBSI', 'SST_IOBSJ', 'SST_IOBSK']
 
     elif vartype == 'SLA':
-        stat_type_lst = [  61,   65,  262,  441, 1005]
+        if stat_type_lst is None: stat_type_lst = [  61,   65,  262,  441, 1005]
         ops_qc_var_good_1_lst = ['OBSERVATION_QC','SLA_QC']#,'SLA_LEVEL_QC']
         iobsi = 'SLA_IOBSI'
         iobsj = 'SLA_IOBSJ'
@@ -8551,6 +8607,13 @@ def load_ops_2D_xarray(OPSfname,vartype, nlon = 1458, nlat = 1345,  excl_qc = Fa
 
     #pdb.set_trace()
     stat_type_ind = np.isin(stat_type,stat_type_lst)
+
+
+    if stat_type_lst_exc:
+        stat_type_ind = np.isin(stat_type,stat_type_lst)
+    else:
+        stat_type_ind = np.isin(stat_type,stat_type_lst) == False
+
     if timing: tim_lst.append(('Selected Station types',datetime.now()))
 
     #pdb.set_trace()
@@ -8640,9 +8703,9 @@ def load_ops_2D_xarray(OPSfname,vartype, nlon = 1458, nlat = 1345,  excl_qc = Fa
     return ops_output_dict
 
 
-def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,nlon = 1458, nlat = 1345, excl_qc = False):
+def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,stat_type_lst_exc = False,nlon = 1458, nlat = 1345, excl_qc = False):
     '''
-    stat_type_lst = [50,53,55]
+    argo = stat_type_lst = [831]
     nlon = 1458
     nlat = 1345
     excl_qc = True    
@@ -8778,7 +8841,10 @@ def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,nlon = 1458, nlat 
     # find obs with correct station types.
     # obs  station types.
     stat_type = np.array(chartostring(rootgrp.variables['STATION_TYPE'][:])).astype('float')
-    #stat_type_ind = np.isin(stat_type,stat_type_lst)
+    if stat_type_lst_exc:
+        stat_type_ind = np.isin(stat_type,stat_type_lst)
+    else:
+        stat_type_ind = np.isin(stat_type,stat_type_lst) == False
 
     #pdb.set_trace()
 
@@ -8789,7 +8855,8 @@ def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,nlon = 1458, nlat 
     else:
         loc_ind = (rootgrp.variables['PSAL_IOBSI'][:]>=0) & (rootgrp.variables['PSAL_IOBSI'][:]<nlon) & (rootgrp.variables['PSAL_IOBSJ'][:]>=0) & (rootgrp.variables['PSAL_IOBSJ'][:]<nlat)
     
-  
+    if stat_type_lst is not None:
+        loc_ind =  stat_type_ind & loc_ind
     
     if excl_qc:
         comb_ind = loc_ind
