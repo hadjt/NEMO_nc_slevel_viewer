@@ -224,7 +224,7 @@ def nemo_slice_zlev(config = 'amm7',
 
             
             if Obs_reloadmeth == 0:
-                Obs_dict = Obs_load_init_files_dict(Obs_fname)
+                Obs_dict = Obs_load_init_files_dict(Obs_fname,Obs_Type_load_dict)
                 '''       
                 Obs_dict = {}
                 for tmp_datstr in Obs_fname.keys():
@@ -932,10 +932,19 @@ def nemo_slice_zlev(config = 'amm7',
         if Obs_pair_loc is None: Obs_pair_loc = True
         if Obs_AbsAnom is None: Obs_AbsAnom = True
 
-        Obs_Type_argo = True
-        Obs_Type_ships = True
-        Obs_Type_drifter = True
-        Obs_Type_moored = True
+        #Obs_Type_argo = True
+        #Obs_Type_ships = True
+        #Obs_Type_drifter = True
+        #Obs_Type_moored = True
+        # 50 = ship, 53 = drifting buoy, 55 = moored buoy
+        Obs_Type_load_dict = {}
+        Obs_Type_load_dict['TS_argo'] = True
+        Obs_Type_load_dict['TS_ships'] = True
+        Obs_Type_load_dict['TS_gliders'] = True
+        Obs_Type_load_dict['TS_other'] = True
+        Obs_Type_load_dict['SST_ships'] = True
+        Obs_Type_load_dict['SST_drifter'] = True
+        Obs_Type_load_dict['SST_moored'] = True
         
 
         #Available Obs data types
@@ -2538,7 +2547,7 @@ def nemo_slice_zlev(config = 'amm7',
                 if reload_Obs:
 
 
-                    Obs_dat_dict,Obs_var_lst_sub = Obs_reload_obs(var,Dataset_lst,tmp_current_time,ob_ti,Obs_dict,Obs_fname,Obs_JULD_datetime_dict,Obs_vis_d,Obs_varlst,Obs_reloadmeth)
+                    Obs_dat_dict,Obs_var_lst_sub = Obs_reload_obs(var,Dataset_lst,tmp_current_time,ob_ti,Obs_dict,Obs_fname,Obs_JULD_datetime_dict,Obs_vis_d,Obs_varlst,Obs_reloadmeth,Obs_Type_load_dict)
                     '''
                     
                     #for a given variable, what obs types to use
@@ -3503,6 +3512,12 @@ def nemo_slice_zlev(config = 'amm7',
                             tmpobsx = Obs_dat_dict[secdataset_proc][ob_var]['LONGITUDE']
                             tmpobsy = Obs_dat_dict[secdataset_proc][ob_var]['LATITUDE']
                             tmpobsz = Obs_dat_dict[secdataset_proc][ob_var]['DEPTH']
+
+                            #if no obs actually loaded, skip.
+                            if len(tmpobsx) == 0:
+                                continue
+
+
                             if Obs_AbsAnom:
                                 tmpobsdat_mat = Obs_dat_dict[secdataset_proc][ob_var]['OBS']
                             else:
@@ -3577,6 +3592,7 @@ def nemo_slice_zlev(config = 'amm7',
                         tmp_obs_mat=np.ma.concatenate(tmp_obs_lst)
                         tmp_obs_llind_mat=np.ma.concatenate(tmp_obs_llind_lst)
                         if Obs_anom_clim is None:
+                            #pdb.set_trace()
                             if tmp_obs_llind_mat.sum()>3:
                                 obs_OmB_clim = np.percentile(np.abs(tmp_obs_mat[(tmp_obs_mat.mask == False) & tmp_obs_llind_mat]),95)*np.array([-1,1])    
                             else:
@@ -4366,7 +4382,7 @@ def nemo_slice_zlev(config = 'amm7',
                                     #(obs_z_sel,obs_obs_sel,obs_mod_sel,obs_lon_sel,obs_lat_sel,
                                     #    obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel,obs_load_sel) = obs_reset_sel(Dataset_lst, Fill = False)
 
-
+                                    #pdb.set_trace()
                                     obs_z_sel,obs_obs_sel,obs_mod_sel,obs_lon_sel,obs_lat_sel,obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel,obs_load_sel = obs_load_selected_point(secdataset_proc, Dataset_lst, Obs_var_lst_sub, Obs_dat_dict, obs_lon, obs_lat)
                                     """
                                     tmpobs_dist_sel = {}
@@ -4576,7 +4592,7 @@ def nemo_slice_zlev(config = 'amm7',
                                 # button names                            
                                 obs_but_names = ['ProfT','SST_ins','SST_sat','ProfS','SLA','ChlA',
                                                  'Hide_Obs','Edges','Loc','AbsAnom',
-                                                 'Obs_Type_argo','Obs_Type_ships','Obs_Type_drifter','Obs_Type_moored',
+                                                 'Obs_Type_TSargo','Obs_Type_TSships','Obs_Type_TSgliders','Obs_Type_TSother','Obs_Type_SSTships','Obs_Type_SSTdrifter','Obs_Type_SSTmoored',
                                                  'Close']
                                 
                                 
@@ -4588,10 +4604,17 @@ def nemo_slice_zlev(config = 'amm7',
                                 obs_but_sw['Edges'] = {'v':Obs_hide_edges, 'T':'Show Edges','F': 'Hide Edges'}
                                 obs_but_sw['Loc'] = {'v':Obs_pair_loc, 'T':"Don't Selected point",'F': 'Move Selected point'}
                                 obs_but_sw['AbsAnom'] = {'v':Obs_AbsAnom, 'T':"Observed Values",'F': 'Model - Obs'}
-                                obs_but_sw['Obs_Type_argo'] = {'v':Obs_Type_argo, 'T':"Show Argo TS",'F': 'Hide Argo TS'}
-                                obs_but_sw['Obs_Type_ships'] = {'v':Obs_Type_ships, 'T':"Show ships SST",'F': 'Hide ships SST'}
-                                obs_but_sw['Obs_Type_drifter'] = {'v':Obs_Type_drifter, 'T':"Show drifter SST",'F': 'Hide drifter SST'}
-                                obs_but_sw['Obs_Type_moored'] = {'v':Obs_Type_moored, 'T':"Show moored SST",'F': 'Hide moored SST'}
+                                #obs_but_sw['Obs_Type_argo'] = {'v':Obs_Type_argo, 'T':"Show Argo TS",'F': 'Hide Argo TS'}
+                                #obs_but_sw['Obs_Type_ships'] = {'v':Obs_Type_ships, 'T':"Show ships SST",'F': 'Hide ships SST'}
+                                #obs_but_sw['Obs_Type_drifter'] = {'v':Obs_Type_drifter, 'T':"Show drifter SST",'F': 'Hide drifter SST'}
+                                #obs_but_sw['Obs_Type_moored'] = {'v':Obs_Type_moored, 'T':"Show moored SST",'F': 'Hide moored SST'}
+                                obs_but_sw['Obs_Type_TSargo'] = {'v':Obs_Type_load_dict['TS_argo'], 'T':"Show Argo TS",'F': 'Hide Argo TS'}
+                                obs_but_sw['Obs_Type_TSships'] = {'v':Obs_Type_load_dict['TS_ships'], 'T':"Show Ships TS",'F': 'Hide Ships TS'}
+                                obs_but_sw['Obs_Type_TSgliders'] = {'v':Obs_Type_load_dict['TS_gliders'], 'T':"Show Glider TS",'F': 'Hide Glider TS'}
+                                obs_but_sw['Obs_Type_TSother'] = {'v':Obs_Type_load_dict['TS_other'], 'T':"Show Other TS",'F': 'Hide Other TS'}
+                                obs_but_sw['Obs_Type_SSTships'] = {'v':Obs_Type_load_dict['SST_ships'], 'T':"Show ships SST",'F': 'Hide ships SST'}
+                                obs_but_sw['Obs_Type_SSTdrifter'] = {'v':Obs_Type_load_dict['SST_drifter'], 'T':"Show drifter SST",'F': 'Hide drifter SST'}
+                                obs_but_sw['Obs_Type_SSTmoored'] = {'v':Obs_Type_load_dict['SST_moored'], 'T':"Show moored SST",'F': 'Hide moored SST'}
                                 
                                 # Add obs variable type
                                 for ob_var in Obs_var_lst_sub:  obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var,'T_col':'k','F_col':'0.5'}
@@ -4617,11 +4640,18 @@ def nemo_slice_zlev(config = 'amm7',
                                 if obbut_sel == 'Edges':    Obs_hide_edges = not Obs_hide_edges
                                 if obbut_sel == 'Loc':      Obs_pair_loc = not Obs_pair_loc
                                 if obbut_sel == 'AbsAnom':      Obs_AbsAnom = not Obs_AbsAnom
-                                if obbut_sel == 'Obs_Type_argo':    Obs_Type_argo    = not Obs_Type_argo
-                                if obbut_sel == 'Obs_Type_ships':   Obs_Type_ships   = not Obs_Type_ships
-                                if obbut_sel == 'Obs_Type_drifter': Obs_Type_drifter = not Obs_Type_drifter
-                                if obbut_sel == 'Obs_Type_moored':  Obs_Type_moored  = not Obs_Type_moored
+                                #if obbut_sel == 'Obs_Type_argo':    Obs_Type_argo    = not Obs_Type_argo
+                                #if obbut_sel == 'Obs_Type_ships':   Obs_Type_ships   = not Obs_Type_ships
+                                #if obbut_sel == 'Obs_Type_drifter': Obs_Type_drifter = not Obs_Type_drifter
+                                #if obbut_sel == 'Obs_Type_moored':  Obs_Type_moored  = not Obs_Type_moored
 
+                                if obbut_sel == 'Obs_Type_TSargo':    Obs_Type_load_dict['TS_argo']    = not Obs_Type_load_dict['TS_argo']
+                                if obbut_sel == 'Obs_Type_TSships':    Obs_Type_load_dict['TS_ships']    = not Obs_Type_load_dict['TS_ships']
+                                if obbut_sel == 'Obs_Type_TSgliders':    Obs_Type_load_dict['TS_gliders']    = not Obs_Type_load_dict['TS_gliders']
+                                if obbut_sel == 'Obs_Type_TSother':    Obs_Type_load_dict['TS_other']    = not Obs_Type_load_dict['TS_other']
+                                if obbut_sel == 'Obs_Type_SSTships':   Obs_Type_load_dict['SST_ships']    = not Obs_Type_load_dict['SST_ships']
+                                if obbut_sel == 'Obs_Type_SSTdrifter': Obs_Type_load_dict['SST_drifter']    = not Obs_Type_load_dict['SST_drifter']
+                                if obbut_sel == 'Obs_Type_SSTmoored':  Obs_Type_load_dict['SST_moored']    = not Obs_Type_load_dict['SST_moored']
 
 
                                 reload_Obs = True
