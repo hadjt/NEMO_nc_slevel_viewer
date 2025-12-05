@@ -1955,12 +1955,19 @@ def nemo_slice_zlev(config = 'amm7',
             arg_output_text = arg_output_text + ' --vis_curr %s'%vis_curr
             
             arg_output_text = arg_output_text + ' --clim_pair %s'%clim_pair
-            arg_output_text = arg_output_text + ' --clim %s'%clim
+            if clim is not None: arg_output_text = arg_output_text + ' --clim %s'%clim
             arg_output_text = arg_output_text + ' --Time_Diff %s'%Time_Diff
             if do_Obs:
                 arg_output_text = arg_output_text + ' --Obs_hide_edges %s'%Obs_AbsAnom
                 arg_output_text = arg_output_text + ' --Obs_pair_loc %s'%Obs_pair_loc
                 arg_output_text = arg_output_text + ' --Obs_AbsAnom %s'%Obs_AbsAnom
+
+                just_out_Obs_Type_load_str = ''
+                for Obs_Type_var in Obs_Type_load_lst: 
+                    if Obs_Type_load_dict[Obs_Type_var] == False:
+                        just_out_Obs_Type_load_str =  '%s %s'%(just_out_Obs_Type_load_str,Obs_Type_var )
+                if just_out_Obs_Type_load_str != '':
+                    arg_output_text = arg_output_text + ' --Obs_type_hide%s'%just_out_Obs_Type_load_str
 
 
 
