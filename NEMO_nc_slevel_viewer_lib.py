@@ -7749,6 +7749,7 @@ def load_NEMO_nc_viewer_parser(nemo_slice_zlev_helptext):
     parser.add_argument('--do_addtimedim', type=str, required=False)
 
     parser.add_argument('--define_time', action='append', nargs='+',help = 'Allow time variable to be defined (intial time: "%Y%m%d%H%M%S"; freq(hr): 24) for files without info in time_counter (i.e. increment files). Requires: int(dataset number)#, str(grid)#, str(inial time), int(time freq) - # grid, or dataset and grid are optional.')
+    parser.add_argument('--Obs_type_hide', action='append', nargs='+',help = 'Set which observations are intially hidden')
     
     
 
@@ -8281,6 +8282,27 @@ def process_argparse_EOS(args, dataset_lst):
 
 
 
+def process_argparse_Obs_type_hide(args):
+    #pdb.set_trace()
+    
+    Obs_Type_load_lst = obs_get_Obs_Type_load_lst()
+    if args.Obs_type_hide is None:
+        Obs_Type_load_dict = None
+    else:
+        Obs_Type_load_dict = {}
+        for Obs_Type_var in np.ravel(args.Obs_type_hide): #args.Obs_type_hide:
+            if Obs_Type_var not in Obs_Type_load_lst:
+                
+                print('\n\n')
+                print('Argument error: --Obs_type_hide entry %s is not in'%Obs_Type_var)
+                print(Obs_Type_load_lst)
+                print('must be in the form of --Obs_type_hide TS_argo TS_ships TS_gliders TS_other, instead give as:')
+                print(args.Obs_type_hide)
+                pdb.set_trace()
+            else:
+                Obs_Type_load_dict[Obs_Type_var] = False
+
+    return Obs_Type_load_dict
 
 ##############################################################################################################
 ##############################################################################################################
@@ -8371,6 +8393,10 @@ def Obs_setup_Obs_JULD_datetime_dict(Dataset_lst,Obs_varlst,Obs_dict):
     return Obs_JULD_datetime_dict
 
 
+def obs_get_Obs_Type_load_lst():
+    Obs_Type_load_lst = ['TS_argo','TS_ships','TS_gliders','TS_other','SST_ships','SST_drifter','SST_moored']
+
+    return Obs_Type_load_lst
 
 def Obs_load_init_files_dict(Obs_fname,Obs_Type_load_dict):
 
@@ -8422,7 +8448,9 @@ def Obs_load_init_files_dict(Obs_fname,Obs_Type_load_dict):
 
 
 
-def Obs_reload_obs(var,Dataset_lst,tmp_current_time,ob_ti,Obs_dict,Obs_fname,Obs_JULD_datetime_dict,Obs_vis_d,Obs_varlst,Obs_reloadmeth,Obs_Type_load_dict):
+def Obs_reload_obs(var,Dataset_lst,tmp_current_time,ob_ti,
+                   Obs_dict,Obs_fname,Obs_JULD_datetime_dict,Obs_vis_d,
+                   Obs_varlst,Obs_reloadmeth,Obs_Type_load_dict):
                   
     #for a given variable, what obs types to use
     if var.lower() in ['votemper','votempis','votemper_bot','votempis_bot']:
@@ -9172,7 +9200,7 @@ def obs_load_selected_point(secdataset_proc, Dataset_lst, Obs_var_lst_sub, Obs_d
                     obs_dist_sel_cf_lst.append(np.ma.masked)
             else:
                 obs_dist_sel_cf_lst.append(np.ma.masked)
-                
+
         obs_dist_sel_cf_mat = np.ma.array(obs_dist_sel_cf_lst)
         '''
         if tmp_datstr in tmpobs_dist_sel[ob_var].keys():

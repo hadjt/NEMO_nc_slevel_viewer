@@ -64,12 +64,12 @@ from NEMO_nc_slevel_viewer_lib import process_argparse_bool
 from NEMO_nc_slevel_viewer_lib import process_argparse_fname_dict,process_argparse_configd
 from NEMO_nc_slevel_viewer_lib import process_argparse_dataset_lab_d,process_argparse_thd
 from NEMO_nc_slevel_viewer_lib import process_argparse_Obs_dict,process_argparse_rename_var
-from NEMO_nc_slevel_viewer_lib import process_argparse_forced_dim,process_argparse_EOS
+from NEMO_nc_slevel_viewer_lib import process_argparse_forced_dim,process_argparse_EOS,process_argparse_Obs_type_hide
 
 
 from NEMO_nc_slevel_viewer_lib import obs_reset_sel # load_ops_prof_TS, load_ops_2D_xarray
 from NEMO_nc_slevel_viewer_lib import Obs_load_init_files_dict,Obs_set_empty_dict,Obs_setup_Obs_vis_d,Obs_setup_Obs_JULD_datetime_dict
-from NEMO_nc_slevel_viewer_lib import Obs_reload_obs,obs_load_selected_point
+from NEMO_nc_slevel_viewer_lib import Obs_reload_obs,obs_load_selected_point, obs_get_Obs_Type_load_lst
 
 letter_mat = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
 
@@ -120,7 +120,8 @@ def nemo_slice_zlev(config = 'amm7',
     resample_freq = None,
     verbose_debugging = False,do_timer = True,do_memory = True,do_ensemble = False,
     Obs_dict = None, Obs_reloadmeth = 2,Obs_hide = False,
-    Obs_hide_edges = None, Obs_pair_loc = None, Obs_AbsAnom = None,Obs_anom_clim = None,
+    Obs_hide_edges = None, Obs_pair_loc = None, Obs_AbsAnom = None,
+    Obs_anom_clim = None,Obs_Type_load_dict = None,
     do_MLD = True,do_mask = False,
     use_xarray_gdept = True,
     force_dim_d = None,xarr_rename_master_dict=None,
@@ -937,7 +938,17 @@ def nemo_slice_zlev(config = 'amm7',
         #Obs_Type_drifter = True
         #Obs_Type_moored = True
         # 50 = ship, 53 = drifting buoy, 55 = moored buoy
-        Obs_Type_load_dict = {}
+        if Obs_Type_load_dict is None:
+            Obs_Type_load_dict = {}
+
+        Obs_Type_load_lst = obs_get_Obs_Type_load_lst()
+
+        for tmp_Obs_Type_load in Obs_Type_load_lst:
+            if tmp_Obs_Type_load not in Obs_Type_load_dict.keys():
+                Obs_Type_load_dict[tmp_Obs_Type_load] = True
+    
+    
+        '''
         Obs_Type_load_dict['TS_argo'] = True
         Obs_Type_load_dict['TS_ships'] = True
         Obs_Type_load_dict['TS_gliders'] = True
@@ -945,6 +956,7 @@ def nemo_slice_zlev(config = 'amm7',
         Obs_Type_load_dict['SST_ships'] = True
         Obs_Type_load_dict['SST_drifter'] = True
         Obs_Type_load_dict['SST_moored'] = True
+        '''
         
 
         #Available Obs data types
@@ -6071,6 +6083,7 @@ def main():
 
         # set up empty EOS dictionary
         EOS_d = process_argparse_EOS(args, dataset_lst)
+        Obs_Type_load_dict = process_argparse_Obs_type_hide(args)
 
 
         define_time_dict = process_argparse_define_time(args, dataset_lst, fname_dict)
@@ -6100,6 +6113,7 @@ def main():
             Obs_dict = Obs_dict_in,Obs_hide = argparse_bool_dict['Obs_hide'],
             Obs_AbsAnom = argparse_bool_dict['Obs_AbsAnom'], Obs_hide_edges = argparse_bool_dict['Obs_hide_edges'],
             Obs_pair_loc = argparse_bool_dict['Obs_pair_loc'], Obs_anom_clim = args.Obs_anom_clim,
+            Obs_Type_load_dict = Obs_Type_load_dict,
             fig_dir = args.fig_dir, fig_lab = args.fig_lab,fig_cutout = argparse_bool_dict['fig_cutout'],
             verbose_debugging = argparse_bool_dict['verbose_debugging'],do_timer = argparse_bool_dict['do_mask'],do_memory = argparse_bool_dict['do_memory'],
             do_ensemble = argparse_bool_dict['do_ensemble'],do_mask = argparse_bool_dict['do_mask'],
