@@ -7751,7 +7751,6 @@ def load_NEMO_nc_viewer_parser(nemo_slice_zlev_helptext):
     parser.add_argument('--define_time', action='append', nargs='+',help = 'Allow time variable to be defined (intial time: "%Y%m%d%H%M%S"; freq(hr): 24) for files without info in time_counter (i.e. increment files). Requires: int(dataset number)#, str(grid)#, str(inial time), int(time freq) - # grid, or dataset and grid are optional.')
     parser.add_argument('--Obs_type_hide', action='append', nargs='+',help = 'Set which observations are intially hidden')
     
-    
 
     parser.add_argument('--trim_extra_files', type=int, required=False)
     parser.add_argument('--trim_files', type=int, required=False)
@@ -7790,11 +7789,13 @@ def load_NEMO_nc_viewer_parser(nemo_slice_zlev_helptext):
 
     parser.add_argument('--Obs_dict', action='append', nargs='+')
     parser.add_argument('--Obs_hide', type=str, required=False)
+    parser.add_argument('--Obs_show_with_diff_var', type=str, required=False)
 
     parser.add_argument('--Obs_hide_edges', type=str, required=False)
     parser.add_argument('--Obs_pair_loc', type=str, required=False)
     parser.add_argument('--Obs_AbsAnom', type=str, required=False)
     parser.add_argument('--Obs_anom_clim', type=float, required=False, nargs = 2,help = 'Display Options: clim. Requires: flt(ylim min) flt(ylim max)')
+    
     
     
 
@@ -8282,21 +8283,29 @@ def process_argparse_EOS(args, dataset_lst):
 
 
 
-def process_argparse_Obs_type_hide(args):
+def process_argparse_Obs_type_hide(args,argparse_bool_dict):
     #pdb.set_trace()
-    
+
+    Obs_show_with_diff_var = argparse_bool_dict['Obs_show_with_diff_var']
+
+    #if argparse_bool_dict['Obs_show_with_diff_var'] is None:
+    #    Obs_show_with_diff_var = False
+    #else:
+    #    Obs_show_with_diff_var = argparse_bool_dict['Obs_show_with_diff_var']
+
     Obs_Type_load_lst = obs_get_Obs_Type_load_lst()
     if args.Obs_type_hide is None:
         Obs_Type_load_dict = None
     else:
         Obs_Type_load_dict = {}
+        Obs_Type_load_dict['show_with_diff_var'] = Obs_show_with_diff_var
         for Obs_Type_var in np.ravel(args.Obs_type_hide): #args.Obs_type_hide:
             if Obs_Type_var not in Obs_Type_load_lst:
                 
                 print('\n\n')
                 print('Argument error: --Obs_type_hide entry %s is not in'%Obs_Type_var)
                 print(Obs_Type_load_lst)
-                print('must be in the form of --Obs_type_hide TS_argo TS_ships TS_gliders TS_other, instead give as:')
+                print('must be in the form of --Obs_type_hide S_argo S_ships S_gliders S_other, instead give as:')
                 print(args.Obs_type_hide)
                 pdb.set_trace()
             else:
@@ -8394,7 +8403,10 @@ def Obs_setup_Obs_JULD_datetime_dict(Dataset_lst,Obs_varlst,Obs_dict):
 
 
 def obs_get_Obs_Type_load_lst():
-    Obs_Type_load_lst = ['TS_argo','TS_ships','TS_gliders','TS_other','SST_ships','SST_drifter','SST_moored']
+    #Obs_Type_load_lst = ['TS_argo','TS_ships','TS_gliders','TS_other','SST_ships','SST_drifter','SST_moored']
+    Obs_Type_load_lst = ['T_argo','T_ships','T_gliders','T_other',
+                         'S_argo','S_ships','S_gliders','S_other',
+                         'SST_ships','SST_drifter','SST_moored']
 
     return Obs_Type_load_lst
 
@@ -8408,22 +8420,57 @@ def Obs_load_init_files_dict(Obs_fname,Obs_Type_load_dict):
             Obs_dict[tmp_datstr][ob_var] = {}
             Obs_dict[tmp_datstr][ob_var]['Obs'] = []
             Obs_dict[tmp_datstr][ob_var]['JULD'] = []
-            for tmpObsfname in Obs_fname[tmp_datstr][ob_var]:      
-                if ob_var in ['ProfT','ProfS']:
+            for tmpObsfname in Obs_fname[tmp_datstr][ob_var]:    
+                if ob_var in ['ProfT']:
                     #tmp_stat_type_lst = None
                     tmp_stat_type_lst = []
-                    if Obs_Type_load_dict['TS_argo']: 
+                    if Obs_Type_load_dict['T_argo']: 
                         tmp_stat_type_lst.append(831)
-                    if Obs_Type_load_dict['TS_other']: 
+                    if Obs_Type_load_dict['T_other']: 
                         tmp_stat_type_lst.append(405)
                         tmp_stat_type_lst.append(820)
-                    if Obs_Type_load_dict['TS_gliders']: 
+                    if Obs_Type_load_dict['T_gliders']: 
                         tmp_stat_type_lst.append(741)
-                    if Obs_Type_load_dict['TS_ships']:  
+                    if Obs_Type_load_dict['T_ships']:  
                         tmp_stat_type_lst.append(402)
                         tmp_stat_type_lst.append(403)
                     tmp_stat_type_lst_exc = True
                     Obs_dict[tmp_datstr][ob_var]['Obs'].append(load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = True,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc))
+  
+                elif ob_var in ['ProfS']:
+                    #tmp_stat_type_lst = None
+                    tmp_stat_type_lst = []
+                    if Obs_Type_load_dict['S_argo']: 
+                        tmp_stat_type_lst.append(831)
+                    if Obs_Type_load_dict['S_other']: 
+                        tmp_stat_type_lst.append(405)
+                        tmp_stat_type_lst.append(820)
+                    if Obs_Type_load_dict['S_gliders']: 
+                        tmp_stat_type_lst.append(741)
+                    if Obs_Type_load_dict['S_ships']:  
+                        tmp_stat_type_lst.append(402)
+                        tmp_stat_type_lst.append(403)
+                    tmp_stat_type_lst_exc = True
+                    Obs_dict[tmp_datstr][ob_var]['Obs'].append(load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = True,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc))
+
+                    '''    
+                    if ob_var in ['ProfT','ProfS']:
+                        #tmp_stat_type_lst = None
+                        tmp_stat_type_lst = []
+                        if Obs_Type_load_dict['TS_argo']: 
+                            tmp_stat_type_lst.append(831)
+                        if Obs_Type_load_dict['TS_other']: 
+                            tmp_stat_type_lst.append(405)
+                            tmp_stat_type_lst.append(820)
+                        if Obs_Type_load_dict['TS_gliders']: 
+                            tmp_stat_type_lst.append(741)
+                        if Obs_Type_load_dict['TS_ships']:  
+                            tmp_stat_type_lst.append(402)
+                            tmp_stat_type_lst.append(403)
+                        tmp_stat_type_lst_exc = True
+                        Obs_dict[tmp_datstr][ob_var]['Obs'].append(load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = True,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc))
+
+                    '''
                 elif ob_var in ['SST_ins','SST_sat','SLA','ChlA']:
                     tmp_stat_type_lst = None
                     if ob_var in ['SST_ins']:
@@ -8460,10 +8507,15 @@ def Obs_reload_obs(var,Dataset_lst,tmp_current_time,ob_ti,
         Obs_var_lst_sub = [ss for ss in Obs_varlst if ss in ['ProfS']]
     elif var.lower() in ['sossheig']:
         Obs_var_lst_sub = [ss for ss in Obs_varlst if ss in ['SLA']]
+        Obs_var_lst_sub = [ss for ss in Obs_varlst if ss in ['ProfS']]
     elif var.lower() in ['chl']:
         Obs_var_lst_sub = [ss for ss in Obs_varlst if ss in ['ChlA']]
     else:
         Obs_var_lst_sub	 = []
+
+    if Obs_Type_load_dict['show_with_diff_var']:
+        Obs_var_lst_sub = [ss for ss in Obs_varlst if ss in ['ProfT','SST_ins','SST_sat','ProfS','SLA','ChlA']]
+    
     
     # exclude obs types that have been excluded
     #Obs_var_lst_sub = [ss for ss in Obs_var_lst_sub if ss not in Obs_obstype_hide]
@@ -8531,6 +8583,42 @@ def Obs_reload_obs(var,Dataset_lst,tmp_current_time,ob_ti,
 
                     tmpObsfname = Obs_fname[tmp_datstr][ob_var][ob_ti]
 
+
+    
+                    if ob_var in ['ProfT']:
+                        #tmp_stat_type_lst = None
+                        tmp_stat_type_lst = []
+                        if Obs_Type_load_dict['T_argo']: 
+                            tmp_stat_type_lst.append(831)
+                        if Obs_Type_load_dict['T_other']: 
+                            tmp_stat_type_lst.append(405)
+                            tmp_stat_type_lst.append(820)
+                        if Obs_Type_load_dict['T_gliders']: 
+                            tmp_stat_type_lst.append(741)
+                        if Obs_Type_load_dict['T_ships']:  
+                            tmp_stat_type_lst.append(402)
+                            tmp_stat_type_lst.append(403)
+                        tmp_stat_type_lst_exc = True
+                        Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = True,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc)
+    
+                    elif ob_var in ['ProfS']:
+                        #tmp_stat_type_lst = None
+                        tmp_stat_type_lst = []
+                        if Obs_Type_load_dict['S_argo']: 
+                            tmp_stat_type_lst.append(831)
+                        if Obs_Type_load_dict['S_other']: 
+                            tmp_stat_type_lst.append(405)
+                            tmp_stat_type_lst.append(820)
+                        if Obs_Type_load_dict['S_gliders']: 
+                            tmp_stat_type_lst.append(741)
+                        if Obs_Type_load_dict['S_ships']:  
+                            tmp_stat_type_lst.append(402)
+                            tmp_stat_type_lst.append(403)
+                        tmp_stat_type_lst_exc = True
+                        Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = True,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc)
+
+                        '''
+
                     if ob_var in ['ProfT','ProfS']:
                         tmp_stat_type_lst = []
                         if Obs_Type_load_dict['TS_argo']: 
@@ -8548,6 +8636,7 @@ def Obs_reload_obs(var,Dataset_lst,tmp_current_time,ob_ti,
                         Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = True,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc)
                         #if len(Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti]['JULD']) == 0: pdb.set_trace()#Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = []
                         #pdb.set_trace()
+                        '''
                     elif ob_var in ['SST_ins','SST_sat','SLA','ChlA']:
                         tmp_stat_type_lst = None
                         if ob_var in ['SST_ins']:
