@@ -5972,7 +5972,18 @@ def create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncg
 
 
 
+def dataset_comp_func(dataset_1_in, dataset_2_in, method = None):
+    if method is None:
+        out_dataset = dataset_1_in - dataset_2_in
+    else:
+        if method in ['-']:
+            out_dataset = dataset_1_in - dataset_2_in
+        if method in ['/']:
+            out_dataset = dataset_1_in / dataset_2_in
+        if method in ['%','centred_percentage_difference']:
+            out_dataset = 100*(dataset_1_in - dataset_2_in)/((dataset_1_in + dataset_2_in)/2.)
 
+    return out_dataset 
 
 
 def resample_xarray(xarr_dict,resample_freq,time_varname_dict):
