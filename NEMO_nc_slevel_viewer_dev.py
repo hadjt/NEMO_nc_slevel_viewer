@@ -405,6 +405,8 @@ def nemo_slice_zlev(config = 'amm7',
     # if a secondary data set, give ability to change data sets. 
     #secdataset_proc_list = ['Dataset 1', 'Dataset 2', 'Dat2-Dat1', 'Dat1-Dat2']
 
+    tmpdataset_oper_lst =  ['-','/','%']
+
     secdataset_proc_list = Dataset_lst.copy()
     if nDataset > 1:
         '''
@@ -422,16 +424,24 @@ def nemo_slice_zlev(config = 'amm7',
             for tmp_datstr2 in Dataset_lst:
                 #th_d_ind2 = int(tmp_datstr2[-1])
                 th_d_ind2 = int(tmp_datstr2[8:])
-                if tmp_datstr1!=tmp_datstr2:
-                #if ((nDataset<6)&(th_d_ind1 != th_d_ind2))|((nDataset>=6)&(th_d_ind1 > th_d_ind2)):
-                    """
+                """
+                if tmp_datstr1>tmp_datstr2:                    
                     tmp_diff_str_name = 'Dat%i-Dat%i'%(th_d_ind1,th_d_ind2)
                     secdataset_proc_list.append(tmp_diff_str_name)
                     Dataset_col_diff_dict[tmp_diff_str_name] = Dataset_col_diff[cnt_diff_str_name]
                     cnt_diff_str_name = cnt_diff_str_name+1
-                    """
-                    for tmpdataset_oper in ['-','/','%']:
+                """
+                if tmp_datstr1!=tmp_datstr2:
+                #if ((nDataset<6)&(th_d_ind1 != th_d_ind2))|((nDataset>=6)&(th_d_ind1 > th_d_ind2)):
+                    '''
+                    tmp_diff_str_name = 'Dat%i-Dat%i'%(th_d_ind1,th_d_ind2)
+                    secdataset_proc_list.append(tmp_diff_str_name)
+                    Dataset_col_diff_dict[tmp_diff_str_name] = Dataset_col_diff[cnt_diff_str_name]
+                    cnt_diff_str_name = cnt_diff_str_name+1
+                    '''
+                    for tmpdataset_oper in tmpdataset_oper_lst:
                         tmp_diff_str_name = 'Dat%i%sDat%i'%(th_d_ind1,tmpdataset_oper,th_d_ind2)
+                        #if tmpdataset_oper == '-': secdataset_proc_list.append(tmp_diff_str_name)
                         secdataset_proc_list.append(tmp_diff_str_name)
 
                         Dataset_col_diff_dict[tmp_diff_str_name] = Dataset_col_diff[cnt_diff_str_name]
@@ -1816,7 +1826,7 @@ def nemo_slice_zlev(config = 'amm7',
             tmpdataset_oper = secdataset_proc[4]
             #if tmpdataset_oper == '-':
             #    secdataset_proc_figname = 'Diff_%s-%s'%(tmpdatasetnum_1,tmpdatasetnum_2)
-            if tmpdataset_oper in ['-','/','%']:
+            if tmpdataset_oper in tmpdataset_oper_lst:
                 secdataset_proc_figname = 'Diff_%s%s%s'%(tmpdatasetnum_1,tmpdataset_oper,tmpdatasetnum_2)
         
         #print(do_grad)
@@ -2742,7 +2752,7 @@ def nemo_slice_zlev(config = 'amm7',
                 tmpdataset_2 = 'Dataset ' + secdataset_proc[8]
                 tmpdataset_oper = secdataset_proc[4]
 
-                if tmpdataset_oper in ['-','/','%']:
+                if tmpdataset_oper in tmpdataset_oper_lst:
                     map_dat = dataset_comp_func(map_dat_dict[tmpdataset_1], map_dat_dict[tmpdataset_2],method = tmpdataset_oper)
                     if var_dim[var] == 4:
                         #ns_slice_dat = ns_slice_dict[tmpdataset_1] - ns_slice_dict[tmpdataset_2]
@@ -2945,7 +2955,7 @@ def nemo_slice_zlev(config = 'amm7',
                     tmpdataset_2 = 'Dataset ' + secdataset_proc[8]
                     tmpdataset_oper = secdataset_proc[4]
 
-                    if tmpdataset_oper in ['-','/','%']: 
+                    if tmpdataset_oper in tmpdataset_oper_lst: 
                         
 
                         pax2d.append(ax[1].plot(ew_slice_x,dataset_comp_func(ew_slice_dict[tmpdataset_1],ew_slice_dict[tmpdataset_2], method = tmpdataset_oper),Dataset_col_diff_dict[secdataset_proc]))
@@ -3040,7 +3050,7 @@ def nemo_slice_zlev(config = 'amm7',
                 tmpdataset_1 = 'Dataset ' + secdataset_proc[3]
                 tmpdataset_2 = 'Dataset ' + secdataset_proc[8]
                 tmpdataset_oper = secdataset_proc[4]
-                if tmpdataset_oper in ['-','/','%']: 
+                if tmpdataset_oper in tmpdataset_oper_lst: 
                     
                     tsax_lst.append(ax[4].plot(ts_dat_dict['x'],dataset_comp_func(ts_dat_dict[tmpdataset_1], ts_dat_dict[tmpdataset_2], method = tmpdataset_oper),Dataset_col_diff_dict[secdataset_proc]))
                     tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ts_dat_dict['Dataset 1']*0, color = '0.5', ls = '--'))
@@ -3181,7 +3191,7 @@ def nemo_slice_zlev(config = 'amm7',
                     tmpdataset_2 = 'Dataset ' + secdataset_proc[8]
                     tmpdataset_oper = secdataset_proc[4]
 
-                    if tmpdataset_oper in ['-','/','%']: 
+                    if tmpdataset_oper in tmpdataset_oper_lst: 
                         
                         #pf_xvals.append(pf_dat_dict[tmpdataset_1] - pf_dat_dict[tmpdataset_2])
                         for pfi in dataset_comp_func(pf_dat_dict[tmpdataset_1], pf_dat_dict[tmpdataset_2], method = tmpdataset_oper):pf_xvals.append(pfi)
@@ -6021,7 +6031,45 @@ def nemo_slice_zlev(config = 'amm7',
 
                         
                         elif but_name in secdataset_proc_list:
-                            secdataset_proc = but_name 
+                            #pdb.set_trace()
+
+                            # if clicked on Dat1-Dat2: and its already Dat1-Dat2
+                            #   Change value
+                            if but_name not in Dataset_lst:
+                                #if already seleted
+
+                                print('but_name, Dataset_lst',but_name, Dataset_lst)
+                                tmp_secdataset_proc_button_name = func_but_text_han[but_name].get_text()
+                                print('tmp_secdataset_proc_button_name',tmp_secdataset_proc_button_name)
+                                print("mouse_info['button'].name",mouse_info['button'].name)
+                                #pdb.set_trace()
+                                #if but_name == secdataset_proc:
+                                if secdataset_proc == tmp_secdataset_proc_button_name:
+                                #if but_name == tmp_secdataset_proc_button_name:
+                                    #find the dataset numbers, and operation type
+                                    tmpdataset_oper_b = tmp_secdataset_proc_button_name[4]
+                                    tmpdataset_dat_1st =tmp_secdataset_proc_button_name[:4]
+                                    tmpdataset_dat_2nd =tmp_secdataset_proc_button_name[5:]
+                                    
+                                    # cycle through next or previous cycle of operation, and update text
+                                    if tmpdataset_oper in tmpdataset_oper_lst:    
+                                        if mouse_info['button'].name == 'LEFT':
+                                            tmpdataset_oper_a=tmpdataset_oper_lst[int((np.where(tmpdataset_oper == np.array(tmpdataset_oper_lst))[0]+1)%3)]
+                                            print('left press,was, now,',tmpdataset_oper_b, tmpdataset_oper_a)
+                                        elif mouse_info['button'].name == 'RIGHT':
+                                            tmpdataset_oper_a=tmpdataset_oper_lst[int((np.where(tmpdataset_oper == np.array(tmpdataset_oper_lst))[0]-1)%3)]
+                                            print('right press,was, now,',tmpdataset_oper_b, tmpdataset_oper_a)
+                                        else:
+                                            tmpdataset_oper_a = tmpdataset_oper_b
+                                            tmpdataset_dat_2nd =tmp_secdataset_proc_button_name[:4]
+                                            tmpdataset_dat_1st =tmp_secdataset_proc_button_name[5:]
+                                            print('middle  press,was, now,',tmp_secdataset_proc_button_name, tmpdataset_dat_1st  + tmpdataset_oper_a + tmpdataset_dat_2nd)
+                                       
+                                            #pdb.set_trace()
+                                        func_but_text_han[but_name].set_text(tmpdataset_dat_1st  + tmpdataset_oper_a + tmpdataset_dat_2nd)
+                                secdataset_proc = func_but_text_han[but_name].get_text()
+                            else:
+                                secdataset_proc = but_name 
 
                             #obs_load_sel[secdataset_proc] = False
 
