@@ -304,9 +304,10 @@ def nemo_slice_zlev(config = 'amm7',
     # create [empty] xarray handle dictionary
     xarr_dict = create_xarr_dict(fname_dict)
 
+    tmpdataset_oper_lst =  ['-','/','%']
 
     # create colours and line styles for plots
-    Dataset_col,Dataset_col_diff,linestyle_str = create_col_lst(nDataset)
+    Dataset_col,Dataset_col_diff,linestyle_str = create_col_lst(nDataset,tmpdataset_oper_lst)
 
 
     for tmp_datstr in Dataset_lst:
@@ -405,8 +406,7 @@ def nemo_slice_zlev(config = 'amm7',
     # if a secondary data set, give ability to change data sets. 
     #secdataset_proc_list = ['Dataset 1', 'Dataset 2', 'Dat2-Dat1', 'Dat1-Dat2']
 
-    tmpdataset_oper_lst =  ['-','/','%']
-
+    #pdb.set_trace()
     secdataset_proc_list = Dataset_lst.copy()
     if nDataset > 1:
         '''
@@ -441,9 +441,11 @@ def nemo_slice_zlev(config = 'amm7',
                     '''
                     for tmpdataset_oper in tmpdataset_oper_lst:
                         tmp_diff_str_name = 'Dat%i%sDat%i'%(th_d_ind1,tmpdataset_oper,th_d_ind2)
-                        #if tmpdataset_oper == '-': secdataset_proc_list.append(tmp_diff_str_name)
-                        secdataset_proc_list.append(tmp_diff_str_name)
-
+                        if tmpdataset_oper == '-':
+                            if tmp_datstr1>tmp_datstr2:
+                                secdataset_proc_list.append(tmp_diff_str_name)
+                        #secdataset_proc_list.append(tmp_diff_str_name)
+                        # color 
                         Dataset_col_diff_dict[tmp_diff_str_name] = Dataset_col_diff[cnt_diff_str_name]
                         cnt_diff_str_name = cnt_diff_str_name+1
 
@@ -453,7 +455,6 @@ def nemo_slice_zlev(config = 'amm7',
         clim_pair = False
     
     if justplot is None: justplot = False
-
 
     if hov_time is None: hov_time = True
 
@@ -6033,43 +6034,73 @@ def nemo_slice_zlev(config = 'amm7',
                         elif but_name in secdataset_proc_list:
                             #pdb.set_trace()
 
+                            tmp_secdataset_proc_button_name = func_but_text_han[but_name].get_text()
                             # if clicked on Dat1-Dat2: and its already Dat1-Dat2
                             #   Change value
+
+                            secdataset_proc = but_name 
                             if but_name not in Dataset_lst:
                                 #if already seleted
-
+                                
+                                tmpdataset_oper_char_ind = int(np.where(np.array([ss in tmpdataset_oper_lst for ss in tmp_secdataset_proc_button_name]))[0][0])
+                                tmpdataset_oper_b = tmp_secdataset_proc_button_name[tmpdataset_oper_char_ind]
+                                #pdb.set_trace()
+                                tmpdataset_dat_1st = tmp_secdataset_proc_button_name[:tmpdataset_oper_char_ind]
+                                tmpdataset_dat_2nd = tmp_secdataset_proc_button_name[tmpdataset_oper_char_ind+1:]
+                                    
                                 print('but_name, Dataset_lst',but_name, Dataset_lst)
                                 tmp_secdataset_proc_button_name = func_but_text_han[but_name].get_text()
                                 print('tmp_secdataset_proc_button_name',tmp_secdataset_proc_button_name)
                                 print("mouse_info['button'].name",mouse_info['button'].name)
                                 #pdb.set_trace()
-                                #if but_name == secdataset_proc:
-                                if secdataset_proc == tmp_secdataset_proc_button_name:
+                                if but_name == secdataset_proc:
+                                #if secdataset_proc == tmp_secdataset_proc_button_name:
                                 #if but_name == tmp_secdataset_proc_button_name:
                                     #find the dataset numbers, and operation type
-                                    tmpdataset_oper_b = tmp_secdataset_proc_button_name[4]
-                                    tmpdataset_dat_1st =tmp_secdataset_proc_button_name[:4]
-                                    tmpdataset_dat_2nd =tmp_secdataset_proc_button_name[5:]
-                                    
+
+                                    #tmpdataset_oper_char_ind = int(np.where(np.array([ss in tmpdataset_oper_lst for ss in tmp_secdataset_proc_button_name]))[0][0])
+                                    #tmpdataset_oper_b = tmp_secdataset_proc_button_name[tmpdataset_oper_char_ind]
+                                    #tmpdataset_dat_1st = tmp_secdataset_proc_button_name[:tmpdataset_oper_b]
+                                    #tmpdataset_dat_2nd = tmp_secdataset_proc_button_name[tmpdataset_oper_b+1:]
+                                    '''
+                                    if len(tmp_secdataset_proc_button_name) == 5:
+                                        tmpdataset_oper_b = tmp_secdataset_proc_button_name[2]
+                                        tmpdataset_dat_1st =tmp_secdataset_proc_button_name[:2]
+                                        tmpdataset_dat_2nd =tmp_secdataset_proc_button_name[3:]
+                                    elif len(tmp_secdataset_proc_button_name) == 9:
+                                        tmpdataset_oper_b = tmp_secdataset_proc_button_name[4]
+                                        tmpdataset_dat_1st =tmp_secdataset_proc_button_name[:4]
+                                        tmpdataset_dat_2nd =tmp_secdataset_proc_button_name[5:]
+                                    '''
                                     # cycle through next or previous cycle of operation, and update text
                                     if tmpdataset_oper in tmpdataset_oper_lst:    
                                         if mouse_info['button'].name == 'LEFT':
                                             tmpdataset_oper_a=tmpdataset_oper_lst[int((np.where(tmpdataset_oper == np.array(tmpdataset_oper_lst))[0]+1)%3)]
                                             print('left press,was, now,',tmpdataset_oper_b, tmpdataset_oper_a)
+
+                                            secdataset_proc = tmpdataset_oper_a.join(but_name.split(tmpdataset_oper))
+
                                         elif mouse_info['button'].name == 'RIGHT':
                                             tmpdataset_oper_a=tmpdataset_oper_lst[int((np.where(tmpdataset_oper == np.array(tmpdataset_oper_lst))[0]-1)%3)]
                                             print('right press,was, now,',tmpdataset_oper_b, tmpdataset_oper_a)
+                                            
+                                            secdataset_proc = tmpdataset_oper_a.join(but_name.split(tmpdataset_oper))
+
                                         else:
                                             tmpdataset_oper_a = tmpdataset_oper_b
-                                            tmpdataset_dat_2nd =tmp_secdataset_proc_button_name[:4]
-                                            tmpdataset_dat_1st =tmp_secdataset_proc_button_name[5:]
+                                            tmpdataset_dat_1st,tmpdataset_dat_2nd = tmpdataset_dat_2nd,tmpdataset_dat_1st
                                             print('middle  press,was, now,',tmp_secdataset_proc_button_name, tmpdataset_dat_1st  + tmpdataset_oper_a + tmpdataset_dat_2nd)
-                                       
+
+                                            secdataset_proc = tmpdataset_oper.join(but_name.split(tmpdataset_oper)[::-1])
+
                                             #pdb.set_trace()
                                         func_but_text_han[but_name].set_text(tmpdataset_dat_1st  + tmpdataset_oper_a + tmpdataset_dat_2nd)
-                                secdataset_proc = func_but_text_han[but_name].get_text()
-                            else:
-                                secdataset_proc = but_name 
+
+                                #pdb.set_trace()
+                                #secdataset_proc = func_but_text_han[but_name].get_text()
+
+                            #else:
+                            #    secdataset_proc = but_name 
 
                             #obs_load_sel[secdataset_proc] = False
 
@@ -6099,9 +6130,17 @@ def nemo_slice_zlev(config = 'amm7',
                                 if secdataset_proc in Dataset_lst:
                                     cur_fig_tit_str_lab = '%s'%dataset_lab_d[secdataset_proc]
                                 else:
+                                    #pdb.set_trace()
                                     tmpdataset_1 = 'Dataset ' + secdataset_proc[3]
                                     tmpdataset_2 = 'Dataset ' + secdataset_proc[8]
                                     tmpdataset_oper = secdataset_proc[4]
+                                    '''
+                                    tmpdataset_oper_char_ind = int(np.where(np.array([ss in tmpdataset_oper_lst for ss in tmp_secdataset_proc_button_name]))[0][0])
+                                    
+                                    tmpdataset_1 = 'Dataset ' + secdataset_proc[tmpdataset_oper_char_ind-1]
+                                    tmpdataset_2 = 'Dataset ' + secdataset_proc[-1]
+                                    '''
+                                    tmpdataset_oper = secdataset_proc[tmpdataset_oper_char_ind]
                                     if tmpdataset_oper == '-':
                                         cur_fig_tit_str_lab = '%s minus %s'%(dataset_lab_d[tmpdataset_1],dataset_lab_d[tmpdataset_2])
                             

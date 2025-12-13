@@ -5550,9 +5550,12 @@ def trim_file_dict(fname_dict,thd):
     return fname_dict
 
 
-def create_col_lst(nDataset):
+def create_col_lst(nDataset,tmpdataset_oper_lst):
     #create a set of lists of standard colours, colours for differences, and linestyles.
     
+
+    #number of differenceing methods
+    ndiffmeth = len(tmpdataset_oper_lst)
     Dataset_col = ['r','b','g','c','m','y']
     Dataset_col_diff = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan']
     #https://matplotlib.org/3.3.3/gallery/lines_bars_and_markers/linestyles.html
@@ -5565,10 +5568,10 @@ def create_col_lst(nDataset):
         
         for ii in range(nDataset-len(Dataset_col)):Dataset_col.append(CSS4_COLORS[ii])
 
-    if (nDataset**2)>len(Dataset_col):
+    if ((nDataset**2)*ndiffmeth)>len(Dataset_col):
         import matplotlib.colors as mcolors
         XKCD_COLORS = np.array([ss for ss in mcolors.XKCD_COLORS.keys()])
-        for ii in range((nDataset**2)-len(Dataset_col_diff)):Dataset_col_diff.append(XKCD_COLORS[ii])
+        for ii in range(((nDataset**2)*ndiffmeth)-len(Dataset_col_diff)):Dataset_col_diff.append(XKCD_COLORS[ii])
     #print (nDataset,len(Dataset_col),len(Dataset_col_diff),len(linestyle_str))
     return Dataset_col,Dataset_col_diff,linestyle_str
 
