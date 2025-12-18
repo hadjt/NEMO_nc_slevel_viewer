@@ -5973,6 +5973,43 @@ def create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncg
 
 
 
+def split_secdataset_proc(secdataset_proc, oper_lst):
+    # for a given secdataset_proc string in the format of:
+    #   "Dataset 1" or "Dat1-Dat4"
+    # return 
+    #   "1", None, None    or
+    #   "1","4","-"
+    #
+
+    if secdataset_proc[:8] == 'Dataset ':
+        tmpdatasetnum_1 = secdataset_proc[8:]
+        tmpdatasetnum_2,tmpdataset_oper  = None, None
+    elif secdataset_proc[:3] == 'Dat':
+        datind2 = secdataset_proc.find('Dat',1)
+        # find which character in secdataset_proc is the operator character ('-','/','%' etc)
+        isOpCh = np.array([ss in  oper_lst for ss in secdataset_proc])
+        if isOpCh.any() == 0:
+            print('split_secdataset_proc: operator character not found in secdataset_proc',secdataset_proc,oper_lst)
+            pdb.set_trace()
+        OpChind = int(np.where(isOpCh)[0][0])
+
+        tmpdatasetnum_1 = secdataset_proc[3:OpChind]
+        tmpdataset_oper = secdataset_proc[OpChind]
+        tmpdatasetnum_2 = secdataset_proc[datind2+3:]
+   
+    else:
+
+        print('split_secdataset_proc: secdataset_proc not in form of Dataset %i, or Dat%i%1sDat%i',secdataset_proc)
+        pdb.set_trace()
+
+    #tmpdatasetnum_1 = secdataset_proc[3]
+    #tmpdatasetnum_2 = secdataset_proc[8]
+    #tmpdataset_oper = secdataset_proc[4]
+
+
+
+    #pdb.set_trace()
+    return tmpdatasetnum_1,tmpdatasetnum_2,tmpdataset_oper
 
 
 def dataset_comp_func(dataset_1_in, dataset_2_in, method = None):
