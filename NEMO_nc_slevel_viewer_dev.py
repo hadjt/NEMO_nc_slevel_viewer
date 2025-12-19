@@ -6129,7 +6129,7 @@ def nemo_slice_zlev(config = 'amm7',
                                     if mouse_info['button'].name == 'LEFT':
                                         curr_dataset_diff_oper_ind =  (curr_dataset_diff_oper[2]+1)%len(dataset_diff_oper_dict['oper_lst'])
                                     elif mouse_info['button'].name == 'RIGHT':
-                                        curr_dataset_diff_oper_ind =  (curr_dataset_diff_oper[2]+1)%len(dataset_diff_oper_dict['oper_lst'])
+                                        curr_dataset_diff_oper_ind =  (curr_dataset_diff_oper[2]-1)%len(dataset_diff_oper_dict['oper_lst'])
                                     elif mouse_info['button'].name == 'MIDDLE':
                                         curr_dataset_diff_oper_dat_a,curr_dataset_diff_oper_dat_b = curr_dataset_diff_oper_dat_b,curr_dataset_diff_oper_dat_a
                                     
