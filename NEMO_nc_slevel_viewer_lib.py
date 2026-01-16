@@ -6904,6 +6904,49 @@ def calc_ens_stat_map(map_dat_dict, Ens_stat,Dataset_lst):
     return map_dat
 
 
+def load_xypos_dict(Dataset_lst,configd,config_fnames_dict):
+
+
+    from scipy.interpolate import griddata
+
+    xypos_dict = {}
+    
+    for tmp_datstr in Dataset_lst:
+        th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
+        tmpconfig = configd[th_d_ind]
+        xypos_dict[tmp_datstr] = {}
+        xypos_dict[tmp_datstr]['do_xypos'] = False
+        
+        if 'xypos_file' in config_fnames_dict[tmpconfig].keys():
+
+            xypos_dict[tmp_datstr]['do_xypos'] = True
+            rootgrp = Dataset(config_fnames_dict[tmpconfig]['xypos_file'], 'r')
+            for xy_var in rootgrp.variables.keys(): xypos_dict[tmp_datstr][xy_var] = rootgrp.variables[xy_var][:]
+            xypos_dict[tmp_datstr]['lon_min'] = xypos_dict[tmp_datstr]['LON'].min()
+            xypos_dict[tmp_datstr]['lat_min'] = xypos_dict[tmp_datstr]['LAT'].min()
+            xypos_dict[tmp_datstr]['dlon'] =  (np.diff(xypos_dict[tmp_datstr]['LON'][0,:])).mean()
+            xypos_dict[tmp_datstr]['dlat'] =  (np.diff(xypos_dict[tmp_datstr]['LAT'][:,0])).mean()
+            
+            rootgrp.close()
+
+
+
+            nxylat, nxylon = xypos_dict[tmp_datstr]['LAT'].shape
+            xypos_mask =  np.ma.getmaskarray(xypos_dict[tmp_datstr]['XPOS'])
+
+            xypos_xmat, xypos_ymat = np.meshgrid(np.arange(nxylon), np.arange(nxylat))
+
+            points = (xypos_xmat[~xypos_mask], xypos_ymat[~xypos_mask])
+            values_X = xypos_dict[tmp_datstr]['XPOS'][~xypos_mask]
+            values_Y = xypos_dict[tmp_datstr]['YPOS'][~xypos_mask]
+
+            
+            xypos_dict[tmp_datstr]['XPOS_NN'] = griddata(points, values_X, (xypos_xmat, xypos_ymat), method='nearest')
+            xypos_dict[tmp_datstr]['YPOS_NN'] = griddata(points, values_Y, (xypos_xmat, xypos_ymat), method='nearest')
+
+    return xypos_dict
+
+
 def load_xypos(xypos_fname):
     #xypos_dict = {}
     #xypos_dict[tmp_datstr] =  load_xypos(config_fnames_dict[tmpconfig]['xypos_file'])
@@ -6911,7 +6954,6 @@ def load_xypos(xypos_fname):
             
 
 
-    from scipy.interpolate import griddata
 
 
     xypos_dict = {}
@@ -8003,10 +8045,46 @@ def process_argparse_dataset_lab_d(args):
             dataset_lab_d[tmp_datstr] = tmparr[1]
     return dataset_lab_d
 
+def create_empty_thd(Dataset_lst):
+    
+    thd = {}
+    thd[1] = {}
+    thd[1]['df'] = 1
+    thd[1]['f0'] = 0
+    thd[1]['f1'] = None
+
+    thd[1]['dx'] = 1
+    thd[1]['dy'] = 1
+    thd[1]['x0'] = 0
+    thd[1]['x1'] = None
+    thd[1]['y0'] = 0
+    thd[1]['y1'] = None
+    thd[1]['lat0'] = None
+    thd[1]['lat1'] = None
+    thd[1]['lon0'] = None
+    thd[1]['lon1'] = None
+
+    thd[1]['pxy'] = None
+
+    thd[1]['cutx0'] = 0
+    thd[1]['cutx1'] = None
+    thd[1]['cuty0'] = 0
+    thd[1]['cuty1'] = None
+        
+    # lat0, lat1, lon0, lon1, cutx0, cutx1, cuty0, cuty1
+    #pdb.set_trace()
+
+    # Copy dummy values for all datasets
+    for ii in range(len(Dataset_lst)-1):
+        thd[ii+2] = thd[1].copy()
+
+    return thd
+
 def process_argparse_thd(args,configd, dataset_lst, nDataset):
 
     #pdb.set_trace() 
     # set up empty th dictionary
+    '''
     thd = {}
     thd[1] = {}
     thd[1]['df'] = 1
@@ -8037,8 +8115,8 @@ def process_argparse_thd(args,configd, dataset_lst, nDataset):
     # Copy dummy values for all datasets
     for ii in range(len(dataset_lst)-1):
         thd[ii+2] = thd[1].copy()
-
-
+    '''
+    thd = create_empty_thd(dataset_lst)
 
     # update with arguements.
     # if argument entered for one dataset, copy to all subsequent datasets with the same config
