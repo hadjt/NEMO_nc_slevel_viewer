@@ -8296,7 +8296,7 @@ def process_argparse_EOS(args, dataset_lst):
         EOS_d['T']=2==2
         EOS_d['S']=3==3
 
-        for ii in range(len(dataset_lst)):                 EOS_d[ii+1] = ('' + '.')[:-1]
+        for ii in range(len(dataset_lst)):      EOS_d[ii+1] = ('' + '.')[:-1]
         #for ii in range(len(dataset_lst)): id(EOS_d[ii+1])
         #for ss in EOS_d.keys():ss,id(EOS_d[ss])
 
@@ -8306,7 +8306,7 @@ def process_argparse_EOS(args, dataset_lst):
         EOS_args = (args.EOS)
         EOS_args.sort()
 
-        print('th arguments:',EOS_args)
+        print('EOS arguments:',EOS_args)
         #for tmparr in args.th:
         for tmparr in EOS_args:
             #pdb.set_trace()

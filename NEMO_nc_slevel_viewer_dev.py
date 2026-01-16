@@ -666,7 +666,6 @@ def nemo_slice_zlev(config = 'amm7',
         domsize[th_d_ind] = np.array(lat_d[th_d_ind].shape)
     #pdb.set_trace()
 
-    #pdb.set_trace()
     xypos_dict = {}
     
     for tmp_datstr in Dataset_lst:
@@ -702,7 +701,7 @@ def nemo_slice_zlev(config = 'amm7',
             xypos_dict[tmp_datstr]['XPOS_NN'] = griddata(points, values_X, (xypos_xmat, xypos_ymat), method='nearest')
             xypos_dict[tmp_datstr]['YPOS_NN'] = griddata(points, values_Y, (xypos_xmat, xypos_ymat), method='nearest')
 
-            
+            pdb.set_trace()
 
     init_timer.append((datetime.now(),'created lon lat dict'))
     # if use key words to set intial lon/lat,nvarbutcol convert to jj/ii
