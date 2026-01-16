@@ -58,7 +58,7 @@ from NEMO_nc_slevel_viewer_lib import pop_up_opt_window,pop_up_info_window,get_h
 
 from NEMO_nc_slevel_viewer_lib import calc_ens_stat_2d, calc_ens_stat_3d,calc_ens_stat_map
 
-from NEMO_nc_slevel_viewer_lib import int_ind_wgt_from_xypos, ind_from_lon_lat
+from NEMO_nc_slevel_viewer_lib import load_xypos_dict, int_ind_wgt_from_xypos, ind_from_lon_lat
 
 
 from NEMO_nc_slevel_viewer_lib import load_nemo_slice_zlev_helptext, load_NEMO_nc_viewer_parser
@@ -666,6 +666,18 @@ def nemo_slice_zlev(config = 'amm7',
         domsize[th_d_ind] = np.array(lat_d[th_d_ind].shape)
     #pdb.set_trace()
 
+
+
+    #pdb.set_trace()
+
+
+    xypos_dict = load_xypos_dict(Dataset_lst,configd,config_fnames_dict)
+    #pdb.set_trace()
+    '''
+
+
+
+
     xypos_dict = {}
     
     for tmp_datstr in Dataset_lst:
@@ -702,6 +714,7 @@ def nemo_slice_zlev(config = 'amm7',
             xypos_dict[tmp_datstr]['YPOS_NN'] = griddata(points, values_Y, (xypos_xmat, xypos_ymat), method='nearest')
 
             pdb.set_trace()
+    '''
 
     init_timer.append((datetime.now(),'created lon lat dict'))
     # if use key words to set intial lon/lat,nvarbutcol convert to jj/ii
