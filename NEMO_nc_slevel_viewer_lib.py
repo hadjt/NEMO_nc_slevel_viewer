@@ -5550,9 +5550,12 @@ def trim_file_dict(fname_dict,thd):
     return fname_dict
 
 
-def create_col_lst(nDataset):
+def create_col_lst(nDataset,tmpdataset_oper_lst):
     #create a set of lists of standard colours, colours for differences, and linestyles.
     
+
+    #number of differenceing methods
+    ndiffmeth = len(tmpdataset_oper_lst)
     Dataset_col = ['r','b','g','c','m','y']
     Dataset_col_diff = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan']
     #https://matplotlib.org/3.3.3/gallery/lines_bars_and_markers/linestyles.html
@@ -5565,10 +5568,10 @@ def create_col_lst(nDataset):
         
         for ii in range(nDataset-len(Dataset_col)):Dataset_col.append(CSS4_COLORS[ii])
 
-    if (nDataset**2)>len(Dataset_col):
+    if ((nDataset**2)*ndiffmeth)>len(Dataset_col):
         import matplotlib.colors as mcolors
         XKCD_COLORS = np.array([ss for ss in mcolors.XKCD_COLORS.keys()])
-        for ii in range((nDataset**2)-len(Dataset_col_diff)):Dataset_col_diff.append(XKCD_COLORS[ii])
+        for ii in range(((nDataset**2)*ndiffmeth)-len(Dataset_col_diff)):Dataset_col_diff.append(XKCD_COLORS[ii])
     #print (nDataset,len(Dataset_col),len(Dataset_col_diff),len(linestyle_str))
     return Dataset_col,Dataset_col_diff,linestyle_str
 
@@ -5970,9 +5973,57 @@ def create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncg
 
 
 
+def split_secdataset_proc(secdataset_proc, oper_lst):
+    # for a given secdataset_proc string in the format of:
+    #   "Dataset 1" or "Dat1-Dat4"
+    # return 
+    #   "1", None, None    or
+    #   "1","4","-"
+    #
+
+    if secdataset_proc[:8] == 'Dataset ':
+        tmpdatasetnum_1 = secdataset_proc[8:]
+        tmpdatasetnum_2,tmpdataset_oper  = None, None
+    elif secdataset_proc[:3] == 'Dat':
+        datind2 = secdataset_proc.find('Dat',1)
+        # find which character in secdataset_proc is the operator character ('-','/','%' etc)
+        isOpCh = np.array([ss in  oper_lst for ss in secdataset_proc])
+        if isOpCh.any() == 0:
+            print('split_secdataset_proc: operator character not found in secdataset_proc',secdataset_proc,oper_lst)
+            pdb.set_trace()
+        OpChind = int(np.where(isOpCh)[0][0])
+
+        tmpdatasetnum_1 = secdataset_proc[3:OpChind]
+        tmpdataset_oper = secdataset_proc[OpChind]
+        tmpdatasetnum_2 = secdataset_proc[datind2+3:]
+   
+    else:
+
+        print('split_secdataset_proc: secdataset_proc not in form of Dataset %i, or Dat%i%1sDat%i',secdataset_proc)
+        pdb.set_trace()
+
+    #tmpdatasetnum_1 = secdataset_proc[3]
+    #tmpdatasetnum_2 = secdataset_proc[8]
+    #tmpdataset_oper = secdataset_proc[4]
 
 
 
+    #pdb.set_trace()
+    return tmpdatasetnum_1,tmpdatasetnum_2,tmpdataset_oper
+
+
+def dataset_comp_func(dataset_1_in, dataset_2_in, method = None):
+    if method is None:
+        out_dataset = dataset_1_in - dataset_2_in
+    else:
+        if method in ['-']:
+            out_dataset = dataset_1_in - dataset_2_in
+        if method in ['/']:
+            out_dataset = dataset_1_in / dataset_2_in
+        if method in ['%','centred_percentage_difference']:
+            out_dataset = 100*(dataset_1_in - dataset_2_in)/((dataset_1_in + dataset_2_in)/2.)
+
+    return out_dataset 
 
 
 def resample_xarray(xarr_dict,resample_freq,time_varname_dict):
@@ -8245,7 +8296,7 @@ def process_argparse_EOS(args, dataset_lst):
         EOS_d['T']=2==2
         EOS_d['S']=3==3
 
-        for ii in range(len(dataset_lst)):                 EOS_d[ii+1] = ('' + '.')[:-1]
+        for ii in range(len(dataset_lst)):      EOS_d[ii+1] = ('' + '.')[:-1]
         #for ii in range(len(dataset_lst)): id(EOS_d[ii+1])
         #for ss in EOS_d.keys():ss,id(EOS_d[ss])
 
@@ -8255,7 +8306,7 @@ def process_argparse_EOS(args, dataset_lst):
         EOS_args = (args.EOS)
         EOS_args.sort()
 
-        print('th arguments:',EOS_args)
+        print('EOS arguments:',EOS_args)
         #for tmparr in args.th:
         for tmparr in EOS_args:
             #pdb.set_trace()
