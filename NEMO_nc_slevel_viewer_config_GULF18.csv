@@ -1,0 +1,4 @@
+mesh_file,/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/GULF18/mesh_mask_gulf18.nc
+ncgdept,gdept_0
+z_meth_default,z_slice
+xypos_file,/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/GULF18/gulf18_xypos_updated_with_NEMO_nc_slevel_viewer_create_XYPOS.nc

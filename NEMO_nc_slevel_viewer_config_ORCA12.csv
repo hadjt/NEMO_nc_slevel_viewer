@@ -1,0 +1,9 @@
+mesh_file,/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/ORCA12/mesh_mask_GO6_ORCA12_compressed.nc
+ncgdept,gdept_0
+nce1t,e1t
+nce2t,e2t
+nce3t,e3t_0
+z_meth_default,z_index
+ncglamt,glamt
+ncgphit,gphit
+xypos_file,/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/ORCA12/xypos_0000of0000by0000_orca12.nc

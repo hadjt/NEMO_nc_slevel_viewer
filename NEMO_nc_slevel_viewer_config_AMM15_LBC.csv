@@ -1,0 +1,6 @@
+mesh_file,/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/AMM15/amm15.mesh_mask.nc
+ncgdept,gdept_0
+z_meth_default,z_slice
+xypos_file,/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/AMM15/xypos_amm15.nc
+bdy_coord_1_file,/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/AMM15/coordinates.bdy.nc
+bdy_coord_2_file,/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/AMM15/coordinates.skagbdy.nc

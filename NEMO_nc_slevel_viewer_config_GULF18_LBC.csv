@@ -1,0 +1,7 @@
+mesh_file,/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/GULF18/mesh_mask_gulf18.nc
+ncgdept,gdept_0
+z_meth_default,z_slice
+xypos_file,/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/GULF18/gulf18_xypos_updated_with_NEMO_nc_slevel_viewer_create_XYPOS.nc
+bdy_coord_1_file,/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/GULF18/coordinates.bdy.nc
+bdy_coord_2_file,/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/GULF18/gulf18.bdy.coordinates.rim15.nc
+bdy_coord_3_file,/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/GULF18/gulf18.bdy.coordinates.rim25.nc

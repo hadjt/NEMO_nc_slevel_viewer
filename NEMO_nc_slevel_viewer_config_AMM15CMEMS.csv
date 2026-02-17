@@ -1,0 +1,4 @@
+mesh_file,/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/CopMarProd/NWS_MFC/amm15_CopMar_Prod_old.mesh_mask.nc
+ncgdept,gdept_0
+z_meth_default,z_index
+xypos_file,/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/AMM15/xypos_CMEMSamm15.nc

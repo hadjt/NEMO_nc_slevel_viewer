@@ -2981,10 +2981,30 @@ def nemo_slice_zlev(config = 'amm7',
                 if secdataset_proc in Dataset_lst:
                     
                     for dsi,tmp_datstr in enumerate(Dataset_lst):
+
+                        if Sec_regrid:
+                            tmp_ew_slice_x = ew_slice_dict['Sec Grid'][tmp_datstr]['x']
+                            tmp_ew_slice_y = ew_slice_dict['Sec Grid'][tmp_datstr]['y']
+                            tmp_ew_slice_dat = ew_slice_dict['Sec Grid'][tmp_datstr]['data']
+                            tmp_ns_slice_x = ns_slice_dict['Sec Grid'][tmp_datstr]['x']
+                            tmp_ns_slice_y = ns_slice_dict['Sec Grid'][tmp_datstr]['y']
+                            tmp_ns_slice_dat = ns_slice_dict['Sec Grid'][tmp_datstr]['data']
+                        else:
+                            tmp_ew_slice_x = ew_slice_x
+                            tmp_ew_slice_y = ew_slice_y
+                            tmp_ew_slice_dat = ew_slice_dict[tmp_datstr]
+                            tmp_ns_slice_x = ns_slice_x
+                            tmp_ns_slice_y = ns_slice_y
+                            tmp_ns_slice_dat = ns_slice_dict[tmp_datstr]
+
+                        
+                        #pdb.set_trace()
                         tmplw = 0.5
                         if secdataset_proc == tmp_datstr:tmplw = 1
-                        pax2d.append(ax[1].plot(ew_slice_x,ew_slice_dict[tmp_datstr],Dataset_col[dsi], lw = tmplw))
-                        pax2d.append(ax[2].plot(ns_slice_x,ns_slice_dict[tmp_datstr],Dataset_col[dsi], lw = tmplw))
+                        #pax2d.append(ax[1].plot(ew_slice_x,ew_slice_dict[tmp_datstr],Dataset_col[dsi], lw = tmplw))
+                        #pax2d.append(ax[2].plot(ns_slice_x,ns_slice_dict[tmp_datstr],Dataset_col[dsi], lw = tmplw))
+                        pax2d.append(ax[1].plot(tmp_ew_slice_x,tmp_ew_slice_dat,Dataset_col[dsi], lw = tmplw))
+                        pax2d.append(ax[2].plot(tmp_ns_slice_x,tmp_ns_slice_dat,Dataset_col[dsi], lw = tmplw))
 
                         if do_ensemble:
                             pax2d.append(ax[1].plot(ew_slice_x,ens_ew_slice_dat[0],'k', lw = 1))

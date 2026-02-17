@@ -256,7 +256,7 @@ variables:
 
 
     print ('Finished creating %s at %s'%(xypos_file_out, datetime.now()))
-    pdb.set_trace()
+    #pdb.set_trace()
 
 
 def subset_mats(pvi,pvj,nlon,nlat,nav_lon,nav_lat,xypos_ii_int_mat, xypos_jj_int_mat,npnt):
@@ -362,6 +362,14 @@ def create_AMM15CMEMS_xypos():
     xypos_file_out='/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/AMM15/xypos_CMEMSamm15.nc'
     create_xypos(mesh_file,xypos_file_out)
 
+def create_cmemsmfc_my_xypos(MFC):
+ 
+    import glob
+
+    mesh_file='/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/CopMarProd/%s_MFC/%s-MFC_coordinates_nslv_mesh.nc'%(MFC, MFC)
+    #mesh_file=glob.glob('/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/CopMarProd/%s_MFC/%s-MFC_*_coordinates_nslv_mesh.nc'%(MFC, MFC))[0]
+    xypos_file_out='/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/CopMarProd/%s_MFC/xypos_%s-MFC.nc'%(MFC, MFC)
+    create_xypos(mesh_file,xypos_file_out)
 
 
 def test_xypos_interp():
@@ -431,6 +439,17 @@ def test_xypos_interp():
 
 
 def main():
+    for MFC in ['MED','IBI','BS','BAL','GLO']:
+        create_cmemsmfc_my_xypos(MFC)
+    exit()
+
+    #create_cmemsmfc_my_xypos('IBI')
+    #pdb.set_trace()
+    create_cmemsmfc_my_xypos('GLO')
+    pdb.set_trace()
+    create_cmemsmfc_my_xypos('BAL')
+    pdb.set_trace()
+
     create_AMM15CMEMS_xypos()
 
     create_hires_amm15_xypos()

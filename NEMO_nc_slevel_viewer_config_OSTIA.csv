@@ -1,0 +1,5 @@
+mesh_file,/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/OSTIA/pseudo_mesh_file.nc
+z_meth_default,z_index
+ncglamt,nav_lat
+ncgphit,nav_lon
+# ncks /project/oceanver/monitoring/input/ostia_opfc/diagnostics/run_20250121/sst.nc -v nav_lat,nav_lon /data/cr1/hadjt/data/reffiles/OSTIA/pseudo_mesh_file.nc   

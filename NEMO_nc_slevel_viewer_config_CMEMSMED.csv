@@ -1,0 +1,4 @@
+mesh_file,/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/CopMarProd/MED_MFC/MED-MFC_coordinates_nslv_mesh.nc
+ncgdept,gdept_0
+z_meth_default,z_index
+xypos_file,/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/CopMarProd/MED_MFC/xypos_MED-MFC.nc

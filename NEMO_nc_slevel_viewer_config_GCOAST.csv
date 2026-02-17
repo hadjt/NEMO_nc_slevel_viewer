@@ -1,0 +1,4 @@
+mesh_file,/data/users/jonathan.tinker/shelf_seas/NEMO_nc_slevel_viewer_data/BSH/mesh_mask_comb.nc
+ncgdept,gdept_0
+z_meth_default,z_slice
+xypos_file,/data/users/jonathan.tinker/shelf_seas/NEMO_nc_slevel_viewer_data/BSH/tmp_out_xypos_BSH_NWSMFC_MY.nc
