@@ -5223,7 +5223,8 @@ def nemo_slice_zlev(config = 'amm7',
                                 xsect_ax_pnt_lst = []
                                 xsect_ii_pnt_lst = []
                                 xsect_jj_pnt_lst = []
-                                
+                                xsect_lon_pnt_lst = []
+                                xsect_lat_pnt_lst = []
                                 for tmpxsectloc in xsectloc_lst: 
                                     #### if fig zorder = 1
                                     '''
@@ -5234,6 +5235,7 @@ def nemo_slice_zlev(config = 'amm7',
                                     tmpxsect_jj,tmpxsect_ii = ind_from_lon_lat('Dataset 1',configd,xypos_dict, lon_d,lat_d, thd,rot_dict,tmpxsectloc[0],tmpxsectloc[1])
                                     tmpxsect_ii = int(tmpxsect_ii)
                                     tmpxsect_jj = int(tmpxsect_jj)
+
                                     tmpxsect_ax = 0
                                     if (tmpxsect_ax is None)|(tmpxsect_ii is None)|(tmpxsect_jj is None): 
                                         print('Xsect: selected point outside axis, skipping')
@@ -5241,15 +5243,44 @@ def nemo_slice_zlev(config = 'amm7',
                                     xsect_ax_pnt_lst.append(tmpxsect_ax)
                                     xsect_ii_pnt_lst.append(tmpxsect_ii)
                                     xsect_jj_pnt_lst.append(tmpxsect_jj)
+                                    xsect_lon_pnt_lst.append(tmpxsectloc[0])
+                                    xsect_lat_pnt_lst.append(tmpxsectloc[1])
 
                                 
                                 xsect_jjii_npnt = len(xsect_ii_pnt_lst)
+
+                                # create a pseudo master path:
+                                xsect_psmast_lon_lst = []
+                                xsect_psmast_lat_lst= []
+                                for xsii in range(xsect_jjii_npnt-1): # xsii+=1
+                                    xs_n_step = 100
+                                    tmp_xs_lon_path = np.linspace(xsectloc_lst[xsii][0],xsectloc_lst[xsii+1][0],xs_n_step)
+                                    tmp_xs_lat_path = np.linspace(xsectloc_lst[xsii][1],xsectloc_lst[xsii+1][1],xs_n_step)
+                                    xsect_psmast_lon_lst.append(tmp_xs_lon_path)
+                                    xsect_psmast_lat_lst.append(tmp_xs_lat_path)
+
+                                xsect_psmast_lon_mat = np.concatenate(xsect_psmast_lon_lst)
+                                xsect_psmast_lat_mat = np.concatenate(xsect_psmast_lat_lst)
+                                xsect_psmast_dlonlat_mat = np.sqrt((xsect_psmast_lon_mat[1:] - xsect_psmast_lon_mat[:-1])**2 + (xsect_psmast_lat_mat[1:] - xsect_psmast_lat_mat[:-1])**2)
+                                xsect_psmast_dist_mat = np.append(0,xsect_psmast_dlonlat_mat).cumsum()
+                                xsect_lon_pnt_mat = np.array(xsect_lon_pnt_lst)
+                                xsect_lat_pnt_mat = np.array(xsect_lat_pnt_lst)
+                                '''
+                                plt.plot(xsect_psmast_lon_mat,xsect_psmast_lat_mat)
+                                plt.plot(np.array(xsectloc_lst)[:,0],np.array(xsectloc_lst)[:,1],'+')
+                                plt.plot(np.append(xsect_psmast_lon_mat[::xs_n_step],xsect_psmast_lon_mat[-1]),np.append(xsect_psmast_lat_mat[::xs_n_step],xsect_psmast_lat_mat[-1]),'x')
+                                
+                                '''
+
+                                xsect_dist_pnt_mat = np.append(xsect_psmast_dist_mat[::xs_n_step],xsect_psmast_dist_mat[-1])
+
+                                
                                 if xsect_jjii_npnt < 2: 
                                     print('Xsect: you must select at least 2 points. You have selected %i points'%xsect_jjii_npnt)
                                     print('Xsect: exiting Xsect')
                                     continue
                                     
-
+                                
                                 
                                 sec_th_d_ind = int(xsect_secdataset_proc[8:]) # int(tmp_datstr[-1])
                                 #pdb.set_trace()
@@ -5272,10 +5303,15 @@ def nemo_slice_zlev(config = 'amm7',
                                 xsect_lat_pnt_dict = {}
                                 xsect_ii_pnt_dict = {}
                                 xsect_jj_pnt_dict = {}
+                                xsect_valid_pnt_dict = {}
+                                xsect_valid_ind_dict = {}
                                 xsect_jj_ind_dict = {}
                                 xsect_ii_ind_dict = {}
                                 xsect_pnt_ind_dict = {}
+                                xsect_distdeg_dict = {}
                                 nxsect_dict = {}
+                                xsect_cum_deg_dict = {}
+                                xsect_degdist_dict = {}
 
                                 for tmp_datstr in Dataset_lst:
 
@@ -5294,22 +5330,30 @@ def nemo_slice_zlev(config = 'amm7',
                                     #if configd[int(secdataset_proc[8:])].lower() in ['amm7','amm15','co9p2','gulf18','orca025']:
                                     #if True:
 
+                                    tmp_xsect_valid_ind = []
+                                    xsect_valid_ind_lst = []
                                     xsect_ii_ind_lst = []
                                     xsect_jj_ind_lst = []
                                     xsect_n_ind_lst = []
                                     tmp_xsect_ii_pnt_dict = []
                                     tmp_xsect_jj_pnt_dict = []
+                                    tmp_xsect_valid_pnt_dict = []
 
                                     #convert selected  points into lon lat points for current grid
                                     for xi in range(xsect_jjii_npnt):
 
                                         #pdb.set_trace()
-                                        tmp_jj_jjii_from_lon_lat,tmp_ii_jjii_from_lon_lat = jjii_from_lon_lat(xsect_lon_pnt_mat[xi],xsect_lat_pnt_mat[xi],lon_d[th_d_ind],lat_d[th_d_ind])
+                                        (tmp_jj_jjii_from_lon_lat,tmp_ii_jjii_from_lon_lat, tmp_valid_jjii_from_lon_lat) = jjii_from_lon_lat(
+                                            xsect_lon_pnt_mat[xi],xsect_lat_pnt_mat[xi],lon_d[th_d_ind],lat_d[th_d_ind],
+                                            predict_out_of_domain = True)
+                                        
                                         #tmp_lonlatijdist_iijj = np.sqrt((xsect_lon_pnt_mat[xi] - lon_d[th_d_ind])**2 + (xsect_lat_pnt_mat[xi] - lat_d[th_d_ind])**2)).argmin()
                                         tmp_xsect_ii_pnt_dict.append(tmp_ii_jjii_from_lon_lat)
                                         tmp_xsect_jj_pnt_dict.append(tmp_jj_jjii_from_lon_lat)
+                                        tmp_xsect_valid_pnt_dict.append(tmp_valid_jjii_from_lon_lat)
                                     xsect_ii_pnt_dict[tmp_datstr] = np.array(tmp_xsect_ii_pnt_dict)
                                     xsect_jj_pnt_dict[tmp_datstr] = np.array(tmp_xsect_jj_pnt_dict)
+                                    xsect_valid_pnt_dict[tmp_datstr] = np.array(tmp_xsect_valid_pnt_dict)
                                     del(tmp_xsect_ii_pnt_dict)
                                     del(tmp_xsect_jj_pnt_dict)
 
@@ -5321,19 +5365,37 @@ def nemo_slice_zlev(config = 'amm7',
                                         #tmp_ii = (xsect_lon_pnt_mat[xi] - lon_d[th_d_ind]**2) + (xsect_lat_pnt_mat[xi] - lat_d[th_d_ind]**2)
                                         #tmp_xsect_ii_ind,tmp_xsect_jj_ind = profile_line( xsect_ii_pnt_lst[xi:xi+2],xsect_jj_pnt_lst[xi:xi+2], ni = tmpnlat )
                                         tmp_xsect_ii_ind,tmp_xsect_jj_ind = profile_line( xsect_ii_pnt_dict[tmp_datstr][xi:xi+2],xsect_jj_pnt_dict[tmp_datstr][xi:xi+2], ni = tmpnlat )
+                                        # if both endpoints of the profile line are valid, 
+                                        # the points of the line are also valid, so valid is True
+                                        if xsect_valid_pnt_dict[tmp_datstr][xi:xi+2].all():
+                                            tmp_xsect_valid_ind = np.ones(tmp_xsect_ii_ind.shape).astype('bool')
+                                        else:
+                                            tmp_xsect_valid_ind = np.zeros(tmp_xsect_ii_ind.shape).astype('bool')
+                                            #pdb.set_trace()
+                                        xsect_valid_ind_lst.append(tmp_xsect_valid_ind)
                                         xsect_ii_ind_lst.append(tmp_xsect_ii_ind)
                                         xsect_jj_ind_lst.append(tmp_xsect_jj_ind)
                                         xsect_n_ind_lst.append(tmp_xsect_ii_ind.size)
 
+
+                                    xsect_valid_ind_mat = np.concatenate(xsect_valid_ind_lst)
                                     xsect_ii_ind_mat = np.concatenate(xsect_ii_ind_lst)
                                     xsect_jj_ind_mat = np.concatenate(xsect_jj_ind_lst)
+
+
+
+                                    
+                                    #pdb.set_trace()
                                     nxsect = xsect_ii_ind_mat.size
 
                                     xsect_lon_mat = lon_d[th_d_ind][[xsect_jj_ind_mat],[xsect_ii_ind_mat]][0,:]
                                     xsect_lat_mat = lat_d[th_d_ind][[xsect_jj_ind_mat],[xsect_ii_ind_mat]][0,:]
-                                    
-                                    xsect_pnt_ind = np.append(0,np.cumsum(xsect_n_ind_lst)-1)
+                                    xsect_psmast_ind_mat = np.array([np.sqrt((tmpxslon - xsect_psmast_lon_mat)**2 + (tmpxslat - xsect_psmast_lat_mat)**2 ).argmin()  for tmpxslon, tmpxslat in zip(xsect_lon_mat,xsect_lat_mat) ])
+                                    xsect_degdist_mat =  xsect_psmast_dist_mat[xsect_psmast_ind_mat]
 
+                                    xsect_pnt_ind = np.append(0,np.cumsum(xsect_n_ind_lst)-1)
+                                    xsect_d_deg_ind = np.array([np.sqrt((xsect_lon_mat[xii] - xsect_lon_mat[xii+1])**2 + (xsect_lat_mat[xii] - xsect_lat_mat[xii+1])**2) for xii in range(nxsect-1)])
+                                    xsect_cumsum_deg_ind = np.append(0,xsect_d_deg_ind).cumsum()
 
                                     xsect_lon_dict[tmp_datstr] = xsect_lon_mat
                                     xsect_lat_dict[tmp_datstr] = xsect_lat_mat
@@ -5341,11 +5403,15 @@ def nemo_slice_zlev(config = 'amm7',
                                     xsect_lat_pnt_dict[tmp_datstr] = xsect_lat_pnt_mat
                                     xsect_ii_ind_dict[tmp_datstr] = xsect_ii_ind_mat
                                     xsect_jj_ind_dict[tmp_datstr] = xsect_jj_ind_mat
+                                    xsect_valid_ind_dict[tmp_datstr] = xsect_valid_ind_mat
                                     xsect_pnt_ind_dict[tmp_datstr] = xsect_pnt_ind
                                     nxsect_dict[tmp_datstr] = nxsect
+                                    xsect_cum_deg_dict[tmp_datstr] = xsect_cumsum_deg_ind
+
+                                    xsect_degdist_dict[tmp_datstr] = xsect_degdist_mat
 
                                    
-                                
+                            #pdb.set_trace()
                             print('Xsect: indices processed.')
 
 
@@ -5373,7 +5439,9 @@ def nemo_slice_zlev(config = 'amm7',
                                     
                                 elif var_dim[var] == 3:
                                     tmp_xsect_dat[tmp_datstr] = data_inst[tmp_datstr][[xsect_jj_ind_dict[tmp_datstr]],[xsect_ii_ind_dict[tmp_datstr]]][0,:]
-                                    tmp_xsect_x[tmp_datstr] = np.arange(nxsect_dict[tmp_datstr])
+                                    tmp_xsect_dat[tmp_datstr] = np.ma.array(tmp_xsect_dat[tmp_datstr],mask = tmp_xsect_dat[tmp_datstr].mask | xsect_valid_ind_dict[tmp_datstr] == False)
+                                    
+                                    tmp_xsect_x[tmp_datstr] = xsect_degdist_dict[tmp_datstr]
                                     #pdb.set_trace()
 
 
@@ -5411,10 +5479,16 @@ def nemo_slice_zlev(config = 'amm7',
                                     #for axi,tmpax  in enumerate(axxs): 
                                     for axi,tmp_datstr in enumerate(Dataset_lst): 
                                         
+                                        for xspntlon,xspntlat,xspntd in zip (xsect_lon_pnt_mat,xsect_lat_pnt_mat,xsect_dist_pnt_mat):
+                                            axxs[axi].axvline(xspntd,color = 'k', alpha = 0.5, ls = '--') 
+                                            axxs[axi].text(xspntd,xs_ylim[0] - np.ptp(xs_ylim)*0.9   ,lon_lat_to_str(xspntlon,xspntlat)[0], rotation = 270, ha = 'left', va = 'top')
+                                        
+                                        
+
                                         #tmpax = axxs[xi]
-                                        for xi in xsect_pnt_ind_dict[tmp_datstr]: axxs[axi].axvline(xi,color = 'k', alpha = 0.5, ls = '--') 
+                                        #for xi in xsect_pnt_ind_dict[tmp_datstr]: axxs[axi].axvline(xi,color = 'k', alpha = 0.5, ls = '--') 
                                         #for xi in xsect_pnt_ind_dict[tmp_datstr]: axxs[axi].text(xi,xs_ylim[0] - xs_ylim.ptp()*0.9   ,lon_lat_to_str(xsect_lon_dict[tmp_datstr][xi],xsect_lat_dict[tmp_datstr][xi])[0], rotation = 270, ha = 'left', va = 'top')
-                                        for xi in xsect_pnt_ind_dict[tmp_datstr]: axxs[axi].text(xi,xs_ylim[0] - np.ptp(xs_ylim)*0.9   ,lon_lat_to_str(xsect_lon_dict[tmp_datstr][xi],xsect_lat_dict[tmp_datstr][xi])[0], rotation = 270, ha = 'left', va = 'top')
+                                        #for xi in xsect_pnt_ind_dict[tmp_datstr]: axxs[axi].text(xi,xs_ylim[0] - np.ptp(xs_ylim)*0.9   ,lon_lat_to_str(xsect_lon_dict[tmp_datstr][xi],xsect_lat_dict[tmp_datstr][xi])[0], rotation = 270, ha = 'left', va = 'top')
                                         plt.colorbar(paxxs[axi], ax = axxs[axi])
                                     plt.colorbar(paxxs[2], ax = axxs[2])
                                     for xi,tmp_datstr in enumerate(Dataset_lst): set_perc_clim_pcolor_in_region(5,95,ax = axxs[axi])
@@ -5464,9 +5538,15 @@ def nemo_slice_zlev(config = 'amm7',
                                     #for axi,tmpax  in enumerate(axxs): 
                                     for axi,tmp_datstr in enumerate(Dataset_lst): 
                                         #tmpax = axxs[axi]
-                                        for xi in xsect_pnt_ind_dict[tmp_datstr]: axxs[axi].axvline(xi,color = 'k', alpha = 0.5, ls = '--') 
+
+                                        for xspntlon,xspntlat,xspntd in zip (xsect_lon_pnt_mat,xsect_lat_pnt_mat,xsect_dist_pnt_mat):
+                                            axxs[axi].axvline(xspntd,color = 'k', alpha = 0.5, ls = '--') 
+                                            axxs[axi].text(xspntd,xs_ylim[0] - np.ptp(xs_ylim)*0.9   ,lon_lat_to_str(xspntlon,xspntlat)[0], rotation = 270, ha = 'left', va = 'top')
+                                        
+
+                                        #for xi in xsect_pnt_ind_dict[tmp_datstr]: axxs[axi].axvline(xi,color = 'k', alpha = 0.5, ls = '--') 
                                         #for xi in xsect_pnt_ind_dict[tmp_datstr]: axxs[axi].text(xi,xs_ylim[0] - xs_ylim.ptp()*0.9   ,lon_lat_to_str(xsect_lon_dict[tmp_datstr][xi],xsect_lat_dict[tmp_datstr][xi])[0], rotation = 270, ha = 'left', va = 'top')
-                                        for xi in xsect_pnt_ind_dict[tmp_datstr]: axxs[axi].text(xi,xs_ylim[0] - np.ptp(xs_ylim)*0.9   ,lon_lat_to_str(xsect_lon_dict[tmp_datstr][xi],xsect_lat_dict[tmp_datstr][xi])[0], rotation = 270, ha = 'left', va = 'top')
+                                        #for xi in xsect_pnt_ind_dict[tmp_datstr]: axxs[axi].text(xi,xs_ylim[0] - np.ptp(xs_ylim)*0.9   ,lon_lat_to_str(xsect_lon_dict[tmp_datstr][xi],xsect_lat_dict[tmp_datstr][xi])[0], rotation = 270, ha = 'left', va = 'top')
                                         plt.colorbar(paxxs[axi], ax = axxs[axi])
                                     for xi,tmp_datstr in enumerate(Dataset_lst): set_perc_clim_pcolor_in_region(5,95,ax = axxs[axi])
                                     
@@ -5521,9 +5601,19 @@ def nemo_slice_zlev(config = 'amm7',
                                     axxs[0].set_ylim(xs_ylim)
                                     #pdb.set_trace()
 
-                                for xi in xsect_pnt_ind_dict[xsect_secdataset_proc]:                            axxs[0].axvline(xi,color = 'k', alpha = 0.5, ls = '--') 
+                                #for xi in xsect_pnt_ind_dict[xsect_secdataset_proc]:   axxs[0].axvline(xi,color = 'k', alpha = 0.5, ls = '--') 
 
-                                if var_dim[var] == 4:
+                                for xspntlon,xspntlat,xspntd in zip (xsect_lon_pnt_mat,xsect_lat_pnt_mat,xsect_dist_pnt_mat):
+                                    axxs[0].axvline(xspntd,color = 'k', alpha = 0.5, ls = '--') 
+                                    
+                                    if var_dim[var] == 4:
+                                        axxs[0].text(xspntd,xs_ylim[0] - np.ptp(xs_ylim)*0.9   ,lon_lat_to_str(xspntlon,xspntlat)[0], rotation = 270, ha = 'left', va = 'top')
+                                        
+                                    elif var_dim[var] == 3:
+                                        axxs[0].text(xspntd,xs_ylim[0] + np.ptp(xs_ylim)*0.9   ,lon_lat_to_str(xspntlon,xspntlat)[0], rotation = 270, ha = 'left', va = 'top')
+                                       
+
+                                '''if var_dim[var] == 4:
                                     #for xi in xsect_pnt_ind_dict[xsect_secdataset_proc]:         axxs[0].text(xi,xs_ylim[0] - xs_ylim.ptp()*0.9,lon_lat_to_str(xsect_lon_dict[tmp_datstr][xi],xsect_lat_dict[tmp_datstr][xi])[0], rotation = 270, ha = 'left', va = 'top')
                                     for xi in xsect_pnt_ind_dict[xsect_secdataset_proc]:         axxs[0].text(xi,xs_ylim[0] - np.ptp(xs_ylim)*0.9,lon_lat_to_str(xsect_lon_dict[tmp_datstr][xi],xsect_lat_dict[tmp_datstr][xi])[0], rotation = 270, ha = 'left', va = 'top')
                                 elif var_dim[var] == 3:
@@ -5531,7 +5621,7 @@ def nemo_slice_zlev(config = 'amm7',
                                     for xi in xsect_pnt_ind_dict[xsect_secdataset_proc]:         axxs[0].text(xi,xs_ylim[0] + np.ptp(xs_ylim)*0.9,lon_lat_to_str(xsect_lon_dict[tmp_datstr][xi],xsect_lat_dict[tmp_datstr][xi])[0], rotation = 270, ha = 'left', va = 'top')
                                 #axxs[0].set_xlim([0,xs_xlim[1]*1.01])
                                 #pdb.set_trace()
-
+                                '''
                                 #xmapax = figxs.add_axes([0.075,0.15,0.2,0.5], frameon=False)
                                 xmapax = figxs.add_axes([0.075,0.15,0.175,0.4], frameon=False)
                                 

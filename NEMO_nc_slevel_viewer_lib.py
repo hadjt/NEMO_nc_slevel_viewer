@@ -6821,14 +6821,30 @@ def get_help_text(help_type,help_but):
 
     return help_text
 
-def jjii_from_lon_lat(lon_in, lat_in, lon_d_in,lat_d_in,config = 'orca12'):
+def jjii_from_lon_lat(lon_in, lat_in, lon_d_in,lat_d_in,config = 'orca12', predict_out_of_domain = False):
     
     tmp_distmat = np.sqrt((lon_in - lon_d_in)**2 + (lat_in - lat_d_in)**2)
 
 
     sel_jj,sel_ii = tmp_distmat.argmin()//tmp_distmat.shape[1], tmp_distmat.argmin()%tmp_distmat.shape[1]
 
-    return sel_jj,sel_ii
+    if predict_out_of_domain: 
+        # distance from point to nearest grid box
+        mindist = tmp_distmat.min()
+        #median diag grid box distance... 
+        pred_med_diag_gridspace = np.median(np.sqrt((lon_d_in[1:,:-1] - lon_d_in[1:,1:] )**2 + (lat_d_in[:-1,1:] - lat_d_in[1:,1:])**2))
+        
+    
+        # if the distance from point to nearest grid box (mindist) 
+        # is less than the median diag grid box distance (pred_med_diag_gridspace)
+        # the estimate is a valid point
+        if mindist < pred_med_diag_gridspace:
+            valid_point = True 
+        else:
+            valid_point = False     
+        return sel_jj,sel_ii,valid_point
+    else:
+        return sel_jj,sel_ii
                
 def calc_ens_stat_3d(ns_slice_dat, ew_slice_dat,hov_dat,ns_slice_dict,ew_slice_dict,hov_dat_dict,ts_dat_dict, Ens_stat,Dataset_lst):
 
