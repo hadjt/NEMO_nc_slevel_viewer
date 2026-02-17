@@ -1,0 +1,4 @@
+mesh_file,/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/CopMarProd/SL_TAC/SLTAC_MDT_grid.nc
+ncgdept,gdept_0
+z_meth_default,z_index
+xypos_file,/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/CopMarProd/SL_TAC/xypos_SL_TAC.nc

@@ -2253,6 +2253,7 @@ def reload_data_instances_time(var,thd,ldi,ti,current_time_datetime_since_1970,t
 
             else:
                 print('reload_data_instants: failed... ti to late?')
+                print('Consider --do_match_time False')
 
                 if var_dim[var] == 3:
                     data_inst[tmp_datstr] = np.ma.zeros((xarr_dict[tmp_datstr][tmp_cur_var_grid][ldi].variables[var][0,thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']].shape))*np.ma.masked
@@ -7318,7 +7319,7 @@ def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lo
 
     #Numeric code of the dataset
     th_d_ind = int(tmp_datstr[8:])
-
+    #pdb.set_trace() 
     # if using xypos files:
     if xypos_dict[tmp_datstr]['do_xypos'] == True:
         
@@ -7333,6 +7334,12 @@ def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lo
         #ensure the indices are in the array
         xy_i_ind = np.ma.minimum(np.ma.maximum(xy_i_ind,0),nxylon-1)
         xy_j_ind = np.ma.minimum(np.ma.maximum(xy_j_ind,0),nxylat-1)
+
+        '''
+        print(xypos_dict[tmp_datstr]['LON'][xy_j_ind,xy_i_ind],loni,xypos_dict[tmp_datstr]['XPOS'][xy_j_ind,xy_i_ind])
+        print(xypos_dict[tmp_datstr]['LAT'][xy_j_ind,xy_i_ind],latj,xypos_dict[tmp_datstr]['YPOS'][xy_j_ind,xy_i_ind])
+
+        '''
 
         #pdb.set_trace()
         # Convert indices to lon and lats with the XYPOS file
@@ -7853,7 +7860,7 @@ def load_NEMO_nc_viewer_parser(nemo_slice_zlev_helptext):
                         '"True". Requires bool(fig_cutout)')
     
 
-    parser.add_argument('--allow_diff_time', type=str, required=False)
+    #parser.add_argument('--allow_diff_time', type=str, required=False)
     parser.add_argument('--do_match_time', type=str, required=False)
     parser.add_argument('--do_addtimedim', type=str, required=False)
 

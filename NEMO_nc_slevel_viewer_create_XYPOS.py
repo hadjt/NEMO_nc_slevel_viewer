@@ -438,7 +438,20 @@ def test_xypos_interp():
     pdb.set_trace()
 
 
+def create_cmemsTAC_my_xypos():
+    mesh_file='/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/CopMarProd/SL_TAC/SLTAC_MDT_grid.nc'
+    #mesh_file=glob.glob('/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/CopMarProd/%s_MFC/%s-MFC_*_coordinates_nslv_mesh.nc'%(MFC, MFC))[0]
+    xypos_file_out='/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/CopMarProd/SL_TAC/xypos_SL_TAC.nc'
+    create_xypos(mesh_file,xypos_file_out)
+
+
+
 def main():
+    create_cmemsTAC_my_xypos()
+
+    pdb.set_trace()
+
+
     for MFC in ['MED','IBI','BS','BAL','GLO']:
         create_cmemsmfc_my_xypos(MFC)
     exit()

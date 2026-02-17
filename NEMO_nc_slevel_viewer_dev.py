@@ -109,7 +109,8 @@ def nemo_slice_zlev(config = 'amm7',
     z_meth = None,
     secdataset_proc = 'Dataset 1',
     hov_time = False, do_cont = False, do_grad = 0,
-    allow_diff_time = False,define_time_dict = None, 
+    #allow_diff_time = False,
+    define_time_dict = None, 
     preload_data = True,
     ld_lst = None, ld_nctvar = 'time_counter',ld_lab_lst = '-36,-12,012,036,060,084,108,132',
     clim_sym = None, clim_pair = True,use_cmocean = False,
@@ -6649,7 +6650,7 @@ def main():
         # separating those that default to True
         argparse_bool_T = ['clim_pair','fig_cutout','do_match_time','trim_files','Obs_pair_loc','Obs_AbsAnom']
         # from those that default to False
-        argparse_bool_F = ['allow_diff_time','clim_sym','hov_time','justplot','use_cmocean','verbose_debugging','do_timer','do_memory','do_ensemble','do_mask','do_addtimedim','do_all_WW3','do_cont','trim_extra_files','Obs_hide','use_xarray_gdept','Obs_hide_edges','Obs_AbsAnom','Time_Diff','Obs_pair_loc','Obs_show_with_diff_var']
+        argparse_bool_F = ['clim_sym','hov_time','justplot','use_cmocean','verbose_debugging','do_timer','do_memory','do_ensemble','do_mask','do_addtimedim','do_all_WW3','do_cont','trim_extra_files','Obs_hide','use_xarray_gdept','Obs_hide_edges','Obs_AbsAnom','Time_Diff','Obs_pair_loc','Obs_show_with_diff_var'] #'allow_diff_time',
         
 
 
@@ -6735,7 +6736,8 @@ def main():
             dataset_lab_d = dataset_lab_d,configd = configd,thd = thd,fname_dict = fname_dict,
             load_second_files = load_second_files,
             clim_sym = argparse_bool_dict['clim_sym'], clim = args.clim, clim_pair = argparse_bool_dict['clim_pair'],hov_time = argparse_bool_dict['hov_time'],
-            allow_diff_time = argparse_bool_dict['allow_diff_time'],preload_data = preload_data_in,
+            #allow_diff_time = argparse_bool_dict['allow_diff_time'],
+            preload_data = preload_data_in,
             do_grad = args.do_grad,do_cont = argparse_bool_dict['do_cont'],trim_extra_files = argparse_bool_dict['trim_extra_files'],trim_files = argparse_bool_dict['trim_files'],
             use_cmocean = argparse_bool_dict['use_cmocean'], date_fmt = args.date_fmt,
             Time_Diff = argparse_bool_dict['Time_Diff'],
