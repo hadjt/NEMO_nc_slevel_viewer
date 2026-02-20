@@ -3003,7 +3003,7 @@ def nemo_slice_zlev(config = 'amm7',
 
             if do_adjacent_map & Sec_regrid & (secdataset_proc in Dataset_lst):
                 #pdb.set_trace()
-                #print(adjacent_map_ind_lst)
+                print('adjacent_map_ind_lst:',adjacent_map_ind_lst)
                 #print(np.array(Dataset_lst)[adjacent_map_ind_lst[::-1]])
                 for tmp_secdataset_proc in np.array(Dataset_lst)[adjacent_map_ind_lst[::-1]]:
                 #for tmp_secdataset_proc in Dataset_lst:
@@ -3663,7 +3663,15 @@ def nemo_slice_zlev(config = 'amm7',
                         map_clim = np.ma.array([tmp_map_dat_clim_mat.min(),tmp_map_dat_clim_mat.max()])
 
                         if clim_sym: map_clim = np.ma.array([-1,1])*np.abs(map_clim).max()
-                        if map_clim.mask.any() == False: set_clim_pcolor(map_clim, ax = ax[0])
+                        if map_clim.mask.any() == False:
+                            
+                            if test_clim_code: print('set_clim_pcolor(map_clim, ax = ax[0])')
+                        
+                            set_clim_pcolor(map_clim, ax = ax[0])
+                            #pdb.set_trace()
+                            if do_adjacent_map & Sec_regrid & (secdataset_proc in Dataset_lst):
+                                if test_clim_code: print('for tmppax in pax: tmppax.set_clim(map_clim)')
+                                for tmppax in pax: tmppax.set_clim(map_clim)
 
                     
                     if test_clim_code: print('if map_clim.mask.any() == False: set_clim_pcolor(map_clim, ax = ax[0])')
