@@ -1472,9 +1472,11 @@ def nemo_slice_zlev(config = 'amm7',
                     
             
                 if nDataset in [3,4]:
-                    tmpfunc_but_dx1 = 0.025# 0.05/2
+                    #tmpfunc_but_dx1 = 0.025# 0.05/2
+                    tmpfunc_but_dx1 = 0.0375# 0.05/2
                 elif nDataset in [5,6]:
-                    tmpfunc_but_dx1 = 0.0125# 0.05/4
+                    #tmpfunc_but_dx1 = 0.0125# 0.05/4
+                    tmpfunc_but_dx1 = 0.025# 0.05/2
                     '''
                 if nDataset>6:
                     tmpfunc_but_dx1 = 0.015
