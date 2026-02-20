@@ -2304,6 +2304,13 @@ def nemo_slice_zlev(config = 'amm7',
             ###################################################################################################
             
 
+                
+            if clim_sym_but == 0:
+                func_but_text_han['Clim: sym'].set_color('k')                                
+            elif clim_sym_but == 1:
+                func_but_text_han['Clim: sym'].set_color('r')          
+
+
             ###################################################################################################
 
             if reload_hov:
@@ -2728,7 +2735,9 @@ def nemo_slice_zlev(config = 'amm7',
                 curr_cmap = cylc_cmap
                 clim_sym = True
             else:
-                if (secdataset_proc in Dataset_lst) & (clim_sym_but != 1):
+                # if a Dataset, and the symetrical clim button isn't set ("clim: sym")
+                # use a normal colourmap
+                if (clim_sym_but == 0):
                     if col_scl == 0:
                         curr_cmap = base_cmap
                     elif col_scl == 1:
@@ -2739,10 +2748,29 @@ def nemo_slice_zlev(config = 'amm7',
                 else:
                     curr_cmap = scnd_cmap
                     clim_sym = True
-            #else:
-            #    print(secdataset_proc)
-            #    pdb.set_trace()
-            
+
+                """
+                if (secdataset_proc in Dataset_lst) & (clim_sym_but == 0):#(clim_sym_but != 1):
+                    if col_scl == 0:
+                        curr_cmap = base_cmap
+                    elif col_scl == 1:
+                        curr_cmap = base_cmap_high
+                    elif col_scl == 2:
+                        curr_cmap = base_cmap_low
+                    clim_sym = False
+                else:
+                    clim_sym_but = 1
+                    func_but_text_han['Clim: sym'].set_color('r')
+                    clim_sym = True
+                    curr_cmap = scnd_cmap
+
+                    '''
+                    curr_cmap = scnd_cmap
+                    clim_sym = True
+
+                    '''
+                """
+
             ###################################################################################################
             ### Choose which dataset to use
             ###################################################################################################
@@ -6001,15 +6029,15 @@ def nemo_slice_zlev(config = 'amm7',
 
                         elif but_name == 'Clim: sym':
                             if clim_sym_but == 0:
+                                clim_sym_but = 1
                                 func_but_text_han['Clim: sym'].set_color('r')
                                 #curr_cmap = scnd_cmap
-                                clim_sym_but = 1
                                 #clim_sym_but_norm_val = clim_sym
                                 clim_sym = True
                                 
                             elif clim_sym_but == 1:
-                                func_but_text_han['Clim: sym'].set_color('k')
                                 clim_sym_but = 0
+                                func_but_text_han['Clim: sym'].set_color('k')
                                 
                                 
                                 #curr_cmap = base_cmap
@@ -6017,6 +6045,9 @@ def nemo_slice_zlev(config = 'amm7',
                                 #col_scl = 0
                                 #clim_sym = clim_sym_but_norm_val
                                 
+                                clim_sym = False
+
+
 
                         elif but_name == 'Hov/Time':
                             if hov_time:
@@ -6226,11 +6257,15 @@ def nemo_slice_zlev(config = 'amm7',
                             #   Change value
 
                             if but_name in Dataset_lst:
+                                clim_sym_but = 0
                                 secdataset_proc = but_name 
+
+
                             #secdataset_proc = but_name 
                             # if not Dataset 1, Dataset 2 etc, 
                             #   then e.g. dat1-dat2 dat1%dat4
                             elif but_name not in Dataset_lst:
+                                clim_sym_but = 1
 
                                 #Current diff oper mode setting
                                 curr_dataset_diff_oper = dataset_diff_oper_dict[but_name]   
@@ -6245,7 +6280,6 @@ def nemo_slice_zlev(config = 'amm7',
                                 # if a different dataset selected, 
                                 if secdataset_proc != tmp_secdataset_proc:
                                     secdataset_proc = tmp_secdataset_proc
-
                                 else:
                                     # if alread on this mode, cycle though to the next or previous mode
                                     #  or swap dataset around.     
