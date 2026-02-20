@@ -7826,6 +7826,7 @@ def load_NEMO_nc_viewer_parser(nemo_slice_zlev_helptext):
     parser.add_argument('--secdataset_proc', type=str, required=False)
 
     parser.add_argument('--Time_Diff', type=str, required=False)
+    parser.add_argument('--do_adjacent_map', type=str, required=False)
     # Depreciated, as take in form the config files
     #parser.add_argument('--z_meth', type=str, help="z_slice, ss, nb, df, zm, zx, zn, zs, or z_index for z level models")# Parse the argument
 

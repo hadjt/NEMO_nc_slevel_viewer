@@ -117,6 +117,7 @@ def nemo_slice_zlev(config = 'amm7',
     fig_dir = None,fig_lab = 'figs',fig_cutout = True, 
     justplot = False, justplot_date_ind = None,justplot_z_meth_zz = None,justplot_secdataset_proc = None,
     fig_fname_lab = None, 
+    do_adjacent_map = False,
     trim_files = True,
     trim_extra_files = False,
     vis_curr = -1, vis_curr_meth = 'barb',
@@ -184,7 +185,6 @@ def nemo_slice_zlev(config = 'amm7',
     if EOS_d is None:
         EOS_d = {}
         EOS_d['do_TEOS_EOS_conv'] = False
-
 
 
 
@@ -327,6 +327,8 @@ def nemo_slice_zlev(config = 'amm7',
     if do_grad is None: do_grad = 0
     if do_cont is None: do_cont = True
     
+    if do_adjacent_map:
+        adjacent_map_ind_lst = np.arange(nDataset)
 
 
     grad_meth=0
@@ -2997,11 +2999,54 @@ def nemo_slice_zlev(config = 'amm7',
             #paxmap.set_array(map_dat)  
             ## comment out pax.append(ax[0].pcolormesh(map_dat_dict
             # if using_set_array
-            if Sec_regrid & (secdataset_proc in Dataset_lst):
-                th_d_ind = int(secdataset_proc[8:])
-                pax.append(ax[0].pcolormesh(lon_d[th_d_ind][::pdy,::pdx],lat_d[th_d_ind][::pdy,::pdx],map_dat[::pdy,::pdx],cmap = curr_cmap,norm = climnorm, rasterized = True))
+            #do_adjacent_map = True
+
+            if do_adjacent_map & Sec_regrid & (secdataset_proc in Dataset_lst):
+                #pdb.set_trace()
+                #print(adjacent_map_ind_lst)
+                #print(np.array(Dataset_lst)[adjacent_map_ind_lst[::-1]])
+                for tmp_secdataset_proc in np.array(Dataset_lst)[adjacent_map_ind_lst[::-1]]:
+                #for tmp_secdataset_proc in Dataset_lst:
+                #for tmp_secdataset_proc in ['Dataset 2','Dataset 3','Dataset 1']:
+                    tmp_th_d_ind = int(tmp_secdataset_proc[8:])
+                    if tmp_secdataset_proc == 'Dataset 1':
+                        tmp_map_dat = map_dat_dict[tmp_secdataset_proc]
+                    else:
+                        tmp_map_dat = map_dat_dict[tmp_secdataset_proc + '_Sec_regrid']
+                    #print('Plotting map for ',tmp_secdataset_proc,tmp_th_d_ind )
+                    pax.append(ax[0].pcolormesh(lon_d[tmp_th_d_ind][::pdy,::pdx],lat_d[tmp_th_d_ind][::pdy,::pdx],tmp_map_dat[::pdy,::pdx],cmap = curr_cmap,norm = climnorm, rasterized = True))
+                #pdb.set_trace()   
+                '''
+                ax = [plt.subplot(111)]
+               # tmp_adjacent_map_ind_lst =  np.array(Dataset_lst)[adjacent_map_ind_lst[::-1]]
+
+                #tmp_adjacent_map_ind_lst =  np.array(['Dataset 3', 'Dataset 2'], dtype='<U9')
+
+                ax = [plt.subplot(111)]
+                pax = []
+                for tmp_secdataset_proc in ['Dataset 1']:pax.append(ax[0].pcolormesh(lon_d[int(tmp_secdataset_proc[8:])][::pdy,::pdx],lat_d[int(tmp_secdataset_proc[8:])][::pdy,::pdx],map_dat_dict[tmp_secdataset_proc][::pdy,::pdx],cmap = curr_cmap,norm = climnorm, rasterized = True))
+                for tmp_secdataset_proc in ['Dataset 3']:pax.append(ax[0].pcolormesh(lon_d[int(tmp_secdataset_proc[8:])][::pdy,::pdx],lat_d[int(tmp_secdataset_proc[8:])][::pdy,::pdx],map_dat_dict[tmp_secdataset_proc + '_Sec_regrid'][::pdy,::pdx],cmap = curr_cmap,norm = climnorm, rasterized = True))
+                for tmp_secdataset_proc in ['Dataset 2']:pax.append(ax[0].pcolormesh(lon_d[int(tmp_secdataset_proc[8:])][::pdy,::pdx],lat_d[int(tmp_secdataset_proc[8:])][::pdy,::pdx],map_dat_dict[tmp_secdataset_proc + '_Sec_regrid'][::pdy,::pdx],cmap = curr_cmap,norm = climnorm, rasterized = True))
+                set_perc_clim_pcolor_in_region(5,95,ax = ax[0])
+                plt.colorbar(pax, ax = ax[0])
+                plt.show()
+
+
+                for tmppax in pax:tmppax.get_clim()
+                get_clim_pcolor(ax = ax[0])
+
+
+                '''
             else:
-                pax.append(ax[0].pcolormesh(map_dat_dict['x'][::pdy,::pdx],map_dat_dict['y'][::pdy,::pdx],map_dat[::pdy,::pdx],cmap = curr_cmap,norm = climnorm, rasterized = True))
+                if Sec_regrid & (secdataset_proc in Dataset_lst):
+                    th_d_ind = int(secdataset_proc[8:])
+                    pax.append(ax[0].pcolormesh(lon_d[th_d_ind][::pdy,::pdx],lat_d[th_d_ind][::pdy,::pdx],map_dat[::pdy,::pdx],cmap = curr_cmap,norm = climnorm, rasterized = True))
+                else:
+                    pax.append(ax[0].pcolormesh(map_dat_dict['x'][::pdy,::pdx],map_dat_dict['y'][::pdy,::pdx],map_dat[::pdy,::pdx],cmap = curr_cmap,norm = climnorm, rasterized = True))
+
+               
+
+
             if var_dim[var] == 4:
                 #pdb.set_trace()
                 pax.append(ax[1].pcolormesh(ew_slice_x[::pdx],ew_slice_y[:,::pdx],ew_slice_dat[:,::pdx],cmap = curr_cmap,norm = climnorm, rasterized = True))
@@ -6261,6 +6306,17 @@ def nemo_slice_zlev(config = 'amm7',
                             if but_name in Dataset_lst:
                                 clim_sym_but = 0
                                 secdataset_proc = but_name 
+                                
+                                # if doing adjacent map, clicking on dataset makes that the top data set
+                                #   Noting that the list is initialised from 0 to nDatasets-1, 
+                                #   and that they are plotted in reverse order, dataset 1 is on top
+                                
+                                if do_adjacent_map:
+                                    tmp_th_d_ind = int(but_name[8:])-1
+                                    if tmp_th_d_ind != adjacent_map_ind_lst[0]:
+                                        adjacent_map_ind_lst = np.append(tmp_th_d_ind,adjacent_map_ind_lst[adjacent_map_ind_lst !=tmp_th_d_ind])
+                                    
+                                    #pdb.set_trace()
 
 
                             #secdataset_proc = but_name 
@@ -6686,7 +6742,7 @@ def main():
         # separating those that default to True
         argparse_bool_T = ['clim_pair','fig_cutout','do_match_time','trim_files','Obs_pair_loc','Obs_AbsAnom']
         # from those that default to False
-        argparse_bool_F = ['clim_sym','hov_time','justplot','use_cmocean','verbose_debugging','do_timer','do_memory','do_ensemble','do_mask','do_addtimedim','do_all_WW3','do_cont','trim_extra_files','Obs_hide','use_xarray_gdept','Obs_hide_edges','Obs_AbsAnom','Time_Diff','Obs_pair_loc','Obs_show_with_diff_var'] #'allow_diff_time',
+        argparse_bool_F = ['clim_sym','hov_time','justplot','use_cmocean','verbose_debugging','do_timer','do_memory','do_ensemble','do_mask','do_addtimedim','do_all_WW3','do_cont','trim_extra_files','Obs_hide','use_xarray_gdept','Obs_hide_edges','Obs_AbsAnom','Time_Diff','Obs_pair_loc','Obs_show_with_diff_var', 'do_adjacent_map'] #'allow_diff_time',
         
 
 
@@ -6777,6 +6833,7 @@ def main():
             do_grad = args.do_grad,do_cont = argparse_bool_dict['do_cont'],trim_extra_files = argparse_bool_dict['trim_extra_files'],trim_files = argparse_bool_dict['trim_files'],
             use_cmocean = argparse_bool_dict['use_cmocean'], date_fmt = args.date_fmt,
             Time_Diff = argparse_bool_dict['Time_Diff'],
+            do_adjacent_map = argparse_bool_dict['do_adjacent_map'],
             define_time_dict = define_time_dict,
             fig_fname_lab = args.fig_fname_lab,
             justplot = argparse_bool_dict['justplot'],justplot_date_ind = args.justplot_date_ind,
