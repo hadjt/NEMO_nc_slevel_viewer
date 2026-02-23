@@ -5309,10 +5309,14 @@ def nemo_slice_zlev(config = 'amm7',
 
 
                                 xs_pred_med_diag_gridspace_dict = {}
+                                #for tmp_datstr,th_d_ind in zip(Dataset_lst,[int(ss[8:]) for ss in Dataset_lst]) :                                    xs_pred_med_diag_gridspace_dict[tmp_datstr] = np.median(np.sqrt((lon_d[th_d_ind][1:,:-1] - lon_d[th_d_ind][1:,1:] )**2 + (lat_d[th_d_ind][:-1,1:] - lat_d[th_d_ind][1:,1:])**2))
+                                
                                 for tmp_datstr in Dataset_lst:
                                     xs_pred_med_diag_gridspace_dict[tmp_datstr] = np.median(np.sqrt((lon_d[th_d_ind][1:,:-1] - lon_d[th_d_ind][1:,1:] )**2 + (lat_d[th_d_ind][:-1,1:] - lat_d[th_d_ind][1:,1:])**2))
                                     
                                     
+                                
+                                xs_pred_med_diag_gridspace_min = np.min([xs_pred_med_diag_gridspace_dict[tmp_datstr] for tmp_datstr in Dataset_lst])
 
 
                                 #try: 
@@ -5334,19 +5338,45 @@ def nemo_slice_zlev(config = 'amm7',
                                 # create a pseudo master path:
                                 xsect_psmast_lon_lst = []
                                 xsect_psmast_lat_lst= []
+                                xsect_psmast_len_path_lst = []
                                 for xsii in range(xsect_jjii_npnt-1): # xsii+=1
+                                    tmp_xs_len_path =  np.sqrt((xsectloc_lst[xsii][0]-xsectloc_lst[xsii+1][0])**2 + (xsectloc_lst[xsii][1]-xsectloc_lst[xsii+1][1])**2 )
+                                    
                                     xs_n_step = 100
+                                    xs_n_step =  int(np.ceil(2*(tmp_xs_len_path/xs_pred_med_diag_gridspace_min)))
+                                    
                                     tmp_xs_lon_path = np.linspace(xsectloc_lst[xsii][0],xsectloc_lst[xsii+1][0],xs_n_step)
                                     tmp_xs_lat_path = np.linspace(xsectloc_lst[xsii][1],xsectloc_lst[xsii+1][1],xs_n_step)
+                                     
+                                    #tmp_xsect_psmast_dlonlat = np.sqrt((tmp_xs_lon_path[1:] - tmp_xs_lon_path[:-1])**2 + (tmp_xs_lat_path[1:] - tmp_xs_lat_path[:-1])**2)
+                                
+
                                     xsect_psmast_lon_lst.append(tmp_xs_lon_path)
                                     xsect_psmast_lat_lst.append(tmp_xs_lat_path)
+                                    xsect_psmast_len_path_lst.append(tmp_xs_len_path)
+                                    #pdb.set_trace()
 
                                 xsect_psmast_lon_mat = np.concatenate(xsect_psmast_lon_lst)
                                 xsect_psmast_lat_mat = np.concatenate(xsect_psmast_lat_lst)
+                                #xsect_psmast_dist_mat = np.append(0,np.cumsum(xsect_psmast_len_path_lst))
+
                                 xsect_psmast_dlonlat_mat = np.sqrt((xsect_psmast_lon_mat[1:] - xsect_psmast_lon_mat[:-1])**2 + (xsect_psmast_lat_mat[1:] - xsect_psmast_lat_mat[:-1])**2)
                                 xsect_psmast_dist_mat = np.append(0,xsect_psmast_dlonlat_mat).cumsum()
-                                xsect_dist_pnt_mat = np.append(xsect_psmast_dist_mat[::xs_n_step],xsect_psmast_dist_mat[-1])
+                                #xsect_dist_pnt_mat = np.append(xsect_psmast_dist_mat[::xs_n_step],xsect_psmast_dist_mat[-1])
+ 
+                                #pdb.set_trace()
+                                xsect_dist_pnt_mat = np.append(0,np.cumsum(xsect_psmast_len_path_lst))
 
+                                '''
+                                plt.scatter(xsect_psmast_lon_mat,xsect_psmast_lat_mat,c = xsect_psmast_dist_mat, vmin = 0, vmax = 60, s = 10)
+                                plt.scatter(xsect_lon_pnt_mat,xsect_lat_pnt_mat,c = xsect_dist_pnt_mat, vmin = 0, vmax = 60, s = 50)
+                                plt.colorbar()
+                                plt.show()
+                                
+                                '''
+
+                                print('Xsect ind: number of points selected: %i'%xsect_jjii_npnt)
+                                print('Xsect ind: number of pseudo index pnts: %i'%xsect_psmast_lon_mat.size)
 
                                 nxsect_psmast = xsect_psmast_lon_mat.size
 
@@ -5359,7 +5389,17 @@ def nemo_slice_zlev(config = 'amm7',
                                 '''
 
                                 ##################################################
-                                xs_ind_sel_meth = 1
+                                ## xs_ind_sel_meth (2026/2/23)
+                                ## Two methods for selecting indices.
+                                ## xs_ind_sel_meth = 1 is simpler, but takes longer, up to 1 min vs 1 sec
+                                ##       finds the grid boxes nearest to the xsect_psmast_lon_mat/lat points
+                                ## xs_ind_sel_meth = 2 is much faster, using profile_line, but fudges when outside
+                                ##      lon/lat matrices, and so masks them out as invalid. When using Sec Grid with 
+                                ##      overlapping adjacent grids (do_adjacent_map), and large segment size, whole 
+                                ##      segments are rejected if either end is outside the lon/lat mat. In which case
+                                ##      xs_ind_sel_meth is better. 
+                                ##          
+                                xs_ind_sel_meth = 2
 
                                 if xs_ind_sel_meth == 1:
                                     xsect_ind_raw_d = {}
@@ -5407,7 +5447,9 @@ def nemo_slice_zlev(config = 'amm7',
                                             xsect_ind_raw_d[tmp_datstr]['lat_target'].append(tmpxslat)
                                             xsect_ind_raw_d[tmp_datstr]['dist'].append(tmpxsdist)
 
-                                    print(xt1[-1][1] - xt1[0][1])
+                                        print('Xsect ind: number of raw index pnts selected of %s: %i'%(tmp_datstr,len(xsect_ind_raw_d[tmp_datstr]['ii'])))
+
+                                    print('Xsect: raw index pnts time: %s'%(xt1[-1][1] - xt1[0][1]))
                                     #print('remove repeats')
 
                                     '''
@@ -5476,6 +5518,8 @@ def nemo_slice_zlev(config = 'amm7',
                                                 xsect_ind_raw_d[tmp_datstr]['lon_target'].append(tmpxslon)
                                                 xsect_ind_raw_d[tmp_datstr]['lat_target'].append(tmpxslat)
                                                 '''
+                                        print('Xsect ind: number of index pnts selected of %s: %i'%(tmp_datstr,len(xsect_ind_d[tmp_datstr]['ii'])))
+
                                     ##############################################################
                                     '''
                                     ax = [plt.subplot(2,1,1),plt.subplot(2,1,2)]
@@ -5671,7 +5715,7 @@ def nemo_slice_zlev(config = 'amm7',
                                         #th_d_ind1 = int(tmp_datstr1[-1])
                                         #t#h_d_ind1 = int(tmp_datstr1[8:])
 
-                                        xs1 = datetime.now()
+                                        #xs1 = datetime.now()
                                         #if configd[int(secdataset_proc[8:])].lower() in ['amm7','amm15','co9p2','gulf18','orca025']:
                                         #if True:
 
@@ -5767,7 +5811,9 @@ def nemo_slice_zlev(config = 'amm7',
                                     #except:
                                     #    pdb.set_trace()
                                 #pdb.set_trace()
-                            print('Xsect: indices processed.')
+
+                            xs1 = datetime.now()
+                            print('Xsect: indices processed: %s'%(xs1 - xs0))
 
                             '''
 
