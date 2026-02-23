@@ -7331,9 +7331,15 @@ def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lo
         xy_i_ind = ((loni-xypos_dict[tmp_datstr]['lon_min'])/xypos_dict[tmp_datstr]['dlon']).astype('int')
         xy_j_ind = ((latj-xypos_dict[tmp_datstr]['lat_min'])/xypos_dict[tmp_datstr]['dlat']).astype('int')
 
+        #is point in the xypos array?
+        xy_in_xypos_arr = (xy_i_ind >= 0) & (xy_i_ind <= nxylon-1) & (xy_j_ind >= 0) & (xy_j_ind <= nxylat-1)
+
         #ensure the indices are in the array
         xy_i_ind = np.ma.minimum(np.ma.maximum(xy_i_ind,0),nxylon-1)
         xy_j_ind = np.ma.minimum(np.ma.maximum(xy_j_ind,0),nxylat-1)
+
+
+
 
         '''
         print(xypos_dict[tmp_datstr]['LON'][xy_j_ind,xy_i_ind],loni,xypos_dict[tmp_datstr]['XPOS'][xy_j_ind,xy_i_ind])
@@ -7344,7 +7350,38 @@ def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lo
         #pdb.set_trace()
         # Convert indices to lon and lats with the XYPOS file
         #
+        try:
+            # default output of True
+            xy_xypos_arr_unmasked = np.ones(xypos_dict[tmp_datstr]['XPOS'][xy_j_ind,xy_i_ind].shape).astype('bool')
+
+            # if its a masked array
+            if np.ma.isMA(xypos_dict[tmp_datstr]['XPOS']):
+                # if its a single value, just use the mask
+                if xypos_dict[tmp_datstr]['XPOS'].size==1:
+                    xy_xypos_arr_unmasked = xypos_dict[tmp_datstr]['XPOS'].mask == False
+                else:
+                    # if its not a single value, and the mask the same size, use the correct value in the mask.
+                    if xypos_dict[tmp_datstr]['XPOS'].size == xypos_dict[tmp_datstr]['XPOS'].mask.size:
+                        xy_xypos_arr_unmasked = xypos_dict[tmp_datstr]['XPOS'].mask[xy_j_ind,xy_i_ind] == False
+                    else:
+                        # if its not a single value, but the mask is use the mask.
+                        xy_xypos_arr_unmasked = xypos_dict[tmp_datstr]['XPOS'].mask == False
+
+
+        except:
+            print("need to handle unmasked xypos_dict[tmp_datstr]['XPOS']")
+            pdb.set_trace()
+
+        sel_valid_out = xy_in_xypos_arr & xy_xypos_arr_unmasked
+
         if meth == 'nearest':
+            
+            #xy_xypos_arr_unmasked = xypos_dict[tmp_datstr]['XPOS'][xy_j_ind,xy_i_ind].mask == False
+
+            #xy_in_xypos_arr & xy_xypos_arr_unmasked
+
+            #pdb.set_trace()
+
 
             if XYPOS_ind_extended_NN:
                 #Use XYPOS ind array extended with a nearest neighbour interpolation - so no masked values
@@ -7353,6 +7390,7 @@ def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lo
             else:
                 sel_ii_out = np.floor((xypos_dict[tmp_datstr]['XPOS'][xy_j_ind,xy_i_ind] - thd[th_d_ind]['x0'] - thd[th_d_ind]['cutx0'])/thd[th_d_ind]['dx']).astype('int')
                 sel_jj_out = np.floor((xypos_dict[tmp_datstr]['YPOS'][xy_j_ind,xy_i_ind] - thd[th_d_ind]['y0'] - thd[th_d_ind]['cuty0'])/thd[th_d_ind]['dy']).astype('int')
+            #pdb.set_trace()
             
         elif meth == 'bilin':
 
@@ -7451,7 +7489,8 @@ def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lo
         sel_jj_out = np.ma.minimum(np.ma.maximum(sel_jj_out,0),ndatlat-1)
 
 
-        loni,latj,lon_d[1][sel_jj_out,sel_ii_out],lat_d[1][sel_jj_out,sel_ii_out]
+        #loni,latj,lon_d[th_d_ind][sel_jj_out,sel_ii_out],lat_d[th_d_ind][sel_jj_out,sel_ii_out]
+        #loni,latj,lon_d[1][sel_jj_out,sel_ii_out],lat_d[1][sel_jj_out,sel_ii_out]
 
     else:
         
@@ -7484,7 +7523,7 @@ def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lo
         print('XYPOS indices are masked')
         pdb.set_trace()
 
-    return sel_jj_out,sel_ii_out
+    return sel_jj_out,sel_ii_out,sel_valid_out
 
 
 
