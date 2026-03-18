@@ -318,7 +318,7 @@ def create_test_amm15_xypos():
     #create_xypos(mesh_file,xypos_file_out,LAT_min = LAT_min,LAT_max = LAT_max,LON_min = LON_min,LON_max = LON_max,DLAT = DLAT,DLON = DLON)
     
 
-def create_hires_amm15_xypos():
+def create_hires_amm15_xypos(DLAT):
     mesh_file='/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/AMM15/amm15.mesh_mask.nc'
     xypos_file='/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/AMM15/xypos_amm15.nc'
     xypos_file_out='/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/AMM15/tmp_out_xypos_amm15.nc'
@@ -329,10 +329,11 @@ def create_hires_amm15_xypos():
     LAT_max = 63.25    
     LON_min = -25.35
     LON_max = 16.15
-    DLAT = 0.01
-    DLON = 0.01
+    #DLAT = 0.01
+    #DLON = 0.01
+    DLON = DLAT
     
-    xypos_file_out='/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/AMM15/xypos_amm15_dlonlat_0.01.nc'
+    xypos_file_out='/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/AMM15/xypos_amm15_dlonlat_%f.nc'%DLAT
     create_xypos(mesh_file,xypos_file_out,LAT_min = LAT_min,LAT_max = LAT_max,LON_min = LON_min,LON_max = LON_max,DLAT = DLAT,DLON = DLON)
     
 
@@ -447,6 +448,14 @@ def create_cmemsTAC_my_xypos():
 
 
 def main():
+
+
+    #create_hires_amm15_xypos(0.05)
+    #create_hires_amm15_xypos(0.025)
+    create_hires_amm15_xypos(0.01)
+
+
+
     create_cmemsTAC_my_xypos()
 
     pdb.set_trace()
@@ -465,7 +474,7 @@ def main():
 
     create_AMM15CMEMS_xypos()
 
-    create_hires_amm15_xypos()
+    #create_hires_amm15_xypos()
 
     pdb.set_trace()
 
