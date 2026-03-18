@@ -636,7 +636,7 @@ def nemo_slice_zlev(config = 'amm7',
     print ('xarray open_mfdataset Finish',datetime.now())
 
 
-    #pdb.set_trace()
+    pdb.set_trace()
     # Create lon and lat dictionaries
     #lon_d,lat_d = create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncglamt,ncgphit,nav_lon_varname_dict,nav_lat_varname_dict,ncdim_d,cutxind,cutyind,cutout_data)
     lon_d,lat_d = create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncglamt,ncgphit,nav_lon_varname_dict,nav_lat_varname_dict,ncdim_d,cutout_d,gr_1st = gr_1st)
