@@ -922,8 +922,8 @@ def nemo_slice_zlev(config = 'amm7',
     init_timer.append((datetime.now(),'AMM15 grid rotated'))
 
     # find variables common to both data sets, and use them for the buttons
-    '''
     
+    '''
     npnt=1000
 
     indmatjj=np.random.uniform(0,domsize[1][0]-1,npnt).astype('int')
@@ -944,18 +944,10 @@ def nemo_slice_zlev(config = 'amm7',
 
 
 
-
-
-
-
-
-
-
-
     for nn,(jj,ii) in enumerate(zip(indmatjj,indmatii)):
         loni = lon_d[1][jj,ii]
         lati = lat_d[1][jj,ii]
-        tmpind_xy = np.array(ind_from_lon_lat('Dataset 1',configd,xypos_dict, lon_d,lat_d, thd,rot_dict,loni,lati, meth = 'nearest')[:2])
+        tmpind_xy = np.array(ind_from_lon_lat('Dataset 1',configd,xypos_dict, lon_d,lat_d, thd,rot_dict,loni,lati, meth = 'bilin')[:2])
         loni_xy_mat[nn],lati_xy_mat[nn], = lon_d[1][tmpind_xy[0],tmpind_xy[1]], lat_d[1][tmpind_xy[0],tmpind_xy[1]]
         mindist = (np.sqrt((lon_d[1] - loni)**2 + (lat_d[1] - lati)**2)).argmin()
         tmpind_nn = np.array([mindist//domsize[1][1],mindist%domsize[1][1]])
