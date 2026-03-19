@@ -922,7 +922,7 @@ def nemo_slice_zlev(config = 'amm7',
     init_timer.append((datetime.now(),'AMM15 grid rotated'))
 
     # find variables common to both data sets, and use them for the buttons
-    #pdb.set_trace()
+    
     var_but_mat = var_d[1]['mat'].copy()
 
     if len(var_but_mat) == 0:

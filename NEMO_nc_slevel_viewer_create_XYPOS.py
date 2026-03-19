@@ -452,8 +452,51 @@ def main():
 
     #create_hires_amm15_xypos(0.05)
     #create_hires_amm15_xypos(0.025)
-    create_hires_amm15_xypos(0.01)
+    #create_hires_amm15_xypos(0.01)
+    #create_hires_amm15_xypos(0.005)
+    #create_hires_amm15_xypos(0.0025)
+    create_hires_amm15_xypos(0.0001)
 
+
+    '''
+XYPOS 2026-03-19 05:37:39.423892 399 4151
+XYPOS 2026-03-19 05:38:22.056882 400 4151
+XYPOS 2026-03-19 05:39:05.210015 401 4151
+XYPOS 2026-03-19 05:39:48.271803 402 4151
+salloc: Job 5855493 has exceeded its time limit and its allocation has been revoked.
+                                                                            [2026-03-19T05:39:53.018+00:00] error: *** STEP 5855493.interactive ON sla-cpu-r-31 CANCELLED AT 2026-03-19T05:39:53 DUE TO TIME LIMIT ***
+srun: Job step aborted: Waiting up to 32 seconds for job step to finish.
+srun: error: sla-cpu-r-31: task 0: Killed
+
+XYPOS 2026-03-19 05:43:44.424942 378 8301
+XYPOS 2026-03-19 05:44:37.238628 379 8301
+XYPOS 2026-03-19 05:45:30.286939 380 8301
+XYPOS 2026-03-19 05:46:23.391548 381 8301
+XYPOS 2026-03-19 05:47:16.479459 382 8301
+XYPOS 2026-03-19 05:48:09.157563 383 8301
+salloc: Job 5855984 has exceeded its time limit and its allocation has been revoked.
+                                                                            [2026-03-19T05:48:53.014+00:00] error: *** STEP 5855984.interactive ON sla-cpu-r-21 CANCELLED AT 2026-03-19T05:48:53 DUE TO TIME LIMIT ***
+srun: Job step aborted: Waiting up to 32 seconds for job step to finish.
+XYPOS 2026-03-19 05:49:02.028777 384 8301
+srun: error: sla-cpu-r-21: task 0: Killed
+
+
+XYPOS 2026-03-19 05:21:17.235808 80 16601
+XYPOS 2026-03-19 05:25:07.880473 81 16601
+XYPOS 2026-03-19 05:28:58.814185 82 16601
+XYPOS 2026-03-19 05:32:50.196773 83 16601
+XYPOS 2026-03-19 05:36:41.501129 84 16601
+XYPOS 2026-03-19 05:40:32.973399 85 16601
+XYPOS 2026-03-19 05:44:24.803935 86 16601
+XYPOS 2026-03-19 05:48:16.791560 87 16601
+salloc: Job 5855985 has exceeded its time limit and its allocation has been revoked.
+                                                                                    [2026-03-19T05:48:53.025+00:00] error: *** STEP 5855985.interactive ON sla-cpu-r-31 CANCELLED AT 2026-03-19T05:48:53 DUE TO TIME LIMIT ***
+srun: Job step aborted: Waiting up to 32 seconds for job step to finish.
+srun: error: sla-cpu-r-31: task 0: Killed
+
+    '''
+
+    pdb.set_trace()
 
 
     create_cmemsTAC_my_xypos()
