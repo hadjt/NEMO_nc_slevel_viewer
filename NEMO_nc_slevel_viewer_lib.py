@@ -7314,7 +7314,7 @@ def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lo
     XYPOS_ind_extended_NN = True
 
 
-    meth = 'nearest'
+    #meth = 'nearest'
 
 
     #Numeric code of the dataset
@@ -7475,14 +7475,16 @@ def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lo
             #sel_jj_out = np.round(sel_jj_out_flt).astype('int')
             if verbose: print(sel_ii_out,sel_jj_out)
 
-
+        else:
+            print('meth not recogised:', meth)
+            pdb.set_trace()
         #JT sel_ii_out-=thd[th_d_ind]['cutx0']
         #JT sel_jj_out-=thd[th_d_ind]['cuty0']
 
 
         #Offset added as selected grid box is adjacent the clicked grid box
-        sel_ii_out-=1
-        sel_jj_out-=1
+        #sel_ii_out-=1
+        #sel_jj_out-=1
         
         #ensure the indices are in the array
         sel_ii_out = np.ma.minimum(np.ma.maximum(sel_ii_out,0),ndatlon-1)
