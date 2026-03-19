@@ -61,7 +61,7 @@ def load_nc_dims(tmp_data):
 
     poss_zdims = ['depth','deptht','depthu','depthv','depthw','z', 'nc']
     poss_tdims = ['time_counter','time','t']
-    poss_xdims = ['x','X','lon','ni','x_grid_T','x_grid_U','x_grid_V', 'lon','longitude','xbt','xbT','xbU','xbV']
+    poss_xdims = ['x','X','lon','ni','x_grid_T','x_grid_U','x_grid_V', 'lon','longitude','xbt','xbT','xbU','xbV','xb']
     poss_ydims = ['y','Y','lat','nj','y_grid_T','y_grid_U','y_grid_V', 'lat','latitude','yb']
 
 
@@ -5324,7 +5324,7 @@ def connect_to_files_with_xarray(Dataset_lst,fname_dict,xarr_dict,nldi,ldi_ind_m
                 ######################################################################
                 ######################################################################
                 ######################################################################
-            
+            #pdb.set_trace()    
 
             if do_addtimedim:
                 for tmpldi in range(len(xarr_dict[tmp_datstr][tmpgrid])):
@@ -7331,9 +7331,15 @@ def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lo
         xy_i_ind = ((loni-xypos_dict[tmp_datstr]['lon_min'])/xypos_dict[tmp_datstr]['dlon']).astype('int')
         xy_j_ind = ((latj-xypos_dict[tmp_datstr]['lat_min'])/xypos_dict[tmp_datstr]['dlat']).astype('int')
 
+        #is point in the xypos array?
+        xy_in_xypos_arr = (xy_i_ind >= 0) & (xy_i_ind <= nxylon-1) & (xy_j_ind >= 0) & (xy_j_ind <= nxylat-1)
+
         #ensure the indices are in the array
         xy_i_ind = np.ma.minimum(np.ma.maximum(xy_i_ind,0),nxylon-1)
         xy_j_ind = np.ma.minimum(np.ma.maximum(xy_j_ind,0),nxylat-1)
+
+
+
 
         '''
         print(xypos_dict[tmp_datstr]['LON'][xy_j_ind,xy_i_ind],loni,xypos_dict[tmp_datstr]['XPOS'][xy_j_ind,xy_i_ind])
@@ -7344,7 +7350,38 @@ def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lo
         #pdb.set_trace()
         # Convert indices to lon and lats with the XYPOS file
         #
+        try:
+            # default output of True
+            xy_xypos_arr_unmasked = np.ones(xypos_dict[tmp_datstr]['XPOS'][xy_j_ind,xy_i_ind].shape).astype('bool')
+
+            # if its a masked array
+            if np.ma.isMA(xypos_dict[tmp_datstr]['XPOS']):
+                # if its a single value, just use the mask
+                if xypos_dict[tmp_datstr]['XPOS'].size==1:
+                    xy_xypos_arr_unmasked = xypos_dict[tmp_datstr]['XPOS'].mask == False
+                else:
+                    # if its not a single value, and the mask the same size, use the correct value in the mask.
+                    if xypos_dict[tmp_datstr]['XPOS'].size == xypos_dict[tmp_datstr]['XPOS'].mask.size:
+                        xy_xypos_arr_unmasked = xypos_dict[tmp_datstr]['XPOS'].mask[xy_j_ind,xy_i_ind] == False
+                    else:
+                        # if its not a single value, but the mask is use the mask.
+                        xy_xypos_arr_unmasked = xypos_dict[tmp_datstr]['XPOS'].mask == False
+
+
+        except:
+            print("need to handle unmasked xypos_dict[tmp_datstr]['XPOS']")
+            pdb.set_trace()
+
+        sel_valid_out = xy_in_xypos_arr & xy_xypos_arr_unmasked
+
         if meth == 'nearest':
+            
+            #xy_xypos_arr_unmasked = xypos_dict[tmp_datstr]['XPOS'][xy_j_ind,xy_i_ind].mask == False
+
+            #xy_in_xypos_arr & xy_xypos_arr_unmasked
+
+            #pdb.set_trace()
+
 
             if XYPOS_ind_extended_NN:
                 #Use XYPOS ind array extended with a nearest neighbour interpolation - so no masked values
@@ -7353,6 +7390,7 @@ def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lo
             else:
                 sel_ii_out = np.floor((xypos_dict[tmp_datstr]['XPOS'][xy_j_ind,xy_i_ind] - thd[th_d_ind]['x0'] - thd[th_d_ind]['cutx0'])/thd[th_d_ind]['dx']).astype('int')
                 sel_jj_out = np.floor((xypos_dict[tmp_datstr]['YPOS'][xy_j_ind,xy_i_ind] - thd[th_d_ind]['y0'] - thd[th_d_ind]['cuty0'])/thd[th_d_ind]['dy']).astype('int')
+            #pdb.set_trace()
             
         elif meth == 'bilin':
 
@@ -7451,7 +7489,8 @@ def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lo
         sel_jj_out = np.ma.minimum(np.ma.maximum(sel_jj_out,0),ndatlat-1)
 
 
-        loni,latj,lon_d[1][sel_jj_out,sel_ii_out],lat_d[1][sel_jj_out,sel_ii_out]
+        #loni,latj,lon_d[th_d_ind][sel_jj_out,sel_ii_out],lat_d[th_d_ind][sel_jj_out,sel_ii_out]
+        #loni,latj,lon_d[1][sel_jj_out,sel_ii_out],lat_d[1][sel_jj_out,sel_ii_out]
 
     else:
         
@@ -7484,7 +7523,7 @@ def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lo
         print('XYPOS indices are masked')
         pdb.set_trace()
 
-    return sel_jj_out,sel_ii_out
+    return sel_jj_out,sel_ii_out,sel_valid_out
 
 
 
@@ -7826,6 +7865,7 @@ def load_NEMO_nc_viewer_parser(nemo_slice_zlev_helptext):
     parser.add_argument('--secdataset_proc', type=str, required=False)
 
     parser.add_argument('--Time_Diff', type=str, required=False)
+    parser.add_argument('--do_adjacent_map', type=str, required=False)
     # Depreciated, as take in form the config files
     #parser.add_argument('--z_meth', type=str, help="z_slice, ss, nb, df, zm, zx, zn, zs, or z_index for z level models")# Parse the argument
 

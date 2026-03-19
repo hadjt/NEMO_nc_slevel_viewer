@@ -117,6 +117,7 @@ def nemo_slice_zlev(config = 'amm7',
     fig_dir = None,fig_lab = 'figs',fig_cutout = True, 
     justplot = False, justplot_date_ind = None,justplot_z_meth_zz = None,justplot_secdataset_proc = None,
     fig_fname_lab = None, 
+    do_adjacent_map = False,
     trim_files = True,
     trim_extra_files = False,
     vis_curr = -1, vis_curr_meth = 'barb',
@@ -184,7 +185,6 @@ def nemo_slice_zlev(config = 'amm7',
     if EOS_d is None:
         EOS_d = {}
         EOS_d['do_TEOS_EOS_conv'] = False
-
 
 
 
@@ -327,6 +327,8 @@ def nemo_slice_zlev(config = 'amm7',
     if do_grad is None: do_grad = 0
     if do_cont is None: do_cont = True
     
+    if do_adjacent_map:
+        adjacent_map_ind_lst = np.arange(nDataset)
 
 
     grad_meth=0
@@ -920,7 +922,7 @@ def nemo_slice_zlev(config = 'amm7',
     init_timer.append((datetime.now(),'AMM15 grid rotated'))
 
     # find variables common to both data sets, and use them for the buttons
-    #pdb.set_trace()
+    
     var_but_mat = var_d[1]['mat'].copy()
 
     if len(var_but_mat) == 0:
@@ -1770,7 +1772,7 @@ def nemo_slice_zlev(config = 'amm7',
 
                     #print(sel_ii,sel_jj)
                     
-                    sel_jj,sel_ii = ind_from_lon_lat('Dataset 1',configd,xypos_dict, lon_d,lat_d, thd,rot_dict,loni,latj)
+                    sel_jj,sel_ii,__ = ind_from_lon_lat('Dataset 1',configd,xypos_dict, lon_d,lat_d, thd,rot_dict,loni,latj)
 
                     if (sel_ii<0)|(sel_jj<0):
                         pdb.set_trace()
@@ -2149,6 +2151,20 @@ def nemo_slice_zlev(config = 'amm7',
     # if using_set_array
 
 
+
+    '''
+    xsect_lon_pnt_mat = np.array([  1.9920506 , -10.84018352, -12.52309947,  -6.00180017,-10.62981903, -12.10237049,  -8.3158096 ,  -0.74268782,0.51949914,  3.25423756,   6.62006946,   9.14444338,10.82735933,  11.8791818 ,  18.19011662,  20.71449054,22.81813548,  23.86995795,  24.34327806])
+    xsect_lat_pnt_mat = np.array([37.6918753 , 33.74911012, 42.25069754, 47.42557683, 50.1362279 ,54.44862731, 60.36277508, 61.10204355, 56.4200099 , 53.95578166,57.28248978, 58.14496967, 55.43431861, 56.05037566, 56.91285555,60.11635226, 64.79838591, 65.7840772 , 47.98002819])
+    loni,latj = xsect_lon_pnt_mat,xsect_lat_pnt_mat
+    xsect_jj_pnt_mat, xsect_ii_pnt_mat, xsect_valid_pnt_mat = ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,loni,latj, XYPOS_ind_extended_NN = True, verbose = True)
+
+    
+    plt.plot(xsect_ii_pnt_mat,xsect_jj_pnt_mat, lw = 0.25)
+    plt.plot(xsect_ii_pnt_mat,np.ma.array(xsect_jj_pnt_mat, mask = xsect_valid_pnt_mat == False), lw = 2.25)
+    plt.show()
+    
+    pdb.set_trace()
+    '''
     
 
     while ii is not None:
@@ -2997,11 +3013,54 @@ def nemo_slice_zlev(config = 'amm7',
             #paxmap.set_array(map_dat)  
             ## comment out pax.append(ax[0].pcolormesh(map_dat_dict
             # if using_set_array
-            if Sec_regrid & (secdataset_proc in Dataset_lst):
-                th_d_ind = int(secdataset_proc[8:])
-                pax.append(ax[0].pcolormesh(lon_d[th_d_ind][::pdy,::pdx],lat_d[th_d_ind][::pdy,::pdx],map_dat[::pdy,::pdx],cmap = curr_cmap,norm = climnorm, rasterized = True))
+            #do_adjacent_map = True
+
+            if do_adjacent_map & Sec_regrid & (secdataset_proc in Dataset_lst):
+                #pdb.set_trace()
+                print('adjacent_map_ind_lst:',adjacent_map_ind_lst)
+                #print(np.array(Dataset_lst)[adjacent_map_ind_lst[::-1]])
+                for tmp_secdataset_proc in np.array(Dataset_lst)[adjacent_map_ind_lst[::-1]]:
+                #for tmp_secdataset_proc in Dataset_lst:
+                #for tmp_secdataset_proc in ['Dataset 2','Dataset 3','Dataset 1']:
+                    tmp_th_d_ind = int(tmp_secdataset_proc[8:])
+                    if tmp_secdataset_proc == 'Dataset 1':
+                        tmp_map_dat = map_dat_dict[tmp_secdataset_proc]
+                    else:
+                        tmp_map_dat = map_dat_dict[tmp_secdataset_proc + '_Sec_regrid']
+                    #print('Plotting map for ',tmp_secdataset_proc,tmp_th_d_ind )
+                    pax.append(ax[0].pcolormesh(lon_d[tmp_th_d_ind][::pdy,::pdx],lat_d[tmp_th_d_ind][::pdy,::pdx],tmp_map_dat[::pdy,::pdx],cmap = curr_cmap,norm = climnorm, rasterized = True))
+                #pdb.set_trace()   
+                '''
+                ax = [plt.subplot(111)]
+               # tmp_adjacent_map_ind_lst =  np.array(Dataset_lst)[adjacent_map_ind_lst[::-1]]
+
+                #tmp_adjacent_map_ind_lst =  np.array(['Dataset 3', 'Dataset 2'], dtype='<U9')
+
+                ax = [plt.subplot(111)]
+                pax = []
+                for tmp_secdataset_proc in ['Dataset 1']:pax.append(ax[0].pcolormesh(lon_d[int(tmp_secdataset_proc[8:])][::pdy,::pdx],lat_d[int(tmp_secdataset_proc[8:])][::pdy,::pdx],map_dat_dict[tmp_secdataset_proc][::pdy,::pdx],cmap = curr_cmap,norm = climnorm, rasterized = True))
+                for tmp_secdataset_proc in ['Dataset 3']:pax.append(ax[0].pcolormesh(lon_d[int(tmp_secdataset_proc[8:])][::pdy,::pdx],lat_d[int(tmp_secdataset_proc[8:])][::pdy,::pdx],map_dat_dict[tmp_secdataset_proc + '_Sec_regrid'][::pdy,::pdx],cmap = curr_cmap,norm = climnorm, rasterized = True))
+                for tmp_secdataset_proc in ['Dataset 2']:pax.append(ax[0].pcolormesh(lon_d[int(tmp_secdataset_proc[8:])][::pdy,::pdx],lat_d[int(tmp_secdataset_proc[8:])][::pdy,::pdx],map_dat_dict[tmp_secdataset_proc + '_Sec_regrid'][::pdy,::pdx],cmap = curr_cmap,norm = climnorm, rasterized = True))
+                set_perc_clim_pcolor_in_region(5,95,ax = ax[0])
+                plt.colorbar(pax, ax = ax[0])
+                plt.show()
+
+
+                for tmppax in pax:tmppax.get_clim()
+                get_clim_pcolor(ax = ax[0])
+
+
+                '''
             else:
-                pax.append(ax[0].pcolormesh(map_dat_dict['x'][::pdy,::pdx],map_dat_dict['y'][::pdy,::pdx],map_dat[::pdy,::pdx],cmap = curr_cmap,norm = climnorm, rasterized = True))
+                if Sec_regrid & (secdataset_proc in Dataset_lst):
+                    th_d_ind = int(secdataset_proc[8:])
+                    pax.append(ax[0].pcolormesh(lon_d[th_d_ind][::pdy,::pdx],lat_d[th_d_ind][::pdy,::pdx],map_dat[::pdy,::pdx],cmap = curr_cmap,norm = climnorm, rasterized = True))
+                else:
+                    pax.append(ax[0].pcolormesh(map_dat_dict['x'][::pdy,::pdx],map_dat_dict['y'][::pdy,::pdx],map_dat[::pdy,::pdx],cmap = curr_cmap,norm = climnorm, rasterized = True))
+
+               
+
+
             if var_dim[var] == 4:
                 #pdb.set_trace()
                 pax.append(ax[1].pcolormesh(ew_slice_x[::pdx],ew_slice_y[:,::pdx],ew_slice_dat[:,::pdx],cmap = curr_cmap,norm = climnorm, rasterized = True))
@@ -3618,7 +3677,15 @@ def nemo_slice_zlev(config = 'amm7',
                         map_clim = np.ma.array([tmp_map_dat_clim_mat.min(),tmp_map_dat_clim_mat.max()])
 
                         if clim_sym: map_clim = np.ma.array([-1,1])*np.abs(map_clim).max()
-                        if map_clim.mask.any() == False: set_clim_pcolor(map_clim, ax = ax[0])
+                        if map_clim.mask.any() == False:
+                            
+                            if test_clim_code: print('set_clim_pcolor(map_clim, ax = ax[0])')
+                        
+                            set_clim_pcolor(map_clim, ax = ax[0])
+                            #pdb.set_trace()
+                            if do_adjacent_map & Sec_regrid & (secdataset_proc in Dataset_lst):
+                                if test_clim_code: print('for tmppax in pax: tmppax.set_clim(map_clim)')
+                                for tmppax in pax: tmppax.set_clim(map_clim)
 
                     
                     if test_clim_code: print('if map_clim.mask.any() == False: set_clim_pcolor(map_clim, ax = ax[0])')
@@ -4764,7 +4831,7 @@ def nemo_slice_zlev(config = 'amm7',
 
                                 # convert to the nearest model grid box
                                 # if fig zorder = -5
-                                obs_jj,obs_ii = ind_from_lon_lat('Dataset 1',configd,xypos_dict, lon_d,lat_d, thd,rot_dict,tmpobsloc[0][0],tmpobsloc[0][1])
+                                obs_jj,obs_ii,__ = ind_from_lon_lat('Dataset 1',configd,xypos_dict, lon_d,lat_d, thd,rot_dict,tmpobsloc[0][0],tmpobsloc[0][1])
                                 obs_ii = int(obs_ii)
                                 obs_jj = int(obs_jj)
                                 sel_xlocval, sel_ylocval = tmpobsloc[0][0],tmpobsloc[0][1]
@@ -5237,6 +5304,10 @@ def nemo_slice_zlev(config = 'amm7',
                             if (mouse_info['button'].name == 'RIGHT') | (loaded_xsect == False):
                                 loaded_xsect = True
 
+
+                                ###################################################################
+                                # Select points (lon, lat) on the main map axis (ax[0])
+
                                 tmp_xsect_jjii_npnt = 0
                                 while tmp_xsect_jjii_npnt<2:
                                     xsectloc_lst = plt.ginput(-1)
@@ -5250,206 +5321,611 @@ def nemo_slice_zlev(config = 'amm7',
                                 print('Xsect: ginput exited')
                                 xs0 = datetime.now()
 
-                                # convert to the nearest model grid box
-                                xsect_ax_pnt_lst = []
-                                xsect_ii_pnt_lst = []
-                                xsect_jj_pnt_lst = []
+
+                                xs_pred_med_diag_gridspace_dict = {}
+                                #for tmp_datstr,th_d_ind in zip(Dataset_lst,[int(ss[8:]) for ss in Dataset_lst]) :                                    xs_pred_med_diag_gridspace_dict[tmp_datstr] = np.median(np.sqrt((lon_d[th_d_ind][1:,:-1] - lon_d[th_d_ind][1:,1:] )**2 + (lat_d[th_d_ind][:-1,1:] - lat_d[th_d_ind][1:,1:])**2))
+                                
+                                for tmp_datstr in Dataset_lst:
+                                    xs_pred_med_diag_gridspace_dict[tmp_datstr] = np.median(np.sqrt((lon_d[th_d_ind][1:,:-1] - lon_d[th_d_ind][1:,1:] )**2 + (lat_d[th_d_ind][:-1,1:] - lat_d[th_d_ind][1:,1:])**2))
+                                    
+                                    
+                                
+                                xs_pred_med_diag_gridspace_min = np.min([xs_pred_med_diag_gridspace_dict[tmp_datstr] for tmp_datstr in Dataset_lst])
+
+
+                                #try: 
+
+
+                                ###################################################################
+                                # convert to list and array
                                 xsect_lon_pnt_lst = []
                                 xsect_lat_pnt_lst = []
                                 for tmpxsectloc in xsectloc_lst: 
-                                    #### if fig zorder = 1
-                                    '''
-                                    tmpxsect_ax,tmpxsect_ii,tmpxsect_jj,tmpxsect_ti,tmpxsect_zz, tmpxsect_sel_xlocval,tmpxsect_sel_ylocval = indices_from_ginput_ax(ax,tmpxsectloc[0],tmpxsectloc[1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
-                                    pdb.set_trace()
-                                    '''
-                                    #### if fig zorder = -5
-                                    tmpxsect_jj,tmpxsect_ii = ind_from_lon_lat('Dataset 1',configd,xypos_dict, lon_d,lat_d, thd,rot_dict,tmpxsectloc[0],tmpxsectloc[1])
-                                    tmpxsect_ii = int(tmpxsect_ii)
-                                    tmpxsect_jj = int(tmpxsect_jj)
 
-                                    tmpxsect_ax = 0
-                                    if (tmpxsect_ax is None)|(tmpxsect_ii is None)|(tmpxsect_jj is None): 
-                                        print('Xsect: selected point outside axis, skipping')
-                                        continue
-                                    xsect_ax_pnt_lst.append(tmpxsect_ax)
-                                    xsect_ii_pnt_lst.append(tmpxsect_ii)
-                                    xsect_jj_pnt_lst.append(tmpxsect_jj)
                                     xsect_lon_pnt_lst.append(tmpxsectloc[0])
                                     xsect_lat_pnt_lst.append(tmpxsectloc[1])
 
-                                
-                                xsect_jjii_npnt = len(xsect_ii_pnt_lst)
-
+                                xsect_lon_pnt_mat = np.array(xsect_lon_pnt_lst)
+                                xsect_lat_pnt_mat = np.array(xsect_lat_pnt_lst)
+                                xsect_jjii_npnt = len(xsect_lon_pnt_lst)
+                                ###################################################################
                                 # create a pseudo master path:
                                 xsect_psmast_lon_lst = []
                                 xsect_psmast_lat_lst= []
+                                xsect_psmast_len_path_lst = []
                                 for xsii in range(xsect_jjii_npnt-1): # xsii+=1
+                                    tmp_xs_len_path =  np.sqrt((xsectloc_lst[xsii][0]-xsectloc_lst[xsii+1][0])**2 + (xsectloc_lst[xsii][1]-xsectloc_lst[xsii+1][1])**2 )
+                                    
                                     xs_n_step = 100
+                                    xs_n_step =  int(np.ceil(2*(tmp_xs_len_path/xs_pred_med_diag_gridspace_min)))
+                                    
                                     tmp_xs_lon_path = np.linspace(xsectloc_lst[xsii][0],xsectloc_lst[xsii+1][0],xs_n_step)
                                     tmp_xs_lat_path = np.linspace(xsectloc_lst[xsii][1],xsectloc_lst[xsii+1][1],xs_n_step)
+                                     
+                                    #tmp_xsect_psmast_dlonlat = np.sqrt((tmp_xs_lon_path[1:] - tmp_xs_lon_path[:-1])**2 + (tmp_xs_lat_path[1:] - tmp_xs_lat_path[:-1])**2)
+                                
+
                                     xsect_psmast_lon_lst.append(tmp_xs_lon_path)
                                     xsect_psmast_lat_lst.append(tmp_xs_lat_path)
+                                    xsect_psmast_len_path_lst.append(tmp_xs_len_path)
+                                    #pdb.set_trace()
 
                                 xsect_psmast_lon_mat = np.concatenate(xsect_psmast_lon_lst)
                                 xsect_psmast_lat_mat = np.concatenate(xsect_psmast_lat_lst)
+                                #xsect_psmast_dist_mat = np.append(0,np.cumsum(xsect_psmast_len_path_lst))
+
                                 xsect_psmast_dlonlat_mat = np.sqrt((xsect_psmast_lon_mat[1:] - xsect_psmast_lon_mat[:-1])**2 + (xsect_psmast_lat_mat[1:] - xsect_psmast_lat_mat[:-1])**2)
                                 xsect_psmast_dist_mat = np.append(0,xsect_psmast_dlonlat_mat).cumsum()
-                                xsect_lon_pnt_mat = np.array(xsect_lon_pnt_lst)
-                                xsect_lat_pnt_mat = np.array(xsect_lat_pnt_lst)
+                                #xsect_dist_pnt_mat = np.append(xsect_psmast_dist_mat[::xs_n_step],xsect_psmast_dist_mat[-1])
+ 
+                                #pdb.set_trace()
+                                xsect_dist_pnt_mat = np.append(0,np.cumsum(xsect_psmast_len_path_lst))
+
+                                '''
+                                plt.scatter(xsect_psmast_lon_mat,xsect_psmast_lat_mat,c = xsect_psmast_dist_mat, vmin = 0, vmax = 60, s = 10)
+                                plt.scatter(xsect_lon_pnt_mat,xsect_lat_pnt_mat,c = xsect_dist_pnt_mat, vmin = 0, vmax = 60, s = 50)
+                                plt.colorbar()
+                                plt.show()
+                                
+                                '''
+
+                                print('Xsect ind: number of points selected: %i'%xsect_jjii_npnt)
+                                print('Xsect ind: number of pseudo index pnts: %i'%xsect_psmast_lon_mat.size)
+
+                                nxsect_psmast = xsect_psmast_lon_mat.size
+
                                 '''
                                 plt.plot(xsect_psmast_lon_mat,xsect_psmast_lat_mat)
-                                plt.plot(np.array(xsectloc_lst)[:,0],np.array(xsectloc_lst)[:,1],'+')
-                                plt.plot(np.append(xsect_psmast_lon_mat[::xs_n_step],xsect_psmast_lon_mat[-1]),np.append(xsect_psmast_lat_mat[::xs_n_step],xsect_psmast_lat_mat[-1]),'x')
+                                plt.plot(xsect_lon_pnt_mat,xsect_lat_pnt_mat,'x')
+                                plt.plot(xsect_lon_pnt_mat[0],xsect_lat_pnt_mat[0],'+')
+                                plt.show()
                                 
                                 '''
 
-                                xsect_dist_pnt_mat = np.append(xsect_psmast_dist_mat[::xs_n_step],xsect_psmast_dist_mat[-1])
+                                ##################################################
+                                ## xs_ind_sel_meth (2026/2/23)
+                                ## Two methods for selecting indices.
+                                ## xs_ind_sel_meth = 1 is simpler, but takes longer, up to 1 min vs 1 sec
+                                ##       finds the grid boxes nearest to the xsect_psmast_lon_mat/lat points
+                                ## xs_ind_sel_meth = 2 is much faster, using profile_line, but fudges when outside
+                                ##      lon/lat matrices, and so masks them out as invalid. When using Sec Grid with 
+                                ##      overlapping adjacent grids (do_adjacent_map), and large segment size, whole 
+                                ##      segments are rejected if either end is outside the lon/lat mat. In which case
+                                ##      xs_ind_sel_meth is better. 
+                                ##          
+                                xs_ind_sel_meth = 3
 
-                                
-                                if xsect_jjii_npnt < 2: 
-                                    print('Xsect: you must select at least 2 points. You have selected %i points'%xsect_jjii_npnt)
-                                    print('Xsect: exiting Xsect')
-                                    continue
+                                if xs_ind_sel_meth in [2,3]:
+
+                                    xt1 = [('start',datetime.now())]
+
+                                    if xs_ind_sel_meth == 2:
+                                        xsect_ind_raw_d = {}
+
+                                        for tmp_datstr in Dataset_lst:
+
+                                            th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
+
+                                            xsect_ind_raw_d[tmp_datstr] = {}
+
+                                            pred_med_diag_gridspace = xs_pred_med_diag_gridspace_dict[tmp_datstr]
+
+                                            xsect_ind_raw_d[tmp_datstr]['ii'] = []
+                                            xsect_ind_raw_d[tmp_datstr]['jj'] = []
+                                            xsect_ind_raw_d[tmp_datstr]['valid'] = []
+                                            xsect_ind_raw_d[tmp_datstr]['lon_target'] = []
+                                            xsect_ind_raw_d[tmp_datstr]['lat_target'] = []
+                                            xsect_ind_raw_d[tmp_datstr]['lon'] = []
+                                            xsect_ind_raw_d[tmp_datstr]['lat'] = []
+                                            xsect_ind_raw_d[tmp_datstr]['dist'] = []
+                                            xt1.append(('start ind loop %i'%th_d_ind,datetime.now()))
+                                            print(xt1[-1])
+                                            #pdb.set_trace()
+
+                                            '''
+                                            
+                                            for tmp_datstr in Dataset_lst:xsect_ind_raw_d[tmp_datstr] = {}
+                                            XYPOS_ind_extended_NN = False
+                                            for tmp_datstr in Dataset_lst:xsect_ind_raw_d[tmp_datstr]['jj_xypos'],xsect_ind_raw_d[tmp_datstr]['ii_xypos'] = ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,xsect_psmast_lon_mat,xsect_psmast_lat_mat,XYPOS_ind_extended_NN = XYPOS_ind_extended_NN)
+                                            #
+                                            ax = [plt.subplot(2,1,1),plt.subplot(2,1,2)]
+                                            for tmp_datstr,th_d_ind, in zip(Dataset_lst,[1,2,3]):ax[0].plot(xsect_ind_raw_d[tmp_datstr]['ii_xypos'],xsect_ind_raw_d[tmp_datstr]['jj_xypos'])
+                                            for tmp_datstr,th_d_ind, in zip(Dataset_lst,[1,2,3]):ax[1].plot(lon_d[th_d_ind][xsect_ind_raw_d[tmp_datstr]['jj_xypos'],xsect_ind_raw_d[tmp_datstr]['ii_xypos']],lat_d[th_d_ind][xsect_ind_raw_d[tmp_datstr]['jj_xypos'],xsect_ind_raw_d[tmp_datstr]['ii_xypos']],)
+                                            plt.show()
+                                            
+                                            
+                                            '''
+
+                                            for tmpxslon, tmpxslat,tmpxsdist in zip(xsect_psmast_lon_mat,xsect_psmast_lat_mat,xsect_psmast_dist_mat):
+                                                #pdb.set_trace()
+                                                tmp_distmat = ((lon_d[th_d_ind] - tmpxslon)**2 + (lat_d[th_d_ind] - tmpxslat)**2)
+                                                sel_jj,sel_ii = tmp_distmat.argmin()//tmp_distmat.shape[1], tmp_distmat.argmin()%tmp_distmat.shape[1]
+                                                mindist = tmp_distmat.min()
+        
+                                                # if the distance from point to nearest grid box (mindist) 
+                                                # is less than the median diag grid box distance (pred_med_diag_gridspace)
+                                                # the estimate is a valid point
+                                                if mindist < pred_med_diag_gridspace:
+                                                    valid_point = True 
+                                                else:
+                                                    valid_point = False     
+
+                                                    
+                                                xsect_ind_raw_d[tmp_datstr]['ii'].append(sel_ii)
+                                                xsect_ind_raw_d[tmp_datstr]['jj'].append(sel_jj)
+                                                xsect_ind_raw_d[tmp_datstr]['valid'].append(valid_point)
+                                                xsect_ind_raw_d[tmp_datstr]['lon'].append(lon_d[th_d_ind][sel_jj,sel_ii])
+                                                xsect_ind_raw_d[tmp_datstr]['lat'].append(lat_d[th_d_ind][sel_jj,sel_ii])
+                                                xsect_ind_raw_d[tmp_datstr]['lon_target'].append(tmpxslon)
+                                                xsect_ind_raw_d[tmp_datstr]['lat_target'].append(tmpxslat)
+                                                xsect_ind_raw_d[tmp_datstr]['dist'].append(tmpxsdist)
+
+                                            print('Xsect ind: number of raw index pnts selected of %s: %i'%(tmp_datstr,len(xsect_ind_raw_d[tmp_datstr]['ii'])))
+
+                                    elif xs_ind_sel_meth == 3:
+                                        xsect_ind_xypos_d = {}
+                                        #for tmp_datstr in Dataset_lst:xsect_ind_xypos_d[tmp_datstr] = {}
+                                        #for tmp_datstr in Dataset_lst:xsect_ind_xypos_d[tmp_datstr]['jj'], xsect_ind_xypos_d[tmp_datstr]['ii'], xsect_ind_xypos_d[tmp_datstr]['valid'] = ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,xsect_psmast_lon_mat,xsect_psmast_lat_mat, XYPOS_ind_extended_NN = True, verbose = True)
+
+                                        #for tmp_datstr,th_d_ind, in zip(Dataset_lst,[1,2,3]):xsect_ind_xypos_d[tmp_datstr]['lon'] = lon_d[th_d_ind][xsect_ind_xypos_d[tmp_datstr]['jj'], xsect_ind_xypos_d[tmp_datstr]['ii']]
+                                        #for tmp_datstr,th_d_ind, in zip(Dataset_lst,[1,2,3]):xsect_ind_xypos_d[tmp_datstr]['lat'] = lat_d[th_d_ind][xsect_ind_xypos_d[tmp_datstr]['jj'], xsect_ind_xypos_d[tmp_datstr]['ii']]
+                                        #for tmp_datstr,th_d_ind, in zip(Dataset_lst,[1,2,3]):xsect_ind_xypos_d[tmp_datstr]['dist'] = xsect_psmast_dist_mat
                                     
-                                
-                                
-                                sec_th_d_ind = int(xsect_secdataset_proc[8:]) # int(tmp_datstr[-1])
+                                        for tmp_datstr in Dataset_lst:
+                                            th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
+                                            #xt1.append(('start ind loop %i'%th_d_ind,datetime.now()))
+                                            #print(xt1[-1])
+
+                                            xsect_ind_xypos_d[tmp_datstr] = {}
+                                            xsect_ind_xypos_d[tmp_datstr]['jj'], xsect_ind_xypos_d[tmp_datstr]['ii'], xsect_ind_xypos_d[tmp_datstr]['valid'] = ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,xsect_psmast_lon_mat,xsect_psmast_lat_mat, XYPOS_ind_extended_NN = True, verbose = True)
+
+
+                                            xsect_ind_xypos_d[tmp_datstr]['lon'] = lon_d[th_d_ind][xsect_ind_xypos_d[tmp_datstr]['jj'], xsect_ind_xypos_d[tmp_datstr]['ii']]
+                                            xsect_ind_xypos_d[tmp_datstr]['lat'] = lat_d[th_d_ind][xsect_ind_xypos_d[tmp_datstr]['jj'], xsect_ind_xypos_d[tmp_datstr]['ii']]
+                                            xsect_ind_xypos_d[tmp_datstr]['dist'] = xsect_psmast_dist_mat
+                                            xsect_ind_xypos_d[tmp_datstr]['lon_target']  = xsect_psmast_lon_mat
+                                            xsect_ind_xypos_d[tmp_datstr]['lat_target']  = xsect_psmast_lat_mat
+
+                                        xsect_ind_raw_d = xsect_ind_xypos_d.copy()
+                                        del(xsect_ind_xypos_d)
+
+                                    
+                                    print('Xsect: raw index pnts time: %s'%(xt1[-1][1] - xt1[0][1]))
+                                    #pdb.set_trace()
+                                    '''
+                                    xsect_ind_xypos_d = {}
+                                    for tmp_datstr in Dataset_lst:xsect_ind_xypos_d[tmp_datstr] = {}
+                                    for tmp_datstr in Dataset_lst:xsect_ind_xypos_d[tmp_datstr]['jj'], xsect_ind_xypos_d[tmp_datstr]['ii'], xsect_ind_xypos_d[tmp_datstr]['valid'] = ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,xsect_psmast_lon_mat,xsect_psmast_lat_mat, XYPOS_ind_extended_NN = True, verbose = True)
+
+                                    for tmp_datstr,th_d_ind, in zip(Dataset_lst,[1,2,3]):xsect_ind_xypos_d[tmp_datstr]['lon'] = lon_d[th_d_ind][xsect_ind_xypos_d[tmp_datstr]['jj'], xsect_ind_xypos_d[tmp_datstr]['ii']]
+                                    for tmp_datstr,th_d_ind, in zip(Dataset_lst,[1,2,3]):xsect_ind_xypos_d[tmp_datstr]['lat'] = lat_d[th_d_ind][xsect_ind_xypos_d[tmp_datstr]['jj'], xsect_ind_xypos_d[tmp_datstr]['ii']]
+                                    for tmp_datstr,th_d_ind, in zip(Dataset_lst,[1,2,3]):xsect_ind_xypos_d[tmp_datstr]['dist'] = xsect_psmast_dist_mat
+                                            datstr,th_d_ind, in zip(Dataset_lst,[1,2,3]):xsect_ind_xypos_d[tmp_datstr]['dist'] = xsect_psmast_dist_mat
+                                            
+                                    plt.plot(xsect_ii_pnt_mat,xsect_jj_pnt_mat, lw = 0.25)
+                                    plt.plot(xsect_ii_pnt_mat,np.ma.array(xsect_jj_pnt_mat, mask = xsect_valid_pnt_mat == False), lw = 2.25)
+                                    plt.show()
+                                    
+                                    
+                                    ax = [plt.subplot(2,2,1),plt.subplot(2,2,2),plt.subplot(2,2,3),plt.subplot(2,2,4)]
+                                    for tmp_datstr in Dataset_lst:ax[0].plot(xsect_ind_raw_d[tmp_datstr]['ii'],xsect_ind_raw_d[tmp_datstr]['jj'], lw = 0.5)
+                                    for tmp_datstr in Dataset_lst:ax[1].plot(xsect_ind_raw_d[tmp_datstr]['lon'],xsect_ind_raw_d[tmp_datstr]['lat'], lw = 0.5)
+                                    for tmp_datstr in Dataset_lst:ax[0].plot(np.ma.array(xsect_ind_raw_d[tmp_datstr]['ii'],mask = np.array(xsect_ind_raw_d[tmp_datstr]['valid']) == False),xsect_ind_raw_d[tmp_datstr]['jj'], lw = 2)
+                                    for tmp_datstr in Dataset_lst:ax[1].plot(np.ma.array(xsect_ind_raw_d[tmp_datstr]['lon'],mask = np.array(xsect_ind_raw_d[tmp_datstr]['valid']) == False),xsect_ind_raw_d[tmp_datstr]['lat'], lw = 2)
+                                    for tmp_datstr in Dataset_lst:ax[2].plot(xsect_ind_xypos_d[tmp_datstr]['ii'],xsect_ind_xypos_d[tmp_datstr]['jj'], lw = 0.5)
+                                    for tmp_datstr in Dataset_lst:ax[3].plot(xsect_ind_xypos_d[tmp_datstr]['lon'],xsect_ind_xypos_d[tmp_datstr]['lat'], lw = 0.5)
+                                    for tmp_datstr in Dataset_lst:ax[2].plot(np.ma.array(xsect_ind_xypos_d[tmp_datstr]['ii'],mask = np.array(xsect_ind_xypos_d[tmp_datstr]['valid']) == False),xsect_ind_xypos_d[tmp_datstr]['jj'], lw = 2)
+                                    for tmp_datstr in Dataset_lst:ax[3].plot(np.ma.array(xsect_ind_xypos_d[tmp_datstr]['lon'],mask = np.array(xsect_ind_xypos_d[tmp_datstr]['valid']) == False),xsect_ind_xypos_d[tmp_datstr]['lat'], lw = 2)
+                                    plt.show()
+
+
+
+                                    
+                                    '''
+
+                                    
+                                    #print('remove repeats')
+
+                                    '''
+                                    ax = [plt.subplot(2,1,1),plt.subplot(2,1,2)]
+                                    for tmp_datstr in Dataset_lst:ax[0].plot(xsect_ind_raw_d[tmp_datstr]['ii'],xsect_ind_raw_d[tmp_datstr]['jj'], lw = 0.5)
+                                    for tmp_datstr in Dataset_lst:ax[1].plot(xsect_ind_raw_d[tmp_datstr]['lon'],xsect_ind_raw_d[tmp_datstr]['lat'], lw = 0.5)
+                                    for tmp_datstr in Dataset_lst:ax[0].plot(np.ma.array(xsect_ind_raw_d[tmp_datstr]['ii'],mask = np.array(xsect_ind_raw_d[tmp_datstr]['valid']) == False),xsect_ind_raw_d[tmp_datstr]['jj'], lw = 2)
+                                    for tmp_datstr in Dataset_lst:ax[1].plot(np.ma.array(xsect_ind_raw_d[tmp_datstr]['lon'],mask = np.array(xsect_ind_raw_d[tmp_datstr]['valid']) == False),xsect_ind_raw_d[tmp_datstr]['lat'], lw = 2)
+                                    plt.show()
+
+
+                                    '''
+                                    #pdb.set_trace()
+
+                                    #nxsect_psmast
+                                    #############################################################
+
+                                    xsect_ind_d = {}
+
+                                    for tmp_datstr in Dataset_lst:
+
+                                        #xt1.append(('Start ind clean loop %i'%th_d_ind,datetime.now()))
+                                        #print(xt1[-1])
+                                        th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
+
+                                        xsect_ind_d[tmp_datstr] = {}
+    
+                                        # Intialise cleaned list of indices, with first indices
+                                        xsect_ind_d_key_lst = ['ii', 'jj', 'valid', 'lon_target', 'lat_target', 'lon', 'lat','dist']
+                                        for ss in xsect_ind_d_key_lst:
+                                            xsect_ind_d[tmp_datstr][ss] = [xsect_ind_raw_d[tmp_datstr][ss][0]]
+                                        '''
+                                        xsect_ind_d[tmp_datstr]['jj'] = [xsect_ind_raw_d[tmp_datstr]['ii'][0]]
+                                        xsect_ind_d[tmp_datstr]['valid'] = [xsect_ind_raw_d[tmp_datstr]['ii'][0]]
+                                        xsect_ind_d[tmp_datstr]['lon_target'] = [xsect_ind_raw_d[tmp_datstr]['ii'][0]]
+                                        xsect_ind_d[tmp_datstr]['lat_target'] = [xsect_ind_raw_d[tmp_datstr]['ii'][0]]
+                                        xsect_ind_d[tmp_datstr]['lon'] = [xsect_ind_raw_d[tmp_datstr]['ii'][0]]
+                                        xsect_ind_d[tmp_datstr]['lat'] = [xsect_ind_raw_d[tmp_datstr]['ii'][0]]
+                                        '''
+
+                                        
+                                        # loop through the raw list of indices - starting at the 2nd point
+                                        # if each point has a different iijj pair of indices, add to the new cleaned list. 
+
+                                        '''
+                                        tmpflst = np.array([not (xsect_ind_raw_d[tmp_datstr]['jj'][xsi] == xsect_ind_raw_d[tmp_datstr]['jj'][xsi-1]) &(xsect_ind_raw_d[tmp_datstr]['ii'][xsi] == xsect_ind_raw_d[tmp_datstr]['ii'][xsi-1]) for xsi in range(1,nxsect_psmast)])
+                                        for xsi,xsfl in zip(range(1,nxsect_psmast),tmpflst):xsect_ind_d[tmp_datstr][ss].append(xsect_ind_raw_d[tmp_datstr][ss][xsi])
+
+                                        for xsi in np.where(tmpflst)[0]+1:xsect_ind_d[tmp_datstr][ss].append(xsect_ind_raw_d[tmp_datstr][ss][xsi])
+
+                                        
+                                        '''
+                                        
+                                        for xsi in range(1,nxsect_psmast):
+                                            if not((xsect_ind_raw_d[tmp_datstr]['ii'][xsi] == xsect_ind_raw_d[tmp_datstr]['ii'][xsi-1]) &
+                                                (xsect_ind_raw_d[tmp_datstr]['jj'][xsi] == xsect_ind_raw_d[tmp_datstr]['jj'][xsi-1])):
+                                                
+                                                for ss in xsect_ind_d_key_lst: xsect_ind_d[tmp_datstr][ss].append(xsect_ind_raw_d[tmp_datstr][ss][xsi])
+                                                
+                                                '''
+                                                xsect_ind_raw_d[tmp_datstr]['ii'].append(xsect_ind_raw_d[tmp_datstr]['ii'][xsi])
+                                                xsect_ind_raw_d[tmp_datstr]['jj'].append(sel_jj)
+                                                xsect_ind_raw_d[tmp_datstr]['valid'].append(valid_point)
+                                                xsect_ind_raw_d[tmp_datstr]['lon'].append(lon_d[th_d_ind][sel_jj,sel_ii])
+                                                xsect_ind_raw_d[tmp_datstr]['lat'].append(lat_d[th_d_ind][sel_jj,sel_ii])
+                                                xsect_ind_raw_d[tmp_datstr]['lon_target'].append(tmpxslon)
+                                                xsect_ind_raw_d[tmp_datstr]['lat_target'].append(tmpxslat)
+                                                '''
+                                        print('Xsect ind: number of index pnts selected of %s: %i'%(tmp_datstr,len(xsect_ind_d[tmp_datstr]['ii'])))
+
+                                    ##############################################################
+                                    '''
+                                    ax = [plt.subplot(2,1,1),plt.subplot(2,1,2)]
+                                    for tmp_datstr in Dataset_lst:ax[0].plot(xsect_ind_d[tmp_datstr]['ii'],xsect_ind_d[tmp_datstr]['jj'], lw = 0.5)
+                                    for tmp_datstr in Dataset_lst:ax[1].plot(xsect_ind_d[tmp_datstr]['lon'],xsect_ind_d[tmp_datstr]['lat'], lw = 0.5)
+                                    for tmp_datstr in Dataset_lst:ax[0].plot(np.ma.array(xsect_ind_d[tmp_datstr]['ii'],mask = np.array(xsect_ind_d[tmp_datstr]['valid']) == False),xsect_ind_d[tmp_datstr]['jj'], lw = 2)
+                                    for tmp_datstr in Dataset_lst:ax[1].plot(np.ma.array(xsect_ind_d[tmp_datstr]['lon'],mask = np.array(xsect_ind_d[tmp_datstr]['valid']) == False),xsect_ind_d[tmp_datstr]['lat'], lw = 2)
+                                    plt.show()
+
+                                                
+                                    '''
+                                    #pdb.set_trace()
+                                    for tmp_datstr in Dataset_lst:
+                                        for ss in xsect_ind_d_key_lst: xsect_ind_d[tmp_datstr][ss] = np.ma.array(xsect_ind_d[tmp_datstr][ss])
+                                    
+                                    #pdb.set_trace()
+
+                                    '''
+                                    plt.plot(xsect_psmast_lon_mat,xsect_psmast_lat_mat)
+                                    plt.plot(np.array(xsectloc_lst)[:,0],np.array(xsectloc_lst)[:,1],'+')
+                                    plt.plot(np.append(xsect_psmast_lon_mat[::xs_n_step],xsect_psmast_lon_mat[-1]),np.append(xsect_psmast_lat_mat[::xs_n_step],xsect_psmast_lat_mat[-1]),'x')
+                                    plt.show()
+                                    '''
+
+                                    ###################
+                                    #map to required output:
+                                    xsect_jj_ind_dict = {}
+                                    xsect_ii_ind_dict = {}
+                                    xsect_valid_ind_dict = {}
+                                    xsect_degdist_dict = {}
+                                    for tmp_datstr in Dataset_lst: xsect_ii_ind_dict[tmp_datstr] = xsect_ind_d[tmp_datstr]['ii']
+                                    for tmp_datstr in Dataset_lst: xsect_jj_ind_dict[tmp_datstr] = xsect_ind_d[tmp_datstr]['jj']
+                                    for tmp_datstr in Dataset_lst: xsect_valid_ind_dict[tmp_datstr] = xsect_ind_d[tmp_datstr]['valid']
+                                    for tmp_datstr in Dataset_lst: xsect_degdist_dict[tmp_datstr] = xsect_ind_d[tmp_datstr]['dist']
+                                    #pdb.set_trace()
+                                if xs_ind_sel_meth == 1:
+
+                                    if not (do_adjacent_map & Sec_regrid & (secdataset_proc in Dataset_lst)):
+                                            
+                                        ###################################################################
+                                        # convert to the nearest model grid box
+                                        print('convert to the nearest model grid box, not Sec_regrid')
+                                        xsect_ax_pnt_lst = []
+                                        xsect_ii_pnt_lst = []
+                                        xsect_jj_pnt_lst = []
+                                        #xsect_lon_pnt_lst = []
+                                        #xsect_lat_pnt_lst = []
+                                        for tmpxsectloc in xsectloc_lst: 
+                                            #### if fig zorder = 1
+                                            '''
+                                            tmpxsect_ax,tmpxsect_ii,tmpxsect_jj,tmpxsect_ti,tmpxsect_zz, tmpxsect_sel_xlocval,tmpxsect_sel_ylocval = indices_from_ginput_ax(ax,tmpxsectloc[0],tmpxsectloc[1], thd,ew_line_x = lon_d[1][jj,:],ew_line_y = lat_d[1][jj,:],ns_line_x = lon_d[1][:,ii],ns_line_y = lat_d[1][:,ii])
+                                            pdb.set_trace()
+                                            '''
+                                            #### if fig zorder = -5
+                                            tmpxsect_jj,tmpxsect_ii,__ = ind_from_lon_lat('Dataset 1',configd,xypos_dict, lon_d,lat_d, thd,rot_dict,tmpxsectloc[0],tmpxsectloc[1])
+                                            tmpxsect_ii = int(tmpxsect_ii)
+                                            tmpxsect_jj = int(tmpxsect_jj)
+
+                                            tmpxsect_ax = 0
+                                            if (tmpxsect_ax is None)|(tmpxsect_ii is None)|(tmpxsect_jj is None): 
+                                                print('Xsect: selected point outside axis, skipping')
+                                                continue
+                                            xsect_ax_pnt_lst.append(tmpxsect_ax)
+                                            xsect_ii_pnt_lst.append(tmpxsect_ii)
+                                            xsect_jj_pnt_lst.append(tmpxsect_jj)
+                                            #xsect_lon_pnt_lst.append(tmpxsectloc[0])
+                                            #xsect_lat_pnt_lst.append(tmpxsectloc[1])
+
+                                        
+                                        xsect_jjii_npnt = len(xsect_ii_pnt_lst)
+
+                                    elif do_adjacent_map & Sec_regrid & (secdataset_proc in Dataset_lst):
+                                                
+                                        ###################################################################
+                                        # convert to the nearest model grid box
+                                        print('convert to the nearest model grid box, Sec_regrid')
+                                        xsect_ax_pnt_d = {}
+                                        xsect_ii_pnt_d = {}
+                                        xsect_jj_pnt_d = {}
+                                        #xsect_lon_pnt_d = {} 
+                                        #xsect_lat_pnt_d = {}
+                                        #xsect_jjii_npnt_d = {}
+
+                                        for tmp_datstr in Dataset_lst:
+                                            th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
+
+                                            # convert to the nearest model grid box
+                                            xsect_ax_pnt_d[th_d_ind] = []
+                                            xsect_ii_pnt_d[th_d_ind] = []
+                                            xsect_jj_pnt_d[th_d_ind] = []
+                                            #xsect_lon_pnt_d[th_d_ind] = []
+                                            #xsect_lat_pnt_d[th_d_ind] = []
+                                            '''
+                                            tmpxsect_jj,tmpxsect_ii,__ = ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,tmpxsectloc[0],tmpxsectloc[1])
+                                                
+                                            
+                                            '''
+
+                                            for tmpxsectloc in xsectloc_lst: 
+                                                #pdb.set_trace()
+                                                tmpxsect_jj,tmpxsect_ii,__ = ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,tmpxsectloc[0],tmpxsectloc[1])
+                                                tmpxsect_ii = int(tmpxsect_ii)
+                                                tmpxsect_jj = int(tmpxsect_jj)
+
+                                                tmpxsect_ax = 0
+                                                if (tmpxsect_ax is None)|(tmpxsect_ii is None)|(tmpxsect_jj is None): 
+                                                    print('Xsect: selected point outside axis, skipping')
+                                                    continue
+                                                xsect_ax_pnt_d[th_d_ind].append(tmpxsect_ax)
+                                                xsect_ii_pnt_d[th_d_ind].append(tmpxsect_ii)
+                                                xsect_jj_pnt_d[th_d_ind].append(tmpxsect_jj)
+                                                #xsect_lon_pnt_d[th_d_ind].append(tmpxsectloc[0])
+                                                #xsect_lat_pnt_d[th_d_ind].append(tmpxsectloc[1])
+
+
+                                            #xsect_jjii_npnt_d[th_d_ind]= len(xsect_ii_pnt_d[th_d_ind])
+                                        '''
+                                        for tmp_datstr,th_d_ind, in zip(Dataset_lst,[1,2,3]):plt.plot(xsect_ii_pnt_d[th_d_ind],xsect_jj_pnt_d[th_d_ind],'.-')
+                                        plt.show()
+                                        
+                                        '''
+
+                                        del(xsect_ii_pnt_d)
+                                        del(xsect_jj_pnt_d)
+
+
+                                    ###################################################################
+                                    
+                                    if xsect_jjii_npnt < 2: 
+                                        print('Xsect: you must select at least 2 points. You have selected %i points'%xsect_jjii_npnt)
+                                        print('Xsect: exiting Xsect')
+                                        continue
+                                        
+                                    
+                                    
+                                    sec_th_d_ind = int(xsect_secdataset_proc[8:]) # int(tmp_datstr[-1])
+
+                                    #convert selected indices into Lat and Lon 
+                                    #   indices_from_ginput_ax hard coded to return indices for Dataset 1.
+                                    
+                                    if not (do_adjacent_map & Sec_regrid & (secdataset_proc in Dataset_lst)):
+                                    
+                                        xsect_lon_pnt_mat = lon_d[1][[xsect_jj_pnt_lst],[xsect_ii_pnt_lst]][0,:]
+                                        xsect_lat_pnt_mat = lat_d[1][[xsect_jj_pnt_lst],[xsect_ii_pnt_lst]][0,:]
+                                    """
+                                    elif do_adjacent_map & Sec_regrid & (secdataset_proc in Dataset_lst):
+                                    
+                                        #try:
+                                        xsect_lon_pnt_mat_d = {}
+                                        xsect_lat_pnt_mat_d = {}
+                                        for th_d_ind in range(1,nDataset+1): xsect_lon_pnt_mat_d[th_d_ind] = lon_d[th_d_ind][[xsect_jj_pnt_d[th_d_ind]],[xsect_ii_pnt_d[th_d_ind]]][0,:]
+                                        for th_d_ind in range(1,nDataset+1): xsect_lat_pnt_mat_d[th_d_ind] = lat_d[th_d_ind][[xsect_jj_pnt_d[th_d_ind]],[xsect_ii_pnt_d[th_d_ind]]][0,:]
+                                        #except:
+                                        #    pdb.set_trace()
+                                    """
+                                    '''
+                                    for tmp_datstr,th_d_ind, in zip(Dataset_lst,[1,2,3]):plt.plot(xsect_lon_pnt_mat_d[th_d_ind],xsect_lat_pnt_mat_d[th_d_ind])                                
+                                    plt.show()
+                                    
+                                    '''
+                                    
+
+
+                                    '''
+                                    try:
+                                        xsect_lon_pnt_mat = lon_d[sec_th_d_ind][[xsect_jj_pnt_lst],[xsect_ii_pnt_lst]][0,:]
+                                        xsect_lat_pnt_mat = lat_d[sec_th_d_ind][[xsect_jj_pnt_lst],[xsect_ii_pnt_lst]][0,:]
+                                    except:
+                                        pdb.set_trace()
+                                    '''
+                                    xsect_lon_dict = {}
+                                    xsect_lat_dict = {}
+                                    xsect_lon_pnt_dict = {}
+                                    xsect_lat_pnt_dict = {}
+                                    xsect_ii_pnt_dict = {}
+                                    xsect_jj_pnt_dict = {}
+                                    xsect_valid_pnt_dict = {}
+                                    xsect_valid_ind_dict = {}
+                                    xsect_jj_ind_dict = {}
+                                    xsect_ii_ind_dict = {}
+                                    xsect_pnt_ind_dict = {}
+                                    xsect_distdeg_dict = {}
+                                    nxsect_dict = {}
+                                    xsect_cum_deg_dict = {}
+                                    xsect_degdist_dict = {}
+
+                                    for tmp_datstr in Dataset_lst:
+
+                                        th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
+                                        
+                                        #xsect_lon_pnt_mat = lon_d[th_d_ind][[xsect_jj_pnt_lst],[xsect_ii_pnt_lst]][0,:]
+                                        #xsect_lat_pnt_mat = lat_d[th_d_ind][[xsect_jj_pnt_lst],[xsect_ii_pnt_lst]][0,:]
+
+
+
+                                        tmpnlat, tmpnlon = domsize[th_d_ind] # lat_d[th_d_ind].shape
+                                        #th_d_ind1 = int(tmp_datstr1[-1])
+                                        #t#h_d_ind1 = int(tmp_datstr1[8:])
+
+                                        #xs1 = datetime.now()
+                                        #if configd[int(secdataset_proc[8:])].lower() in ['amm7','amm15','co9p2','gulf18','orca025']:
+                                        #if True:
+
+                                        tmp_xsect_valid_ind = []
+                                        xsect_valid_ind_lst = []
+                                        xsect_ii_ind_lst = []
+                                        xsect_jj_ind_lst = []
+                                        xsect_n_ind_lst = []
+                                        tmp_xsect_ii_pnt_dict = []
+                                        tmp_xsect_jj_pnt_dict = []
+                                        tmp_xsect_valid_pnt_dict = []
+
+                                        #convert selected  points into lon lat points for current grid
+                                        for xi in range(xsect_jjii_npnt):
+
+                                            #pdb.set_trace()
+                                            #pdb.set_trace()
+
+
+                                            if do_adjacent_map & Sec_regrid & (secdataset_proc in Dataset_lst):
+                                                (tmp_jj_jjii_from_lon_lat,tmp_ii_jjii_from_lon_lat, tmp_valid_jjii_from_lon_lat) = jjii_from_lon_lat(
+                                                    #xsect_lon_pnt_mat_d[th_d_ind][xi],xsect_lat_pnt_mat_d[th_d_ind][xi],lon_d[th_d_ind],lat_d[th_d_ind],
+                                                    xsect_lon_pnt_mat[xi],xsect_lat_pnt_mat[xi],lon_d[th_d_ind],lat_d[th_d_ind],
+                                                    predict_out_of_domain = True)
+                                            else:   
+                                            
+                                                (tmp_jj_jjii_from_lon_lat,tmp_ii_jjii_from_lon_lat, tmp_valid_jjii_from_lon_lat) = jjii_from_lon_lat(
+                                                    xsect_lon_pnt_mat[xi],xsect_lat_pnt_mat[xi],lon_d[th_d_ind],lat_d[th_d_ind],
+                                                    predict_out_of_domain = True)
+                                            #tmp_lonlatijdist_iijj = np.sqrt((xsect_lon_pnt_mat[xi] - lon_d[th_d_ind])**2 + (xsect_lat_pnt_mat[xi] - lat_d[th_d_ind])**2)).argmin()
+                                            tmp_xsect_ii_pnt_dict.append(tmp_ii_jjii_from_lon_lat)
+                                            tmp_xsect_jj_pnt_dict.append(tmp_jj_jjii_from_lon_lat)
+                                            tmp_xsect_valid_pnt_dict.append(tmp_valid_jjii_from_lon_lat)
+                                        xsect_ii_pnt_dict[tmp_datstr] = np.array(tmp_xsect_ii_pnt_dict)
+                                        xsect_jj_pnt_dict[tmp_datstr] = np.array(tmp_xsect_jj_pnt_dict)
+                                        xsect_valid_pnt_dict[tmp_datstr] = np.array(tmp_xsect_valid_pnt_dict)
+                                        del(tmp_xsect_ii_pnt_dict)
+                                        del(tmp_xsect_jj_pnt_dict)
+
+                                        #pdb.set_trace()
+                                        for xi in range(xsect_jjii_npnt-1):
+
+                                            #pdb.set_trace()
+
+                                            #tmp_ii = (xsect_lon_pnt_mat[xi] - lon_d[th_d_ind]**2) + (xsect_lat_pnt_mat[xi] - lat_d[th_d_ind]**2)
+                                            #tmp_xsect_ii_ind,tmp_xsect_jj_ind = profile_line( xsect_ii_pnt_lst[xi:xi+2],xsect_jj_pnt_lst[xi:xi+2], ni = tmpnlat )
+                                            tmp_xsect_ii_ind,tmp_xsect_jj_ind = profile_line( xsect_ii_pnt_dict[tmp_datstr][xi:xi+2],xsect_jj_pnt_dict[tmp_datstr][xi:xi+2], ni = tmpnlat )
+                                            # if both endpoints of the profile line are valid, 
+                                            # the points of the line are also valid, so valid is True
+                                            if xsect_valid_pnt_dict[tmp_datstr][xi:xi+2].all():
+                                                tmp_xsect_valid_ind = np.ones(tmp_xsect_ii_ind.shape).astype('bool')
+                                            else:
+                                                tmp_xsect_valid_ind = np.zeros(tmp_xsect_ii_ind.shape).astype('bool')
+                                                #pdb.set_trace()
+                                            xsect_valid_ind_lst.append(tmp_xsect_valid_ind)
+                                            xsect_ii_ind_lst.append(tmp_xsect_ii_ind)
+                                            xsect_jj_ind_lst.append(tmp_xsect_jj_ind)
+                                            xsect_n_ind_lst.append(tmp_xsect_ii_ind.size)
+
+
+                                        xsect_valid_ind_mat = np.concatenate(xsect_valid_ind_lst)
+                                        xsect_ii_ind_mat = np.concatenate(xsect_ii_ind_lst)
+                                        xsect_jj_ind_mat = np.concatenate(xsect_jj_ind_lst)
+
+
+
+                                        
+                                        #pdb.set_trace()
+                                        nxsect = xsect_ii_ind_mat.size
+
+                                        xsect_lon_mat = lon_d[th_d_ind][[xsect_jj_ind_mat],[xsect_ii_ind_mat]][0,:]
+                                        xsect_lat_mat = lat_d[th_d_ind][[xsect_jj_ind_mat],[xsect_ii_ind_mat]][0,:]
+                                        xsect_psmast_ind_mat = np.array([np.sqrt((tmpxslon - xsect_psmast_lon_mat)**2 + (tmpxslat - xsect_psmast_lat_mat)**2 ).argmin()  for tmpxslon, tmpxslat in zip(xsect_lon_mat,xsect_lat_mat) ])
+                                        xsect_degdist_mat =  xsect_psmast_dist_mat[xsect_psmast_ind_mat]
+
+                                        xsect_pnt_ind = np.append(0,np.cumsum(xsect_n_ind_lst)-1)
+                                        xsect_d_deg_ind = np.array([np.sqrt((xsect_lon_mat[xii] - xsect_lon_mat[xii+1])**2 + (xsect_lat_mat[xii] - xsect_lat_mat[xii+1])**2) for xii in range(nxsect-1)])
+                                        xsect_cumsum_deg_ind = np.append(0,xsect_d_deg_ind).cumsum()
+
+                                        xsect_lon_dict[tmp_datstr] = xsect_lon_mat
+                                        xsect_lat_dict[tmp_datstr] = xsect_lat_mat
+                                        xsect_lon_pnt_dict[tmp_datstr] = xsect_lon_pnt_mat
+                                        xsect_lat_pnt_dict[tmp_datstr] = xsect_lat_pnt_mat
+                                        xsect_ii_ind_dict[tmp_datstr] = xsect_ii_ind_mat
+                                        xsect_jj_ind_dict[tmp_datstr] = xsect_jj_ind_mat
+                                        xsect_valid_ind_dict[tmp_datstr] = xsect_valid_ind_mat
+                                        xsect_pnt_ind_dict[tmp_datstr] = xsect_pnt_ind
+                                        nxsect_dict[tmp_datstr] = nxsect
+                                        xsect_cum_deg_dict[tmp_datstr] = xsect_cumsum_deg_ind
+
+                                        xsect_degdist_dict[tmp_datstr] = xsect_degdist_mat
+
+                                    #except:
+                                    #    pdb.set_trace()
                                 #pdb.set_trace()
 
-                                #convert selected indices into Lat and Lon 
-                                #   indices_from_ginput_ax hard coded to return indices for Dataset 1.
+                            xs1 = datetime.now()
+                            print('Xsect: indices processed: %s'%(xs1 - xs0))
 
-                                xsect_lon_pnt_mat = lon_d[1][[xsect_jj_pnt_lst],[xsect_ii_pnt_lst]][0,:]
-                                xsect_lat_pnt_mat = lat_d[1][[xsect_jj_pnt_lst],[xsect_ii_pnt_lst]][0,:]
-                                '''
-                                try:
-                                    xsect_lon_pnt_mat = lon_d[sec_th_d_ind][[xsect_jj_pnt_lst],[xsect_ii_pnt_lst]][0,:]
-                                    xsect_lat_pnt_mat = lat_d[sec_th_d_ind][[xsect_jj_pnt_lst],[xsect_ii_pnt_lst]][0,:]
-                                except:
-                                    pdb.set_trace()
-                                '''
-                                xsect_lon_dict = {}
-                                xsect_lat_dict = {}
-                                xsect_lon_pnt_dict = {}
-                                xsect_lat_pnt_dict = {}
-                                xsect_ii_pnt_dict = {}
-                                xsect_jj_pnt_dict = {}
-                                xsect_valid_pnt_dict = {}
-                                xsect_valid_ind_dict = {}
-                                xsect_jj_ind_dict = {}
-                                xsect_ii_ind_dict = {}
-                                xsect_pnt_ind_dict = {}
-                                xsect_distdeg_dict = {}
-                                nxsect_dict = {}
-                                xsect_cum_deg_dict = {}
-                                xsect_degdist_dict = {}
+                            '''
 
-                                for tmp_datstr in Dataset_lst:
-
-                                    th_d_ind = int(tmp_datstr[8:]) # int(tmp_datstr[-1])
-                                    
-                                    #xsect_lon_pnt_mat = lon_d[th_d_ind][[xsect_jj_pnt_lst],[xsect_ii_pnt_lst]][0,:]
-                                    #xsect_lat_pnt_mat = lat_d[th_d_ind][[xsect_jj_pnt_lst],[xsect_ii_pnt_lst]][0,:]
-
-
-
-                                    tmpnlat, tmpnlon = domsize[th_d_ind] # lat_d[th_d_ind].shape
-                                    #th_d_ind1 = int(tmp_datstr1[-1])
-                                    #t#h_d_ind1 = int(tmp_datstr1[8:])
-
-                                    xs1 = datetime.now()
-                                    #if configd[int(secdataset_proc[8:])].lower() in ['amm7','amm15','co9p2','gulf18','orca025']:
-                                    #if True:
-
-                                    tmp_xsect_valid_ind = []
-                                    xsect_valid_ind_lst = []
-                                    xsect_ii_ind_lst = []
-                                    xsect_jj_ind_lst = []
-                                    xsect_n_ind_lst = []
-                                    tmp_xsect_ii_pnt_dict = []
-                                    tmp_xsect_jj_pnt_dict = []
-                                    tmp_xsect_valid_pnt_dict = []
-
-                                    #convert selected  points into lon lat points for current grid
-                                    for xi in range(xsect_jjii_npnt):
-
-                                        #pdb.set_trace()
-                                        (tmp_jj_jjii_from_lon_lat,tmp_ii_jjii_from_lon_lat, tmp_valid_jjii_from_lon_lat) = jjii_from_lon_lat(
-                                            xsect_lon_pnt_mat[xi],xsect_lat_pnt_mat[xi],lon_d[th_d_ind],lat_d[th_d_ind],
-                                            predict_out_of_domain = True)
-                                        
-                                        #tmp_lonlatijdist_iijj = np.sqrt((xsect_lon_pnt_mat[xi] - lon_d[th_d_ind])**2 + (xsect_lat_pnt_mat[xi] - lat_d[th_d_ind])**2)).argmin()
-                                        tmp_xsect_ii_pnt_dict.append(tmp_ii_jjii_from_lon_lat)
-                                        tmp_xsect_jj_pnt_dict.append(tmp_jj_jjii_from_lon_lat)
-                                        tmp_xsect_valid_pnt_dict.append(tmp_valid_jjii_from_lon_lat)
-                                    xsect_ii_pnt_dict[tmp_datstr] = np.array(tmp_xsect_ii_pnt_dict)
-                                    xsect_jj_pnt_dict[tmp_datstr] = np.array(tmp_xsect_jj_pnt_dict)
-                                    xsect_valid_pnt_dict[tmp_datstr] = np.array(tmp_xsect_valid_pnt_dict)
-                                    del(tmp_xsect_ii_pnt_dict)
-                                    del(tmp_xsect_jj_pnt_dict)
-
-                                    #pdb.set_trace()
-                                    for xi in range(xsect_jjii_npnt-1):
-
-                                        #pdb.set_trace()
-
-                                        #tmp_ii = (xsect_lon_pnt_mat[xi] - lon_d[th_d_ind]**2) + (xsect_lat_pnt_mat[xi] - lat_d[th_d_ind]**2)
-                                        #tmp_xsect_ii_ind,tmp_xsect_jj_ind = profile_line( xsect_ii_pnt_lst[xi:xi+2],xsect_jj_pnt_lst[xi:xi+2], ni = tmpnlat )
-                                        tmp_xsect_ii_ind,tmp_xsect_jj_ind = profile_line( xsect_ii_pnt_dict[tmp_datstr][xi:xi+2],xsect_jj_pnt_dict[tmp_datstr][xi:xi+2], ni = tmpnlat )
-                                        # if both endpoints of the profile line are valid, 
-                                        # the points of the line are also valid, so valid is True
-                                        if xsect_valid_pnt_dict[tmp_datstr][xi:xi+2].all():
-                                            tmp_xsect_valid_ind = np.ones(tmp_xsect_ii_ind.shape).astype('bool')
-                                        else:
-                                            tmp_xsect_valid_ind = np.zeros(tmp_xsect_ii_ind.shape).astype('bool')
-                                            #pdb.set_trace()
-                                        xsect_valid_ind_lst.append(tmp_xsect_valid_ind)
-                                        xsect_ii_ind_lst.append(tmp_xsect_ii_ind)
-                                        xsect_jj_ind_lst.append(tmp_xsect_jj_ind)
-                                        xsect_n_ind_lst.append(tmp_xsect_ii_ind.size)
-
-
-                                    xsect_valid_ind_mat = np.concatenate(xsect_valid_ind_lst)
-                                    xsect_ii_ind_mat = np.concatenate(xsect_ii_ind_lst)
-                                    xsect_jj_ind_mat = np.concatenate(xsect_jj_ind_lst)
-
-
-
-                                    
-                                    #pdb.set_trace()
-                                    nxsect = xsect_ii_ind_mat.size
-
-                                    xsect_lon_mat = lon_d[th_d_ind][[xsect_jj_ind_mat],[xsect_ii_ind_mat]][0,:]
-                                    xsect_lat_mat = lat_d[th_d_ind][[xsect_jj_ind_mat],[xsect_ii_ind_mat]][0,:]
-                                    xsect_psmast_ind_mat = np.array([np.sqrt((tmpxslon - xsect_psmast_lon_mat)**2 + (tmpxslat - xsect_psmast_lat_mat)**2 ).argmin()  for tmpxslon, tmpxslat in zip(xsect_lon_mat,xsect_lat_mat) ])
-                                    xsect_degdist_mat =  xsect_psmast_dist_mat[xsect_psmast_ind_mat]
-
-                                    xsect_pnt_ind = np.append(0,np.cumsum(xsect_n_ind_lst)-1)
-                                    xsect_d_deg_ind = np.array([np.sqrt((xsect_lon_mat[xii] - xsect_lon_mat[xii+1])**2 + (xsect_lat_mat[xii] - xsect_lat_mat[xii+1])**2) for xii in range(nxsect-1)])
-                                    xsect_cumsum_deg_ind = np.append(0,xsect_d_deg_ind).cumsum()
-
-                                    xsect_lon_dict[tmp_datstr] = xsect_lon_mat
-                                    xsect_lat_dict[tmp_datstr] = xsect_lat_mat
-                                    xsect_lon_pnt_dict[tmp_datstr] = xsect_lon_pnt_mat
-                                    xsect_lat_pnt_dict[tmp_datstr] = xsect_lat_pnt_mat
-                                    xsect_ii_ind_dict[tmp_datstr] = xsect_ii_ind_mat
-                                    xsect_jj_ind_dict[tmp_datstr] = xsect_jj_ind_mat
-                                    xsect_valid_ind_dict[tmp_datstr] = xsect_valid_ind_mat
-                                    xsect_pnt_ind_dict[tmp_datstr] = xsect_pnt_ind
-                                    nxsect_dict[tmp_datstr] = nxsect
-                                    xsect_cum_deg_dict[tmp_datstr] = xsect_cumsum_deg_ind
-
-                                    xsect_degdist_dict[tmp_datstr] = xsect_degdist_mat
-
-                                   
-                            #pdb.set_trace()
-                            print('Xsect: indices processed.')
-
-
-                            #xs_map_ax_lst = [ax[0].plot(xsect_lon_mat,xsect_lat_mat,'r.-')]
-                            #xs_map_ax_lst.append(ax[0].plot(xsect_lon_pnt_mat,xsect_lat_pnt_mat,'ko-'))
-                            xs_map_ax_lst = [ax[0].plot(xsect_lon_dict[xsect_secdataset_proc],xsect_lat_dict[xsect_secdataset_proc],'r.-')]
-                            xs_map_ax_lst.append(ax[0].plot(xsect_lon_pnt_dict[xsect_secdataset_proc],xsect_lat_pnt_dict[xsect_secdataset_proc],'ko-'))
+                            plt.plot(xsect_psmast_lon_mat,xsect_psmast_lat_mat, '0.5')
+                            plt.plot(np.array(xsectloc_lst)[:,0],np.array(xsectloc_lst)[:,1],'+')
+                            plt.plot(np.append(xsect_psmast_lon_mat[::xs_n_step],xsect_psmast_lon_mat[-1]),np.append(xsect_psmast_lat_mat[::xs_n_step],xsect_psmast_lat_mat[-1]),'x')
+                            
+                            for tmp_datstr,th_d_ind, in zip(Dataset_lst,[1,2,3]):plt.plot(xsect_lon_dict[tmp_datstr],xsect_lat_dict[tmp_datstr], lw = 0.5)
+                            for tmp_datstr,th_d_ind, in zip(Dataset_lst,[1,2,3]):plt.plot(np.ma.array(xsect_lon_dict[tmp_datstr], mask = xsect_valid_ind_dict[tmp_datstr] == False),xsect_lat_dict[tmp_datstr])                                
+                            plt.show()
+                            '''
+                            xs_map_ax_lst = [ax[0].plot(xsect_lon_pnt_lst,xsect_lat_pnt_lst,'r.')]
+                            xs_map_ax_lst.append(ax[0].plot(xsect_psmast_lon_mat,xsect_psmast_lat_mat,'r-'))
+                            #xs_map_ax_lst.append(ax[0].plot(xsect_lon_pnt_dict[xsect_secdataset_proc],xsect_lat_pnt_dict[xsect_secdataset_proc],'ko-'))
 
                             fig.canvas.draw_idle()
                             if verbose_debugging: print('Canvas flush', datetime.now())
@@ -5460,21 +5936,27 @@ def nemo_slice_zlev(config = 'amm7',
                             tmp_xsect_x,tmp_xsect_z,tmp_xsect_dat = {},{},{}
                             tmp_xsect_mld_dat = {}
                             #pdb.set_trace()
-                            for tmp_datstr in Dataset_lst:
-                                if var_dim[var] == 4:
-                                    tmp_xsect_dat[tmp_datstr] = data_inst[tmp_datstr][:,[xsect_jj_ind_dict[tmp_datstr]],[xsect_ii_ind_dict[tmp_datstr]]][:,0,:]
-                                    tmp_xsect_z[tmp_datstr] = np.array(grid_dict[tmp_datstr]['gdept'])[:,[xsect_jj_ind_dict[tmp_datstr]],[xsect_ii_ind_dict[tmp_datstr]]][:,0,:]
-                                    tmp_xsect_x[tmp_datstr] = np.arange(nxsect_dict[tmp_datstr])
-                                    if do_MLD:
-                                        tmp_xsect_mld_dat[tmp_datstr] = data_inst_mld[tmp_datstr][[xsect_jj_ind_dict[tmp_datstr]],[xsect_ii_ind_dict[tmp_datstr]]][0,:]
+                            try:
+                                #
                                     
-                                elif var_dim[var] == 3:
-                                    tmp_xsect_dat[tmp_datstr] = data_inst[tmp_datstr][[xsect_jj_ind_dict[tmp_datstr]],[xsect_ii_ind_dict[tmp_datstr]]][0,:]
-                                    tmp_xsect_dat[tmp_datstr] = np.ma.array(tmp_xsect_dat[tmp_datstr],mask = tmp_xsect_dat[tmp_datstr].mask | xsect_valid_ind_dict[tmp_datstr] == False)
-                                    
-                                    tmp_xsect_x[tmp_datstr] = xsect_degdist_dict[tmp_datstr]
-                                    #pdb.set_trace()
+                                for tmp_datstr in Dataset_lst:
+                                    if var_dim[var] == 4:
+                                        tmp_xsect_dat[tmp_datstr] = data_inst[tmp_datstr][:,[xsect_jj_ind_dict[tmp_datstr]],[xsect_ii_ind_dict[tmp_datstr]]][:,0,:]
+                                        tmp_xsect_z[tmp_datstr] = np.array(grid_dict[tmp_datstr]['gdept'])[:,[xsect_jj_ind_dict[tmp_datstr]],[xsect_ii_ind_dict[tmp_datstr]]][:,0,:]
+                                        tmp_xsect_x[tmp_datstr] = np.arange(nxsect_dict[tmp_datstr])
+                                        if do_MLD:
+                                            tmp_xsect_mld_dat[tmp_datstr] = data_inst_mld[tmp_datstr][[xsect_jj_ind_dict[tmp_datstr]],[xsect_ii_ind_dict[tmp_datstr]]][0,:]
+                                        
+                                    elif var_dim[var] == 3:
+                                        tmp_xsect_dat[tmp_datstr] = data_inst[tmp_datstr][[xsect_jj_ind_dict[tmp_datstr]],[xsect_ii_ind_dict[tmp_datstr]]][0,:]
+                                        tmp_xsect_dat[tmp_datstr] = np.ma.array(tmp_xsect_dat[tmp_datstr],mask = tmp_xsect_dat[tmp_datstr].mask | xsect_valid_ind_dict[tmp_datstr] == False)
+                                        
+                                        tmp_xsect_x[tmp_datstr] = xsect_degdist_dict[tmp_datstr]
+                                        #pdb.set_trace()
+                               
 
+                            except:
+                                pdb.set_trace(0)
 
 
                             if figxs is not None:
@@ -5531,15 +6013,30 @@ def nemo_slice_zlev(config = 'amm7',
                                     #pdb.set_trace()
                                     xs_pe = [pe.Stroke(linewidth=2, foreground='w'), pe.Normal()]
                                     #pdb.set_trace()
+                                    '''
                                     if var_dim[var] == 3:
                                         xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
                                     elif var_dim[var] == 4:
                                         xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][0][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
-                                    xmapax.plot(xsect_lon_dict[xsect_secdataset_proc],xsect_lat_dict[xsect_secdataset_proc],'r-', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                                    #xmapax.plot(xsect_lon_pnt_mat,xsect_lat_pnt_mat,'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                                    #xmapax.plot(xsect_lon_pnt_mat[0],xsect_lat_pnt_mat[0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                                    xmapax.plot(xsect_lon_pnt_dict[xsect_secdataset_proc],xsect_lat_pnt_dict[xsect_secdataset_proc],'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                                    xmapax.plot(xsect_lon_pnt_dict[xsect_secdataset_proc][0],xsect_lat_pnt_dict[xsect_secdataset_proc][0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                    '''
+
+                                    for tmp_datstr in Dataset_lst:
+                                        th_d_ind = int(tmp_datstr[8:]) 
+                                        
+                                        if var_dim[var] == 3:
+                                            xsmapconax = xmapax.contour(lon_d[th_d_ind][1:-1,1:-1],lat_d[th_d_ind][1:-1,1:-1],data_inst[tmp_datstr][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
+                                        elif var_dim[var] == 4:
+                                            xsmapconax = xmapax.contour(lon_d[th_d_ind][1:-1,1:-1],lat_d[th_d_ind][1:-1,1:-1],data_inst[tmp_datstr][0][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
+                                    
+                                    #xmapax.plot(xsect_lon_dict[xsect_secdataset_proc],xsect_lat_dict[xsect_secdataset_proc],'r-', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                    #xmapax.plot(xsect_lon_pnt_dict[xsect_secdataset_proc],xsect_lat_pnt_dict[xsect_secdataset_proc],'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                    #xmapax.plot(xsect_lon_pnt_dict[xsect_secdataset_proc][0],xsect_lat_pnt_dict[xsect_secdataset_proc][0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                    xmapax.plot(xsect_psmast_lon_mat,xsect_psmast_lat_mat,'r-', alpha = 0.5, lw = 0.5)
+                                    xmapax.plot(xsect_lon_pnt_mat,xsect_lat_pnt_mat,'k+', alpha = 0.5, lw = 0.5)
+                                    xmapax.plot(xsect_lon_pnt_mat[0],xsect_lat_pnt_mat[0],'kx', alpha = 0.5, lw = 0.5)
+                                    
+                                    
+                                    
                                     xmapax.axis('equal')
                                     xmapax.set_xticks([])
                                     xmapax.set_yticks([]) 
@@ -5587,15 +6084,26 @@ def nemo_slice_zlev(config = 'amm7',
                                     #pdb.set_trace()
                                     xs_pe = [pe.Stroke(linewidth=2, foreground='w'), pe.Normal()]
                                     #pdb.set_trace()
+                                    '''
                                     if var_dim[var] == 3:
                                         xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
                                     elif var_dim[var] == 4:
                                         xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][0][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
-                                    xmapax.plot(xsect_lon_dict[xsect_secdataset_proc],xsect_lat_dict[xsect_secdataset_proc],'r-', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                                    #xmapax.plot(xsect_lon_pnt_mat,xsect_lat_pnt_mat,'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                                    #xmapax.plot(xsect_lon_pnt_mat[0],xsect_lat_pnt_mat[0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                                    xmapax.plot(xsect_lon_pnt_dict[xsect_secdataset_proc],xsect_lat_pnt_dict[xsect_secdataset_proc],'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                                    xmapax.plot(xsect_lon_pnt_dict[xsect_secdataset_proc][0],xsect_lat_pnt_dict[xsect_secdataset_proc][0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                    '''
+                                    for tmp_datstr in Dataset_lst:
+                                        th_d_ind = int(tmp_datstr[8:]) 
+                                        
+                                        if var_dim[var] == 3:
+                                            xsmapconax = xmapax.contour(lon_d[th_d_ind][1:-1,1:-1],lat_d[th_d_ind][1:-1,1:-1],data_inst[tmp_datstr][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
+                                        elif var_dim[var] == 4:
+                                            xsmapconax = xmapax.contour(lon_d[th_d_ind][1:-1,1:-1],lat_d[th_d_ind][1:-1,1:-1],data_inst[tmp_datstr][0][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
+                                    
+                                    #xmapax.plot(xsect_lon_dict[xsect_secdataset_proc],xsect_lat_dict[xsect_secdataset_proc],'r-', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                    #xmapax.plot(xsect_lon_pnt_dict[xsect_secdataset_proc],xsect_lat_pnt_dict[xsect_secdataset_proc],'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                    #xmapax.plot(xsect_lon_pnt_dict[xsect_secdataset_proc][0],xsect_lat_pnt_dict[xsect_secdataset_proc][0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                    xmapax.plot(xsect_psmast_lon_mat,xsect_psmast_lat_mat,'r-', alpha = 0.5, lw = 0.5)
+                                    xmapax.plot(xsect_lon_pnt_mat,xsect_lat_pnt_mat,'k+', alpha = 0.5, lw = 0.5)
+                                    xmapax.plot(xsect_lon_pnt_mat[0],xsect_lat_pnt_mat[0],'kx', alpha = 0.5, lw = 0.5)
                                     xmapax.axis('equal')
                                     xmapax.set_xticks([])
                                     xmapax.set_yticks([]) 
@@ -5659,17 +6167,29 @@ def nemo_slice_zlev(config = 'amm7',
                                 #pdb.set_trace()
                                 xs_pe = [pe.Stroke(linewidth=2, foreground='w'), pe.Normal()]
                                 #pdb.set_trace()
+                                '''
                                 if var_dim[var] == 3:
                                     xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
                                 elif var_dim[var] == 4:
                                     xsmapconax = xmapax.contour(lon_d[1][1:-1,1:-1],lat_d[1][1:-1,1:-1],data_inst['Dataset 1'][0][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
-                                xmapax.plot(xsect_lon_dict[xsect_secdataset_proc],xsect_lat_dict[xsect_secdataset_proc],'r-', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                                #xmapax.plot(xsect_lon_mat,xsect_lat_mat,'r-', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                                #xmapax.plot(xsect_lon_pnt_mat,xsect_lat_pnt_mat,'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                                #xmapax.plot(xsect_lon_pnt_mat[0],xsect_lat_pnt_mat[0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                                #xmapax.plot(xsect_lon_dict[xsect_secdataset_proc],xsect_lat_dict[xsect_secdataset_proc],'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                                xmapax.plot(xsect_lon_pnt_dict[xsect_secdataset_proc],xsect_lat_pnt_dict[xsect_secdataset_proc],'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
-                                xmapax.plot(xsect_lon_pnt_dict[xsect_secdataset_proc][0],xsect_lat_pnt_dict[xsect_secdataset_proc][0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                '''
+                                
+                                for tmp_datstr in Dataset_lst:
+                                    th_d_ind = int(tmp_datstr[8:]) 
+                                    
+                                    if var_dim[var] == 3:
+                                        xsmapconax = xmapax.contour(lon_d[th_d_ind][1:-1,1:-1],lat_d[th_d_ind][1:-1,1:-1],data_inst[tmp_datstr][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
+                                    elif var_dim[var] == 4:
+                                        xsmapconax = xmapax.contour(lon_d[th_d_ind][1:-1,1:-1],lat_d[th_d_ind][1:-1,1:-1],data_inst[tmp_datstr][0][1:-1,1:-1].mask, linewidths = 0.5, colors = 'k', path_effect = xs_pe)
+                                
+
+
+                                #xmapax.plot(xsect_lon_dict[xsect_secdataset_proc],xsect_lat_dict[xsect_secdataset_proc],'r-', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                #xmapax.plot(xsect_lon_pnt_dict[xsect_secdataset_proc],xsect_lat_pnt_dict[xsect_secdataset_proc],'k+', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                #xmapax.plot(xsect_lon_pnt_dict[xsect_secdataset_proc][0],xsect_lat_pnt_dict[xsect_secdataset_proc][0],'kx', alpha = 0.5, lw = 0.5)#,path_effect = xs_pe)
+                                xmapax.plot(xsect_psmast_lon_mat,xsect_psmast_lat_mat,'r-', alpha = 0.5, lw = 0.5)
+                                xmapax.plot(xsect_lon_pnt_mat,xsect_lat_pnt_mat,'k+', alpha = 0.5, lw = 0.5)
+                                xmapax.plot(xsect_lon_pnt_mat[0],xsect_lat_pnt_mat[0],'kx', alpha = 0.5, lw = 0.5)
                                 xmapax.axis('equal')
                                 xmapax.set_xticks([])
                                 xmapax.set_yticks([]) 
@@ -6261,6 +6781,17 @@ def nemo_slice_zlev(config = 'amm7',
                             if but_name in Dataset_lst:
                                 clim_sym_but = 0
                                 secdataset_proc = but_name 
+                                
+                                # if doing adjacent map, clicking on dataset makes that the top data set
+                                #   Noting that the list is initialised from 0 to nDatasets-1, 
+                                #   and that they are plotted in reverse order, dataset 1 is on top
+                                
+                                if do_adjacent_map:
+                                    tmp_th_d_ind = int(but_name[8:])-1
+                                    if tmp_th_d_ind != adjacent_map_ind_lst[0]:
+                                        adjacent_map_ind_lst = np.append(tmp_th_d_ind,adjacent_map_ind_lst[adjacent_map_ind_lst !=tmp_th_d_ind])
+                                    
+                                    #pdb.set_trace()
 
 
                             #secdataset_proc = but_name 
@@ -6686,7 +7217,7 @@ def main():
         # separating those that default to True
         argparse_bool_T = ['clim_pair','fig_cutout','do_match_time','trim_files','Obs_pair_loc','Obs_AbsAnom']
         # from those that default to False
-        argparse_bool_F = ['clim_sym','hov_time','justplot','use_cmocean','verbose_debugging','do_timer','do_memory','do_ensemble','do_mask','do_addtimedim','do_all_WW3','do_cont','trim_extra_files','Obs_hide','use_xarray_gdept','Obs_hide_edges','Obs_AbsAnom','Time_Diff','Obs_pair_loc','Obs_show_with_diff_var'] #'allow_diff_time',
+        argparse_bool_F = ['clim_sym','hov_time','justplot','use_cmocean','verbose_debugging','do_timer','do_memory','do_ensemble','do_mask','do_addtimedim','do_all_WW3','do_cont','trim_extra_files','Obs_hide','use_xarray_gdept','Obs_hide_edges','Obs_AbsAnom','Time_Diff','Obs_pair_loc','Obs_show_with_diff_var', 'do_adjacent_map'] #'allow_diff_time',
         
 
 
@@ -6777,6 +7308,7 @@ def main():
             do_grad = args.do_grad,do_cont = argparse_bool_dict['do_cont'],trim_extra_files = argparse_bool_dict['trim_extra_files'],trim_files = argparse_bool_dict['trim_files'],
             use_cmocean = argparse_bool_dict['use_cmocean'], date_fmt = args.date_fmt,
             Time_Diff = argparse_bool_dict['Time_Diff'],
+            do_adjacent_map = argparse_bool_dict['do_adjacent_map'],
             define_time_dict = define_time_dict,
             fig_fname_lab = args.fig_fname_lab,
             justplot = argparse_bool_dict['justplot'],justplot_date_ind = args.justplot_date_ind,
