@@ -2065,7 +2065,7 @@ def nemo_slice_zlev(config = 'amm7',
             if zlim_max is not None:arg_output_text = arg_output_text + ' --zlim_max %i'%zlim_max
             arg_output_text = arg_output_text + ' --th 1 dxy %i'%thd[1]['dx']
             arg_output_text = arg_output_text + ' --th 1 df %i'%thd[1]['df']
-            arg_output_text = arg_output_text + ' --datlab 1 %s'%dataset_lab_d['Dataset 1']
+            #arg_output_text = arg_output_text + ' --datlab 1 %s'%dataset_lab_d['Dataset 1']
             arg_output_text = arg_output_text + ' --lon %f'%lon_d[1][jj,ii]
             arg_output_text = arg_output_text + ' --lat %f'%lat_d[1][jj,ii]
             if cur_xlim is not None: arg_output_text = arg_output_text + ' --xlim %f %f'%(cur_xlim[0],cur_xlim[1])
@@ -2076,26 +2076,54 @@ def nemo_slice_zlev(config = 'amm7',
             #arg_output_text = arg_output_text + ' --z_meth %s'%z_meth
             arg_output_text = arg_output_text + ' --zz %s'%zz
             arg_output_text = arg_output_text + ' --do_grad %1i'%do_grad
-            arg_output_text = arg_output_text + ' --clim_sym %s'%clim_sym
+            #arg_output_text = arg_output_text + ' --clim_sym %s'%clim_sym
             arg_output_text = arg_output_text + ' --vis_curr %s'%vis_curr
             
+            for tmp_datstr_ii, tmp_datstr in enumerate(Dataset_lst):
+                if tmp_datstr_ii>0:
+                    arg_output_text = arg_output_text + ' --config %i %s'%(tmp_datstr_ii+1,configd[tmp_datstr_ii+1])
+                
+            for tmp_datstr_ii, tmp_datstr in enumerate(Dataset_lst):
+                arg_output_text = arg_output_text + ' --datlab %i %s'%(tmp_datstr_ii+1,dataset_lab_d[tmp_datstr]) 
+                
+
+            for tmp_datstr_ii, tmp_datstr in enumerate(Dataset_lst):
+                for tmpgrss in fname_dict[tmp_datstr].keys():
+                    if (tmp_datstr_ii == 0) & (tmpgrss == 'T'): continue
+                    arg_output_text = arg_output_text + ' --file %i %s "$file_%i_%s"'%(tmp_datstr_ii+1,tmpgrss,tmp_datstr_ii+1,tmpgrss) 
+                  
+            del(tmp_datstr_ii)
+            del(tmp_datstr)
+            del(tmpgrss)
+
             #if xlim is not None:arg_output_text = arg_output_text + ' --xlim %f %f'%tuple(xlim)
             #if ylim is not None:arg_output_text = arg_output_text + ' --ylim %f %f'%tuple(ylim)
-            if load_second_files:
+            #if load_second_files:
                 #if configd[2] is not None: 
-                arg_output_text = arg_output_text + ' --config 2 %s'%configd[2]
+                #arg_output_text = arg_output_text + ' --config 2 %s'%configd[2]
                 #arg_output_text = arg_output_text + ' --thin_2nd %i'%thd[2]['dx']
-                arg_output_text = arg_output_text + ' --secdataset_proc "%s"'%secdataset_proc
-                arg_output_text = arg_output_text + ' --file 2 T "$flist2"'
-                arg_output_text = arg_output_text + ' --clim_pair %s'%clim_pair
+                #arg_output_text = arg_output_text + ' --secdataset_proc "%s"'%secdataset_proc
+                #arg_output_text = arg_output_text + ' --file 2 T "$flist2"'
+            #    arg_output_text = arg_output_text + ' --clim_pair %s'%clim_pair
 
             arg_output_text = arg_output_text + ' --justplot_date_ind "$justplot_date_ind"'
             #arg_output_text = arg_output_text + " --justplot_date_ind '%s'"%time_datetime[ti].strftime(date_fmt)
             arg_output_text = arg_output_text + " --justplot_secdataset_proc '%s'"%justplot_secdataset_proc
             arg_output_text = arg_output_text + " --justplot_z_meth_zz '%s'"%justplot_z_meth_zz
             arg_output_text = arg_output_text + ' --justplot True'       
-            arg_output_text = arg_output_text + '\n\n\n'       
+            arg_output_text = arg_output_text + '\n\n\n'      
 
+      
+            for tmp_datstr_ii, tmp_datstr in enumerate(Dataset_lst):
+                #arg_output_text = arg_output_text + ' --config %i %s'%(tmp_datstr_ii+1,configd[tmp_datstr_ii+1])
+                for tmpthfss in ['x0','x1','y0','y1', 'pxy','f0','f1','df']:
+                    tmpthout = thd[tmp_datstr_ii+1][tmpthfss]
+                    if tmpthout is None: tmpthout = 'None'
+                    arg_output_text = arg_output_text + ' --th %i %s %s'%(tmp_datstr_ii+1,tmpthfss,tmpthout) 
+                
+            del(tmp_datstr_ii)
+            del(tmp_datstr)
+            del(tmpthfss)
 
 
             arg_output_text = arg_output_text + '\n\n\n'
@@ -2169,6 +2197,12 @@ def nemo_slice_zlev(config = 'amm7',
 
     if justplot: 
         secdataset_proc = just_plt_vals[just_plt_cnt][0]
+        if secdataset_proc not in Dataset_lst:
+
+            tmpdatasetnum_1,tmpdatasetnum_2,tmpdataset_oper = split_secdataset_proc(secdataset_proc,dataset_diff_oper_dict['oper_lst'])
+            tmpdataset_1 = 'Dataset %s'%tmpdatasetnum_1
+            tmpdataset_2 = 'Dataset %s'%tmpdatasetnum_2
+
         #tmp_date_in_ind = just_plt_vals[just_plt_cnt][1]
         z_meth = just_plt_vals[just_plt_cnt][2]
         zz = just_plt_vals[just_plt_cnt][3]
@@ -2924,7 +2958,7 @@ def nemo_slice_zlev(config = 'amm7',
 
                 """
                 tmpdatasetnum_1,tmpdatasetnum_2,tmpdataset_oper = split_secdataset_proc(secdataset_proc,dataset_diff_oper_dict['oper_lst'])
-
+                #pdb.set_trace()
                 if tmpdataset_oper in dataset_diff_oper_dict['oper_lst']:
                     map_dat = dataset_comp_func(map_dat_dict[tmpdataset_1], map_dat_dict[tmpdataset_2],method = tmpdataset_oper)
                     if var_dim[var] == 4:
@@ -4379,6 +4413,23 @@ def nemo_slice_zlev(config = 'amm7',
 
                 clii,cljj  = 0,0
                 secdataset_proc = just_plt_vals[just_plt_cnt][0]
+
+                if secdataset_proc not in Dataset_lst:
+
+                    tmpdatasetnum_1,tmpdatasetnum_2,tmpdataset_oper = split_secdataset_proc(secdataset_proc,dataset_diff_oper_dict['oper_lst'])
+                    tmpdataset_1 = 'Dataset %s'%tmpdatasetnum_1
+                    tmpdataset_2 = 'Dataset %s'%tmpdatasetnum_2
+
+                    #pdb.set_trace()
+
+
+                if secdataset_proc in Dataset_lst:
+                    clim_sym = False
+                    clim_sym_but = 0
+                else:
+                    clim_sym = True
+                    clim_sym_but = 1
+
                 tmp_date_in_ind = just_plt_vals[just_plt_cnt][1]
                 z_meth = just_plt_vals[just_plt_cnt][2]
                 zz = just_plt_vals[just_plt_cnt][3]
