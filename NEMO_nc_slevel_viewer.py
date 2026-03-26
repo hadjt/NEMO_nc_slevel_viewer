@@ -2083,10 +2083,10 @@ def nemo_slice_zlev(config = 'amm7',
             #if ylim is not None:arg_output_text = arg_output_text + ' --ylim %f %f'%tuple(ylim)
             if load_second_files:
                 #if configd[2] is not None: 
-                arg_output_text = arg_output_text + ' --config_2nd %s'%configd[2]
+                arg_output_text = arg_output_text + ' --config 2 %s'%configd[2]
                 #arg_output_text = arg_output_text + ' --thin_2nd %i'%thd[2]['dx']
                 arg_output_text = arg_output_text + ' --secdataset_proc "%s"'%secdataset_proc
-                arg_output_text = arg_output_text + ' --fname_lst_2nd  "$flist2"'
+                arg_output_text = arg_output_text + ' --file 2 T "$flist2"'
                 arg_output_text = arg_output_text + ' --clim_pair %s'%clim_pair
 
             arg_output_text = arg_output_text + ' --justplot_date_ind "$justplot_date_ind"'
