@@ -923,6 +923,87 @@ def nemo_slice_zlev(config = 'amm7',
 
     # find variables common to both data sets, and use them for the buttons
     
+    '''
+    npnt=1000
+
+    indmatjj=np.random.uniform(0,domsize[1][0]-1,npnt).astype('int')
+    indmatii=np.random.uniform(0,domsize[1][1]-1,npnt).astype('int')
+
+    loni_mat = np.zeros(npnt)
+    lati_mat = np.zeros(npnt)
+    ind_xy_mat = np.zeros((npnt,2))
+
+    loni_xy_mat = np.zeros(npnt)
+    lati_xy_mat = np.zeros(npnt)
+    ind_nn_mat = np.zeros((npnt,2))
+    loni_nn_mat = np.zeros(npnt)
+    lati_nn_mat = np.zeros(npnt)
+
+    dlon = xypos_dict['Dataset 1']['dlon']
+    dlat = xypos_dict['Dataset 1']['dlat']
+
+
+
+    for nn,(jj,ii) in enumerate(zip(indmatjj,indmatii)):
+        loni = lon_d[1][jj,ii]
+        lati = lat_d[1][jj,ii]
+        tmpind_xy = np.array(ind_from_lon_lat('Dataset 1',configd,xypos_dict, lon_d,lat_d, thd,rot_dict,loni,lati, meth = 'bilin')[:2])
+        loni_xy_mat[nn],lati_xy_mat[nn], = lon_d[1][tmpind_xy[0],tmpind_xy[1]], lat_d[1][tmpind_xy[0],tmpind_xy[1]]
+        mindist = (np.sqrt((lon_d[1] - loni)**2 + (lat_d[1] - lati)**2)).argmin()
+        tmpind_nn = np.array([mindist//domsize[1][1],mindist%domsize[1][1]])
+        loni_nn_mat[nn],lati_nn_mat[nn], = lon_d[1][tmpind_nn[0],tmpind_nn[1]], lat_d[1][tmpind_nn[0],tmpind_nn[1]]
+        
+        loni_mat[nn] = loni
+        lati_mat[nn] = lati
+        ind_xy_mat[nn] = tmpind_xy
+        ind_nn_mat[nn] = tmpind_nn
+
+    print(np.unique(indmatii-ind_xy_mat[:,1], return_counts = True))
+    print(np.unique(indmatjj-ind_xy_mat[:,0], return_counts = True))
+
+    ax = [plt.subplot(2,3,1)]
+    plt.plot(indmatii,ind_nn_mat[:,1],'.')
+    ax.append(plt.subplot(2,3,2))
+    plt.plot(indmatii,ind_xy_mat[:,1],'.')
+    ax.append(plt.subplot(2,3,3))
+    plt.plot(indmatii-ind_xy_mat[:,1],'.')
+    ax.append(plt.subplot(2,3,4))
+    plt.plot(indmatjj,ind_nn_mat[:,0],'.')
+    ax.append(plt.subplot(2,3,5))
+    plt.plot(indmatjj,ind_xy_mat[:,0],'.')
+    ax.append(plt.subplot(2,3,6))
+    plt.plot(indmatjj-ind_xy_mat[:,0],'.')
+    for tmpax in ax[:2] + ax[3:-1]: tmpax.axline((0,0),slope = 1, color = 'k')
+    plt.show()
+
+    pdb.set_trace()
+    ax = [plt.subplot(2,3,1)]
+    plt.plot(loni_mat,loni_nn_mat,'.')
+    ax.append(plt.subplot(2,3,2))
+    plt.plot(loni_mat,loni_xy_mat,'.')
+    ax.append(plt.subplot(2,3,4))
+    plt.plot(lati_mat,lati_nn_mat,'.')
+    ax.append(plt.subplot(2,3,5))
+    plt.plot(lati_mat,lati_xy_mat,'.')
+    for tmpax in ax: tmpax.axline((0,0),slope = 1, color = 'k')
+    plt.show()
+    
+    pdb.set_trace()
+    '''
+    
+    '''
+
+    for ii in range (100): 
+        loni,lati = 0,50 + (ii/100.)
+        tmpind_xy = np.array(ind_from_lon_lat('Dataset 1',configd,xypos_dict, lon_d,lat_d, thd,rot_dict,loni,lati)[:2])
+        lon_d[1][tmpind[0],tmpind[1]], lat_d[1][tmpind[0],tmpind[1]]
+        mindist = (np.sqrt((lon_d[1] - loni)**2 + (lat_d[1] - lati)**2)).argmin()
+        tmpind_nn = np.array([mindist//domsize[1][1],mindist%domsize[1][1]])
+    
+    '''
+
+
+
     var_but_mat = var_d[1]['mat'].copy()
 
     if len(var_but_mat) == 0:
