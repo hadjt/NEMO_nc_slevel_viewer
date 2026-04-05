@@ -1062,6 +1062,10 @@ def nemo_slice_zlev(config = 'amm7',
         if Obs_Type_load_dict is None:
             Obs_Type_load_dict = {}
             Obs_Type_load_dict['show_with_diff_var'] = False
+            Obs_Type_load_dict['Obs_excl_qc_prof'] = True
+            Obs_Type_load_dict['Obs_excl_qc_sat'] = False
+        if 'Obs_excl_qc_prof' not in Obs_Type_load_dict.keys():Obs_Type_load_dict['Obs_excl_qc_prof'] = True
+        if 'Obs_excl_qc_sat' not in Obs_Type_load_dict.keys():Obs_Type_load_dict['Obs_excl_qc_sat'] = False
 
         Obs_Type_load_lst = obs_get_Obs_Type_load_lst()
 
@@ -1075,6 +1079,8 @@ def nemo_slice_zlev(config = 'amm7',
                     Obs_Type_load_dict[tmp_Obs_Type_load] = False
                 else:
                     Obs_Type_load_dict[tmp_Obs_Type_load] = True
+
+                    
     
     
         '''
@@ -5207,11 +5213,12 @@ def nemo_slice_zlev(config = 'amm7',
 
                                 obs_but_names = [ss for ss in Obs_vis_d['visible'].keys()]
                                 obs_but_names = obs_but_names + ['Hide_Obs','Edges','Loc','AbsAnom','Obs_show_with_diff_var',
-                                                 #'Obs_Type_TSargo','Obs_Type_TSships','Obs_Type_TSgliders','Obs_Type_TSother',
+                                                                 'Obs_excl_qc_prof','Obs_excl_qc_sat',
                                                  'Obs_Type_T_argo','Obs_Type_T_ships','Obs_Type_T_gliders','Obs_Type_T_other',
                                                  'Obs_Type_S_argo','Obs_Type_S_ships','Obs_Type_S_gliders','Obs_Type_S_other',
                                                  'Obs_Type_SSTships','Obs_Type_SSTdrifter','Obs_Type_SSTmoored',
                                                  'Close']
+                                                 #'Obs_Type_TSargo','Obs_Type_TSships','Obs_Type_TSgliders','Obs_Type_TSother',
                                 
                                 
                                 '''
@@ -5234,6 +5241,8 @@ def nemo_slice_zlev(config = 'amm7',
                                 obs_but_sw['Loc'] = {'v':Obs_pair_loc, 'T':"Don't Selected point",'F': 'Move Selected point'}
                                 obs_but_sw['AbsAnom'] = {'v':Obs_AbsAnom, 'T':"Observed Values",'F': 'Model - Obs'}
                                 obs_but_sw['Obs_show_with_diff_var'] = {'v':Obs_Type_load_dict['show_with_diff_var'] , 'T':"No obs mixing",'F': 'Allow obs mixing'}
+                                obs_but_sw['Obs_excl_qc_prof'] = {'v':Obs_Type_load_dict['Obs_excl_qc_prof'] , 'T':"Obs_excl_qc_prof=T",'F': 'Obs_excl_qc_prof=F'}
+                                obs_but_sw['Obs_excl_qc_sat'] = {'v':Obs_Type_load_dict['Obs_excl_qc_sat'] , 'T':"Obs_excl_qc_sat=T",'F': 'Obs_excl_qc_sat=F'}
                                 #obs_but_sw['Obs_Type_argo'] = {'v':Obs_Type_argo, 'T':"Show Argo TS",'F': 'Hide Argo TS'}
                                 #obs_but_sw['Obs_Type_ships'] = {'v':Obs_Type_ships, 'T':"Show ships SST",'F': 'Hide ships SST'}
                                 #obs_but_sw['Obs_Type_drifter'] = {'v':Obs_Type_drifter, 'T':"Show drifter SST",'F': 'Hide drifter SST'}
@@ -5262,7 +5271,7 @@ def nemo_slice_zlev(config = 'amm7',
                                 
                                 # Add all obs types
                                 for ob_var in Obs_varlst:       obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var,'T_col':'k','F_col':'0.5'}
-
+                                #pdb.set_trace()
                                 obbut_sel = pop_up_opt_window(obs_but_names, opt_but_sw = obs_but_sw)
 
 
@@ -5305,7 +5314,8 @@ def nemo_slice_zlev(config = 'amm7',
                                 if obbut_sel == 'Obs_Type_SSTdrifter': Obs_Type_load_dict['SST_drifter']    = not Obs_Type_load_dict['SST_drifter']
                                 if obbut_sel == 'Obs_Type_SSTmoored':  Obs_Type_load_dict['SST_moored']    = not Obs_Type_load_dict['SST_moored']
                                 if obbut_sel == 'Obs_show_with_diff_var':  Obs_Type_load_dict['show_with_diff_var']     = not Obs_Type_load_dict['show_with_diff_var'] 
-
+                                if obbut_sel == 'Obs_excl_qc_prof':  Obs_Type_load_dict['Obs_excl_qc_prof'] = not Obs_Type_load_dict['Obs_excl_qc_prof']
+                                if obbut_sel == 'Obs_excl_qc_sat':  Obs_Type_load_dict['Obs_excl_qc_sat'] = not Obs_Type_load_dict['Obs_excl_qc_sat']
 
                                 reload_Obs = True
                         

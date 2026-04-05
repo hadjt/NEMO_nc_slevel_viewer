@@ -8629,7 +8629,8 @@ def Obs_load_init_files_dict(Obs_fname,Obs_Type_load_dict):
                         tmp_stat_type_lst.append(402)
                         tmp_stat_type_lst.append(403)
                     tmp_stat_type_lst_exc = True
-                    Obs_dict[tmp_datstr][ob_var]['Obs'].append(load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = True,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc))
+                    #Obs_dict[tmp_datstr][ob_var]['Obs'].append(load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = True,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc))
+                    Obs_dict[tmp_datstr][ob_var]['Obs'].append(load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = Obs_Type_load_dict['Obs_excl_qc_prof'] ,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc))
   
                 elif ob_var in ['ProfS']:
                     #tmp_stat_type_lst = None
@@ -8645,7 +8646,8 @@ def Obs_load_init_files_dict(Obs_fname,Obs_Type_load_dict):
                         tmp_stat_type_lst.append(402)
                         tmp_stat_type_lst.append(403)
                     tmp_stat_type_lst_exc = True
-                    Obs_dict[tmp_datstr][ob_var]['Obs'].append(load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = True,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc))
+                    #Obs_dict[tmp_datstr][ob_var]['Obs'].append(load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = True,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc))
+                    Obs_dict[tmp_datstr][ob_var]['Obs'].append(load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = Obs_Type_load_dict['Obs_excl_qc_prof'],stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc))
 
                     '''    
                     if ob_var in ['ProfT','ProfS']:
@@ -8673,7 +8675,8 @@ def Obs_load_init_files_dict(Obs_fname,Obs_Type_load_dict):
                         if Obs_Type_load_dict['SST_drifter']: tmp_stat_type_lst.append(53)
                         if Obs_Type_load_dict['SST_moored']: tmp_stat_type_lst.append(55)
                     tmp_stat_type_lst_exc = True
-                    Obs_dict[tmp_datstr][ob_var]['Obs'].append(load_ops_2D_xarray(tmpObsfname,ob_var,excl_qc = False,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc))
+                    #Obs_dict[tmp_datstr][ob_var]['Obs'].append(load_ops_2D_xarray(tmpObsfname,ob_var,excl_qc = False,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc))
+                    Obs_dict[tmp_datstr][ob_var]['Obs'].append(load_ops_2D_xarray(tmpObsfname,ob_var,excl_qc = Obs_Type_load_dict['Obs_excl_qc_sat'],stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc))
 
                 if ob_var in ['ProfT','ProfS','SST_ins','SST_sat','SLA','ChlA']:
                     tmptimetupel = datetime(*(Obs_dict[tmp_datstr][ob_var]['Obs'][-1]['JULD_datetime'][0]).timetuple()[:3])
@@ -8793,7 +8796,8 @@ def Obs_reload_obs(var,Dataset_lst,tmp_current_time,ob_ti,
                             tmp_stat_type_lst.append(402)
                             tmp_stat_type_lst.append(403)
                         tmp_stat_type_lst_exc = True
-                        Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = True,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc)
+                        #Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = True,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc)
+                        Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = Obs_Type_load_dict['Obs_excl_qc_prof'],stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc)
     
                     elif ob_var in ['ProfS']:
                         #tmp_stat_type_lst = None
@@ -8809,7 +8813,8 @@ def Obs_reload_obs(var,Dataset_lst,tmp_current_time,ob_ti,
                             tmp_stat_type_lst.append(402)
                             tmp_stat_type_lst.append(403)
                         tmp_stat_type_lst_exc = True
-                        Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = True,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc)
+                        #Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = True,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc)
+                        Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = Obs_Type_load_dict['Obs_excl_qc_prof'],stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc)
 
                         '''
 
@@ -8839,7 +8844,8 @@ def Obs_reload_obs(var,Dataset_lst,tmp_current_time,ob_ti,
                             if Obs_Type_load_dict['SST_drifter']: tmp_stat_type_lst.append(53)
                             if Obs_Type_load_dict['SST_moored']: tmp_stat_type_lst.append(55)
                         tmp_stat_type_lst_exc = True
-                        Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = load_ops_2D_xarray(tmpObsfname,ob_var,excl_qc = False,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc)   
+                        #Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = load_ops_2D_xarray(tmpObsfname,ob_var,excl_qc = False,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc)   
+                        Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = load_ops_2D_xarray(tmpObsfname,ob_var,excl_qc = Obs_Type_load_dict['Obs_excl_qc_sat'],stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc)   
                         #if len(Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti]['JULD']) == 0: Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = []
 
                 Obs_dat_dict[tmp_datstr][ob_var] = Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti]
@@ -8871,7 +8877,10 @@ def Obs_reload_obs(var,Dataset_lst,tmp_current_time,ob_ti,
     '''
 
 
-def load_ops_2D_xarray(OPSfname,vartype,stat_type_lst = None, stat_type_lst_exc = True, nlon = 1458, nlat = 1345,  excl_qc = False, timing_in = 1):
+def load_ops_2D_xarray(OPSfname,vartype,stat_type_lst = None, stat_type_lst_exc = True, nlon = 1458, nlat = 1345,
+                       excl_qc = False, timing_in = 1):
+
+    #excl_qc = False
 
 
     timing = False
@@ -9079,7 +9088,8 @@ def load_ops_2D_xarray(OPSfname,vartype,stat_type_lst = None, stat_type_lst_exc 
     return ops_output_dict
 
 
-def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,stat_type_lst_exc = True,nlon = 1458, nlat = 1345, excl_qc = False):
+def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,stat_type_lst_exc = True,nlon = 1458, nlat = 1345,
+                     excl_qc = False):
     '''
     argo = stat_type_lst = [831]
     nlon = 1458
@@ -9087,10 +9097,13 @@ def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,stat_type_lst_exc 
     excl_qc = True    
     '''
 
+
+    print('load_ops_prof_TS:excl_qc',excl_qc)
     if TS_str_in.upper() in ['T','POTM','VOTEMPER','TEMPERATURE']:
         TnotS = True
     elif TS_str_in.upper() in ['S','PSAL','VOSALINE','SALINITY']:
         TnotS = False
+        #pdb.set_trace()
     else:
         print('TS_str_in must be T or S, not ',TS_str_in)
         pdb.set_trace()
@@ -9240,19 +9253,39 @@ def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,stat_type_lst_exc 
     else:
         loc_ind = (rootgrp.variables['PSAL_IOBSI'][:]>=0) & (rootgrp.variables['PSAL_IOBSI'][:]<nlon) & (rootgrp.variables['PSAL_IOBSJ'][:]>=0) & (rootgrp.variables['PSAL_IOBSJ'][:]<nlat)
     
+
+    n_levels = ops_dim_dict['N_LEVELS']
     if (stat_type_lst is not None):
         #if len(stat_type_lst)>0:
         loc_ind =  stat_type_ind & loc_ind
-    
-    if excl_qc:
-        comb_ind = loc_ind
-        comb_ind_T = loc_ind
-        comb_ind_S = loc_ind
-    else:
-        comb_ind = loc_ind
-        comb_ind_T = (comb_qc_flag_POTM==0)  & loc_ind
-        comb_ind_S = (comb_qc_flag_PSAL==0)  & loc_ind
+    try:
+        if excl_qc:
+            loc_ind = np.tile(loc_ind,(n_levels,1)).T
+            comb_ind = loc_ind
+            comb_ind_T = loc_ind
+            comb_ind_S = loc_ind
 
+            print('excl_qc', excl_qc)
+            print('comb_ind.shape:', comb_ind.shape)
+            print('comb_ind_T.shape:', comb_ind_T.shape)
+            print('comb_ind_S.shape:', comb_ind_S.shape)
+
+
+        else:
+            loc_ind = np.tile(loc_ind,(n_levels,1)).T
+            comb_ind = loc_ind
+            comb_ind_T = (comb_qc_flag_POTM==0)  & loc_ind
+            comb_ind_S = (comb_qc_flag_PSAL==0)  & loc_ind
+            #comb_ind_T = ((comb_qc_flag_POTM==0).T  & loc_ind).T
+            #comb_ind_S = ((comb_qc_flag_PSAL==0).T  & loc_ind).T
+
+            print('excl_qc', excl_qc)
+            print('comb_ind.shape:', comb_ind.shape)
+            print('comb_ind_T.shape:', comb_ind_T.shape)
+            print('comb_ind_S.shape:', comb_ind_S.shape)
+    except:
+        pdb.set_trace()
+    #pdb.set_trace()
         
     if TnotS:
         comb_ind = comb_ind_T
@@ -9303,10 +9336,11 @@ def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,stat_type_lst_exc 
 
 
     #pdb.set_trace()
+    '''
     for ss in ops_output_var_3d_mat:   ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],rootgrp.variables[ss]._Fillvalue )[comb_ind.T]
     for ss in ops_output_var_2d_mat:   ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],rootgrp.variables[ss]._Fillvalue )[comb_ind.T]
     for ss in ops_output_ind_2d_mat:   ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],-99999 )[comb_ind.T]
-
+    
     if TnotS:
         for ss in ops_output_var_3d_T_mat:   ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],rootgrp.variables[ss]._Fillvalue )[comb_ind_T.T]
         for ss in ops_output_ind_3d_T_mat: ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],-99999,)[comb_ind_T.T]
@@ -9315,17 +9349,33 @@ def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,stat_type_lst_exc 
         for ss in ops_output_var_3d_S_mat:   ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],rootgrp.variables[ss]._Fillvalue )[comb_ind_S.T]
         for ss in ops_output_ind_3d_S_mat: ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],-99999,)[comb_ind_S.T]
         for ss in ops_output_ind_2d_S_mat: ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],-99999,)[comb_ind_S.T]
+    '''
+    try:
+        for ss in ops_output_var_3d_mat:   ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],rootgrp.variables[ss]._Fillvalue )[comb_ind.any(axis = 1)]
+        for ss in ops_output_var_2d_mat:   ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],rootgrp.variables[ss]._Fillvalue )[comb_ind.any(axis = 1)]
+        for ss in ops_output_ind_2d_mat:   ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],-99999 )[comb_ind]
 
+        if TnotS:
+            #pdb.set_trace()
+            for ss in ops_output_var_3d_T_mat:   ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],rootgrp.variables[ss]._Fillvalue )[comb_ind_T.any(axis = 1)]
+            for ss in ops_output_ind_3d_T_mat: ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],-99999,)[comb_ind_T.any(axis = 1)]
+            for ss in ops_output_ind_2d_T_mat: ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],-99999,)[comb_ind_T.any(axis = 1)]
+        else:
+            for ss in ops_output_var_3d_S_mat:   ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],rootgrp.variables[ss]._Fillvalue )[comb_ind_S.any(axis = 1)]
+            for ss in ops_output_ind_3d_S_mat: ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],-99999,)[comb_ind_S.any(axis = 1)]
+            for ss in ops_output_ind_2d_S_mat: ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],-99999,)[comb_ind_S.any(axis = 1)]
+    except:
+        pdb.set_trace()
     #'pdb.set_trace()
     # need to mask['POTM_IOBSI', 'POTM_IOBSJ','PSAL_IOBSI', 'PSAL_IOBSJ']
 
     JULD_REFERENCE = datetime.strptime(str(chartostring(rootgrp.variables['JULD_REFERENCE'][:])),'%Y%m%d%H%M%S')
     #pdb.set_trace()
 
-    ops_output_dict['JULD_datetime'] = np.array([JULD_REFERENCE + timedelta(ss) for ss in rootgrp.variables['JULD'][:][comb_ind].ravel()])
+    ops_output_dict['JULD_datetime'] = np.array([JULD_REFERENCE + timedelta(ss) for ss in rootgrp.variables['JULD'][:][comb_ind.any(axis = 1)].ravel()])
 
     #ops_output_dict['STATION_TYPE'] = stat_type[comb_ind.any(axis = 0)]
-    ops_output_dict['STATION_TYPE'] = stat_type[comb_ind]
+    ops_output_dict['STATION_TYPE'] = stat_type[comb_ind.any(axis = 1)]
     '''
     #old slower method
     STATION_IDENTIFIER = []
@@ -9333,7 +9383,7 @@ def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,stat_type_lst_exc 
         if tmperr:STATION_IDENTIFIER.append(str(chartostring(ss)))
     ops_output_dict['STATION_IDENTIFIER'] = np.array(STATION_IDENTIFIER)
     '''
-    ops_output_dict['STATION_IDENTIFIER'] = np.array([str(ss) for ss in chartostring(rootgrp.variables['STATION_IDENTIFIER'][comb_ind,:])])
+    ops_output_dict['STATION_IDENTIFIER'] = np.array([str(ss) for ss in chartostring(rootgrp.variables['STATION_IDENTIFIER'][comb_ind.any(axis = 1),:])])
 
 
     #for ss in ops_output_dict.keys(): ss, ops_output_dict[ss].shape
