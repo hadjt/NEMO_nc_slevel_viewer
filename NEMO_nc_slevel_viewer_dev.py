@@ -228,7 +228,7 @@ def nemo_slice_zlev(config = 'amm7',
 
             
             if Obs_reloadmeth == 0:
-                Obs_dict = Obs_load_init_files_dict(Obs_fname,Obs_Type_load_dict)
+                Obs_dict = Obs_load_init_files_dict(Obs_fname,Obs_Type_load_dict,cur_xlim = cur_xlim, cur_ylim = cur_ylim)
                 '''       
                 Obs_dict = {}
                 for tmp_datstr in Obs_fname.keys():
@@ -2784,7 +2784,10 @@ def nemo_slice_zlev(config = 'amm7',
                 if reload_Obs:
 
 
-                    Obs_dat_dict,Obs_var_lst_sub = Obs_reload_obs(var,Dataset_lst,tmp_current_time,ob_ti,Obs_dict,Obs_fname,Obs_JULD_datetime_dict,Obs_vis_d,Obs_varlst,Obs_reloadmeth,Obs_Type_load_dict)
+                    Obs_dat_dict,Obs_var_lst_sub = Obs_reload_obs(var,Dataset_lst,tmp_current_time,ob_ti,Obs_dict,
+                                                                  Obs_fname,Obs_JULD_datetime_dict,Obs_vis_d,Obs_varlst,
+                                                                  Obs_reloadmeth,Obs_Type_load_dict,
+                                                                  cur_xlim = cur_xlim, cur_ylim = cur_ylim)
                     '''
                     
                     #for a given variable, what obs types to use

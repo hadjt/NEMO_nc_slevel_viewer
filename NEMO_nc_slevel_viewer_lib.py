@@ -8604,8 +8604,9 @@ def obs_get_Obs_Type_load_lst():
 
     return Obs_Type_load_lst
 
-def Obs_load_init_files_dict(Obs_fname,Obs_Type_load_dict):
-
+def Obs_load_init_files_dict(Obs_fname,Obs_Type_load_dict,
+                             cur_xlim = None, cur_ylim = None):
+    #pdb.set_trace()
     Obs_dict = {}
     for tmp_datstr in Obs_fname.keys():
         Obs_dict[tmp_datstr] = {}
@@ -8630,7 +8631,7 @@ def Obs_load_init_files_dict(Obs_fname,Obs_Type_load_dict):
                         tmp_stat_type_lst.append(403)
                     tmp_stat_type_lst_exc = True
                     #Obs_dict[tmp_datstr][ob_var]['Obs'].append(load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = True,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc))
-                    Obs_dict[tmp_datstr][ob_var]['Obs'].append(load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = Obs_Type_load_dict['Obs_excl_qc_prof'] ,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc))
+                    Obs_dict[tmp_datstr][ob_var]['Obs'].append(load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = Obs_Type_load_dict['Obs_excl_qc_prof'] ,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc,cur_xlim = cur_xlim, cur_ylim = cur_ylim))
   
                 elif ob_var in ['ProfS']:
                     #tmp_stat_type_lst = None
@@ -8647,7 +8648,7 @@ def Obs_load_init_files_dict(Obs_fname,Obs_Type_load_dict):
                         tmp_stat_type_lst.append(403)
                     tmp_stat_type_lst_exc = True
                     #Obs_dict[tmp_datstr][ob_var]['Obs'].append(load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = True,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc))
-                    Obs_dict[tmp_datstr][ob_var]['Obs'].append(load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = Obs_Type_load_dict['Obs_excl_qc_prof'],stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc))
+                    Obs_dict[tmp_datstr][ob_var]['Obs'].append(load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = Obs_Type_load_dict['Obs_excl_qc_prof'],stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc,cur_xlim = cur_xlim, cur_ylim = cur_ylim))
 
                     '''    
                     if ob_var in ['ProfT','ProfS']:
@@ -8694,7 +8695,8 @@ def Obs_load_init_files_dict(Obs_fname,Obs_Type_load_dict):
 
 def Obs_reload_obs(var,Dataset_lst,tmp_current_time,ob_ti,
                    Obs_dict,Obs_fname,Obs_JULD_datetime_dict,Obs_vis_d,
-                   Obs_varlst,Obs_reloadmeth,Obs_Type_load_dict):
+                   Obs_varlst,Obs_reloadmeth,Obs_Type_load_dict,
+                   cur_xlim = None, cur_ylim = None):
                   
     #for a given variable, what obs types to use
     if var.lower() in ['votemper','votempis','votemper_bot','votempis_bot']:
@@ -8797,7 +8799,8 @@ def Obs_reload_obs(var,Dataset_lst,tmp_current_time,ob_ti,
                             tmp_stat_type_lst.append(403)
                         tmp_stat_type_lst_exc = True
                         #Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = True,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc)
-                        Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = Obs_Type_load_dict['Obs_excl_qc_prof'],stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc)
+                        Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = Obs_Type_load_dict['Obs_excl_qc_prof'],
+                                                                                      stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc,cur_xlim = cur_xlim ,cur_ylim = cur_ylim)
     
                     elif ob_var in ['ProfS']:
                         #tmp_stat_type_lst = None
@@ -8814,7 +8817,7 @@ def Obs_reload_obs(var,Dataset_lst,tmp_current_time,ob_ti,
                             tmp_stat_type_lst.append(403)
                         tmp_stat_type_lst_exc = True
                         #Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = True,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc)
-                        Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = Obs_Type_load_dict['Obs_excl_qc_prof'],stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc)
+                        Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = Obs_Type_load_dict['Obs_excl_qc_prof'],stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc,cur_xlim = cur_xlim ,cur_ylim = cur_ylim)
 
                         '''
 
@@ -8988,6 +8991,8 @@ def load_ops_2D_xarray(OPSfname,vartype,stat_type_lst = None, stat_type_lst_exc 
     # obs  station types.
     #stat_type = np.array(chartostring(rootgrp.variables['STATION_TYPE'][:])).astype('float')
     stat_type = np.array(chartostring(root_x.variables['STATION_TYPE'].load().data[:])).astype('float')
+    #stat_identifier = np.array([ss.strip()  for ss in chartostring(root_x.variables['STATION_IDENTIFIER'][:])])
+
     if timing: tim_lst.append(('Read Station types',datetime.now()))
 
     #pdb.set_trace()
@@ -9089,7 +9094,8 @@ def load_ops_2D_xarray(OPSfname,vartype,stat_type_lst = None, stat_type_lst_exc 
 
 
 def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,stat_type_lst_exc = True,nlon = 1458, nlat = 1345,
-                     excl_qc = False):
+                     excl_qc = False,
+                     cur_xlim = None, cur_ylim = None):
     '''
     argo = stat_type_lst = [831]
     nlon = 1458
@@ -9229,6 +9235,7 @@ def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,stat_type_lst_exc 
     # find obs with correct station types.
     # obs  station types.
     stat_type = np.array(chartostring(rootgrp.variables['STATION_TYPE'][:])).astype('float')
+    stat_identifier = np.array([ss.strip()  for ss in chartostring(rootgrp.variables['STATION_IDENTIFIER'][:])])
 
     #print('\n\n\nTS_profile types:',np.unique(stat_type))
     #print('\n\n\n')
@@ -9247,12 +9254,29 @@ def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,stat_type_lst_exc 
     #pdb.set_trace()
 
     # find obs within domain
+        #pdb.set_trace()
+
+        '''
+
+
+
+  sel_jj,sel_ii,__ = ind_from_lon_lat('Dataset 1',configd,xypos_dict, lon_d,lat_d, thd,rot_dict,loni,latj)
+
+
+        '''
+
+
 
     if TnotS:
         loc_ind = (rootgrp.variables['POTM_IOBSI'][:]>=0) & (rootgrp.variables['POTM_IOBSI'][:]<nlon) & (rootgrp.variables['POTM_IOBSJ'][:]>=0) & (rootgrp.variables['POTM_IOBSJ'][:]<nlat)
     else:
         loc_ind = (rootgrp.variables['PSAL_IOBSI'][:]>=0) & (rootgrp.variables['PSAL_IOBSI'][:]<nlon) & (rootgrp.variables['PSAL_IOBSJ'][:]>=0) & (rootgrp.variables['PSAL_IOBSJ'][:]<nlat)
     
+
+
+    if (rootgrp.variables['POTM_IOBSI'][:] == -99999).all():
+        print('need to add lon lat inds')
+        loc_ind = (((rootgrp.variables['PSAL_IOBSI'][:]).copy()*0)+1).astype('bool')
 
     n_levels = ops_dim_dict['N_LEVELS']
     if (stat_type_lst is not None):
@@ -9291,6 +9315,7 @@ def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,stat_type_lst_exc 
         comb_ind = comb_ind_T
     else:
         comb_ind = comb_ind_S
+        #pdb.set_trace()
 
 
     #ops_output_var_3d_mat = ['DEPTH', 'OBSERVATION_QC','POTM_QC','PSAL_QC','POTM_OBS', 'POTM_Hx', 'PSAL_OBS', 'PSAL_Hx',]
