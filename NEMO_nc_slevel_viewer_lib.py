@@ -9254,18 +9254,7 @@ def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,stat_type_lst_exc 
     #pdb.set_trace()
 
     # find obs within domain
-        #pdb.set_trace()
-
-        '''
-
-
-
-  sel_jj,sel_ii,__ = ind_from_lon_lat('Dataset 1',configd,xypos_dict, lon_d,lat_d, thd,rot_dict,loni,latj)
-
-
-        '''
-
-
+ 
 
     if TnotS:
         loc_ind = (rootgrp.variables['POTM_IOBSI'][:]>=0) & (rootgrp.variables['POTM_IOBSI'][:]<nlon) & (rootgrp.variables['POTM_IOBSJ'][:]>=0) & (rootgrp.variables['POTM_IOBSJ'][:]<nlat)
@@ -9275,8 +9264,28 @@ def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,stat_type_lst_exc 
 
 
     if (rootgrp.variables['POTM_IOBSI'][:] == -99999).all():
-        print('need to add lon lat inds')
-        loc_ind = (((rootgrp.variables['PSAL_IOBSI'][:]).copy()*0)+1).astype('bool')
+        print('need to add lon lat inds')   
+        #pdb.set_trace()
+        if cur_xlim is None:
+    
+            loc_ind = (((rootgrp.variables['PSAL_IOBSI'][:]).copy()*0)+1).astype('bool')
+        else:
+            loc_ind = ((rootgrp.variables['LONGITUDE'][:]>=cur_xlim[0]) &
+                       (rootgrp.variables['LONGITUDE'][:]<=cur_xlim[1]) &
+                       (rootgrp.variables['LATITUDE'][:]>=cur_ylim[0]) &
+                       (rootgrp.variables['LATITUDE'][:]<=cur_ylim[1]))
+
+               #pdb.set_trace()
+
+        '''
+
+
+
+         sel_jj,sel_ii,__ = ind_from_lon_lat('Dataset 1',configd,xypos_dict, lon_d,lat_d, thd,rot_dict,loni,latj)
+
+
+        '''
+
 
     n_levels = ops_dim_dict['N_LEVELS']
     if (stat_type_lst is not None):

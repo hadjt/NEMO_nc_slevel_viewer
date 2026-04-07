@@ -2783,11 +2783,26 @@ def nemo_slice_zlev(config = 'amm7',
             if do_Obs:
                 if reload_Obs:
 
+                    #pdb.set_trace()
+                    obs_xlim = cur_xlim
+                    obs_ylim = cur_ylim
+                    if obs_xlim is None:
+                        obs_xlim = ax[0].get_xlim()
+                        if (obs_xlim == np.array([0,1])).all():
+                            obs_xlim = np.array([lon_d[1].min(),lon_d[1].max()])
+
+                    if obs_ylim is None:
+                        obs_ylim = ax[0].get_ylim()
+                        if (obs_ylim == np.array([0,1])).all():
+                            obs_ylim = np.array([lat_d[1].min(),lat_d[1].max()])
+
 
                     Obs_dat_dict,Obs_var_lst_sub = Obs_reload_obs(var,Dataset_lst,tmp_current_time,ob_ti,Obs_dict,
                                                                   Obs_fname,Obs_JULD_datetime_dict,Obs_vis_d,Obs_varlst,
                                                                   Obs_reloadmeth,Obs_Type_load_dict,
-                                                                  cur_xlim = cur_xlim, cur_ylim = cur_ylim)
+                                                                  cur_xlim = obs_xlim, cur_ylim = obs_ylim)
+                    del(obs_xlim)
+                    del(obs_ylim)
                     '''
                     
                     #for a given variable, what obs types to use
