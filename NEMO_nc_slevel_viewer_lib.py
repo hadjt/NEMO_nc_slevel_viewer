@@ -9026,6 +9026,20 @@ def load_ops_2D_xarray(OPSfname,vartype,stat_type_lst = None, stat_type_lst_exc 
         ops_output_dict['MOD_HX'] = 10**ops_output_dict['SLCHLTOT_Hx'] 
 
 
+
+
+
+    required_output_vars = ['LONGITUDE','LATITUDE','OBS','MOD_HX','DEPTH','STATION_IDENTIFIER','STATION_TYPE','JULD_datetime','DEPTH']
+
+    # Only Keep useful variables in obs output dictionary
+    out_ops_output_dict = {}
+    for ss in required_output_vars: out_ops_output_dict[ss] = ops_output_dict[ss].copy()
+    del(ops_output_dict)
+    ops_output_dict = out_ops_output_dict
+
+
+
+
     return ops_output_dict
 
 
@@ -9491,6 +9505,17 @@ def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,stat_type_lst_exc 
     else:
         for ss in ops_output_dict.keys():ops_output_dict[ss] = ops_output_dict[ss][PSAL_Obs_ind]
     #pdb.set_trace()
+
+
+
+    required_output_vars = ['LONGITUDE','LATITUDE','OBS','MOD_HX','DEPTH','STATION_IDENTIFIER','STATION_TYPE','JULD_datetime','DEPTH']
+
+
+    # Only Keep useful variables in obs output dictionary
+    out_ops_output_dict = {}
+    for ss in required_output_vars: out_ops_output_dict[ss] = ops_output_dict[ss].copy()
+    del(ops_output_dict)
+    ops_output_dict = out_ops_output_dict
 
     return ops_output_dict
 
