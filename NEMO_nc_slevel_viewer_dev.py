@@ -4157,9 +4157,23 @@ def nemo_slice_zlev(config = 'amm7',
                             #scatter plot them
                             if Obs_hide == False:
                                 if Obs_AbsAnom:
-                                    oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS, edgecolors = Obs_scatEC ))
+                                    #oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS, edgecolors = Obs_scatEC ))
+                                    #oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS, edgecolors = 'none' ))
+                                    #oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat.data, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS, edgecolors = Obs_scatEC, facecolor = 'none'))
+                                    #oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat.data, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS*0.5, edgecolors = Obs_scatEC, facecolor = 'none'))
+                                    #oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS, edgecolors = Obs_scatEC))
+                                    #oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat.data*0, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS*0.35, edgecolors = Obs_scatEC, facecolor = 'none'))
+                                    oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS*0.35, edgecolors = Obs_scatEC, facecolor = 'none'))
+                                    oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS, edgecolors = Obs_scatEC))
                                 else:
-                                    oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat, s = Obs_scatSS, edgecolors = Obs_scatEC, cmap = matplotlib.cm.seismic ))
+                                    #oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat, s = Obs_scatSS, edgecolors = Obs_scatEC, cmap = matplotlib.cm.seismic ))
+                                    #oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat, s = Obs_scatSS, edgecolors = 'none', cmap = matplotlib.cm.seismic ))
+                                    #oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat.data, s = Obs_scatSS, edgecolors = Obs_scatEC, facecolor = 'none', cmap = matplotlib.cm.seismic ))
+                                    #oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat.data, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS*0.5, edgecolors = Obs_scatEC, facecolor = 'none'))
+                                    #oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS, edgecolors = Obs_scatEC))
+                                    #oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat.data*0, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS*0.35, edgecolors = Obs_scatEC, facecolor = 'none'))
+                                    oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS*0.35, edgecolors = Obs_scatEC, facecolor = 'none'))
+                                    oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS, edgecolors = Obs_scatEC))
                                     
                     # if in anomaly mode, calculate the clim and colorbars for obs data. 
                     if (len(tmp_obs_lst)>0)& (Obs_AbsAnom==False) & (Obs_hide ==  False):
@@ -4204,12 +4218,15 @@ def nemo_slice_zlev(config = 'amm7',
                             tmp_obs_OmB_clim_lst = []
                             for tmp_oax_lst in oax_lst:
                                 tmp_obs_OmB_clim = tmp_oax_lst.get_clim()   
-                                tmp_obs_OmB_clim_lst.append(tmp_obs_OmB_clim[0])
-                                tmp_obs_OmB_clim_lst.append(tmp_obs_OmB_clim[1])
+                                if tmp_obs_OmB_clim[0] is not None:
+                                    tmp_obs_OmB_clim_lst.append(tmp_obs_OmB_clim[0])
+                                    tmp_obs_OmB_clim_lst.append(tmp_obs_OmB_clim[1])
 
                             # convert this list to an array of abs values
-                            tmp_obs_OmB_clim_mat = np.abs(tmp_obs_OmB_clim_lst)
-
+                            try:
+                                tmp_obs_OmB_clim_mat = np.abs(tmp_obs_OmB_clim_lst)
+                            except:
+                                pdb.set_trace()
                             # find max, and use this for a symetrical clim.
                             tmp_obs_OmB_clim = tmp_obs_OmB_clim_mat.max()*np.array([-1,1]) 
                             

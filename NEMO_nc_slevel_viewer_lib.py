@@ -9207,21 +9207,109 @@ def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,stat_type_lst_exc 
     for ss in ops_qc_var_good_PSAL_lst:  comb_qc_flag_PSAL = comb_qc_flag_PSAL +  (rootgrp.variables[ss][:] != 1).astype('int').T
 
     '''
-
+    '''
 
     comb_qc_flag = np.zeros((ops_dim_dict['N_OBS'],ops_dim_dict['N_LEVELS']), dtype = 'int')
     comb_qc_flag =  comb_qc_flag + (rootgrp.variables['DEPTH_QC'][:] != 1).astype('int')  # good data (1) added as a zero
     comb_qc_flag =  comb_qc_flag + np.tile((rootgrp.variables['POSITION_QC'][:] != 1).astype('int'),(ops_dim_dict['N_LEVELS'],1)).T # good data (1) added as a zero
+    #comb_qc_flag =  comb_qc_flag + np.tile((rootgrp.variables['OBSERVATION_QC'][:] != 0).astype('int'),(ops_dim_dict['N_LEVELS'],1)).T # good data (0) added as a zero
+    
+    
+    
+    ##OPS work, suggest should  be !=1... but !=0 seems better.
+    ## though Toby said only just POTM and PSAL qc flags??
     comb_qc_flag =  comb_qc_flag + np.tile((rootgrp.variables['OBSERVATION_QC'][:] != 0).astype('int'),(ops_dim_dict['N_LEVELS'],1)).T # good data (0) added as a zero
+    #comb_qc_flag =  comb_qc_flag + np.tile((rootgrp.variables['OBSERVATION_QC'][:] != 1).astype('int'),(ops_dim_dict['N_LEVELS'],1)).T # good data (0) added as a zero
 
-
-    #comb_qc_flag_POTM = comb_qc_flag.copy()
-    #comb_qc_flag_PSAL = comb_qc_flag.copy()
 
     comb_qc_flag_POTM = comb_qc_flag.copy() + (rootgrp.variables['POTM_LEVEL_QC'][:] != 1).astype('int') # good data (1) added as a zero
     comb_qc_flag_PSAL = comb_qc_flag.copy() + (rootgrp.variables['PSAL_LEVEL_QC'][:] != 1).astype('int') # good data (1) added as a zero
     comb_qc_flag_POTM =  comb_qc_flag_POTM.copy() + np.tile((rootgrp.variables['POTM_QC'][:] != 1).astype('int'),(ops_dim_dict['N_LEVELS'],1)).T  # good data (1) added as a zero
     comb_qc_flag_PSAL =  comb_qc_flag_PSAL.copy() + np.tile((rootgrp.variables['PSAL_QC'][:] != 1).astype('int'),(ops_dim_dict['N_LEVELS'],1)).T  # good data (1) added as a zero
+
+
+
+    '''
+
+
+
+
+
+    qc_flag_mat = np.zeros((ops_dim_dict['N_OBS'],ops_dim_dict['N_LEVELS'],7), dtype = 'int')
+    comb_qc_flag = np.zeros((ops_dim_dict['N_OBS'],ops_dim_dict['N_LEVELS']), dtype = 'int')
+
+    tmp_depth_qc = (rootgrp.variables['DEPTH_QC'][:] != 1).astype('int')  # good data (1) added as a zero
+    comb_qc_flag =  comb_qc_flag + tmp_depth_qc
+    qc_flag_mat[:,:,0] = tmp_depth_qc
+
+
+    #comb_qc_flag =  comb_qc_flag + np.tile((rootgrp.variables['POSITION_QC'][:] != 1).astype('int'),(ops_dim_dict['N_LEVELS'],1)).T # good data (1) added as a zero
+    #comb_qc_flag =  comb_qc_flag + np.tile((rootgrp.variables['OBSERVATION_QC'][:] != 0).astype('int'),(ops_dim_dict['N_LEVELS'],1)).T # good data (0) added as a zero
+    
+
+    tmp_pos_qc =  np.tile((rootgrp.variables['POSITION_QC'][:] != 1).astype('int'),(ops_dim_dict['N_LEVELS'],1)).T # good data (1) added as a zero
+    comb_qc_flag =  comb_qc_flag + tmp_pos_qc
+    qc_flag_mat[:,:,1] = tmp_pos_qc
+
+    
+    
+    
+    ##OPS work, suggest should  be !=1... but !=0 seems better.
+    ## though Toby said only just POTM and PSAL qc flags??
+    #comb_qc_flag =  comb_qc_flag + np.tile((rootgrp.variables['OBSERVATION_QC'][:] != 0).astype('int'),(ops_dim_dict['N_LEVELS'],1)).T # good data (0) added as a zero
+    #comb_qc_flag =  comb_qc_flag + np.tile((rootgrp.variables['OBSERVATION_QC'][:] != 1).astype('int'),(ops_dim_dict['N_LEVELS'],1)).T # good data (0) added as a zero
+
+    tmp_obs_qc =  np.tile((rootgrp.variables['OBSERVATION_QC'][:] != 0).astype('int'),(ops_dim_dict['N_LEVELS'],1)).T # good data (0) added as a zero
+    comb_qc_flag =  comb_qc_flag + tmp_obs_qc
+    qc_flag_mat[:,:,2] = tmp_obs_qc
+
+    tmp_obs_Tlev_qc = (rootgrp.variables['POTM_LEVEL_QC'][:] != 1).astype('int') # good data (1) added as a zero
+    tmp_obs_Slev_qc = (rootgrp.variables['PSAL_LEVEL_QC'][:] != 1).astype('int') # good data (1) added as a zero
+    tmp_obs_T_qc = np.tile((rootgrp.variables['POTM_QC'][:] != 1).astype('int'),(ops_dim_dict['N_LEVELS'],1)).T  # good data (1) added as a zero
+    tmp_obs_S_qc = np.tile((rootgrp.variables['PSAL_QC'][:] != 1).astype('int'),(ops_dim_dict['N_LEVELS'],1)).T  # good data (1) added as a zero
+
+
+
+    comb_qc_flag_POTM = comb_qc_flag.copy() + tmp_obs_Tlev_qc
+    comb_qc_flag_PSAL = comb_qc_flag.copy() + tmp_obs_Slev_qc
+    comb_qc_flag_POTM =  comb_qc_flag_POTM.copy() + tmp_obs_T_qc
+    comb_qc_flag_PSAL =  comb_qc_flag_PSAL.copy() + tmp_obs_S_qc
+
+
+    qc_flag_mat[:,:,3] = tmp_obs_Tlev_qc
+    qc_flag_mat[:,:,4] = tmp_obs_T_qc
+    
+    qc_flag_mat[:,:,5] = tmp_obs_Slev_qc
+    qc_flag_mat[:,:,6] = tmp_obs_S_qc
+
+
+    qc_flag_mat_POTM = qc_flag_mat[:,:,[0,1,2,3,4]]
+    qc_flag_mat_PSAL = qc_flag_mat[:,:,[0,1,2,5,6]]
+    comb_qc_flag_POTM_2 = qc_flag_mat_POTM.sum(axis = 2)
+    comb_qc_flag_PSAL_2 = qc_flag_mat_PSAL.sum(axis = 2)
+
+    qc_flag_mat_POTM_good = (qc_flag_mat_POTM == 0).all(axis = 2)
+    qc_flag_mat_POTM_good_2d = qc_flag_mat_POTM_good.any(axis = 1)
+    qc_flag_mat_PSAL_good = (qc_flag_mat_PSAL == 0).all(axis = 2)
+    qc_flag_mat_PSAL_good_2d = qc_flag_mat_PSAL_good.any(axis = 1)
+    #pdb.set_trace()
+
+
+
+
+    POTM_Obs_ind = (rootgrp.variables['POTM_OBS'][:]<1000).any(axis = 1)
+    PSAL_Obs_ind = (rootgrp.variables['PSAL_OBS'][:]<1000).any(axis = 1)
+
+    print('POTM_Obs_ind.sum(): ',POTM_Obs_ind.sum())
+    print('PSAL_Obs_ind.sum(): ',PSAL_Obs_ind.sum())
+
+
+    comb_qc_flag_POTM = (qc_flag_mat_POTM[:,:,-1])
+    comb_qc_flag_PSAL = (qc_flag_mat_PSAL[:,:,-1])
+
+
+
+
 
 
     #comb_qc_flag_POTM_2d = (comb_qc_flag_POTM==0).any(axis = 1)
@@ -9325,7 +9413,9 @@ def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,stat_type_lst_exc 
     else:
         comb_ind = comb_ind_S
         #pdb.set_trace()
-
+    print('POTM_Obs_ind[comb_ind_T.any(axis = 1)].sum(): ',POTM_Obs_ind[comb_ind_T.any(axis = 1)].sum())
+    print('PSAL_Obs_ind[comb_ind_S.any(axis = 1)].sum(): ',PSAL_Obs_ind[comb_ind_S.any(axis = 1)].sum())
+    #pdb.set_trace()
 
     #ops_output_var_3d_mat = ['DEPTH', 'OBSERVATION_QC','POTM_QC','PSAL_QC','POTM_OBS', 'POTM_Hx', 'PSAL_OBS', 'PSAL_Hx',]
     ops_output_var_3d_mat = ['DEPTH', 'OBSERVATION_QC']
@@ -9346,22 +9436,22 @@ def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,stat_type_lst_exc 
     '''
     
     ('DEPTH', (8, 556))
-('OBSERVATION_QC', (8,))
-('LONGITUDE', (9,))
-('LATITUDE', (9,))
-('JULD', (9,))
-('POSITION_QC', (9,))
-('JULD_QC', (9,))
-('DEPTH_QC', (9, 556))
-('POTM_QC', (8,))
-('POTM_OBS', (8, 556))
-('POTM_Hx', (8, 556))
-('POTM_IOBSK', (8, 556))
-('POTM_IOBSI', (9,))
-('POTM_IOBSJ', (9,))
-('JULD_datetime', (8,))
-('STATION_TYPE', (9,))
-('STATION_IDENTIFIER', (8,))
+    ('OBSERVATION_QC', (8,))
+    ('LONGITUDE', (9,))
+    ('LATITUDE', (9,))
+    ('JULD', (9,))
+    ('POSITION_QC', (9,))
+    ('JULD_QC', (9,))
+    ('DEPTH_QC', (9, 556))
+    ('POTM_QC', (8,))
+    ('POTM_OBS', (8, 556))
+    ('POTM_Hx', (8, 556))
+    ('POTM_IOBSK', (8, 556))
+    ('POTM_IOBSI', (9,))
+    ('POTM_IOBSJ', (9,))
+    ('JULD_datetime', (8,))
+    ('STATION_TYPE', (9,))
+    ('STATION_IDENTIFIER', (8,))
 
     
     '''
@@ -9387,7 +9477,7 @@ def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,stat_type_lst_exc 
     try:
         for ss in ops_output_var_3d_mat:   ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],rootgrp.variables[ss]._Fillvalue )[comb_ind.any(axis = 1)]
         for ss in ops_output_var_2d_mat:   ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],rootgrp.variables[ss]._Fillvalue )[comb_ind.any(axis = 1)]
-        for ss in ops_output_ind_2d_mat:   ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],-99999 )[comb_ind]
+        for ss in ops_output_ind_2d_mat:   ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],-99999 )[comb_ind.any(axis = 1)]
 
         if TnotS:
             #pdb.set_trace()
@@ -9456,6 +9546,15 @@ def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,stat_type_lst_exc 
         ops_output_dict['OBS'] = ops_output_dict['PSAL_OBS'] 
         ops_output_dict['MOD_HX'] = ops_output_dict['PSAL_Hx']
 
+    #pdb.set_trace()
+
+
+    # only pass on points that have T/S values
+    if TnotS:
+        for ss in ops_output_dict.keys():ops_output_dict[ss] = ops_output_dict[ss][POTM_Obs_ind]
+    else:
+        for ss in ops_output_dict.keys():ops_output_dict[ss] = ops_output_dict[ss][PSAL_Obs_ind]
+    #pdb.set_trace()
 
     return ops_output_dict
 
