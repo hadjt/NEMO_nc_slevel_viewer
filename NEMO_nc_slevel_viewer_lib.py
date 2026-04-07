@@ -8630,7 +8630,6 @@ def Obs_load_init_files_dict(Obs_fname,Obs_Type_load_dict,
                         tmp_stat_type_lst.append(402)
                         tmp_stat_type_lst.append(403)
                     tmp_stat_type_lst_exc = True
-                    #Obs_dict[tmp_datstr][ob_var]['Obs'].append(load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = True,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc))
                     Obs_dict[tmp_datstr][ob_var]['Obs'].append(load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = Obs_Type_load_dict['Obs_excl_qc_prof'] ,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc,cur_xlim = cur_xlim, cur_ylim = cur_ylim))
   
                 elif ob_var in ['ProfS']:
@@ -8647,27 +8646,8 @@ def Obs_load_init_files_dict(Obs_fname,Obs_Type_load_dict,
                         tmp_stat_type_lst.append(402)
                         tmp_stat_type_lst.append(403)
                     tmp_stat_type_lst_exc = True
-                    #Obs_dict[tmp_datstr][ob_var]['Obs'].append(load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = True,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc))
                     Obs_dict[tmp_datstr][ob_var]['Obs'].append(load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = Obs_Type_load_dict['Obs_excl_qc_prof'],stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc,cur_xlim = cur_xlim, cur_ylim = cur_ylim))
 
-                    '''    
-                    if ob_var in ['ProfT','ProfS']:
-                        #tmp_stat_type_lst = None
-                        tmp_stat_type_lst = []
-                        if Obs_Type_load_dict['TS_argo']: 
-                            tmp_stat_type_lst.append(831)
-                        if Obs_Type_load_dict['TS_other']: 
-                            tmp_stat_type_lst.append(405)
-                            tmp_stat_type_lst.append(820)
-                        if Obs_Type_load_dict['TS_gliders']: 
-                            tmp_stat_type_lst.append(741)
-                        if Obs_Type_load_dict['TS_ships']:  
-                            tmp_stat_type_lst.append(402)
-                            tmp_stat_type_lst.append(403)
-                        tmp_stat_type_lst_exc = True
-                        Obs_dict[tmp_datstr][ob_var]['Obs'].append(load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = True,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc))
-
-                    '''
                 elif ob_var in ['SST_ins','SST_sat','SLA','ChlA']:
                     tmp_stat_type_lst = None
                     if ob_var in ['SST_ins']:
@@ -8798,7 +8778,6 @@ def Obs_reload_obs(var,Dataset_lst,tmp_current_time,ob_ti,
                             tmp_stat_type_lst.append(402)
                             tmp_stat_type_lst.append(403)
                         tmp_stat_type_lst_exc = True
-                        #Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = True,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc)
                         Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = Obs_Type_load_dict['Obs_excl_qc_prof'],
                                                                                       stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc,cur_xlim = cur_xlim ,cur_ylim = cur_ylim)
     
@@ -8816,29 +8795,8 @@ def Obs_reload_obs(var,Dataset_lst,tmp_current_time,ob_ti,
                             tmp_stat_type_lst.append(402)
                             tmp_stat_type_lst.append(403)
                         tmp_stat_type_lst_exc = True
-                        #Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = True,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc)
                         Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = Obs_Type_load_dict['Obs_excl_qc_prof'],stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc,cur_xlim = cur_xlim ,cur_ylim = cur_ylim)
 
-                        '''
-
-                    if ob_var in ['ProfT','ProfS']:
-                        tmp_stat_type_lst = []
-                        if Obs_Type_load_dict['TS_argo']: 
-                            tmp_stat_type_lst.append(831)
-                        if Obs_Type_load_dict['TS_other']: 
-                            tmp_stat_type_lst.append(405)
-                            tmp_stat_type_lst.append(820)
-                        if Obs_Type_load_dict['TS_gliders']: 
-                            tmp_stat_type_lst.append(741)
-                        if Obs_Type_load_dict['TS_ships']:  
-                            tmp_stat_type_lst.append(402)
-                            tmp_stat_type_lst.append(403)
-                        tmp_stat_type_lst_exc = True
-                        #pdb.set_trace()
-                        Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = True,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc)
-                        #if len(Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti]['JULD']) == 0: pdb.set_trace()#Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = []
-                        #pdb.set_trace()
-                        '''
                     elif ob_var in ['SST_ins','SST_sat','SLA','ChlA']:
                         tmp_stat_type_lst = None
                         if ob_var in ['SST_ins']:
@@ -8856,28 +8814,6 @@ def Obs_reload_obs(var,Dataset_lst,tmp_current_time,ob_ti,
                 Obs_dat_dict[tmp_datstr][ob_var]['loaded'] = True
     #once reloaded, set to False
     return Obs_dat_dict,Obs_var_lst_sub
-
-    '''
-    
-                    tmp_stat_type_lst = []
-                    if Obs_Type_load_dict['TS_argo']: tmp_stat_type_lst.append(831)
-                    if Obs_Type_load_dict['TS_other']: 
-                        tmp_stat_type_lst.append(403)
-                        tmp_stat_type_lst.append(820)
-                    tmp_stat_type_lst_exc = None
-                    Obs_dict[tmp_datstr][ob_var]['Obs'].append(load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = True,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc))
-                elif ob_var in ['SST_ins','SST_sat','SLA','ChlA']:
-                    tmp_stat_type_lst = None
-                    if ob_var in ['SST_ins']:
-                        tmp_stat_type_lst = []
-                        if Obs_Type_load_dict['SST_ships']: tmp_stat_type_lst.append(50)
-                        if Obs_Type_load_dict['SST_drifter']: tmp_stat_type_lst.append(53)
-                        if Obs_Type_load_dict['SST_moored']: tmp_stat_type_lst.append(55)
-                    tmp_stat_type_lst_exc = None
-                    Obs_dict[tmp_datstr][ob_var]['Obs'].append(load_ops_2D_xarray(tmpObsfname,ob_var,excl_qc = False,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc))
-
-    
-    '''
 
 
 def load_ops_2D_xarray(OPSfname,vartype,stat_type_lst = None, stat_type_lst_exc = True, nlon = 1458, nlat = 1345,
