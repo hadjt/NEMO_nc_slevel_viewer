@@ -5775,7 +5775,9 @@ def nemo_slice_zlev(config = 'amm7',
                                     if var_dim[var] == 4:
                                         tmp_xsect_dat[tmp_datstr] = data_inst[tmp_datstr][:,[xsect_jj_ind_dict[tmp_datstr]],[xsect_ii_ind_dict[tmp_datstr]]][:,0,:]
                                         tmp_xsect_z[tmp_datstr] = np.array(grid_dict[tmp_datstr]['gdept'])[:,[xsect_jj_ind_dict[tmp_datstr]],[xsect_ii_ind_dict[tmp_datstr]]][:,0,:]
-                                        tmp_xsect_x[tmp_datstr] = np.arange(nxsect_dict[tmp_datstr])
+                                        
+                                        #tmp_xsect_x[tmp_datstr] = np.arange(nxsect_dict[tmp_datstr])
+                                        tmp_xsect_x[tmp_datstr] = xsect_degdist_dict[tmp_datstr]
                                         if do_MLD:
                                             tmp_xsect_mld_dat[tmp_datstr] = data_inst_mld[tmp_datstr][[xsect_jj_ind_dict[tmp_datstr]],[xsect_ii_ind_dict[tmp_datstr]]][0,:]
                                         
@@ -5788,7 +5790,8 @@ def nemo_slice_zlev(config = 'amm7',
                                
 
                             except:
-                                pdb.set_trace(0)
+                                print('problem extracting xsect points')
+                                pdb.set_trace()
 
 
                             if figxs is not None:

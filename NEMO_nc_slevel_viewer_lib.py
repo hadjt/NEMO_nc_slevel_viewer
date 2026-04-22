@@ -7401,10 +7401,18 @@ def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lo
             if verbose: print(xy_i_ind_flt,xy_j_ind_flt)
 
             # previous and subsequent xypos indices with ceil and floor
+            #try:
+            '''
             xy_i_ind_flt_0 = int(np.floor(xy_i_ind_flt))
             xy_i_ind_flt_1 = int(np.ceil(xy_i_ind_flt))
             xy_j_ind_flt_0 = int(np.floor(xy_j_ind_flt))
             xy_j_ind_flt_1 = int(np.ceil(xy_j_ind_flt))
+            '''
+            #except:
+            xy_i_ind_flt_0 = (np.floor(xy_i_ind_flt)).astype('int')
+            xy_i_ind_flt_1 = (np.ceil(xy_i_ind_flt)).astype('int')
+            xy_j_ind_flt_0 = (np.floor(xy_j_ind_flt)).astype('int')
+            xy_j_ind_flt_1 = (np.ceil(xy_j_ind_flt)).astype('int')
             if verbose: print(xy_i_ind_flt_0,xy_i_ind_flt_1,xy_j_ind_flt_0,xy_j_ind_flt_1)
 
             # ensure the indices are within the xypos matrix
@@ -7420,20 +7428,33 @@ def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lo
             if verbose: print(xy_i_ind_flt_d,xy_j_ind_flt_d)
 
             # Distance from flt index to grid box edges (horiz and vert)
+            '''
             xy_lrbt_dist_0 = (xy_i_ind_flt - xy_i_ind_flt_0)/(xy_i_ind_flt_d) # from left
             xy_lrbt_dist_1 = (xy_i_ind_flt_1 - xy_i_ind_flt)/(xy_i_ind_flt_d) # from right
             xy_lrbt_dist_2 = (xy_j_ind_flt - xy_j_ind_flt_0)/(xy_j_ind_flt_d) # from bottom
             xy_lrbt_dist_3 = (xy_j_ind_flt_1 - xy_j_ind_flt)/(xy_j_ind_flt_d) # from top
+            '''
+
+            xy_lrbt_dist_0 = np.array((xy_i_ind_flt - xy_i_ind_flt_0)/(xy_i_ind_flt_d)) # from left
+            xy_lrbt_dist_1 = np.array((xy_i_ind_flt_1 - xy_i_ind_flt)/(xy_i_ind_flt_d)) # from right
+            xy_lrbt_dist_2 = np.array((xy_j_ind_flt - xy_j_ind_flt_0)/(xy_j_ind_flt_d)) # from bottom
+            xy_lrbt_dist_3 = np.array((xy_j_ind_flt_1 - xy_j_ind_flt)/(xy_j_ind_flt_d)) # from top
             if verbose: print(xy_lrbt_dist_0,xy_lrbt_dist_1,xy_lrbt_dist_2,xy_lrbt_dist_3,xy_lrbt_dist_0+xy_lrbt_dist_1,xy_lrbt_dist_2+xy_lrbt_dist_3 )
 
             # if the flt ind is exactly an int, floor and ceil is the same, and so the xy_i_ind_flt_d == 0
             #       if so, set weighting to 0.5 (otherwise nan and masked)
+            '''
             if xy_i_ind_flt_d == 0:
                 xy_lrbt_dist_0 = 0.5
                 xy_lrbt_dist_1 = 0.5
             if xy_j_ind_flt_d == 0:
                 xy_lrbt_dist_2 = 0.5
                 xy_lrbt_dist_3 = 0.5
+            '''
+            xy_lrbt_dist_0[xy_i_ind_flt_d==0] = 0.5
+            xy_lrbt_dist_1[xy_i_ind_flt_d==0] = 0.5
+            xy_lrbt_dist_2[xy_j_ind_flt_d==0] = 0.5
+            xy_lrbt_dist_3[xy_j_ind_flt_d==0] = 0.5
 
             if verbose: print(xy_lrbt_dist_0,xy_lrbt_dist_1,xy_lrbt_dist_2,xy_lrbt_dist_3,xy_lrbt_dist_0+xy_lrbt_dist_1,xy_lrbt_dist_2+xy_lrbt_dist_3)
 
@@ -7446,9 +7467,14 @@ def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lo
             if verbose: print(xy_wgt_0,xy_wgt_1,xy_wgt_2,xy_wgt_3,xy_wgt_0+xy_wgt_1+xy_wgt_2+xy_wgt_3 )
 
             #if (xy_wgt_0 + xy_wgt_1 + xy_wgt_2 + xy_wgt_3) != 1:
-            if np.isclose(xy_wgt_0 + xy_wgt_1 + xy_wgt_2 + xy_wgt_3, 1) == False:
+            #try:
+                #if np.isclose(xy_wgt_0 + xy_wgt_1 + xy_wgt_2 + xy_wgt_3, 1) == False:
+            if np.isclose(xy_wgt_0 + xy_wgt_1 + xy_wgt_2 + xy_wgt_3, 1).all() == False:
+            
                 print('XYPOS Weigthing not adding to 1', (xy_wgt_0 + xy_wgt_1 + xy_wgt_2 + xy_wgt_3))
                 pdb.set_trace()
+            #except:
+            #    pdb.set_trace()
 
             # (BL lon*BL wgt) + (BR lon*BR wgt) + (TL lon*TL wgt) + (TR lon*TR wgt)
             if XYPOS_ind_extended_NN:
