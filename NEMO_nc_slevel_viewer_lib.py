@@ -59,7 +59,7 @@ def load_nc_dims(tmp_data):
     
     nc_dims = [ss for ss in tmp_data._dims.keys()]
 
-    poss_zdims = ['depth','deptht','depthu','depthv','depthw','z', 'nc']
+    poss_zdims = ['depth','deptht','depthu','depthv','depthw','z', 'nc','nav_lev']
     poss_tdims = ['time_counter','time','t']
     poss_xdims = ['x','X','lon','ni','x_grid_T','x_grid_U','x_grid_V', 'lon','longitude','xbt','xbT','xbU','xbV','xb']
     poss_ydims = ['y','Y','lat','nj','y_grid_T','y_grid_U','y_grid_V', 'lat','latitude','yb']
