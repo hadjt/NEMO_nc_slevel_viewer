@@ -21,6 +21,7 @@ computername = socket.gethostname()
 comp = 'linux'
 if computername in ['xcel00','xcfl00']: comp = 'hpc'
 
+from scipy.interpolate import griddata
 
 
 RotNPole_lon = 177.5
@@ -1483,13 +1484,17 @@ def pycnocline_params(rho_4d,gdept_3d,e3t_3d):
     # find index of maximum N2 depth
     N2_max_arg = N2.argmax(axis = 1)
     N2_max = N2.max(axis = 1)
-
+    #pdb.set_trace()
     # use gdept to calcuate these as a depth
-    if n_t <= 1:
-        N2_maxZ = gdept_3d[N2_max_arg,np.tile(n_j_mat,(n_t,1,1)),np.tile(n_i_mat,(n_t,1,1))]
-    else:
-        N2_maxZ = gdept_3d[0,N2_max_arg,np.tile(n_j_mat,(n_t,1,1)),np.tile(n_i_mat,(n_t,1,1))]
-
+    try:
+        #if n_t <= 1:
+        if n_t < 1:
+            N2_maxZ = gdept_3d[N2_max_arg,np.tile(n_j_mat,(n_t,1,1)),np.tile(n_i_mat,(n_t,1,1))]
+        else:
+            N2_maxZ = gdept_3d[0,N2_max_arg,np.tile(n_j_mat,(n_t,1,1)),np.tile(n_i_mat,(n_t,1,1))]
+    except:
+        print('Changed if n_t <= 1 to if n_t < 1')
+        pdb.set_trace()
     return N2,Pync_Z,Pync_Th,N2_max,N2_maxZ
           
 def stream_from_vocetr_eff(v_tr):
@@ -2315,44 +2320,48 @@ def reload_data_instances_time(var,thd,ldi,ti,current_time_datetime_since_1970,t
 
     return data_inst,preload_data_ti,preload_data_var,preload_data_ldi
 
-def EOS_convert_EOS80_2_TEOS10_T(data_in_T, data_in_S, dep, lon, lat, tmp_datstr = None):
-    if tmp_datstr is not None: print('Converting EOS80 temperature to TEOS10 for %s'%tmp_datstr,datetime.now())
+def EOS_convert_EOS80_2_TEOS10_T(data_in_T, data_in_S, dep, lon, lat, tmp_datstr = None, verbose = True):
+    if verbose:
+        if tmp_datstr is not None: print('Converting EOS80 temperature to TEOS10 for %s'%tmp_datstr,datetime.now())
     import gsw as gsw
 
     T_conv = gsw.CT_from_pt(data_in_S, data_in_T)
-    print('        mean %% diff = %.5f%%'%(100*(T_conv.mean()-data_in_T.mean())/(0.5*T_conv.mean()+data_in_T.mean())))
+    if verbose:print('        mean %% diff = %.5f%%'%(100*(T_conv.mean()-data_in_T.mean())/(0.5*T_conv.mean()+data_in_T.mean())))
     return  T_conv
 
-def EOS_convert_TEOS10_2_EOS80_T(data_in_T, data_in_S, dep, lon, lat, tmp_datstr = None):
-    if tmp_datstr is not None: print('Converting TEOS10 temperature to EOS80 for %s'%tmp_datstr,datetime.now())
+def EOS_convert_TEOS10_2_EOS80_T(data_in_T, data_in_S, dep, lon, lat, tmp_datstr = None, verbose = True):
+    if verbose:
+        if tmp_datstr is not None: print('Converting TEOS10 temperature to EOS80 for %s'%tmp_datstr,datetime.now())
 
     import gsw as gsw
 
     T_conv = gsw.pt_from_CT(data_in_S, data_in_T)
-    print('        mean %% diff = %.5f%%'%(100*(T_conv.mean()-data_in_T.mean())/(0.5*T_conv.mean()+data_in_T.mean())))
+    if verbose:print('        mean %% diff = %.5f%%'%(100*(T_conv.mean()-data_in_T.mean())/(0.5*T_conv.mean()+data_in_T.mean())))
 
     return  T_conv
 
 
-def EOS_convert_EOS80_2_TEOS10_S(data_in, dep, lon, lat, tmp_datstr = None):
-    if tmp_datstr is not None: print('Converting EOS80 salinity to TEOS10 for %s'%tmp_datstr,datetime.now())
+def EOS_convert_EOS80_2_TEOS10_S(data_in, dep, lon, lat, tmp_datstr = None, verbose = True):
+    if verbose:
+        if tmp_datstr is not None: print('Converting EOS80 salinity to TEOS10 for %s'%tmp_datstr,datetime.now())
     import gsw as gsw
 
     pres = gsw.p_from_z(-dep, lat)
 
     S_conv = gsw.SA_from_SP(data_in.copy(), pres, lon, lat)
-    print('        mean %% diff = %.5f%%'%(100*(S_conv.mean()-data_in.mean())/(0.5*S_conv.mean()+data_in.mean())))
+    if verbose:print('        mean %% diff = %.5f%%'%(100*(S_conv.mean()-data_in.mean())/(0.5*S_conv.mean()+data_in.mean())))
 
     return  S_conv
 
-def EOS_convert_TEOS10_2_EOS80_S(data_in, dep, lon, lat, tmp_datstr = None):
-    if tmp_datstr is not None: print('Converting TEOS10 salinity to EOS80 for %s'%tmp_datstr,datetime.now())
+def EOS_convert_TEOS10_2_EOS80_S(data_in, dep, lon, lat, tmp_datstr = None, verbose = True):
+    if verbose:
+        if tmp_datstr is not None: print('Converting TEOS10 salinity to EOS80 for %s'%tmp_datstr,datetime.now())
     import gsw as gsw
 
     pres = gsw.p_from_z(-dep, lat)
 
     S_conv = gsw.SP_from_SA(data_in.copy(), pres, lon, lat)
-    print('        mean %% diff = %.5f%%'%(100*(S_conv.mean()-data_in.mean())/(0.5*S_conv.mean()+data_in.mean())))
+    if verbose:print('        mean %% diff = %.5f%%'%(100*(S_conv.mean()-data_in.mean())/(0.5*S_conv.mean()+data_in.mean())))
 
     return  S_conv
 
@@ -6924,7 +6933,7 @@ def calc_ens_stat_map(map_dat_dict, Ens_stat,Dataset_lst):
 def load_xypos_dict(Dataset_lst,configd,config_fnames_dict):
 
 
-    from scipy.interpolate import griddata
+    #from scipy.interpolate import griddata
 
     xypos_dict = {}
     
@@ -7555,6 +7564,33 @@ def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lo
 
 
 
+def ind_from_lon_lat_ext(xypos_dict,AMM,nav_lon,nav_lat,tmplon, tmplat):
+    # function to use ind_from_lon_lat outside NEMO_nc_slevel_viewer evironment.
+    '''
+    if AMM.lower() == 'amm15':
+        xypos_fname = '/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/AMM15/xypos_amm15_dlonlat_0.050000.nc'
+    elif AMM.lower() == 'amm7':
+        xypos_file = '/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/AMM7/xypos_amm7.nc'
+    elif AMM.lower() == 'co9p2':
+        xypos_file = '/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/CO9p2/xypos_amm15.nc'
+    
+    from NEMO_nc_slevel_viewer_lib import load_xypos,ind_from_lon_lat_ext
+    
+    xypos_dict = load_xypos(xypos_fname)
+
+
+    ind_from_lon_lat_ext(xypos_dict,AMM,nav_lon,nav_lat,tmplon, tmplat)
+
+
+    '''
+    #xypos_fname = 
+    # xypos_dict = load_xypos(xypos_fname)
+
+    thd = create_empty_thd(['Dataset 1'])# {1:{'cutx0':0,}}
+    
+    sel_jj,sel_ii,sel_valid_out = ind_from_lon_lat('Dataset 1',{1:AMM},{'Dataset 1':xypos_dict}, {1:nav_lon},{1:nav_lat}, thd,None,tmplon, tmplat)
+    
+    return sel_jj,sel_ii,sel_valid_out
 
 def lonlat_iijj_amm15(loni_in,latj_in):
     

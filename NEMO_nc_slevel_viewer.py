@@ -3827,11 +3827,11 @@ def nemo_slice_zlev(config = 'amm7',
                                     #oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat.data, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS*0.5, edgecolors = Obs_scatEC, facecolor = 'none'))
                                     #oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS, edgecolors = Obs_scatEC))
                                     #oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat.data*0, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS*0.35, edgecolors = Obs_scatEC, facecolor = 'none'))
-                                    oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS*0.35, edgecolors = Obs_scatEC, facecolor = 'none'))
-                                    oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS, edgecolors = Obs_scatEC))
+                                    oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,               vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS*0.35, edgecolors = Obs_scatEC, facecolor = 'none', cmap = scnd_cmap))
+                                    oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS, edgecolors = Obs_scatEC, cmap = scnd_cmap))
                                     
                     # if in anomaly mode, calculate the clim and colorbars for obs data. 
-                    if (len(tmp_obs_lst)>0)& (Obs_AbsAnom==False) & (Obs_hide ==  False):
+                    if (len(tmp_obs_lst)>0)& (Obs_AbsAnom == False) & (Obs_hide ==  False):
                         #try:
 
                         # join all obs types, and all the "within current map" TF array 
@@ -3896,7 +3896,8 @@ def nemo_slice_zlev(config = 'amm7',
                         #cbarobsax = [fig.add_axes([0.305,0.11, 0.15,0.02])]     
                         cbarobsax = [fig.add_axes([0.295,0.11, 0.15,0.02])]
                         #cbarobsax[0].tick_params(top=True, labeltop=True, bottom=False, labelbottom=False)
-                        cax.append(plt.colorbar(oax_lst[0], ax = ax[0], cax = cbarobsax[0], orientation = 'horizontal'))
+                        #pdb.set_trace()
+                        cax.append(plt.colorbar(oax_lst[-1], ax = ax[0], cax = cbarobsax[0], orientation = 'horizontal'))
                         cax[-1].ax.xaxis.set_ticks_position('top')
                         cax[-1].ax.xaxis.set_label_position('top')
                         del(tmp_obs_lst)
