@@ -8753,6 +8753,7 @@ def Obs_reload_obs(var,Dataset_lst,tmp_current_time,ob_ti,
         Obs_var_lst_sub = [ss for ss in Obs_varlst if ss in ['ChlA']]
 
     elif (var.lower() in ['bckint','bckins']):
+        Obs_var_lst_sub	 = []
         if Obs_Type_load_dict['show_with_diff_var']:
             if var.lower() == 'bckint':
                 Obs_var_lst_sub = [ss for ss in Obs_varlst if ss in ['ProfT','SST_ins','SST_sat']]
@@ -8773,8 +8774,10 @@ def Obs_reload_obs(var,Dataset_lst,tmp_current_time,ob_ti,
         
 
     #pdb.set_trace()
-    Obs_var_lst_sub = [ob_var for ob_var in Obs_var_lst_sub if Obs_vis_d['visible'][ob_var]]
-
+    try:
+        Obs_var_lst_sub = [ob_var for ob_var in Obs_var_lst_sub if Obs_vis_d['visible'][ob_var]]
+    except:
+        pdb.set_trace()
 
 
     print(Obs_var_lst_sub,Obs_vis_d['visible'])

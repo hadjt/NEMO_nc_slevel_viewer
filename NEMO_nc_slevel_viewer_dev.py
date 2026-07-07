@@ -991,7 +991,8 @@ def nemo_slice_zlev(config = 'amm7',
             if Obs_show_with_diff_var is None:
                 Obs_Type_load_dict['show_with_diff_var'] = False
             else:
-                Obs_Type_load_dict['show_with_diff_var'] = Obs_show_with_diff_var
+            #    pdb.set_trace()
+                Obs_Type_load_dict['show_with_diff_var'] = False # Obs_show_with_diff_var
             Obs_Type_load_dict['Obs_excl_qc_prof'] = True
             Obs_Type_load_dict['Obs_excl_qc_sat'] = False
         if 'Obs_excl_qc_prof' not in Obs_Type_load_dict.keys():Obs_Type_load_dict['Obs_excl_qc_prof'] = True
