@@ -3838,7 +3838,7 @@ def nemo_slice_zlev(config = 'amm7',
                         tmp_obs_mat=np.ma.concatenate(tmp_obs_lst)
                         tmp_obs_llind_mat=np.ma.concatenate(tmp_obs_llind_lst)
 
-                        # if clim is sp ecified, use it, otherwise calculate it
+                        # if clim is specified, use it, otherwise calculate it
                         if Obs_anom_clim is not None:
                             obs_OmB_clim = Obs_anom_clim
                         else:
@@ -3853,16 +3853,24 @@ def nemo_slice_zlev(config = 'amm7',
                                 obs_OmB_clim = np.percentile(np.abs(tmp_obs_mat[(tmp_obs_mat.mask == False)]),95)*np.array([-1,1])    
                             '''
 
+                            '''
                             # if more than 3 values within the area, calc 
                             if tmp_obs_llind_mat.sum()>3:
                                 tmp_omb_val_clim = np.abs(tmp_obs_mat[(tmp_obs_mat.mask == False) & tmp_obs_llind_mat])
                             else:
                                 tmp_omb_val_clim = np.abs(tmp_obs_mat[(tmp_obs_mat.mask == False)])
-                            
+
                             # if more than 2 obs within region, calc clim values
                             if len(tmp_omb_val_clim)>2:
                                 obs_OmB_clim = np.percentile(tmp_omb_val_clim,95)*np.array([-1,1])    
                             del(tmp_omb_val_clim)
+                            '''
+
+                            tmp_omb_val_clim = np.abs(tmp_obs_mat[(tmp_obs_mat.mask == False) & tmp_obs_llind_mat])
+                            if len(tmp_omb_val_clim)>0:
+                                obs_OmB_clim = np.percentile(tmp_omb_val_clim,95)*np.array([-1,1])
+                            del(tmp_omb_val_clim) 
+
                         #oax_lst[0].get_clim()
                         for tmp_oax_lst in oax_lst: tmp_oax_lst.set_clim(obs_OmB_clim)   
                         
