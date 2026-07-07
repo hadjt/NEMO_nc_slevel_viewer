@@ -304,7 +304,7 @@ def nemo_slice_zlev(config = 'amm7',
 
     #pdb.set_trace()
 
-    init_Obs_show_with_diff_var = Obs_show_with_diff_var
+    #init_Obs_show_with_diff_var = Obs_show_with_diff_var
 
 
     init_clim_sym = clim_sym
@@ -995,7 +995,7 @@ def nemo_slice_zlev(config = 'amm7',
                 Obs_Type_load_dict['show_with_diff_var'] = False
             else:
             #    pdb.set_trace()
-                Obs_Type_load_dict['show_with_diff_var'] = False # Obs_show_with_diff_var
+                Obs_Type_load_dict['show_with_diff_var'] = Obs_show_with_diff_var
 
 
             Obs_Type_load_dict['Obs_excl_qc_prof'] = True
@@ -1011,11 +1011,12 @@ def nemo_slice_zlev(config = 'amm7',
 
                 # if you're going to load all obs all the time, 
                 # don't show them all
-                if Obs_Type_load_dict['show_with_diff_var']:
-                    Obs_Type_load_dict[tmp_Obs_Type_load] = False
-                else:
-                    Obs_Type_load_dict[tmp_Obs_Type_load] = True
+                #if Obs_Type_load_dict['show_with_diff_var']:
+                #    Obs_Type_load_dict[tmp_Obs_Type_load] = False
+                #else:
+                #    Obs_Type_load_dict[tmp_Obs_Type_load] = True
 
+                Obs_Type_load_dict[tmp_Obs_Type_load] = True
                     
     
     
@@ -1087,8 +1088,8 @@ def nemo_slice_zlev(config = 'amm7',
         # set reload Obs to true
         reload_Obs = True
 
-        if init_Obs_show_with_diff_var is not None:
-            Obs_Type_load_dict['show_with_diff_var'] = init_Obs_show_with_diff_var
+        #if init_Obs_show_with_diff_var is not None:
+        #    Obs_Type_load_dict['show_with_diff_var'] = init_Obs_show_with_diff_var
 
 
         init_timer.append((datetime.now(),'Obs Loaded '))
