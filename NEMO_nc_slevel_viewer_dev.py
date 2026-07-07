@@ -304,7 +304,9 @@ def nemo_slice_zlev(config = 'amm7',
 
     #pdb.set_trace()
 
-    if clim_sym is None: clim_sym = False
+    init_clim_sym = clim_sym
+    if clim_sym is None: 
+        clim_sym = False
     if clim_sym == False:
         clim_sym_but = 0
     else:
@@ -3869,6 +3871,8 @@ def nemo_slice_zlev(config = 'amm7',
                             tmp_omb_val_clim = np.abs(tmp_obs_mat[(tmp_obs_mat.mask == False) & tmp_obs_llind_mat])
                             if len(tmp_omb_val_clim)>0:
                                 obs_OmB_clim = np.percentile(tmp_omb_val_clim,95)*np.array([-1,1])
+                            elif len(tmp_omb_val_clim)==0:
+                                obs_OmB_clim = [-0.1,0.1]
                             del(tmp_omb_val_clim) 
 
                         #oax_lst[0].get_clim()
@@ -4127,13 +4131,20 @@ def nemo_slice_zlev(config = 'amm7',
 
                     #pdb.set_trace()
 
-
-                if secdataset_proc in Dataset_lst:
-                    clim_sym = False
-                    clim_sym_but = 0
+                #pdb.set_trace()
+                if init_clim_sym is None:
+                    if secdataset_proc in Dataset_lst:
+                        clim_sym = False
+                        clim_sym_but = 0
+                    else:
+                        clim_sym = True
+                        clim_sym_but = 1
                 else:
-                    clim_sym = True
-                    clim_sym_but = 1
+                    clim_sym = init_clim_sym
+                    if clim_sym:
+                        clim_sym_but = 1
+                    else:
+                        clim_sym_but = 0
 
                 tmp_date_in_ind = just_plt_vals[just_plt_cnt][1]
                 z_meth = just_plt_vals[just_plt_cnt][2]
