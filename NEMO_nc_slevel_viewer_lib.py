@@ -9563,9 +9563,10 @@ def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,stat_type_lst_exc 
 
     # only pass on points that have T/S values
     if TnotS:
-        for ss in ops_output_dict.keys():ops_output_dict[ss] = ops_output_dict[ss][POTM_Obs_ind]
+        for ss in ops_output_dict.keys():ops_output_dict[ss] = ops_output_dict[ss][POTM_Obs_ind[comb_ind_T.any(axis = 1)]]
     else:
-        for ss in ops_output_dict.keys():ops_output_dict[ss] = ops_output_dict[ss][PSAL_Obs_ind]
+        #pdb.set_trace()
+        for ss in ops_output_dict.keys():ops_output_dict[ss] = ops_output_dict[ss][PSAL_Obs_ind[comb_ind_S.any(axis = 1)]]
     #pdb.set_trace()
 
 
