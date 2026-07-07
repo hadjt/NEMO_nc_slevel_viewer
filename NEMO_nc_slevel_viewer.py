@@ -988,7 +988,10 @@ def nemo_slice_zlev(config = 'amm7',
         # 50 = ship, 53 = drifting buoy, 55 = moored buoy
         if Obs_Type_load_dict is None:
             Obs_Type_load_dict = {}
-            Obs_Type_load_dict['show_with_diff_var'] = False
+            if Obs_show_with_diff_var is None:
+                Obs_Type_load_dict['show_with_diff_var'] = False
+            else:
+                Obs_Type_load_dict['show_with_diff_var'] = Obs_show_with_diff_var
             Obs_Type_load_dict['Obs_excl_qc_prof'] = True
             Obs_Type_load_dict['Obs_excl_qc_sat'] = False
         if 'Obs_excl_qc_prof' not in Obs_Type_load_dict.keys():Obs_Type_load_dict['Obs_excl_qc_prof'] = True
