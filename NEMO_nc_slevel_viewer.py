@@ -304,6 +304,9 @@ def nemo_slice_zlev(config = 'amm7',
 
     #pdb.set_trace()
 
+    init_Obs_show_with_diff_var = Obs_show_with_diff_var
+
+
     init_clim_sym = clim_sym
     if clim_sym is None: 
         clim_sym = False
@@ -993,6 +996,8 @@ def nemo_slice_zlev(config = 'amm7',
             else:
             #    pdb.set_trace()
                 Obs_Type_load_dict['show_with_diff_var'] = False # Obs_show_with_diff_var
+
+
             Obs_Type_load_dict['Obs_excl_qc_prof'] = True
             Obs_Type_load_dict['Obs_excl_qc_sat'] = False
         if 'Obs_excl_qc_prof' not in Obs_Type_load_dict.keys():Obs_Type_load_dict['Obs_excl_qc_prof'] = True
@@ -1081,6 +1086,10 @@ def nemo_slice_zlev(config = 'amm7',
 
         # set reload Obs to true
         reload_Obs = True
+
+        if init_Obs_show_with_diff_var is not None:
+            Obs_Type_load_dict['show_with_diff_var'] = init_Obs_show_with_diff_var
+
 
         init_timer.append((datetime.now(),'Obs Loaded '))
 
