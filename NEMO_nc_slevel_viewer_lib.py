@@ -8753,7 +8753,6 @@ def Obs_reload_obs(var,Dataset_lst,tmp_current_time,ob_ti,
         Obs_var_lst_sub = [ss for ss in Obs_varlst if ss in ['ChlA']]
 
     elif (var.lower() in ['bckint','bckins']):
-        Obs_var_lst_sub	 = []
         if Obs_Type_load_dict['show_with_diff_var']:
             if var.lower() == 'bckint':
                 Obs_var_lst_sub = [ss for ss in Obs_varlst if ss in ['ProfT','SST_ins','SST_sat']]
@@ -9127,7 +9126,12 @@ def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,stat_type_lst_exc 
     '''
 
 
+    #if excl_qc is true, don't do QC check, so accept all obs, to so more Obs
+    #if excl_qc is False, do QC check, and don't load obs that fail QC test, to so less Obs
+
+
     print('load_ops_prof_TS:excl_qc',excl_qc)
+
     if TS_str_in.upper() in ['T','POTM','VOTEMPER','TEMPERATURE']:
         TnotS = True
     elif TS_str_in.upper() in ['S','PSAL','VOSALINE','SALINITY']:
@@ -9403,6 +9407,7 @@ def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,stat_type_lst_exc 
         #if len(stat_type_lst)>0:
         loc_ind =  stat_type_ind & loc_ind
     try:
+        #if excl_qc is true, don't do QC check, so accept all obs
         if excl_qc:
             loc_ind = np.tile(loc_ind,(n_levels,1)).T
             comb_ind = loc_ind
@@ -9415,6 +9420,7 @@ def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,stat_type_lst_exc 
             print('comb_ind_S.shape:', comb_ind_S.shape)
 
 
+        #if excl_qc is False, do QC check, and don't load obs that fail QC test
         else:
             loc_ind = np.tile(loc_ind,(n_levels,1)).T
             comb_ind = loc_ind
@@ -9428,6 +9434,7 @@ def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,stat_type_lst_exc 
             print('comb_ind_T.shape:', comb_ind_T.shape)
             print('comb_ind_S.shape:', comb_ind_S.shape)
     except:
+        print('load_ops_prof_TS failed in excl_qc check')
         pdb.set_trace()
     #pdb.set_trace()
         
