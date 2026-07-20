@@ -5717,7 +5717,7 @@ def create_ncvar_lon_lat_time_dict(ncvar_d,gr_1st = None,check_var_name_present 
 
     nav_lon_var_mat = ['nav_lon'.upper(),'lon'.upper(),'longitude'.upper(),'TLON'.upper(),'nav_lon_grid_T'.upper(),'nav_lon_grid_U'.upper(),'nav_lon_grid_V'.upper()]
     nav_lat_var_mat = ['nav_lat'.upper(),'lat'.upper(),'latitude'.upper(),'TLAT'.upper(),'nav_lat_grid_T'.upper(),'nav_lat_grid_U'.upper(),'nav_lat_grid_V'.upper()]
-    time_varname_mat = ['time_counter'.upper(),'time'.upper(),'t'.upper()]
+    time_varname_mat = ['time_counter'.upper(),'time'.upper(),'t'.upper(),'time_instant'.upper()]
         # match def resample_xarray() to time_varname_mat, until generalised. 
 
     nav_lon_varname,nav_lat_varname,time_varname = None, None, None
