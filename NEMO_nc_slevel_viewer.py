@@ -69,7 +69,7 @@ from NEMO_nc_slevel_viewer_lib import process_argparse_Obs_dict,process_argparse
 from NEMO_nc_slevel_viewer_lib import process_argparse_forced_dim,process_argparse_EOS,process_argparse_Obs_type_hide
 
 
-from NEMO_nc_slevel_viewer_lib import obs_reset_sel # load_ops_prof_TS, load_ops_2D_xarray
+from NEMO_nc_slevel_viewer_lib import obs_reset_sel 
 from NEMO_nc_slevel_viewer_lib import Obs_load_init_files_dict,Obs_set_empty_dict,Obs_setup_Obs_vis_d,Obs_setup_Obs_JULD_datetime_dict
 from NEMO_nc_slevel_viewer_lib import Obs_reload_obs,obs_load_selected_point, obs_get_Obs_Type_load_lst
 
@@ -156,31 +156,6 @@ def nemo_slice_zlev(config = 'amm7',
     figsuptitfontsize = 14*0.8
     matplotlib.rcParams['font.size'] = 10*0.8
 
-    '''
-
-    cutout_data = False
-    if cutxind is None:
-        cutxind = [0,None]
-    else:
-        cutout_data = True
-    if cutyind is None:
-        cutyind = [0,None]
-    else:
-        cutout_data = True
-    
-    pdb.set_trace()
-
-    cutxind = thd[1]['cutx0'],thd[1]['cutx1']
-    cutyind = thd[1]['cuty0'],thd[1]['cuty1']
-    
-    # global model (e.g. orca12) enforce th y1 to be e.g. -200, to avoid polar convergence
-    if cutyind[1] is not None: thd[1]['y1'] = None
-    
-    if cutxind[0]!=0:cutout_data = True
-    if cutyind[0]!=0:cutout_data = True
-    if cutxind[1] is not None:cutout_data = True
-    if cutyind[1] is not None:cutout_data = True
-    '''
 
     if EOS_d is None:
         EOS_d = {}
@@ -228,61 +203,11 @@ def nemo_slice_zlev(config = 'amm7',
 
             
             if Obs_reloadmeth == 0:
-                Obs_dict = Obs_load_init_files_dict(Obs_fname,Obs_Type_load_dict)
-                '''       
-                Obs_dict = {}
-                for tmp_datstr in Obs_fname.keys():
-                    Obs_dict[tmp_datstr] = {}
-                    for ob_var in Obs_fname[tmp_datstr].keys():
-                        print(datetime.now(),tmp_datstr,ob_var)
-                        Obs_dict[tmp_datstr][ob_var] = {}
-                        Obs_dict[tmp_datstr][ob_var]['Obs'] = []
-                        Obs_dict[tmp_datstr][ob_var]['JULD'] = []
-                        for tmpObsfname in Obs_fname[tmp_datstr][ob_var]:      
-
-                            if ob_var in ['ProfT','ProfS']:
-                                Obs_dict[tmp_datstr][ob_var]['Obs'].append(load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = True))
-                            elif ob_var in ['SST_ins','SST_sat','SLA','ChlA']:
-                                Obs_dict[tmp_datstr][ob_var]['Obs'].append(load_ops_2D_xarray(tmpObsfname,ob_var,excl_qc = False))
-
-                            if ob_var in ['ProfT','ProfS','SST_ins','SST_sat','SLA','ChlA']:
-                                tmptimetupel = datetime(*(Obs_dict[tmp_datstr][ob_var]['Obs'][-1]['JULD_datetime'][0]).timetuple()[:3])
-                                Obs_dict[tmp_datstr][ob_var]['JULD'].append(  tmptimetupel  )
-
-                        Obs_dict[tmp_datstr][ob_var]['JULD'] = np.array(Obs_dict[tmp_datstr][ob_var]['JULD'])
-            
-                '''
+                Obs_dict = Obs_load_init_files_dict(Obs_fname,Obs_Type_load_dict,cur_xlim = cur_xlim, cur_ylim = cur_ylim)
+               
             elif Obs_reloadmeth > 0:
 
                 Obs_dict = Obs_set_empty_dict(Obs_fname)
-                '''
-                Obs_dict = {}
-                for tmp_datstr in Obs_fname.keys():
-                    Obs_dict[tmp_datstr] = {}
-                    for ob_var in Obs_fname[tmp_datstr].keys():
-                        print(datetime.now(),tmp_datstr,ob_var)
-                        Obs_dict[tmp_datstr][ob_var] = {}
-                        Obs_dict[tmp_datstr][ob_var]['Obs'] = []
-                        Obs_dict[tmp_datstr][ob_var]['JULD'] = []
-
-                        #for tmpObsfname in np.sort(glob.glob(Obs_fname[tmp_datstr][ob_var])):
-                        for tmpObsfname in Obs_fname[tmp_datstr][ob_var]:
-                            Obs_dict[tmp_datstr][ob_var]['Obs'].append({})  
-
-
-                            rootgrp_obs = Dataset(tmpObsfname, 'r')
-                            tmpObs_JULD =  rootgrp_obs.variables['JULD'][0:1].data[0]
-                            tmpObs_JULD_REFERENCE = datetime.strptime(str(chartostring(rootgrp_obs.variables['JULD_REFERENCE'][:])),'%Y%m%d%H%M%S')
-                            tmpObs_JULD_datetime = tmpObs_JULD_REFERENCE + timedelta(tmpObs_JULD)
-
-
-                            Obs_dict[tmp_datstr][ob_var]['JULD'].append(datetime(tmpObs_JULD_datetime.year, tmpObs_JULD_datetime.month, tmpObs_JULD_datetime.day))   
-                            rootgrp_obs.close()
-
-                        Obs_dict[tmp_datstr][ob_var]['JULD'] = np.array(Obs_dict[tmp_datstr][ob_var]['JULD'])
-        
-
-                '''
     if do_memory:
         do_timer = True
  
@@ -379,7 +304,12 @@ def nemo_slice_zlev(config = 'amm7',
 
     #pdb.set_trace()
 
-    if clim_sym is None: clim_sym = False
+    #init_Obs_show_with_diff_var = Obs_show_with_diff_var
+
+
+    init_clim_sym = clim_sym
+    if clim_sym is None: 
+        clim_sym = False
     if clim_sym == False:
         clim_sym_but = 0
     else:
@@ -1061,7 +991,17 @@ def nemo_slice_zlev(config = 'amm7',
         # 50 = ship, 53 = drifting buoy, 55 = moored buoy
         if Obs_Type_load_dict is None:
             Obs_Type_load_dict = {}
-            Obs_Type_load_dict['show_with_diff_var'] = False
+            if Obs_show_with_diff_var is None:
+                Obs_Type_load_dict['show_with_diff_var'] = False
+            else:
+            #    pdb.set_trace()
+                Obs_Type_load_dict['show_with_diff_var'] = Obs_show_with_diff_var
+
+
+            Obs_Type_load_dict['Obs_excl_qc_prof'] = True
+            Obs_Type_load_dict['Obs_excl_qc_sat'] = False
+        if 'Obs_excl_qc_prof' not in Obs_Type_load_dict.keys():Obs_Type_load_dict['Obs_excl_qc_prof'] = True
+        if 'Obs_excl_qc_sat' not in Obs_Type_load_dict.keys():Obs_Type_load_dict['Obs_excl_qc_sat'] = False
 
         Obs_Type_load_lst = obs_get_Obs_Type_load_lst()
 
@@ -1071,10 +1011,13 @@ def nemo_slice_zlev(config = 'amm7',
 
                 # if you're going to load all obs all the time, 
                 # don't show them all
-                if Obs_Type_load_dict['show_with_diff_var']:
-                    Obs_Type_load_dict[tmp_Obs_Type_load] = False
-                else:
-                    Obs_Type_load_dict[tmp_Obs_Type_load] = True
+                #if Obs_Type_load_dict['show_with_diff_var']:
+                #    Obs_Type_load_dict[tmp_Obs_Type_load] = False
+                #else:
+                #    Obs_Type_load_dict[tmp_Obs_Type_load] = True
+
+                Obs_Type_load_dict[tmp_Obs_Type_load] = True
+                    
     
     
         '''
@@ -1097,17 +1040,7 @@ def nemo_slice_zlev(config = 'amm7',
 
         Obs_JULD_datetime_dict = Obs_setup_Obs_JULD_datetime_dict(Dataset_lst,Obs_varlst,Obs_dict)
    
-        '''
-        
-        # a dictionary of Obs datetimes, assuming midday of each day. 
-        Obs_JULD_datetime_dict = {}
-        for tmp_datstr in Dataset_lst:
-            Obs_JULD_datetime_dict[tmp_datstr] = {} #{'ProfT':Obs_dict[tmp_datstr]['ProfT']['JULD']}
-            for ob_var in Obs_varlst:
-                Obs_JULD_datetime_dict[tmp_datstr][ob_var] = Obs_dict[tmp_datstr][ob_var]['JULD']
-
-        '''
-
+  
         # Obs plotting options 
         Obs_scatEC = None
         # size of markers
@@ -1154,6 +1087,10 @@ def nemo_slice_zlev(config = 'amm7',
 
         # set reload Obs to true
         reload_Obs = True
+
+        #if init_Obs_show_with_diff_var is not None:
+        #    Obs_Type_load_dict['show_with_diff_var'] = init_Obs_show_with_diff_var
+
 
         init_timer.append((datetime.now(),'Obs Loaded '))
 
@@ -2777,68 +2714,26 @@ def nemo_slice_zlev(config = 'amm7',
             if do_Obs:
                 if reload_Obs:
 
-
-                    Obs_dat_dict,Obs_var_lst_sub = Obs_reload_obs(var,Dataset_lst,tmp_current_time,ob_ti,Obs_dict,Obs_fname,Obs_JULD_datetime_dict,Obs_vis_d,Obs_varlst,Obs_reloadmeth,Obs_Type_load_dict)
-                    '''
-                    
-                    #for a given variable, what obs types to use
-                    if var.lower() in ['votemper','votempis','votemper_bot','votempis_bot']:
-                        #Obs_var_lst_sub	 = ['ProfT']#,'SST_ins']#,'SST_sat']
-                        Obs_var_lst_sub = [ss for ss in Obs_varlst if ss in ['ProfT','SST_ins','SST_sat']]
-                    elif var.lower() in ['vosaline']:
-                        Obs_var_lst_sub = [ss for ss in Obs_varlst if ss in ['ProfS']]
-                    elif var.lower() in ['sossheig']:
-                        Obs_var_lst_sub = [ss for ss in Obs_varlst if ss in ['SLA']]
-                    elif var.lower() in ['chl']:
-                        Obs_var_lst_sub = [ss for ss in Obs_varlst if ss in ['ChlA']]
-                    else:
-                        Obs_var_lst_sub	 = []
-                    
-                    # exclude obs types that have been excluded
-                    #Obs_var_lst_sub = [ss for ss in Obs_var_lst_sub if ss not in Obs_obstype_hide]
-                    #Obs_var_lst_sub = [ss for ss in Obs_var_lst_sub if ss not in Obs_obstype_hide]
-                        
-                        
-
                     #pdb.set_trace()
-                    Obs_var_lst_sub = [ob_var for ob_var in Obs_var_lst_sub if Obs_vis_d['visible'][ob_var]]
+                    obs_xlim = cur_xlim
+                    obs_ylim = cur_ylim
+                    if obs_xlim is None:
+                        obs_xlim = ax[0].get_xlim()
+                        if (obs_xlim == np.array([0,1])).all():
+                            obs_xlim = np.array([lon_d[1].min(),lon_d[1].max()])
+
+                    if obs_ylim is None:
+                        obs_ylim = ax[0].get_ylim()
+                        if (obs_ylim == np.array([0,1])).all():
+                            obs_ylim = np.array([lat_d[1].min(),lat_d[1].max()])
 
 
-
-                    print(Obs_var_lst_sub,Obs_vis_d['visible'])
-
-
-
-                    #extract relevant day of obs, for each data type, and selected Obs types
-                    Obs_dat_dict = {} 
-                    for tmp_datstr in Dataset_lst:
-                        Obs_dat_dict[tmp_datstr] = {}
-                        for ob_var in Obs_var_lst_sub:
-
-                            # If Obs Method is to replace, set the old OPS to zero. 
-                            if Obs_reloadmeth == 2:
-                                Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = {}
-
-                            # for a give model data time (ti) find nearest Obs data time (ob_ti)
-                            Obs_noon_time_minus_current_time =  [(tmpObsdatetime - tmp_current_time).total_seconds() +86400/2 for tmpObsdatetime in  Obs_JULD_datetime_dict[tmp_datstr][ob_var]]
-                            ob_ti = np.abs(Obs_noon_time_minus_current_time).argmin()
-
-
-
-
-
-                            # If Obs Method is to fill or replace, load the current OPS data now.  
-                            if (Obs_reloadmeth > 0):
-
-                                tmpObsfname = Obs_fname[tmp_datstr][ob_var][ob_ti]
-
-                                if ob_var in ['ProfT','ProfS']:
-                                    Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = True)
-                                elif ob_var in ['SST_ins','SST_sat','SLA','ChlA']:
-                                    Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = load_ops_2D_xarray(tmpObsfname,ob_var,excl_qc = False)   
-                            Obs_dat_dict[tmp_datstr][ob_var] = Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti]
-                    #once reloaded, set to False
-                    '''
+                    Obs_dat_dict,Obs_var_lst_sub = Obs_reload_obs(var,Dataset_lst,tmp_current_time,ob_ti,Obs_dict,
+                                                                  Obs_fname,Obs_JULD_datetime_dict,Obs_vis_d,Obs_varlst,
+                                                                  Obs_reloadmeth,Obs_Type_load_dict,
+                                                                  cur_xlim = obs_xlim, cur_ylim = obs_ylim)
+                    del(obs_xlim)
+                    del(obs_ylim)
 
                     reload_Obs = False
 
@@ -2982,94 +2877,6 @@ def nemo_slice_zlev(config = 'amm7',
                 else:
                     pdb.set_trace()
 
-                """
-
-                if tmpdataset_oper == '-':
-                    map_dat = map_dat_dict[tmpdataset_1] - map_dat_dict[tmpdataset_2]
-                    if var_dim[var] == 4:
-                        #ns_slice_dat = ns_slice_dict[tmpdataset_1] - ns_slice_dict[tmpdataset_2]
-                        #ew_slice_dat = ew_slice_dict[tmpdataset_1] - ew_slice_dict[tmpdataset_2]
-                        #pdb.set_trace()
-                        hov_dat = hov_dat_dict[tmpdataset_1] - hov_dat_dict[tmpdataset_2]
-
-                    #elif var_dim[var] == 3:
-                    ns_slice_dat = ns_slice_dict[tmpdataset_1] - ns_slice_dict[tmpdataset_2]
-                    ew_slice_dat = ew_slice_dict[tmpdataset_1] - ew_slice_dict[tmpdataset_2]
-                    ns_slice_x = ns_slice_dict['x']
-                    ew_slice_x = ew_slice_dict['x']
-                    ns_slice_y = ns_slice_dict['y']
-                    ew_slice_y = ew_slice_dict['y']
-
-                    ts_dat = ts_dat_dict[tmpdataset_1] - ts_dat_dict[tmpdataset_2]
-                    if vis_curr > 0:
-                        map_dat_U = map_dat_dict_U[tmpdataset_1] - map_dat_dict_U[tmpdataset_2]
-                        map_dat_V = map_dat_dict_V[tmpdataset_1] - map_dat_dict_V[tmpdataset_2]
-                
-                elif tmpdataset_oper == '/':
-                    map_dat = map_dat_dict[tmpdataset_1] / map_dat_dict[tmpdataset_2]
-                    if var_dim[var] == 4:
-                        #ns_slice_dat = ns_slice_dict[tmpdataset_1] - ns_slice_dict[tmpdataset_2]
-                        #ew_slice_dat = ew_slice_dict[tmpdataset_1] - ew_slice_dict[tmpdataset_2]
-                        #pdb.set_trace()
-                        hov_dat = hov_dat_dict[tmpdataset_1] / hov_dat_dict[tmpdataset_2]
-
-                    #elif var_dim[var] == 3:
-                    ns_slice_dat = ns_slice_dict[tmpdataset_1] / ns_slice_dict[tmpdataset_2]
-                    ew_slice_dat = ew_slice_dict[tmpdataset_1] / ew_slice_dict[tmpdataset_2]
-                    ns_slice_x = ns_slice_dict['x']
-                    ew_slice_x = ew_slice_dict['x']
-                    ns_slice_y = ns_slice_dict['y']
-                    ew_slice_y = ew_slice_dict['y']
-
-                    ts_dat = ts_dat_dict[tmpdataset_1] / ts_dat_dict[tmpdataset_2]
-                    if vis_curr > 0:
-                        map_dat_U = map_dat_dict_U[tmpdataset_1] / map_dat_dict_U[tmpdataset_2]
-                        map_dat_V = map_dat_dict_V[tmpdataset_1] / map_dat_dict_V[tmpdataset_2]
-                    '''
-                elif tmpdataset_oper == '/':
-                    map_dat = map_dat_dict[tmpdataset_1] / map_dat_dict[tmpdataset_2]
-                    if var_dim[var] == 4:
-                        #ns_slice_dat = ns_slice_dict[tmpdataset_1] - ns_slice_dict[tmpdataset_2]
-                        #ew_slice_dat = ew_slice_dict[tmpdataset_1] - ew_slice_dict[tmpdataset_2]
-                        #pdb.set_trace()
-                        hov_dat = hov_dat_dict[tmpdataset_1] / hov_dat_dict[tmpdataset_2]
-
-                    #elif var_dim[var] == 3:
-                    ns_slice_dat = (ns_slice_dict[tmpdataset_1] / ns_slice_dict[tmpdataset_2])
-                    ew_slice_dat = ew_slice_dict[tmpdataset_1] / ew_slice_dict[tmpdataset_2]
-                    ns_slice_x = ns_slice_dict['x']
-                    ew_slice_x = ew_slice_dict['x']
-                    ns_slice_y = ns_slice_dict['y']
-                    ew_slice_y = ew_slice_dict['y']
-
-                    ts_dat = ts_dat_dict[tmpdataset_1] / ts_dat_dict[tmpdataset_2]
-                    if vis_curr > 0:
-                        map_dat_U = map_dat_dict_U[tmpdataset_1] / map_dat_dict_U[tmpdataset_2]
-                        map_dat_V = map_dat_dict_V[tmpdataset_1] / map_dat_dict_V[tmpdataset_2]
-                    '''
-                elif tmpdataset_oper in ['/','%']:
-                    map_dat = dataset_comp_func(map_dat_dict[tmpdataset_1], map_dat_dict[tmpdataset_2],method = tmpdataset_oper)
-                    if var_dim[var] == 4:
-                        #ns_slice_dat = ns_slice_dict[tmpdataset_1] - ns_slice_dict[tmpdataset_2]
-                        #ew_slice_dat = ew_slice_dict[tmpdataset_1] - ew_slice_dict[tmpdataset_2]
-                        #pdb.set_trace()
-                        hov_dat = dataset_comp_func(hov_dat_dict[tmpdataset_1], hov_dat_dict[tmpdataset_2],method = tmpdataset_oper)
-
-                    #elif var_dim[var] == 3:
-                    ns_slice_dat = dataset_comp_func(ns_slice_dict[tmpdataset_1], ns_slice_dict[tmpdataset_2],method = tmpdataset_oper)
-                    ew_slice_dat = dataset_comp_func(ew_slice_dict[tmpdataset_1], ew_slice_dict[tmpdataset_2],method = tmpdataset_oper)
-                    ns_slice_x = ns_slice_dict['x']
-                    ew_slice_x = ew_slice_dict['x']
-                    ns_slice_y = ns_slice_dict['y']
-                    ew_slice_y = ew_slice_dict['y']
-
-                    ts_dat = dataset_comp_func(ts_dat_dict[tmpdataset_1], ts_dat_dict[tmpdataset_2],method = tmpdataset_oper)
-                    if vis_curr > 0:
-                        map_dat_U = dataset_comp_func(map_dat_dict_U[tmpdataset_1],map_dat_dict_U[tmpdataset_2],method = tmpdataset_oper)
-                        map_dat_V = dataset_comp_func(map_dat_dict_V[tmpdataset_1], map_dat_dict_V[tmpdataset_2],method = tmpdataset_oper)
-                else:
-                    pdb.set_trace()
-                """
 
                 if do_MLD:  
                     mld_ns_slice_dat = mld_ns_slice_dict['Dataset 1'].copy()*0.
@@ -3144,28 +2951,7 @@ def nemo_slice_zlev(config = 'amm7',
                         tmp_map_dat = map_dat_dict[tmp_secdataset_proc + '_Sec_regrid']
                     #print('Plotting map for ',tmp_secdataset_proc,tmp_th_d_ind )
                     pax.append(ax[0].pcolormesh(lon_d[tmp_th_d_ind][::pdy,::pdx],lat_d[tmp_th_d_ind][::pdy,::pdx],tmp_map_dat[::pdy,::pdx],cmap = curr_cmap,norm = climnorm, rasterized = True))
-                #pdb.set_trace()   
-                '''
-                ax = [plt.subplot(111)]
-               # tmp_adjacent_map_ind_lst =  np.array(Dataset_lst)[adjacent_map_ind_lst[::-1]]
-
-                #tmp_adjacent_map_ind_lst =  np.array(['Dataset 3', 'Dataset 2'], dtype='<U9')
-
-                ax = [plt.subplot(111)]
-                pax = []
-                for tmp_secdataset_proc in ['Dataset 1']:pax.append(ax[0].pcolormesh(lon_d[int(tmp_secdataset_proc[8:])][::pdy,::pdx],lat_d[int(tmp_secdataset_proc[8:])][::pdy,::pdx],map_dat_dict[tmp_secdataset_proc][::pdy,::pdx],cmap = curr_cmap,norm = climnorm, rasterized = True))
-                for tmp_secdataset_proc in ['Dataset 3']:pax.append(ax[0].pcolormesh(lon_d[int(tmp_secdataset_proc[8:])][::pdy,::pdx],lat_d[int(tmp_secdataset_proc[8:])][::pdy,::pdx],map_dat_dict[tmp_secdataset_proc + '_Sec_regrid'][::pdy,::pdx],cmap = curr_cmap,norm = climnorm, rasterized = True))
-                for tmp_secdataset_proc in ['Dataset 2']:pax.append(ax[0].pcolormesh(lon_d[int(tmp_secdataset_proc[8:])][::pdy,::pdx],lat_d[int(tmp_secdataset_proc[8:])][::pdy,::pdx],map_dat_dict[tmp_secdataset_proc + '_Sec_regrid'][::pdy,::pdx],cmap = curr_cmap,norm = climnorm, rasterized = True))
-                set_perc_clim_pcolor_in_region(5,95,ax = ax[0])
-                plt.colorbar(pax, ax = ax[0])
-                plt.show()
-
-
-                for tmppax in pax:tmppax.get_clim()
-                get_clim_pcolor(ax = ax[0])
-
-
-                '''
+                #pdb.set_trace() 
             else:
                 if Sec_regrid & (secdataset_proc in Dataset_lst):
                     th_d_ind = int(secdataset_proc[8:])
@@ -3262,35 +3048,6 @@ def nemo_slice_zlev(config = 'amm7',
                             pax2d.append(ax[2].plot(ns_slice_x,ns_slice_dict['Dataset 1']*0, color = '0.5', ls = '--'))
 
 
-                    """
-                    if tmpdataset_oper == '-': 
-                        
-
-                        pax2d.append(ax[1].plot(ew_slice_x,ew_slice_dict[tmpdataset_1] - ew_slice_dict[tmpdataset_2],Dataset_col_diff_dict[secdataset_proc]))
-                        pax2d.append(ax[1].plot(ew_slice_x,ew_slice_dict['Dataset 1']*0, color = '0.5', ls = '--'))
-
-                        pax2d.append(ax[2].plot(ns_slice_x,ns_slice_dict[tmpdataset_1] - ns_slice_dict[tmpdataset_2],Dataset_col_diff_dict[secdataset_proc]))
-                        pax2d.append(ax[2].plot(ns_slice_x,ns_slice_dict['Dataset 1']*0, color = '0.5', ls = '--'))
-
-                        for tmp_datstr1 in Dataset_lst:
-                            #th_d_ind1 = int(tmp_datstr1[-1])
-                            th_d_ind1 = int(tmp_datstr1[8:])
-                            for tmp_datstr2 in Dataset_lst:
-                                #th_d_ind2 = int(tmp_datstr2[-1])
-                                th_d_ind2 = int(tmp_datstr2[8:])
-                                if tmp_datstr1!=tmp_datstr2:
-                                    tmp_diff_str_name = 'Dat%i-Dat%i'%(th_d_ind1,th_d_ind2)                               
-                                    tmplw = 0.5
-                                    if secdataset_proc == tmp_diff_str_name:tmplw = 1
-
-                                    pax2d.append(ax[1].plot(ew_slice_x,ew_slice_dict[tmp_datstr1] - ew_slice_dict[tmp_datstr2],Dataset_col_diff_dict[tmp_diff_str_name], lw = tmplw))
-                                    pax2d.append(ax[2].plot(ns_slice_x,ns_slice_dict[tmp_datstr1] - ns_slice_dict[tmp_datstr2],Dataset_col_diff_dict[tmp_diff_str_name], lw = tmplw))
-                                                
-                            pax2d.append(ax[1].plot(ew_slice_x,ew_slice_dict['Dataset 1']*0, color = '0.5', ls = '--'))
-                            pax2d.append(ax[2].plot(ns_slice_x,ns_slice_dict['Dataset 1']*0, color = '0.5', ls = '--'))
-
-
-                    """
 
             if do_MLD:
                 #pdb.set_trace()
@@ -3364,36 +3121,6 @@ def nemo_slice_zlev(config = 'amm7',
 
                 else:
                     pdb.set_trace()
-                """
-                if tmpdataset_oper == '-': 
-                    
-                    tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ts_dat_dict[tmpdataset_1] - ts_dat_dict[tmpdataset_2],Dataset_col_diff_dict[secdataset_proc]))
-                    tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ts_dat_dict['Dataset 1']*0, color = '0.5', ls = '--'))
-
-
-
-                    for tmp_datstr1 in Dataset_lst:
-                        #th_d_ind1 = int(tmp_datstr1[-1])
-                        th_d_ind1 = int(tmp_datstr1[8:])
-                        for tmp_datstr2 in Dataset_lst:
-                            #th_d_ind2 = int(tmp_datstr2[-1])
-                            th_d_ind2 = int(tmp_datstr2[8:])
-                            if tmp_datstr1!=tmp_datstr2:
-                                tmp_diff_str_name = 'Dat%i-Dat%i'%(th_d_ind1,th_d_ind2)                               
-                                tmplw = 0.5
-                                if secdataset_proc == tmp_diff_str_name:tmplw = 1
-
-                                tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ts_dat_dict[tmp_datstr1] - ts_dat_dict[tmp_datstr2],Dataset_col_diff_dict[tmp_diff_str_name], lw = tmplw))
-
-                        tsax_lst.append(ax[4].plot(ts_dat_dict['x'],ts_dat_dict['Dataset 1']*0, color = '0.5', ls = '--'))
-
-
-
-
-                else:
-                    pdb.set_trace()
-                """
-
             # if Obs, define some plotting handles
             if do_Obs:
                 opax_lst = []
@@ -3519,38 +3246,6 @@ def nemo_slice_zlev(config = 'amm7',
 
                     else:
                         pdb.set_trace()
-                    """
-                    if tmpdataset_oper == '-': 
-                        
-                        #pf_xvals.append(pf_dat_dict[tmpdataset_1] - pf_dat_dict[tmpdataset_2])
-                        for pfi in pf_dat_dict[tmpdataset_1] - pf_dat_dict[tmpdataset_2]:pf_xvals.append(pfi)
-                        pfax_lst.append(ax[5].plot(pf_dat_dict[tmpdataset_1] - pf_dat_dict[tmpdataset_2],pf_dat_dict['y'],Dataset_col_diff_dict[secdataset_proc]))
-                        pfax_lst.append(ax[5].plot(pf_dat_dict['Dataset 1']*0,pf_dat_dict['y'], color = '0.5', ls = '--'))
-
-
-
-                        for tmp_datstr1 in Dataset_lst:
-                            #th_d_ind1 = int(tmp_datstr1[-1])
-                            th_d_ind1 = int(tmp_datstr1[8:])
-                            for tmp_datstr2 in Dataset_lst:
-                                #th_d_ind2 = int(tmp_datstr2[-1])
-                                th_d_ind2 = int(tmp_datstr2[8:])
-                                if tmp_datstr1!=tmp_datstr2:
-                                    tmp_diff_str_name = 'Dat%i-Dat%i'%(th_d_ind1,th_d_ind2)                               
-                                    tmplw = 0.5
-                                    if secdataset_proc == tmp_diff_str_name:tmplw = 1
-
-                                    #pf_xvals.append(pf_dat_dict[tmp_datstr1] - pf_dat_dict[tmp_datstr2])
-                                    for pfi in pf_dat_dict[tmp_datstr1] - pf_dat_dict[tmp_datstr2]:pf_xvals.append(pfi)
-                                    pfax_lst.append(ax[5].plot(pf_dat_dict[tmp_datstr1] - pf_dat_dict[tmp_datstr2],pf_dat_dict['y'],Dataset_col_diff_dict[tmp_diff_str_name], lw = tmplw))
-
-                            pfax_lst.append(ax[5].plot(pf_dat_dict['Dataset 1']*0,pf_dat_dict['y'], color = '0.5', ls = '--'))
-
-
-
-                    else:
-                        pdb.set_trace()
-                    """
                 #pdb.set_trace()
                 pf_xvals_min = np.ma.array(pf_xvals).ravel().min()
                 pf_xvals_max = np.ma.array(pf_xvals).ravel().max()
@@ -4133,19 +3828,33 @@ def nemo_slice_zlev(config = 'amm7',
                             #scatter plot them
                             if Obs_hide == False:
                                 if Obs_AbsAnom:
-                                    oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS, edgecolors = Obs_scatEC ))
+                                    #oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS, edgecolors = Obs_scatEC ))
+                                    #oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS, edgecolors = 'none' ))
+                                    #oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat.data, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS, edgecolors = Obs_scatEC, facecolor = 'none'))
+                                    #oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat.data, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS*0.5, edgecolors = Obs_scatEC, facecolor = 'none'))
+                                    #oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS, edgecolors = Obs_scatEC))
+                                    #oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat.data*0, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS*0.35, edgecolors = Obs_scatEC, facecolor = 'none'))
+                                    oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS*0.35, edgecolors = Obs_scatEC, facecolor = 'none'))
+                                    oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS, edgecolors = Obs_scatEC))
                                 else:
-                                    oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat, s = Obs_scatSS, edgecolors = Obs_scatEC, cmap = matplotlib.cm.seismic ))
+                                    #oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat, s = Obs_scatSS, edgecolors = Obs_scatEC, cmap = matplotlib.cm.seismic ))
+                                    #oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat, s = Obs_scatSS, edgecolors = 'none', cmap = matplotlib.cm.seismic ))
+                                    #oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat.data, s = Obs_scatSS, edgecolors = Obs_scatEC, facecolor = 'none', cmap = matplotlib.cm.seismic ))
+                                    #oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat.data, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS*0.5, edgecolors = Obs_scatEC, facecolor = 'none'))
+                                    #oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS, edgecolors = Obs_scatEC))
+                                    #oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat.data*0, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS*0.35, edgecolors = Obs_scatEC, facecolor = 'none'))
+                                    oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,               vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS*0.35, edgecolors = Obs_scatEC, facecolor = 'none', cmap = scnd_cmap))
+                                    oax_lst.append(ax[0].scatter(tmpobsx,tmpobsy,c = tmpobsdat, vmin = obs_clim[0],vmax = obs_clim[1], s = Obs_scatSS, edgecolors = Obs_scatEC, cmap = scnd_cmap))
                                     
                     # if in anomaly mode, calculate the clim and colorbars for obs data. 
-                    if (len(tmp_obs_lst)>0)& (Obs_AbsAnom==False) & (Obs_hide ==  False):
+                    if (len(tmp_obs_lst)>0)& (Obs_AbsAnom == False) & (Obs_hide ==  False):
                         #try:
 
                         # join all obs types, and all the "within current map" TF array 
                         tmp_obs_mat=np.ma.concatenate(tmp_obs_lst)
                         tmp_obs_llind_mat=np.ma.concatenate(tmp_obs_llind_lst)
 
-                        # if clim is sp ecified, use it, otherwise calculate it
+                        # if clim is specified, use it, otherwise calculate it
                         if Obs_anom_clim is not None:
                             obs_OmB_clim = Obs_anom_clim
                         else:
@@ -4160,16 +3869,26 @@ def nemo_slice_zlev(config = 'amm7',
                                 obs_OmB_clim = np.percentile(np.abs(tmp_obs_mat[(tmp_obs_mat.mask == False)]),95)*np.array([-1,1])    
                             '''
 
+                            '''
                             # if more than 3 values within the area, calc 
                             if tmp_obs_llind_mat.sum()>3:
                                 tmp_omb_val_clim = np.abs(tmp_obs_mat[(tmp_obs_mat.mask == False) & tmp_obs_llind_mat])
                             else:
                                 tmp_omb_val_clim = np.abs(tmp_obs_mat[(tmp_obs_mat.mask == False)])
-                            
+
                             # if more than 2 obs within region, calc clim values
                             if len(tmp_omb_val_clim)>2:
                                 obs_OmB_clim = np.percentile(tmp_omb_val_clim,95)*np.array([-1,1])    
                             del(tmp_omb_val_clim)
+                            '''
+
+                            tmp_omb_val_clim = np.abs(tmp_obs_mat[(tmp_obs_mat.mask == False) & tmp_obs_llind_mat])
+                            if len(tmp_omb_val_clim)>0:
+                                obs_OmB_clim = np.percentile(tmp_omb_val_clim,95)*np.array([-1,1])
+                            elif len(tmp_omb_val_clim)==0:
+                                obs_OmB_clim = [-0.1,0.1]
+                            del(tmp_omb_val_clim) 
+
                         #oax_lst[0].get_clim()
                         for tmp_oax_lst in oax_lst: tmp_oax_lst.set_clim(obs_OmB_clim)   
                         
@@ -4180,12 +3899,15 @@ def nemo_slice_zlev(config = 'amm7',
                             tmp_obs_OmB_clim_lst = []
                             for tmp_oax_lst in oax_lst:
                                 tmp_obs_OmB_clim = tmp_oax_lst.get_clim()   
-                                tmp_obs_OmB_clim_lst.append(tmp_obs_OmB_clim[0])
-                                tmp_obs_OmB_clim_lst.append(tmp_obs_OmB_clim[1])
+                                if tmp_obs_OmB_clim[0] is not None:
+                                    tmp_obs_OmB_clim_lst.append(tmp_obs_OmB_clim[0])
+                                    tmp_obs_OmB_clim_lst.append(tmp_obs_OmB_clim[1])
 
                             # convert this list to an array of abs values
-                            tmp_obs_OmB_clim_mat = np.abs(tmp_obs_OmB_clim_lst)
-
+                            try:
+                                tmp_obs_OmB_clim_mat = np.abs(tmp_obs_OmB_clim_lst)
+                            except:
+                                pdb.set_trace()
                             # find max, and use this for a symetrical clim.
                             tmp_obs_OmB_clim = tmp_obs_OmB_clim_mat.max()*np.array([-1,1]) 
                             
@@ -4200,7 +3922,8 @@ def nemo_slice_zlev(config = 'amm7',
                         #cbarobsax = [fig.add_axes([0.305,0.11, 0.15,0.02])]     
                         cbarobsax = [fig.add_axes([0.295,0.11, 0.15,0.02])]
                         #cbarobsax[0].tick_params(top=True, labeltop=True, bottom=False, labelbottom=False)
-                        cax.append(plt.colorbar(oax_lst[0], ax = ax[0], cax = cbarobsax[0], orientation = 'horizontal'))
+                        #pdb.set_trace()
+                        cax.append(plt.colorbar(oax_lst[-1], ax = ax[0], cax = cbarobsax[0], orientation = 'horizontal'))
                         cax[-1].ax.xaxis.set_ticks_position('top')
                         cax[-1].ax.xaxis.set_label_position('top')
                         del(tmp_obs_lst)
@@ -4422,13 +4145,20 @@ def nemo_slice_zlev(config = 'amm7',
 
                     #pdb.set_trace()
 
-
-                if secdataset_proc in Dataset_lst:
-                    clim_sym = False
-                    clim_sym_but = 0
+                #pdb.set_trace()
+                if init_clim_sym is None:
+                    if secdataset_proc in Dataset_lst:
+                        clim_sym = False
+                        clim_sym_but = 0
+                    else:
+                        clim_sym = True
+                        clim_sym_but = 1
                 else:
-                    clim_sym = True
-                    clim_sym_but = 1
+                    clim_sym = init_clim_sym
+                    if clim_sym:
+                        clim_sym_but = 1
+                    else:
+                        clim_sym_but = 0
 
                 tmp_date_in_ind = just_plt_vals[just_plt_cnt][1]
                 z_meth = just_plt_vals[just_plt_cnt][2]
@@ -5207,11 +4937,12 @@ def nemo_slice_zlev(config = 'amm7',
 
                                 obs_but_names = [ss for ss in Obs_vis_d['visible'].keys()]
                                 obs_but_names = obs_but_names + ['Hide_Obs','Edges','Loc','AbsAnom','Obs_show_with_diff_var',
-                                                 #'Obs_Type_TSargo','Obs_Type_TSships','Obs_Type_TSgliders','Obs_Type_TSother',
+                                                                 'Obs_excl_qc_prof','Obs_excl_qc_sat',
                                                  'Obs_Type_T_argo','Obs_Type_T_ships','Obs_Type_T_gliders','Obs_Type_T_other',
                                                  'Obs_Type_S_argo','Obs_Type_S_ships','Obs_Type_S_gliders','Obs_Type_S_other',
                                                  'Obs_Type_SSTships','Obs_Type_SSTdrifter','Obs_Type_SSTmoored',
                                                  'Close']
+                                                 #'Obs_Type_TSargo','Obs_Type_TSships','Obs_Type_TSgliders','Obs_Type_TSother',
                                 
                                 
                                 '''
@@ -5234,6 +4965,8 @@ def nemo_slice_zlev(config = 'amm7',
                                 obs_but_sw['Loc'] = {'v':Obs_pair_loc, 'T':"Don't Selected point",'F': 'Move Selected point'}
                                 obs_but_sw['AbsAnom'] = {'v':Obs_AbsAnom, 'T':"Observed Values",'F': 'Model - Obs'}
                                 obs_but_sw['Obs_show_with_diff_var'] = {'v':Obs_Type_load_dict['show_with_diff_var'] , 'T':"No obs mixing",'F': 'Allow obs mixing'}
+                                obs_but_sw['Obs_excl_qc_prof'] = {'v':Obs_Type_load_dict['Obs_excl_qc_prof'] , 'T':"Obs_excl_qc_prof=T",'F': 'Obs_excl_qc_prof=F'}
+                                obs_but_sw['Obs_excl_qc_sat'] = {'v':Obs_Type_load_dict['Obs_excl_qc_sat'] , 'T':"Obs_excl_qc_sat=T",'F': 'Obs_excl_qc_sat=F'}
                                 #obs_but_sw['Obs_Type_argo'] = {'v':Obs_Type_argo, 'T':"Show Argo TS",'F': 'Hide Argo TS'}
                                 #obs_but_sw['Obs_Type_ships'] = {'v':Obs_Type_ships, 'T':"Show ships SST",'F': 'Hide ships SST'}
                                 #obs_but_sw['Obs_Type_drifter'] = {'v':Obs_Type_drifter, 'T':"Show drifter SST",'F': 'Hide drifter SST'}
@@ -5262,7 +4995,7 @@ def nemo_slice_zlev(config = 'amm7',
                                 
                                 # Add all obs types
                                 for ob_var in Obs_varlst:       obs_but_sw[ob_var] = {'v':Obs_vis_d['visible'][ob_var] , 'T':ob_var,'F': ob_var,'T_col':'k','F_col':'0.5'}
-
+                                #pdb.set_trace()
                                 obbut_sel = pop_up_opt_window(obs_but_names, opt_but_sw = obs_but_sw)
 
 
@@ -5305,7 +5038,8 @@ def nemo_slice_zlev(config = 'amm7',
                                 if obbut_sel == 'Obs_Type_SSTdrifter': Obs_Type_load_dict['SST_drifter']    = not Obs_Type_load_dict['SST_drifter']
                                 if obbut_sel == 'Obs_Type_SSTmoored':  Obs_Type_load_dict['SST_moored']    = not Obs_Type_load_dict['SST_moored']
                                 if obbut_sel == 'Obs_show_with_diff_var':  Obs_Type_load_dict['show_with_diff_var']     = not Obs_Type_load_dict['show_with_diff_var'] 
-
+                                if obbut_sel == 'Obs_excl_qc_prof':  Obs_Type_load_dict['Obs_excl_qc_prof'] = not Obs_Type_load_dict['Obs_excl_qc_prof']
+                                if obbut_sel == 'Obs_excl_qc_sat':  Obs_Type_load_dict['Obs_excl_qc_sat'] = not Obs_Type_load_dict['Obs_excl_qc_sat']
 
                                 reload_Obs = True
                         
@@ -6075,7 +5809,9 @@ def nemo_slice_zlev(config = 'amm7',
                                     if var_dim[var] == 4:
                                         tmp_xsect_dat[tmp_datstr] = data_inst[tmp_datstr][:,[xsect_jj_ind_dict[tmp_datstr]],[xsect_ii_ind_dict[tmp_datstr]]][:,0,:]
                                         tmp_xsect_z[tmp_datstr] = np.array(grid_dict[tmp_datstr]['gdept'])[:,[xsect_jj_ind_dict[tmp_datstr]],[xsect_ii_ind_dict[tmp_datstr]]][:,0,:]
-                                        tmp_xsect_x[tmp_datstr] = np.arange(nxsect_dict[tmp_datstr])
+                                        
+                                        #tmp_xsect_x[tmp_datstr] = np.arange(nxsect_dict[tmp_datstr])
+                                        tmp_xsect_x[tmp_datstr] = xsect_degdist_dict[tmp_datstr]
                                         if do_MLD:
                                             tmp_xsect_mld_dat[tmp_datstr] = data_inst_mld[tmp_datstr][[xsect_jj_ind_dict[tmp_datstr]],[xsect_ii_ind_dict[tmp_datstr]]][0,:]
                                         
@@ -6088,7 +5824,8 @@ def nemo_slice_zlev(config = 'amm7',
                                
 
                             except:
-                                pdb.set_trace(0)
+                                print('problem extracting xsect points')
+                                pdb.set_trace()
 
 
                             if figxs is not None:

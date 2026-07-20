@@ -21,6 +21,7 @@ computername = socket.gethostname()
 comp = 'linux'
 if computername in ['xcel00','xcfl00']: comp = 'hpc'
 
+from scipy.interpolate import griddata
 
 
 RotNPole_lon = 177.5
@@ -59,7 +60,7 @@ def load_nc_dims(tmp_data):
     
     nc_dims = [ss for ss in tmp_data._dims.keys()]
 
-    poss_zdims = ['depth','deptht','depthu','depthv','depthw','z', 'nc']
+    poss_zdims = ['depth','deptht','depthu','depthv','depthw','z', 'nc','nav_lev']
     poss_tdims = ['time_counter','time','t']
     poss_xdims = ['x','X','lon','ni','x_grid_T','x_grid_U','x_grid_V', 'lon','longitude','xbt','xbT','xbU','xbV','xb']
     poss_ydims = ['y','Y','lat','nj','y_grid_T','y_grid_U','y_grid_V', 'lat','latitude','yb']
@@ -1483,13 +1484,17 @@ def pycnocline_params(rho_4d,gdept_3d,e3t_3d):
     # find index of maximum N2 depth
     N2_max_arg = N2.argmax(axis = 1)
     N2_max = N2.max(axis = 1)
-
+    #pdb.set_trace()
     # use gdept to calcuate these as a depth
-    if n_t <= 1:
-        N2_maxZ = gdept_3d[N2_max_arg,np.tile(n_j_mat,(n_t,1,1)),np.tile(n_i_mat,(n_t,1,1))]
-    else:
-        N2_maxZ = gdept_3d[0,N2_max_arg,np.tile(n_j_mat,(n_t,1,1)),np.tile(n_i_mat,(n_t,1,1))]
-
+    try:
+        #if n_t <= 1:
+        if n_t < 1:
+            N2_maxZ = gdept_3d[N2_max_arg,np.tile(n_j_mat,(n_t,1,1)),np.tile(n_i_mat,(n_t,1,1))]
+        else:
+            N2_maxZ = gdept_3d[0,N2_max_arg,np.tile(n_j_mat,(n_t,1,1)),np.tile(n_i_mat,(n_t,1,1))]
+    except:
+        print('Changed if n_t <= 1 to if n_t < 1')
+        pdb.set_trace()
     return N2,Pync_Z,Pync_Th,N2_max,N2_maxZ
           
 def stream_from_vocetr_eff(v_tr):
@@ -2315,44 +2320,48 @@ def reload_data_instances_time(var,thd,ldi,ti,current_time_datetime_since_1970,t
 
     return data_inst,preload_data_ti,preload_data_var,preload_data_ldi
 
-def EOS_convert_EOS80_2_TEOS10_T(data_in_T, data_in_S, dep, lon, lat, tmp_datstr = None):
-    if tmp_datstr is not None: print('Converting EOS80 temperature to TEOS10 for %s'%tmp_datstr,datetime.now())
+def EOS_convert_EOS80_2_TEOS10_T(data_in_T, data_in_S, dep, lon, lat, tmp_datstr = None, verbose = True):
+    if verbose:
+        if tmp_datstr is not None: print('Converting EOS80 temperature to TEOS10 for %s'%tmp_datstr,datetime.now())
     import gsw as gsw
 
     T_conv = gsw.CT_from_pt(data_in_S, data_in_T)
-    print('        mean %% diff = %.5f%%'%(100*(T_conv.mean()-data_in_T.mean())/(0.5*T_conv.mean()+data_in_T.mean())))
+    if verbose:print('        mean %% diff = %.5f%%'%(100*(T_conv.mean()-data_in_T.mean())/(0.5*T_conv.mean()+data_in_T.mean())))
     return  T_conv
 
-def EOS_convert_TEOS10_2_EOS80_T(data_in_T, data_in_S, dep, lon, lat, tmp_datstr = None):
-    if tmp_datstr is not None: print('Converting TEOS10 temperature to EOS80 for %s'%tmp_datstr,datetime.now())
+def EOS_convert_TEOS10_2_EOS80_T(data_in_T, data_in_S, dep, lon, lat, tmp_datstr = None, verbose = True):
+    if verbose:
+        if tmp_datstr is not None: print('Converting TEOS10 temperature to EOS80 for %s'%tmp_datstr,datetime.now())
 
     import gsw as gsw
 
     T_conv = gsw.pt_from_CT(data_in_S, data_in_T)
-    print('        mean %% diff = %.5f%%'%(100*(T_conv.mean()-data_in_T.mean())/(0.5*T_conv.mean()+data_in_T.mean())))
+    if verbose:print('        mean %% diff = %.5f%%'%(100*(T_conv.mean()-data_in_T.mean())/(0.5*T_conv.mean()+data_in_T.mean())))
 
     return  T_conv
 
 
-def EOS_convert_EOS80_2_TEOS10_S(data_in, dep, lon, lat, tmp_datstr = None):
-    if tmp_datstr is not None: print('Converting EOS80 salinity to TEOS10 for %s'%tmp_datstr,datetime.now())
+def EOS_convert_EOS80_2_TEOS10_S(data_in, dep, lon, lat, tmp_datstr = None, verbose = True):
+    if verbose:
+        if tmp_datstr is not None: print('Converting EOS80 salinity to TEOS10 for %s'%tmp_datstr,datetime.now())
     import gsw as gsw
 
     pres = gsw.p_from_z(-dep, lat)
 
     S_conv = gsw.SA_from_SP(data_in.copy(), pres, lon, lat)
-    print('        mean %% diff = %.5f%%'%(100*(S_conv.mean()-data_in.mean())/(0.5*S_conv.mean()+data_in.mean())))
+    if verbose:print('        mean %% diff = %.5f%%'%(100*(S_conv.mean()-data_in.mean())/(0.5*S_conv.mean()+data_in.mean())))
 
     return  S_conv
 
-def EOS_convert_TEOS10_2_EOS80_S(data_in, dep, lon, lat, tmp_datstr = None):
-    if tmp_datstr is not None: print('Converting TEOS10 salinity to EOS80 for %s'%tmp_datstr,datetime.now())
+def EOS_convert_TEOS10_2_EOS80_S(data_in, dep, lon, lat, tmp_datstr = None, verbose = True):
+    if verbose:
+        if tmp_datstr is not None: print('Converting TEOS10 salinity to EOS80 for %s'%tmp_datstr,datetime.now())
     import gsw as gsw
 
     pres = gsw.p_from_z(-dep, lat)
 
     S_conv = gsw.SP_from_SA(data_in.copy(), pres, lon, lat)
-    print('        mean %% diff = %.5f%%'%(100*(S_conv.mean()-data_in.mean())/(0.5*S_conv.mean()+data_in.mean())))
+    if verbose:print('        mean %% diff = %.5f%%'%(100*(S_conv.mean()-data_in.mean())/(0.5*S_conv.mean()+data_in.mean())))
 
     return  S_conv
 
@@ -6924,7 +6933,7 @@ def calc_ens_stat_map(map_dat_dict, Ens_stat,Dataset_lst):
 def load_xypos_dict(Dataset_lst,configd,config_fnames_dict):
 
 
-    from scipy.interpolate import griddata
+    #from scipy.interpolate import griddata
 
     xypos_dict = {}
     
@@ -7401,10 +7410,18 @@ def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lo
             if verbose: print(xy_i_ind_flt,xy_j_ind_flt)
 
             # previous and subsequent xypos indices with ceil and floor
+            #try:
+            '''
             xy_i_ind_flt_0 = int(np.floor(xy_i_ind_flt))
             xy_i_ind_flt_1 = int(np.ceil(xy_i_ind_flt))
             xy_j_ind_flt_0 = int(np.floor(xy_j_ind_flt))
             xy_j_ind_flt_1 = int(np.ceil(xy_j_ind_flt))
+            '''
+            #except:
+            xy_i_ind_flt_0 = (np.floor(xy_i_ind_flt)).astype('int')
+            xy_i_ind_flt_1 = (np.ceil(xy_i_ind_flt)).astype('int')
+            xy_j_ind_flt_0 = (np.floor(xy_j_ind_flt)).astype('int')
+            xy_j_ind_flt_1 = (np.ceil(xy_j_ind_flt)).astype('int')
             if verbose: print(xy_i_ind_flt_0,xy_i_ind_flt_1,xy_j_ind_flt_0,xy_j_ind_flt_1)
 
             # ensure the indices are within the xypos matrix
@@ -7420,20 +7437,33 @@ def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lo
             if verbose: print(xy_i_ind_flt_d,xy_j_ind_flt_d)
 
             # Distance from flt index to grid box edges (horiz and vert)
+            '''
             xy_lrbt_dist_0 = (xy_i_ind_flt - xy_i_ind_flt_0)/(xy_i_ind_flt_d) # from left
             xy_lrbt_dist_1 = (xy_i_ind_flt_1 - xy_i_ind_flt)/(xy_i_ind_flt_d) # from right
             xy_lrbt_dist_2 = (xy_j_ind_flt - xy_j_ind_flt_0)/(xy_j_ind_flt_d) # from bottom
             xy_lrbt_dist_3 = (xy_j_ind_flt_1 - xy_j_ind_flt)/(xy_j_ind_flt_d) # from top
+            '''
+
+            xy_lrbt_dist_0 = np.array((xy_i_ind_flt - xy_i_ind_flt_0)/(xy_i_ind_flt_d)) # from left
+            xy_lrbt_dist_1 = np.array((xy_i_ind_flt_1 - xy_i_ind_flt)/(xy_i_ind_flt_d)) # from right
+            xy_lrbt_dist_2 = np.array((xy_j_ind_flt - xy_j_ind_flt_0)/(xy_j_ind_flt_d)) # from bottom
+            xy_lrbt_dist_3 = np.array((xy_j_ind_flt_1 - xy_j_ind_flt)/(xy_j_ind_flt_d)) # from top
             if verbose: print(xy_lrbt_dist_0,xy_lrbt_dist_1,xy_lrbt_dist_2,xy_lrbt_dist_3,xy_lrbt_dist_0+xy_lrbt_dist_1,xy_lrbt_dist_2+xy_lrbt_dist_3 )
 
             # if the flt ind is exactly an int, floor and ceil is the same, and so the xy_i_ind_flt_d == 0
             #       if so, set weighting to 0.5 (otherwise nan and masked)
+            '''
             if xy_i_ind_flt_d == 0:
                 xy_lrbt_dist_0 = 0.5
                 xy_lrbt_dist_1 = 0.5
             if xy_j_ind_flt_d == 0:
                 xy_lrbt_dist_2 = 0.5
                 xy_lrbt_dist_3 = 0.5
+            '''
+            xy_lrbt_dist_0[xy_i_ind_flt_d==0] = 0.5
+            xy_lrbt_dist_1[xy_i_ind_flt_d==0] = 0.5
+            xy_lrbt_dist_2[xy_j_ind_flt_d==0] = 0.5
+            xy_lrbt_dist_3[xy_j_ind_flt_d==0] = 0.5
 
             if verbose: print(xy_lrbt_dist_0,xy_lrbt_dist_1,xy_lrbt_dist_2,xy_lrbt_dist_3,xy_lrbt_dist_0+xy_lrbt_dist_1,xy_lrbt_dist_2+xy_lrbt_dist_3)
 
@@ -7446,9 +7476,14 @@ def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lo
             if verbose: print(xy_wgt_0,xy_wgt_1,xy_wgt_2,xy_wgt_3,xy_wgt_0+xy_wgt_1+xy_wgt_2+xy_wgt_3 )
 
             #if (xy_wgt_0 + xy_wgt_1 + xy_wgt_2 + xy_wgt_3) != 1:
-            if np.isclose(xy_wgt_0 + xy_wgt_1 + xy_wgt_2 + xy_wgt_3, 1) == False:
+            #try:
+                #if np.isclose(xy_wgt_0 + xy_wgt_1 + xy_wgt_2 + xy_wgt_3, 1) == False:
+            if np.isclose(xy_wgt_0 + xy_wgt_1 + xy_wgt_2 + xy_wgt_3, 1).all() == False:
+            
                 print('XYPOS Weigthing not adding to 1', (xy_wgt_0 + xy_wgt_1 + xy_wgt_2 + xy_wgt_3))
                 pdb.set_trace()
+            #except:
+            #    pdb.set_trace()
 
             # (BL lon*BL wgt) + (BR lon*BR wgt) + (TL lon*TL wgt) + (TR lon*TR wgt)
             if XYPOS_ind_extended_NN:
@@ -7529,6 +7564,33 @@ def ind_from_lon_lat(tmp_datstr,configd,xypos_dict, lon_d,lat_d, thd,rot_dict,lo
 
 
 
+def ind_from_lon_lat_ext(xypos_dict,AMM,nav_lon,nav_lat,tmplon, tmplat):
+    # function to use ind_from_lon_lat outside NEMO_nc_slevel_viewer evironment.
+    '''
+    if AMM.lower() == 'amm15':
+        xypos_fname = '/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/AMM15/xypos_amm15_dlonlat_0.050000.nc'
+    elif AMM.lower() == 'amm7':
+        xypos_file = '/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/AMM7/xypos_amm7.nc'
+    elif AMM.lower() == 'co9p2':
+        xypos_file = '/data/users/jonathan.tinker/reffiles/NEMO_nc_slevel_viewer/CO9p2/xypos_amm15.nc'
+    
+    from NEMO_nc_slevel_viewer_lib import load_xypos,ind_from_lon_lat_ext
+    
+    xypos_dict = load_xypos(xypos_fname)
+
+
+    ind_from_lon_lat_ext(xypos_dict,AMM,nav_lon,nav_lat,tmplon, tmplat)
+
+
+    '''
+    #xypos_fname = 
+    # xypos_dict = load_xypos(xypos_fname)
+
+    thd = create_empty_thd(['Dataset 1'])# {1:{'cutx0':0,}}
+    
+    sel_jj,sel_ii,sel_valid_out = ind_from_lon_lat('Dataset 1',{1:AMM},{'Dataset 1':xypos_dict}, {1:nav_lon},{1:nav_lat}, thd,None,tmplon, tmplat)
+    
+    return sel_jj,sel_ii,sel_valid_out
 
 def lonlat_iijj_amm15(loni_in,latj_in):
     
@@ -8604,8 +8666,9 @@ def obs_get_Obs_Type_load_lst():
 
     return Obs_Type_load_lst
 
-def Obs_load_init_files_dict(Obs_fname,Obs_Type_load_dict):
-
+def Obs_load_init_files_dict(Obs_fname,Obs_Type_load_dict,
+                             cur_xlim = None, cur_ylim = None):
+    #pdb.set_trace()
     Obs_dict = {}
     for tmp_datstr in Obs_fname.keys():
         Obs_dict[tmp_datstr] = {}
@@ -8629,7 +8692,7 @@ def Obs_load_init_files_dict(Obs_fname,Obs_Type_load_dict):
                         tmp_stat_type_lst.append(402)
                         tmp_stat_type_lst.append(403)
                     tmp_stat_type_lst_exc = True
-                    Obs_dict[tmp_datstr][ob_var]['Obs'].append(load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = True,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc))
+                    Obs_dict[tmp_datstr][ob_var]['Obs'].append(load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = Obs_Type_load_dict['Obs_excl_qc_prof'] ,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc,cur_xlim = cur_xlim, cur_ylim = cur_ylim))
   
                 elif ob_var in ['ProfS']:
                     #tmp_stat_type_lst = None
@@ -8645,26 +8708,8 @@ def Obs_load_init_files_dict(Obs_fname,Obs_Type_load_dict):
                         tmp_stat_type_lst.append(402)
                         tmp_stat_type_lst.append(403)
                     tmp_stat_type_lst_exc = True
-                    Obs_dict[tmp_datstr][ob_var]['Obs'].append(load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = True,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc))
+                    Obs_dict[tmp_datstr][ob_var]['Obs'].append(load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = Obs_Type_load_dict['Obs_excl_qc_prof'],stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc,cur_xlim = cur_xlim, cur_ylim = cur_ylim))
 
-                    '''    
-                    if ob_var in ['ProfT','ProfS']:
-                        #tmp_stat_type_lst = None
-                        tmp_stat_type_lst = []
-                        if Obs_Type_load_dict['TS_argo']: 
-                            tmp_stat_type_lst.append(831)
-                        if Obs_Type_load_dict['TS_other']: 
-                            tmp_stat_type_lst.append(405)
-                            tmp_stat_type_lst.append(820)
-                        if Obs_Type_load_dict['TS_gliders']: 
-                            tmp_stat_type_lst.append(741)
-                        if Obs_Type_load_dict['TS_ships']:  
-                            tmp_stat_type_lst.append(402)
-                            tmp_stat_type_lst.append(403)
-                        tmp_stat_type_lst_exc = True
-                        Obs_dict[tmp_datstr][ob_var]['Obs'].append(load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = True,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc))
-
-                    '''
                 elif ob_var in ['SST_ins','SST_sat','SLA','ChlA']:
                     tmp_stat_type_lst = None
                     if ob_var in ['SST_ins']:
@@ -8673,7 +8718,8 @@ def Obs_load_init_files_dict(Obs_fname,Obs_Type_load_dict):
                         if Obs_Type_load_dict['SST_drifter']: tmp_stat_type_lst.append(53)
                         if Obs_Type_load_dict['SST_moored']: tmp_stat_type_lst.append(55)
                     tmp_stat_type_lst_exc = True
-                    Obs_dict[tmp_datstr][ob_var]['Obs'].append(load_ops_2D_xarray(tmpObsfname,ob_var,excl_qc = False,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc))
+                    #Obs_dict[tmp_datstr][ob_var]['Obs'].append(load_ops_2D_xarray(tmpObsfname,ob_var,excl_qc = False,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc))
+                    Obs_dict[tmp_datstr][ob_var]['Obs'].append(load_ops_2D_xarray(tmpObsfname,ob_var,excl_qc = Obs_Type_load_dict['Obs_excl_qc_sat'],stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc))
 
                 if ob_var in ['ProfT','ProfS','SST_ins','SST_sat','SLA','ChlA']:
                     tmptimetupel = datetime(*(Obs_dict[tmp_datstr][ob_var]['Obs'][-1]['JULD_datetime'][0]).timetuple()[:3])
@@ -8691,7 +8737,8 @@ def Obs_load_init_files_dict(Obs_fname,Obs_Type_load_dict):
 
 def Obs_reload_obs(var,Dataset_lst,tmp_current_time,ob_ti,
                    Obs_dict,Obs_fname,Obs_JULD_datetime_dict,Obs_vis_d,
-                   Obs_varlst,Obs_reloadmeth,Obs_Type_load_dict):
+                   Obs_varlst,Obs_reloadmeth,Obs_Type_load_dict,
+                   cur_xlim = None, cur_ylim = None):
                   
     #for a given variable, what obs types to use
     if var.lower() in ['votemper','votempis','votemper_bot','votempis_bot']:
@@ -8704,11 +8751,19 @@ def Obs_reload_obs(var,Dataset_lst,tmp_current_time,ob_ti,
         Obs_var_lst_sub = [ss for ss in Obs_varlst if ss in ['ProfS']]
     elif var.lower() in ['chl']:
         Obs_var_lst_sub = [ss for ss in Obs_varlst if ss in ['ChlA']]
-    else:
+
+    elif (var.lower() in ['bckint','bckins']):
+        if Obs_Type_load_dict['show_with_diff_var']:
+            if var.lower() == 'bckint':
+                Obs_var_lst_sub = [ss for ss in Obs_varlst if ss in ['ProfT','SST_ins','SST_sat']]
+            elif var.lower() == 'bckins':
+                Obs_var_lst_sub = [ss for ss in Obs_varlst if ss in ['ProfS']]
+            #pdb.set_trace()
+    else: 
         Obs_var_lst_sub	 = []
 
-    if Obs_Type_load_dict['show_with_diff_var']:
-        Obs_var_lst_sub = [ss for ss in Obs_varlst if ss in ['ProfT','SST_ins','SST_sat','ProfS','SLA','ChlA']]
+    #if Obs_Type_load_dict['show_with_diff_var']:
+    #    Obs_var_lst_sub = [ss for ss in Obs_varlst if ss in ['ProfT','SST_ins','SST_sat','ProfS','SLA','ChlA']]
     
     
     # exclude obs types that have been excluded
@@ -8718,8 +8773,10 @@ def Obs_reload_obs(var,Dataset_lst,tmp_current_time,ob_ti,
         
 
     #pdb.set_trace()
-    Obs_var_lst_sub = [ob_var for ob_var in Obs_var_lst_sub if Obs_vis_d['visible'][ob_var]]
-
+    try:
+        Obs_var_lst_sub = [ob_var for ob_var in Obs_var_lst_sub if Obs_vis_d['visible'][ob_var]]
+    except:
+        pdb.set_trace()
 
 
     print(Obs_var_lst_sub,Obs_vis_d['visible'])
@@ -8793,7 +8850,8 @@ def Obs_reload_obs(var,Dataset_lst,tmp_current_time,ob_ti,
                             tmp_stat_type_lst.append(402)
                             tmp_stat_type_lst.append(403)
                         tmp_stat_type_lst_exc = True
-                        Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = True,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc)
+                        Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = Obs_Type_load_dict['Obs_excl_qc_prof'],
+                                                                                      stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc,cur_xlim = cur_xlim ,cur_ylim = cur_ylim)
     
                     elif ob_var in ['ProfS']:
                         #tmp_stat_type_lst = None
@@ -8809,28 +8867,8 @@ def Obs_reload_obs(var,Dataset_lst,tmp_current_time,ob_ti,
                             tmp_stat_type_lst.append(402)
                             tmp_stat_type_lst.append(403)
                         tmp_stat_type_lst_exc = True
-                        Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = True,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc)
+                        Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = Obs_Type_load_dict['Obs_excl_qc_prof'],stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc,cur_xlim = cur_xlim ,cur_ylim = cur_ylim)
 
-                        '''
-
-                    if ob_var in ['ProfT','ProfS']:
-                        tmp_stat_type_lst = []
-                        if Obs_Type_load_dict['TS_argo']: 
-                            tmp_stat_type_lst.append(831)
-                        if Obs_Type_load_dict['TS_other']: 
-                            tmp_stat_type_lst.append(405)
-                            tmp_stat_type_lst.append(820)
-                        if Obs_Type_load_dict['TS_gliders']: 
-                            tmp_stat_type_lst.append(741)
-                        if Obs_Type_load_dict['TS_ships']:  
-                            tmp_stat_type_lst.append(402)
-                            tmp_stat_type_lst.append(403)
-                        tmp_stat_type_lst_exc = True
-                        #pdb.set_trace()
-                        Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = True,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc)
-                        #if len(Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti]['JULD']) == 0: pdb.set_trace()#Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = []
-                        #pdb.set_trace()
-                        '''
                     elif ob_var in ['SST_ins','SST_sat','SLA','ChlA']:
                         tmp_stat_type_lst = None
                         if ob_var in ['SST_ins']:
@@ -8839,7 +8877,8 @@ def Obs_reload_obs(var,Dataset_lst,tmp_current_time,ob_ti,
                             if Obs_Type_load_dict['SST_drifter']: tmp_stat_type_lst.append(53)
                             if Obs_Type_load_dict['SST_moored']: tmp_stat_type_lst.append(55)
                         tmp_stat_type_lst_exc = True
-                        Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = load_ops_2D_xarray(tmpObsfname,ob_var,excl_qc = False,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc)   
+                        #Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = load_ops_2D_xarray(tmpObsfname,ob_var,excl_qc = False,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc)   
+                        Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = load_ops_2D_xarray(tmpObsfname,ob_var,excl_qc = Obs_Type_load_dict['Obs_excl_qc_sat'],stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc)   
                         #if len(Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti]['JULD']) == 0: Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti] = []
 
                 Obs_dat_dict[tmp_datstr][ob_var] = Obs_dict[tmp_datstr][ob_var]['Obs'][ob_ti]
@@ -8848,30 +8887,11 @@ def Obs_reload_obs(var,Dataset_lst,tmp_current_time,ob_ti,
     #once reloaded, set to False
     return Obs_dat_dict,Obs_var_lst_sub
 
-    '''
-    
-                    tmp_stat_type_lst = []
-                    if Obs_Type_load_dict['TS_argo']: tmp_stat_type_lst.append(831)
-                    if Obs_Type_load_dict['TS_other']: 
-                        tmp_stat_type_lst.append(403)
-                        tmp_stat_type_lst.append(820)
-                    tmp_stat_type_lst_exc = None
-                    Obs_dict[tmp_datstr][ob_var]['Obs'].append(load_ops_prof_TS(tmpObsfname,ob_var[-1],excl_qc = True,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc))
-                elif ob_var in ['SST_ins','SST_sat','SLA','ChlA']:
-                    tmp_stat_type_lst = None
-                    if ob_var in ['SST_ins']:
-                        tmp_stat_type_lst = []
-                        if Obs_Type_load_dict['SST_ships']: tmp_stat_type_lst.append(50)
-                        if Obs_Type_load_dict['SST_drifter']: tmp_stat_type_lst.append(53)
-                        if Obs_Type_load_dict['SST_moored']: tmp_stat_type_lst.append(55)
-                    tmp_stat_type_lst_exc = None
-                    Obs_dict[tmp_datstr][ob_var]['Obs'].append(load_ops_2D_xarray(tmpObsfname,ob_var,excl_qc = False,stat_type_lst = tmp_stat_type_lst,stat_type_lst_exc = tmp_stat_type_lst_exc))
 
-    
-    '''
+def load_ops_2D_xarray(OPSfname,vartype,stat_type_lst = None, stat_type_lst_exc = True, nlon = 1458, nlat = 1345,
+                       excl_qc = False, timing_in = 1):
 
-
-def load_ops_2D_xarray(OPSfname,vartype,stat_type_lst = None, stat_type_lst_exc = True, nlon = 1458, nlat = 1345,  excl_qc = False, timing_in = 1):
+    #excl_qc = False
 
 
     timing = False
@@ -8979,6 +8999,8 @@ def load_ops_2D_xarray(OPSfname,vartype,stat_type_lst = None, stat_type_lst_exc 
     # obs  station types.
     #stat_type = np.array(chartostring(rootgrp.variables['STATION_TYPE'][:])).astype('float')
     stat_type = np.array(chartostring(root_x.variables['STATION_TYPE'].load().data[:])).astype('float')
+    #stat_identifier = np.array([ss.strip()  for ss in chartostring(root_x.variables['STATION_IDENTIFIER'][:])])
+
     if timing: tim_lst.append(('Read Station types',datetime.now()))
 
     #pdb.set_trace()
@@ -9076,10 +9098,26 @@ def load_ops_2D_xarray(OPSfname,vartype,stat_type_lst = None, stat_type_lst_exc 
         ops_output_dict['MOD_HX'] = 10**ops_output_dict['SLCHLTOT_Hx'] 
 
 
+
+
+
+    required_output_vars = ['LONGITUDE','LATITUDE','OBS','MOD_HX','DEPTH','STATION_IDENTIFIER','STATION_TYPE','JULD_datetime','DEPTH']
+
+    # Only Keep useful variables in obs output dictionary
+    out_ops_output_dict = {}
+    for ss in required_output_vars: out_ops_output_dict[ss] = ops_output_dict[ss].copy()
+    del(ops_output_dict)
+    ops_output_dict = out_ops_output_dict
+
+
+
+
     return ops_output_dict
 
 
-def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,stat_type_lst_exc = True,nlon = 1458, nlat = 1345, excl_qc = False):
+def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,stat_type_lst_exc = True,nlon = 1458, nlat = 1345,
+                     excl_qc = False,
+                     cur_xlim = None, cur_ylim = None):
     '''
     argo = stat_type_lst = [831]
     nlon = 1458
@@ -9087,10 +9125,18 @@ def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,stat_type_lst_exc 
     excl_qc = True    
     '''
 
+
+    #if excl_qc is true, don't do QC check, so accept all obs, to so more Obs
+    #if excl_qc is False, do QC check, and don't load obs that fail QC test, to so less Obs
+
+
+    print('load_ops_prof_TS:excl_qc',excl_qc)
+
     if TS_str_in.upper() in ['T','POTM','VOTEMPER','TEMPERATURE']:
         TnotS = True
     elif TS_str_in.upper() in ['S','PSAL','VOSALINE','SALINITY']:
         TnotS = False
+        #pdb.set_trace()
     else:
         print('TS_str_in must be T or S, not ',TS_str_in)
         pdb.set_trace()
@@ -9188,21 +9234,109 @@ def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,stat_type_lst_exc 
     for ss in ops_qc_var_good_PSAL_lst:  comb_qc_flag_PSAL = comb_qc_flag_PSAL +  (rootgrp.variables[ss][:] != 1).astype('int').T
 
     '''
-
+    '''
 
     comb_qc_flag = np.zeros((ops_dim_dict['N_OBS'],ops_dim_dict['N_LEVELS']), dtype = 'int')
     comb_qc_flag =  comb_qc_flag + (rootgrp.variables['DEPTH_QC'][:] != 1).astype('int')  # good data (1) added as a zero
     comb_qc_flag =  comb_qc_flag + np.tile((rootgrp.variables['POSITION_QC'][:] != 1).astype('int'),(ops_dim_dict['N_LEVELS'],1)).T # good data (1) added as a zero
+    #comb_qc_flag =  comb_qc_flag + np.tile((rootgrp.variables['OBSERVATION_QC'][:] != 0).astype('int'),(ops_dim_dict['N_LEVELS'],1)).T # good data (0) added as a zero
+    
+    
+    
+    ##OPS work, suggest should  be !=1... but !=0 seems better.
+    ## though Toby said only just POTM and PSAL qc flags??
     comb_qc_flag =  comb_qc_flag + np.tile((rootgrp.variables['OBSERVATION_QC'][:] != 0).astype('int'),(ops_dim_dict['N_LEVELS'],1)).T # good data (0) added as a zero
+    #comb_qc_flag =  comb_qc_flag + np.tile((rootgrp.variables['OBSERVATION_QC'][:] != 1).astype('int'),(ops_dim_dict['N_LEVELS'],1)).T # good data (0) added as a zero
 
-
-    #comb_qc_flag_POTM = comb_qc_flag.copy()
-    #comb_qc_flag_PSAL = comb_qc_flag.copy()
 
     comb_qc_flag_POTM = comb_qc_flag.copy() + (rootgrp.variables['POTM_LEVEL_QC'][:] != 1).astype('int') # good data (1) added as a zero
     comb_qc_flag_PSAL = comb_qc_flag.copy() + (rootgrp.variables['PSAL_LEVEL_QC'][:] != 1).astype('int') # good data (1) added as a zero
     comb_qc_flag_POTM =  comb_qc_flag_POTM.copy() + np.tile((rootgrp.variables['POTM_QC'][:] != 1).astype('int'),(ops_dim_dict['N_LEVELS'],1)).T  # good data (1) added as a zero
     comb_qc_flag_PSAL =  comb_qc_flag_PSAL.copy() + np.tile((rootgrp.variables['PSAL_QC'][:] != 1).astype('int'),(ops_dim_dict['N_LEVELS'],1)).T  # good data (1) added as a zero
+
+
+
+    '''
+
+
+
+
+
+    qc_flag_mat = np.zeros((ops_dim_dict['N_OBS'],ops_dim_dict['N_LEVELS'],7), dtype = 'int')
+    comb_qc_flag = np.zeros((ops_dim_dict['N_OBS'],ops_dim_dict['N_LEVELS']), dtype = 'int')
+
+    tmp_depth_qc = (rootgrp.variables['DEPTH_QC'][:] != 1).astype('int')  # good data (1) added as a zero
+    comb_qc_flag =  comb_qc_flag + tmp_depth_qc
+    qc_flag_mat[:,:,0] = tmp_depth_qc
+
+
+    #comb_qc_flag =  comb_qc_flag + np.tile((rootgrp.variables['POSITION_QC'][:] != 1).astype('int'),(ops_dim_dict['N_LEVELS'],1)).T # good data (1) added as a zero
+    #comb_qc_flag =  comb_qc_flag + np.tile((rootgrp.variables['OBSERVATION_QC'][:] != 0).astype('int'),(ops_dim_dict['N_LEVELS'],1)).T # good data (0) added as a zero
+    
+
+    tmp_pos_qc =  np.tile((rootgrp.variables['POSITION_QC'][:] != 1).astype('int'),(ops_dim_dict['N_LEVELS'],1)).T # good data (1) added as a zero
+    comb_qc_flag =  comb_qc_flag + tmp_pos_qc
+    qc_flag_mat[:,:,1] = tmp_pos_qc
+
+    
+    
+    
+    ##OPS work, suggest should  be !=1... but !=0 seems better.
+    ## though Toby said only just POTM and PSAL qc flags??
+    #comb_qc_flag =  comb_qc_flag + np.tile((rootgrp.variables['OBSERVATION_QC'][:] != 0).astype('int'),(ops_dim_dict['N_LEVELS'],1)).T # good data (0) added as a zero
+    #comb_qc_flag =  comb_qc_flag + np.tile((rootgrp.variables['OBSERVATION_QC'][:] != 1).astype('int'),(ops_dim_dict['N_LEVELS'],1)).T # good data (0) added as a zero
+
+    tmp_obs_qc =  np.tile((rootgrp.variables['OBSERVATION_QC'][:] != 0).astype('int'),(ops_dim_dict['N_LEVELS'],1)).T # good data (0) added as a zero
+    comb_qc_flag =  comb_qc_flag + tmp_obs_qc
+    qc_flag_mat[:,:,2] = tmp_obs_qc
+
+    tmp_obs_Tlev_qc = (rootgrp.variables['POTM_LEVEL_QC'][:] != 1).astype('int') # good data (1) added as a zero
+    tmp_obs_Slev_qc = (rootgrp.variables['PSAL_LEVEL_QC'][:] != 1).astype('int') # good data (1) added as a zero
+    tmp_obs_T_qc = np.tile((rootgrp.variables['POTM_QC'][:] != 1).astype('int'),(ops_dim_dict['N_LEVELS'],1)).T  # good data (1) added as a zero
+    tmp_obs_S_qc = np.tile((rootgrp.variables['PSAL_QC'][:] != 1).astype('int'),(ops_dim_dict['N_LEVELS'],1)).T  # good data (1) added as a zero
+
+
+
+    comb_qc_flag_POTM = comb_qc_flag.copy() + tmp_obs_Tlev_qc
+    comb_qc_flag_PSAL = comb_qc_flag.copy() + tmp_obs_Slev_qc
+    comb_qc_flag_POTM =  comb_qc_flag_POTM.copy() + tmp_obs_T_qc
+    comb_qc_flag_PSAL =  comb_qc_flag_PSAL.copy() + tmp_obs_S_qc
+
+
+    qc_flag_mat[:,:,3] = tmp_obs_Tlev_qc
+    qc_flag_mat[:,:,4] = tmp_obs_T_qc
+    
+    qc_flag_mat[:,:,5] = tmp_obs_Slev_qc
+    qc_flag_mat[:,:,6] = tmp_obs_S_qc
+
+
+    qc_flag_mat_POTM = qc_flag_mat[:,:,[0,1,2,3,4]]
+    qc_flag_mat_PSAL = qc_flag_mat[:,:,[0,1,2,5,6]]
+    comb_qc_flag_POTM_2 = qc_flag_mat_POTM.sum(axis = 2)
+    comb_qc_flag_PSAL_2 = qc_flag_mat_PSAL.sum(axis = 2)
+
+    qc_flag_mat_POTM_good = (qc_flag_mat_POTM == 0).all(axis = 2)
+    qc_flag_mat_POTM_good_2d = qc_flag_mat_POTM_good.any(axis = 1)
+    qc_flag_mat_PSAL_good = (qc_flag_mat_PSAL == 0).all(axis = 2)
+    qc_flag_mat_PSAL_good_2d = qc_flag_mat_PSAL_good.any(axis = 1)
+    #pdb.set_trace()
+
+
+
+
+    POTM_Obs_ind = (rootgrp.variables['POTM_OBS'][:]<1000).any(axis = 1)
+    PSAL_Obs_ind = (rootgrp.variables['PSAL_OBS'][:]<1000).any(axis = 1)
+
+    print('POTM_Obs_ind.sum(): ',POTM_Obs_ind.sum())
+    print('PSAL_Obs_ind.sum(): ',PSAL_Obs_ind.sum())
+
+
+    comb_qc_flag_POTM = (qc_flag_mat_POTM[:,:,-1])
+    comb_qc_flag_PSAL = (qc_flag_mat_PSAL[:,:,-1])
+
+
+
+
 
 
     #comb_qc_flag_POTM_2d = (comb_qc_flag_POTM==0).any(axis = 1)
@@ -9216,6 +9350,7 @@ def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,stat_type_lst_exc 
     # find obs with correct station types.
     # obs  station types.
     stat_type = np.array(chartostring(rootgrp.variables['STATION_TYPE'][:])).astype('float')
+    stat_identifier = np.array([ss.strip()  for ss in chartostring(rootgrp.variables['STATION_IDENTIFIER'][:])])
 
     #print('\n\n\nTS_profile types:',np.unique(stat_type))
     #print('\n\n\n')
@@ -9234,31 +9369,83 @@ def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,stat_type_lst_exc 
     #pdb.set_trace()
 
     # find obs within domain
+ 
 
     if TnotS:
         loc_ind = (rootgrp.variables['POTM_IOBSI'][:]>=0) & (rootgrp.variables['POTM_IOBSI'][:]<nlon) & (rootgrp.variables['POTM_IOBSJ'][:]>=0) & (rootgrp.variables['POTM_IOBSJ'][:]<nlat)
     else:
         loc_ind = (rootgrp.variables['PSAL_IOBSI'][:]>=0) & (rootgrp.variables['PSAL_IOBSI'][:]<nlon) & (rootgrp.variables['PSAL_IOBSJ'][:]>=0) & (rootgrp.variables['PSAL_IOBSJ'][:]<nlat)
     
+
+
+    if (rootgrp.variables['POTM_IOBSI'][:] == -99999).all():
+        print('need to add lon lat inds')   
+        #pdb.set_trace()
+        if cur_xlim is None:
+    
+            loc_ind = (((rootgrp.variables['PSAL_IOBSI'][:]).copy()*0)+1).astype('bool')
+        else:
+            loc_ind = ((rootgrp.variables['LONGITUDE'][:]>=cur_xlim[0]) &
+                       (rootgrp.variables['LONGITUDE'][:]<=cur_xlim[1]) &
+                       (rootgrp.variables['LATITUDE'][:]>=cur_ylim[0]) &
+                       (rootgrp.variables['LATITUDE'][:]<=cur_ylim[1]))
+
+               #pdb.set_trace()
+
+        '''
+
+
+
+         sel_jj,sel_ii,__ = ind_from_lon_lat('Dataset 1',configd,xypos_dict, lon_d,lat_d, thd,rot_dict,loni,latj)
+
+
+        '''
+
+
+    n_levels = ops_dim_dict['N_LEVELS']
     if (stat_type_lst is not None):
         #if len(stat_type_lst)>0:
         loc_ind =  stat_type_ind & loc_ind
-    
-    if excl_qc:
-        comb_ind = loc_ind
-        comb_ind_T = loc_ind
-        comb_ind_S = loc_ind
-    else:
-        comb_ind = loc_ind
-        comb_ind_T = (comb_qc_flag_POTM==0)  & loc_ind
-        comb_ind_S = (comb_qc_flag_PSAL==0)  & loc_ind
+    try:
+        #if excl_qc is true, don't do QC check, so accept all obs
+        if excl_qc:
+            loc_ind = np.tile(loc_ind,(n_levels,1)).T
+            comb_ind = loc_ind
+            comb_ind_T = loc_ind
+            comb_ind_S = loc_ind
 
+            print('excl_qc', excl_qc)
+            print('comb_ind.shape:', comb_ind.shape)
+            print('comb_ind_T.shape:', comb_ind_T.shape)
+            print('comb_ind_S.shape:', comb_ind_S.shape)
+
+
+        #if excl_qc is False, do QC check, and don't load obs that fail QC test
+        else:
+            loc_ind = np.tile(loc_ind,(n_levels,1)).T
+            comb_ind = loc_ind
+            comb_ind_T = (comb_qc_flag_POTM==0)  & loc_ind
+            comb_ind_S = (comb_qc_flag_PSAL==0)  & loc_ind
+            #comb_ind_T = ((comb_qc_flag_POTM==0).T  & loc_ind).T
+            #comb_ind_S = ((comb_qc_flag_PSAL==0).T  & loc_ind).T
+
+            print('excl_qc', excl_qc)
+            print('comb_ind.shape:', comb_ind.shape)
+            print('comb_ind_T.shape:', comb_ind_T.shape)
+            print('comb_ind_S.shape:', comb_ind_S.shape)
+    except:
+        print('load_ops_prof_TS failed in excl_qc check')
+        pdb.set_trace()
+    #pdb.set_trace()
         
     if TnotS:
         comb_ind = comb_ind_T
     else:
         comb_ind = comb_ind_S
-
+        #pdb.set_trace()
+    print('POTM_Obs_ind[comb_ind_T.any(axis = 1)].sum(): ',POTM_Obs_ind[comb_ind_T.any(axis = 1)].sum())
+    print('PSAL_Obs_ind[comb_ind_S.any(axis = 1)].sum(): ',PSAL_Obs_ind[comb_ind_S.any(axis = 1)].sum())
+    #pdb.set_trace()
 
     #ops_output_var_3d_mat = ['DEPTH', 'OBSERVATION_QC','POTM_QC','PSAL_QC','POTM_OBS', 'POTM_Hx', 'PSAL_OBS', 'PSAL_Hx',]
     ops_output_var_3d_mat = ['DEPTH', 'OBSERVATION_QC']
@@ -9279,22 +9466,22 @@ def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,stat_type_lst_exc 
     '''
     
     ('DEPTH', (8, 556))
-('OBSERVATION_QC', (8,))
-('LONGITUDE', (9,))
-('LATITUDE', (9,))
-('JULD', (9,))
-('POSITION_QC', (9,))
-('JULD_QC', (9,))
-('DEPTH_QC', (9, 556))
-('POTM_QC', (8,))
-('POTM_OBS', (8, 556))
-('POTM_Hx', (8, 556))
-('POTM_IOBSK', (8, 556))
-('POTM_IOBSI', (9,))
-('POTM_IOBSJ', (9,))
-('JULD_datetime', (8,))
-('STATION_TYPE', (9,))
-('STATION_IDENTIFIER', (8,))
+    ('OBSERVATION_QC', (8,))
+    ('LONGITUDE', (9,))
+    ('LATITUDE', (9,))
+    ('JULD', (9,))
+    ('POSITION_QC', (9,))
+    ('JULD_QC', (9,))
+    ('DEPTH_QC', (9, 556))
+    ('POTM_QC', (8,))
+    ('POTM_OBS', (8, 556))
+    ('POTM_Hx', (8, 556))
+    ('POTM_IOBSK', (8, 556))
+    ('POTM_IOBSI', (9,))
+    ('POTM_IOBSJ', (9,))
+    ('JULD_datetime', (8,))
+    ('STATION_TYPE', (9,))
+    ('STATION_IDENTIFIER', (8,))
 
     
     '''
@@ -9303,10 +9490,11 @@ def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,stat_type_lst_exc 
 
 
     #pdb.set_trace()
+    '''
     for ss in ops_output_var_3d_mat:   ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],rootgrp.variables[ss]._Fillvalue )[comb_ind.T]
     for ss in ops_output_var_2d_mat:   ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],rootgrp.variables[ss]._Fillvalue )[comb_ind.T]
     for ss in ops_output_ind_2d_mat:   ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],-99999 )[comb_ind.T]
-
+    
     if TnotS:
         for ss in ops_output_var_3d_T_mat:   ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],rootgrp.variables[ss]._Fillvalue )[comb_ind_T.T]
         for ss in ops_output_ind_3d_T_mat: ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],-99999,)[comb_ind_T.T]
@@ -9315,17 +9503,33 @@ def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,stat_type_lst_exc 
         for ss in ops_output_var_3d_S_mat:   ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],rootgrp.variables[ss]._Fillvalue )[comb_ind_S.T]
         for ss in ops_output_ind_3d_S_mat: ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],-99999,)[comb_ind_S.T]
         for ss in ops_output_ind_2d_S_mat: ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],-99999,)[comb_ind_S.T]
+    '''
+    try:
+        for ss in ops_output_var_3d_mat:   ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],rootgrp.variables[ss]._Fillvalue )[comb_ind.any(axis = 1)]
+        for ss in ops_output_var_2d_mat:   ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],rootgrp.variables[ss]._Fillvalue )[comb_ind.any(axis = 1)]
+        for ss in ops_output_ind_2d_mat:   ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],-99999 )[comb_ind.any(axis = 1)]
 
+        if TnotS:
+            #pdb.set_trace()
+            for ss in ops_output_var_3d_T_mat:   ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],rootgrp.variables[ss]._Fillvalue )[comb_ind_T.any(axis = 1)]
+            for ss in ops_output_ind_3d_T_mat: ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],-99999,)[comb_ind_T.any(axis = 1)]
+            for ss in ops_output_ind_2d_T_mat: ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],-99999,)[comb_ind_T.any(axis = 1)]
+        else:
+            for ss in ops_output_var_3d_S_mat:   ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],rootgrp.variables[ss]._Fillvalue )[comb_ind_S.any(axis = 1)]
+            for ss in ops_output_ind_3d_S_mat: ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],-99999,)[comb_ind_S.any(axis = 1)]
+            for ss in ops_output_ind_2d_S_mat: ops_output_dict[ss] = np.ma.masked_equal(rootgrp.variables[ss],-99999,)[comb_ind_S.any(axis = 1)]
+    except:
+        pdb.set_trace()
     #'pdb.set_trace()
     # need to mask['POTM_IOBSI', 'POTM_IOBSJ','PSAL_IOBSI', 'PSAL_IOBSJ']
 
     JULD_REFERENCE = datetime.strptime(str(chartostring(rootgrp.variables['JULD_REFERENCE'][:])),'%Y%m%d%H%M%S')
     #pdb.set_trace()
 
-    ops_output_dict['JULD_datetime'] = np.array([JULD_REFERENCE + timedelta(ss) for ss in rootgrp.variables['JULD'][:][comb_ind].ravel()])
+    ops_output_dict['JULD_datetime'] = np.array([JULD_REFERENCE + timedelta(ss) for ss in rootgrp.variables['JULD'][:][comb_ind.any(axis = 1)].ravel()])
 
     #ops_output_dict['STATION_TYPE'] = stat_type[comb_ind.any(axis = 0)]
-    ops_output_dict['STATION_TYPE'] = stat_type[comb_ind]
+    ops_output_dict['STATION_TYPE'] = stat_type[comb_ind.any(axis = 1)]
     '''
     #old slower method
     STATION_IDENTIFIER = []
@@ -9333,7 +9537,7 @@ def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,stat_type_lst_exc 
         if tmperr:STATION_IDENTIFIER.append(str(chartostring(ss)))
     ops_output_dict['STATION_IDENTIFIER'] = np.array(STATION_IDENTIFIER)
     '''
-    ops_output_dict['STATION_IDENTIFIER'] = np.array([str(ss) for ss in chartostring(rootgrp.variables['STATION_IDENTIFIER'][comb_ind,:])])
+    ops_output_dict['STATION_IDENTIFIER'] = np.array([str(ss) for ss in chartostring(rootgrp.variables['STATION_IDENTIFIER'][comb_ind.any(axis = 1),:])])
 
 
     #for ss in ops_output_dict.keys(): ss, ops_output_dict[ss].shape
@@ -9372,6 +9576,27 @@ def load_ops_prof_TS(OPSfname, TS_str_in,stat_type_lst = None,stat_type_lst_exc 
         ops_output_dict['OBS'] = ops_output_dict['PSAL_OBS'] 
         ops_output_dict['MOD_HX'] = ops_output_dict['PSAL_Hx']
 
+    #pdb.set_trace()
+
+
+    # only pass on points that have T/S values
+    if TnotS:
+        for ss in ops_output_dict.keys():ops_output_dict[ss] = ops_output_dict[ss][POTM_Obs_ind[comb_ind_T.any(axis = 1)]]
+    else:
+        #pdb.set_trace()
+        for ss in ops_output_dict.keys():ops_output_dict[ss] = ops_output_dict[ss][PSAL_Obs_ind[comb_ind_S.any(axis = 1)]]
+    #pdb.set_trace()
+
+
+
+    required_output_vars = ['LONGITUDE','LATITUDE','OBS','MOD_HX','DEPTH','STATION_IDENTIFIER','STATION_TYPE','JULD_datetime','DEPTH']
+
+
+    # Only Keep useful variables in obs output dictionary
+    out_ops_output_dict = {}
+    for ss in required_output_vars: out_ops_output_dict[ss] = ops_output_dict[ss].copy()
+    del(ops_output_dict)
+    ops_output_dict = out_ops_output_dict
 
     return ops_output_dict
 
