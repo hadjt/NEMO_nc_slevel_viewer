@@ -302,7 +302,8 @@ def nemo_slice_zlev(config = 'amm7',
     else:
         base_cmap = matplotlib.cm.viridis
         scnd_cmap = matplotlib.cm.coolwarm
-        cylc_cmap = matplotlib.cm.hsv
+        #cylc_cmap = matplotlib.cm.hsv
+        cylc_cmap = matplotlib.cm.twilight
 
     col_scl = 0
     curr_cmap = base_cmap
@@ -2783,7 +2784,7 @@ def nemo_slice_zlev(config = 'amm7',
 
             # Choose the colormap depending on which dataset being shown
 
-            if var in ['baroc_phi','barot_phi','VolTran_e3_phi','VolTran_phi']:
+            if var in ['baroc_phi','barot_phi','VolTran_e3_phi','VolTran_phi', 'sossheig_phi']:
                 curr_cmap = cylc_cmap
                 clim_sym = True
             else:
