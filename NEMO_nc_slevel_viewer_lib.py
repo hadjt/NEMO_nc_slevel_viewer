@@ -8729,15 +8729,18 @@ def Obs_setup_Obs_vis_d(Obs_varlst):
     Obs_vis_d['Scat_edgecol'] = {}
     Obs_vis_d['visible'] = {}
     for ob_var in Obs_varlst:   
+
+        Obs_vis_d['visible'][ob_var]= True
+        
+        if ob_var in ['SST_sat']:
+            Obs_vis_d['visible'][ob_var] = False
+
         Obs_vis_d['Scat_symsize'][ob_var] = 250
         Obs_vis_d['Scat_edgecol'][ob_var] = 'k'
 
-        Obs_vis_d['visible'][ob_var]= True
         if ob_var in ['SLA', 'ChlA', 'SST_sat']:
             Obs_vis_d['Scat_symsize'][ob_var] = 100
             Obs_vis_d['Scat_edgecol'][ob_var] = None
-            Obs_vis_d['visible'][ob_var] = False
-
 
     Obs_vis_d['Prof_obs_col'] = 'k'
     Obs_vis_d['Prof_obs_ms'] = '.'
@@ -8859,7 +8862,7 @@ def Obs_reload_obs(var,Dataset_lst,tmp_current_time,ob_ti,
         Obs_var_lst_sub = [ss for ss in Obs_varlst if ss in ['ProfS']]
     elif var.lower() in ['sossheig']:
         Obs_var_lst_sub = [ss for ss in Obs_varlst if ss in ['SLA']]
-        Obs_var_lst_sub = [ss for ss in Obs_varlst if ss in ['ProfS']]
+        #Obs_var_lst_sub = [ss for ss in Obs_varlst if ss in ['ProfS']]
     elif var.lower() in ['chl']:
         Obs_var_lst_sub = [ss for ss in Obs_varlst if ss in ['ChlA']]
 
