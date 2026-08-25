@@ -2398,11 +2398,11 @@ def nemo_slice_zlev(config = 'amm7',
                 func_but_text_han['Clim: sym'].set_color('r')          
 
 
-
-            if var in tide_harm_d['tide_var']:
-                func_but_text_han['TideHarm'].set_color('k')
-            else:
-                func_but_text_han['TideHarm'].set_color('0.5')
+            if do_addtideharm:
+                if var in tide_harm_d['tide_var']:
+                    func_but_text_han['TideHarm'].set_color('k')
+                else:
+                    func_but_text_han['TideHarm'].set_color('0.5')
 
 
 

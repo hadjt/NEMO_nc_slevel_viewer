@@ -8395,31 +8395,31 @@ def process_argparse_thd(args,configd, dataset_lst, nDataset):
 def process_argparse_tide_harm_dict(args):
 
     if args.tide_harm is None:
-        tide_harm_d = {'do_addtideharm':False}
+        tide_harm_d = {'do_addtideharm':False,'dim':'per', 'tide_ii':0,'tide_var':[]}
     else:
         tide_harm_d = {'do_addtideharm':True,'dim':'per','const':['M2','S2','N2','K1','O1','M4','Q1'], 'tide_ii':0,'tide_var':[]}
 
-    for tmparr in args.tide_harm:
+        for tmparr in args.tide_harm:
 
-        # if no arguments, just True, use default values.
-        #pdb.set_trace()
-        if (len(tmparr)==1) & (tmparr[0].upper() in ['TRUE', 'T']):
-            continue
-        # otherwise must have a key: value pair      
+            # if no arguments, just True, use default values.
+            #pdb.set_trace()
+            if (len(tmparr)==1) & (tmparr[0].upper() in ['TRUE', 'T']):
+                continue
+            # otherwise must have a key: value pair      
 
-        elif len(tmparr)!=2:
-            print('arg error: (tide_harm_d):', tmparr)
+            elif len(tmparr)!=2:
+                print('arg error: (tide_harm_d):', tmparr)
 
-        tmp_key = tmparr[0]
-        tmp_val = tmparr[1]
-        tide_harm_d[tmp_key]= tmp_val
+            tmp_key = tmparr[0]
+            tmp_val = tmparr[1]
+            tide_harm_d[tmp_key]= tmp_val
 
-        if tmp_key == 'const':
-            tide_harm_d[tmp_key].split(',')
+            if tmp_key == 'const':
+                tide_harm_d[tmp_key].split(',')
 
 
-    if 'n_tide' not in tide_harm_d.keys():
-        tide_harm_d['n_tide'] = len(tide_harm_d['const'])
+        if 'n_tide' not in tide_harm_d.keys():
+            tide_harm_d['n_tide'] = len(tide_harm_d['const'])
     return tide_harm_d
 
 
