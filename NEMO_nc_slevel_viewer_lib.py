@@ -114,6 +114,13 @@ def load_nc_var_name_list(tmp_data,x_dim, y_dim, z_dim,t_dim,tide_harm_d=None):
     #var_4d_mat = np.array([ss for ss in tmp_data.variables.keys() if len(tmp_data.variables[ss].dims) == 4])
     #pdb.set_trace()
 
+
+    '''
+    for ss in tmp_data.variables.keys(): ss,tmp_data.variables[ss].dims,t_dim, z_dim,y_dim, x_dim
+    
+    '''
+
+
     
 
     var_4d_lst = [ss for ss in tmp_data.variables.keys() if tmp_data.variables[ss].dims == (t_dim, z_dim,y_dim, x_dim)]
@@ -1474,7 +1481,11 @@ def pycnocline_params(rho_4d,gdept_3d,e3t_3d):
     #pdb.set_trace()
     # vertical density gradient
     drhodz = np.gradient(rho_4d, axis = 1)/(-e3t_3d)
+    if np.abs(drhodz).sum()!=np.abs(drhodz.sum()): pdb.set_trace
+
+
     N2 = drhodz*(-9.81/rho_4d[:,:,:,:])
+    N2_dz_sum = (N2*e3t_3d).sum(axis = 1)
     '''
     drho =  rho_4d[:,2:,:,:] -  rho_4d[:,:-2,:,:]
     dz = gdept_3d[2:,:,:] - gdept_3d[:-2,:,:]
@@ -1493,15 +1504,15 @@ def pycnocline_params(rho_4d,gdept_3d,e3t_3d):
 
     
     # Pycnocline Depth:
-    #Pync_Z = ((N2*gdept_3d)*e3t_3d).sum(axis = 1)/(N2*e3t_3d).sum(axis = 1)
-    Pync_Z = -((N2*(-minus_z_3d))*e3t_3d).sum(axis = 1)/(N2*e3t_3d).sum(axis = 1)
+    #Pync_Z = ((N2*gdept_3d)*e3t_3d).sum(axis = 1)/N2_dz_sum
+    Pync_Z = -((N2*(-minus_z_3d))*e3t_3d).sum(axis = 1)/N2_dz_sum
                     
     # Pycnocline thickness:
-    #Pync_Th  = np.sqrt(((N2*(gdept_3d-Pync_Z)**2)*e3t_3d).sum(axis = 1)/(N2*e3t_3d).sum(axis = 1))
+    #Pync_Th  = np.sqrt(((N2*(gdept_3d-Pync_Z)**2)*e3t_3d).sum(axis = 1)/N2_dz_sum)
     
     
-    #Pync_Th  = np.sqrt(((N2*((-minus_z_3d)-Pync_Z)**2)*e3t_3d).sum(axis = 1)/(N2*e3t_3d).sum(axis = 1))
-    Pync_Th  = np.sqrt(((N2*((-minus_z_3d.T)-Pync_Z.T).T**2)*e3t_3d).sum(axis = 1)/(N2*e3t_3d).sum(axis = 1))
+    #Pync_Th  = np.sqrt(((N2*((-minus_z_3d)-Pync_Z)**2)*e3t_3d).sum(axis = 1)/N2_dz_sum)
+    Pync_Th  = np.sqrt(((N2*((-minus_z_3d.T)-Pync_Z.T).T**2)*e3t_3d).sum(axis = 1)/N2_dz_sum)
     
     
 
@@ -1527,6 +1538,39 @@ def pycnocline_params(rho_4d,gdept_3d,e3t_3d):
     except:
         print('Changed if n_t <= 1 to if n_t < 1')
         pdb.set_trace()
+
+    # 2026/09/13 Sometimes pynocline thickness and depth blow up >|1e5|, ~|1e19|.
+    # this is because N2_dz_sum is near zero. 
+    # because the density gradent (with depth) integrates to near zero.
+    # i.e. the density isn't alway increasing with depth.
+    #    a simple catch is to mask output to when this is small. 
+    #    it can be |1e-6| and ok (4.337568118184319e-06), 
+    #    and much much smaller when bad (1.7268884212147048e-19)
+    #    so setting to 1e-9... but may need tuning.
+    no_rho_grad_ind = np.abs(N2_dz_sum)<1e-9
+    neg_Pync_Z_ind = Pync_Z<0 # reject any negative pynocline depths 
+    abs_Pync_Z_ind = np.abs(Pync_Z)>250 # reject any pynocline depths greater then 250
+    abs_Pync_Th_ind = np.abs(Pync_Th)>400 # reject any pynocline thickness greater then 400
+
+    rej_prof_ind = no_rho_grad_ind|neg_Pync_Z_ind|abs_Pync_Z_ind|abs_Pync_Th_ind
+    rej_prof_ind = no_rho_grad_ind.filled(True)|neg_Pync_Z_ind.filled(True)|abs_Pync_Z_ind.filled(True)|abs_Pync_Th_ind.filled(True)
+
+    if rej_prof_ind.any():
+        Pync_Z[rej_prof_ind] = np.nan
+        Pync_Z[rej_prof_ind] = np.ma.masked
+        Pync_Th[rej_prof_ind] = np.nan
+        Pync_Th[rej_prof_ind] = np.ma.masked
+        N2_max[rej_prof_ind] = np.nan
+        N2_max[rej_prof_ind] = np.ma.masked
+        N2_maxZ[rej_prof_ind] = np.nan
+        N2_maxZ[rej_prof_ind] = np.ma.masked
+
+        N2[no_rho_grad_ind.repeat(rho_4d.shape[1], axis = 1)[:,:,:,np.newaxis]] = np.nan
+        N2[no_rho_grad_ind.repeat(rho_4d.shape[1], axis = 1)[:,:,:,np.newaxis]] = np.ma.masked
+    
+    #if (Pync_Th<0).any():
+    #    pdb.set_trace()
+    #pdb.set_trace()
     return N2,Pync_Z,Pync_Th,N2_max,N2_maxZ
           
 def stream_from_vocetr_eff(v_tr):
@@ -5972,8 +6016,6 @@ def create_lon_lat_dict(Dataset_lst,configd,thd,rootgrp_gdept_dict,xarr_dict,ncg
             lat_d[th_d_ind] = np.ma.array(lat_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
             lon_d[th_d_ind] = np.ma.array(lon_d[th_d_ind][thd[th_d_ind]['y0']:thd[th_d_ind]['y1']:thd[th_d_ind]['dy'],thd[th_d_ind]['x0']:thd[th_d_ind]['x1']:thd[th_d_ind]['dx']])
 
-            #pdb.set_trace()
-
         #Check if any nav_lat or nav_lon have masked values (i.e. using land suppression)
         if ( ((lat_d[th_d_ind] == 0) & (lon_d[th_d_ind] == 0)).sum()>10) |  (lat_d[th_d_ind] == lon_d[th_d_ind]).sum()> 100:
             print('Several points (>10) for 0degN 0degW - suggesting land suppression - use glamt and gphit from mesh')
@@ -8709,7 +8751,21 @@ def Obs_set_empty_dict(Obs_fname):
 
                 rootgrp_obs = Dataset(tmpObsfname, 'r')
                 tmpObs_JULD =  rootgrp_obs.variables['JULD'][0:1].data[0]
-                tmpObs_JULD_REFERENCE = datetime.strptime(str(chartostring(rootgrp_obs.variables['JULD_REFERENCE'][:])),'%Y%m%d%H%M%S')
+                try:
+                    JULD_REFERENCE_str = str(chartostring(rootgrp_obs.variables['JULD_REFERENCE'][:]))
+                    if JULD_REFERENCE_str == '':
+                        tmpObs_JULD_REFERENCE = datetime(1950,1,1)
+                    else:   
+
+                        JULD_REFERENCE_fmt = '%Y%m%d%H%M%S'
+                        if rootgrp_obs.variables['JULD_REFERENCE'].Conventions == "YYYYMMDDHHMMSS":
+                            JULD_REFERENCE_fmt = '%Y%m%d%H%M%S'
+                        tmpObs_JULD_REFERENCE = datetime.strptime(JULD_REFERENCE_str,JULD_REFERENCE_fmt)
+                except:
+                    print('problem with Obs_set_empty_dict, reading JULD_REFERENCE')
+                    print('JULD_REFERENCE_fmt',JULD_REFERENCE_fmt)
+                    print("str(chartostring(rootgrp_obs.variables['JULD_REFERENCE'][:]))",str(chartostring(rootgrp_obs.variables['JULD_REFERENCE'][:])))
+                    pdb.set_trace()
                 tmpObs_JULD_datetime = tmpObs_JULD_REFERENCE + timedelta(tmpObs_JULD)
 
 
@@ -9006,7 +9062,7 @@ def load_ops_2D_xarray(OPSfname,vartype,stat_type_lst = None, stat_type_lst_exc 
                        excl_qc = False, timing_in = 1):
 
     #excl_qc = False
-
+    #vartype = ['SST_ins','SST_sat','SLA','ChlA']
 
     timing = False
     timing_details = False
@@ -9044,7 +9100,7 @@ def load_ops_2D_xarray(OPSfname,vartype,stat_type_lst = None, stat_type_lst_exc 
         ops_output_ind_mat = ['SST_IOBSI', 'SST_IOBSJ', 'SST_IOBSK']
 
     elif vartype == 'SLA':
-        if stat_type_lst is None: stat_type_lst = [  61,   65,  262,  441, 1005]
+        if stat_type_lst is None: stat_type_lst = [  61,   65, 66,  262,  441, 1005]
         ops_qc_var_good_1_lst = ['OBSERVATION_QC','SLA_QC']#,'SLA_LEVEL_QC']
         iobsi = 'SLA_IOBSI'
         iobsj = 'SLA_IOBSJ'

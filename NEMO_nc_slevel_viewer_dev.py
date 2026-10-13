@@ -325,8 +325,8 @@ def nemo_slice_zlev(config = 'amm7',
     #clim_sym_but_norm_val = clim_sym
 
     # default initial indices
-    if ii is None: ii = 10
-    if jj is None: jj = 10
+    if ii is None: ii = 1 #0
+    if jj is None: jj = 1 #0
     if ti is None: ti = 0
     if zz is None: zz = 0
     if zz == 0: zi = 0
@@ -589,13 +589,13 @@ def nemo_slice_zlev(config = 'amm7',
                 #pdb.set_trace()
 
                 thd_lon_lat_ind = (lon_d[th_d_ind]>thd[th_d_ind]['lon0']) & (lon_d[th_d_ind]<=thd[th_d_ind]['lon1']) & (lat_d[th_d_ind]>thd[th_d_ind]['lat0']) & (lat_d[th_d_ind]<=thd[th_d_ind]['lat1'])  
+                #thd_lon_lat_ind = (lon_d[th_d_ind][::thd[th_d_ind]['dy'],::thd[th_d_ind]['dx']]>thd[th_d_ind]['lon0']) & (lon_d[th_d_ind][::thd[th_d_ind]['dy'],::thd[th_d_ind]['dx']]<=thd[th_d_ind]['lon1']) & (lat_d[th_d_ind][::thd[th_d_ind]['dy'],::thd[th_d_ind]['dx']]>thd[th_d_ind]['lat0']) & (lat_d[th_d_ind][::thd[th_d_ind]['dy'],::thd[th_d_ind]['dx']]<=thd[th_d_ind]['lat1'])  
 
 
-                thd[th_d_ind]['x0'] = np.where(thd_lon_lat_ind.any(axis = 0))[0].min()
-                thd[th_d_ind]['x1'] = np.where(thd_lon_lat_ind.any(axis = 0))[0].max()
-                thd[th_d_ind]['y0'] = np.where(thd_lon_lat_ind.any(axis = 1))[0].min()
-                thd[th_d_ind]['y1'] = np.where(thd_lon_lat_ind.any(axis = 1))[0].max()
-
+                thd[th_d_ind]['x0'] = np.where(thd_lon_lat_ind.any(axis = 0))[0].min()*thd[th_d_ind]['dx']
+                thd[th_d_ind]['x1'] = np.where(thd_lon_lat_ind.any(axis = 0))[0].max()*thd[th_d_ind]['dx']
+                thd[th_d_ind]['y0'] = np.where(thd_lon_lat_ind.any(axis = 1))[0].min()*thd[th_d_ind]['dy']
+                thd[th_d_ind]['y1'] = np.where(thd_lon_lat_ind.any(axis = 1))[0].max()*thd[th_d_ind]['dy']
                 trim_lon_lat_with_thd = True
     
     if trim_lon_lat_with_thd:
@@ -2425,7 +2425,7 @@ def nemo_slice_zlev(config = 'amm7',
                         hov_dat_dict['y'] = np.ma.zeros((nz,time_datetime.size))
 
                 else:
-                    
+                    #pdb.set_trace()
                     hov_dat_dict['x'] = time_datetime
                     hov_dat_dict['y'] =  grid_dict['Dataset 1']['gdept'][:,jj,ii]
                     #hov_dat_dict['Dataset 1'] = np.ma.zeros((hov_dat_dict['y'].shape+hov_dat_dict['x'].shape))*np.ma.masked
