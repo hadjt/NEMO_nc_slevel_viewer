@@ -8086,7 +8086,7 @@ def load_NEMO_nc_viewer_parser(nemo_slice_zlev_helptext):
     parser.add_argument('--do_addtimedim', type=str, required=False)
 
     parser.add_argument('--define_time', action='append', nargs='+',help = 'Allow time variable to be defined (intial time: "%Y%m%d%H%M%S"; freq(hr): 24) for files without info in time_counter (i.e. increment files). Requires: int(dataset number)#, str(grid)#, str(inial time), int(time freq) - # grid, or dataset and grid are optional.')
-    parser.add_argument('--Obs_type_hide', action='append', nargs='+',help = 'Set which observations are intially hidden')
+    parser.add_argument('--Obs_type_hide', action='append', nargs='+',help = 'Set which observations are intially hidden, must be in the form of --Obs_type_hide S_argo S_ships S_gliders S_other')
     
 
     parser.add_argument('--trim_extra_files', type=int, required=False)
@@ -8750,6 +8750,7 @@ def Obs_set_empty_dict(Obs_fname):
 
 
                 rootgrp_obs = Dataset(tmpObsfname, 'r')
+                #pdb.set_trace()
                 tmpObs_JULD =  rootgrp_obs.variables['JULD'][0:1].data[0]
                 try:
                     JULD_REFERENCE_str = str(chartostring(rootgrp_obs.variables['JULD_REFERENCE'][:]))

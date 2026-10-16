@@ -586,11 +586,9 @@ def nemo_slice_zlev(config = 'amm7',
         th_d_ind = int(tmp_datstr[8:])
         if (thd[th_d_ind]['lat0'] is not None)&(thd[th_d_ind]['lat1'] is not None)&\
            (thd[th_d_ind]['lon0'] is not None)&(thd[th_d_ind]['lon1'] is not None):
-                #pdb.set_trace()
 
                 thd_lon_lat_ind = (lon_d[th_d_ind]>thd[th_d_ind]['lon0']) & (lon_d[th_d_ind]<=thd[th_d_ind]['lon1']) & (lat_d[th_d_ind]>thd[th_d_ind]['lat0']) & (lat_d[th_d_ind]<=thd[th_d_ind]['lat1'])  
-                #thd_lon_lat_ind = (lon_d[th_d_ind][::thd[th_d_ind]['dy'],::thd[th_d_ind]['dx']]>thd[th_d_ind]['lon0']) & (lon_d[th_d_ind][::thd[th_d_ind]['dy'],::thd[th_d_ind]['dx']]<=thd[th_d_ind]['lon1']) & (lat_d[th_d_ind][::thd[th_d_ind]['dy'],::thd[th_d_ind]['dx']]>thd[th_d_ind]['lat0']) & (lat_d[th_d_ind][::thd[th_d_ind]['dy'],::thd[th_d_ind]['dx']]<=thd[th_d_ind]['lat1'])  
-
+                
 
                 thd[th_d_ind]['x0'] = np.where(thd_lon_lat_ind.any(axis = 0))[0].min()*thd[th_d_ind]['dx']
                 thd[th_d_ind]['x1'] = np.where(thd_lon_lat_ind.any(axis = 0))[0].max()*thd[th_d_ind]['dx']
@@ -2011,6 +2009,8 @@ def nemo_slice_zlev(config = 'amm7',
             arg_output_text = arg_output_text + 'flist2=$(echo "/dir2/file0[4-7]??_*.nc")\n'
             arg_output_text = arg_output_text + '\n'
             arg_output_text = arg_output_text + "justplot_date_ind='%s,%s'\n"%(time_datetime[ti].strftime(date_fmt),time_datetime[ti].strftime(date_fmt))
+            arg_output_text = arg_output_text + "justplot_z_meth_zz='ss:0,nb:0,df:0'\n"
+            arg_output_text = arg_output_text + "justplot_secdataset_proc='Dataset_1,Dataset_2,Dat2-Dat1'\n"
             
             arg_output_text = arg_output_text + '\n\n\n'
 
