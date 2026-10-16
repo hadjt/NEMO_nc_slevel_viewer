@@ -127,6 +127,7 @@ def nemo_slice_zlev(config = 'amm7',
     Obs_dict = None, Obs_reloadmeth = 2,Obs_hide = False,
     Obs_hide_edges = None, Obs_pair_loc = None, Obs_AbsAnom = None,
     Obs_anom_clim = None,Obs_Type_load_dict = None,Obs_show_with_diff_var = None, 
+    Obs_track_ID = None,
     tide_harm_d = None,
     do_MLD = True,do_mask = False,
     use_xarray_gdept = True,
@@ -1866,7 +1867,7 @@ def nemo_slice_zlev(config = 'amm7',
 
 
 
-    def save_figure_funct():
+    def save_figure_funct(extra_lab = None):
 
 
 
@@ -1894,11 +1895,13 @@ def nemo_slice_zlev(config = 'amm7',
         #pdb.set_trace()
         if resample_freq is None:
         #    fig_out_name = '%s/output_%s_%s_th%02i_fth%02i_i%04i_j%04i_t%03i_z%03i%s_g%1i_%s'%(      fig_dir,fig_lab,var,thd[1]['dx'],thd[1]['df'],ii,jj,ti,zz,z_meth,do_grad,secdataset_proc_figname)
-            fig_out_name = '%s/output_%s_%s_th%02ifth%02ii%04ij%04it%03iz%03i%sg%1i_%s'%(      fig_dir,fig_lab,var,thd[1]['dx'],thd[1]['df'],ii,jj,ti,zz,z_meth,do_grad,secdataset_proc_figname)
+            #fig_out_name = '%s/output_%s_%s_th%02ifth%02ii%04ij%04it%03iz%03i%sg%1i_%s'%(      fig_dir,fig_lab,var,thd[1]['dx'],thd[1]['df'],ii,jj,ti,zz,z_meth,do_grad,secdataset_proc_figname)
+            fig_out_name = '%s/output_%s_%s_th%02ifth%02it%03iz%03i%si%04ij%04ig%1i_%s'%(      fig_dir,fig_lab,var,thd[1]['dx'],thd[1]['df'],ti,zz,z_meth,ii,jj,do_grad,secdataset_proc_figname)
         else:
         #    fig_out_name = '%s/output_%s_%s_th%02i_fth%02i_i%04i_j%04i_t%03i_z%03i%s_g%1i_res%s_%s'%(fig_dir,fig_lab,var,thd[1]['dx'],thd[1]['df'],ii,jj,ti,zz,z_meth,do_grad,resample_freq,secdataset_proc_figname)
-            fig_out_name = '%s/output_%s_%s_th%02ifth%02ii%04ij%04it%03iz%03i%sg%1ir%s_%s'%(fig_dir,fig_lab,var,thd[1]['dx'],thd[1]['df'],ii,jj,ti,zz,z_meth,do_grad,resample_freq,secdataset_proc_figname)
-        
+            #fig_out_name = '%s/output_%s_%s_th%02ifth%02ii%04ij%04it%03iz%03i%sg%1ir%s_%s'%(fig_dir,fig_lab,var,thd[1]['dx'],thd[1]['df'],ii,jj,ti,zz,z_meth,do_grad,resample_freq,secdataset_proc_figname)
+            fig_out_name = '%s/output_%s_%s_th%02ifth%02it%03iz%03i%si%04ij%04ig%1ir%s_%s'%(fig_dir,fig_lab,var,thd[1]['dx'],thd[1]['df'],ti,zz,z_meth,ii,jj,do_grad,resample_freq,secdataset_proc_figname)
+                        
 
         for tmp_datstr in Dataset_lst:
             #if dataset_lab_d[tmp_datstr] is not None: 
@@ -1951,6 +1954,9 @@ def nemo_slice_zlev(config = 'amm7',
             fig_out_name = '%s_%s'%(fig_out_name,fig_fname_lab)
 
         #pdb.set_trace()
+
+        if extra_lab is not None:
+            fig_out_name = '%s_%s'%(fig_out_name,extra_lab)
 
         for ss in func_but_line_han.keys():func_but_line_han[ss][0].set_visible(False)
         for ss in func_but_text_han.keys():func_but_text_han[ss].set_visible(False)
@@ -2735,6 +2741,7 @@ def nemo_slice_zlev(config = 'amm7',
                 
                 if do_memory & do_timer: timer_lst.append(('Reloaded reload_pf_data_comb',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
 
+
             #if Obs and reloading,  
             if do_Obs:
                 if reload_Obs:
@@ -2764,6 +2771,59 @@ def nemo_slice_zlev(config = 'amm7',
 
                     if do_memory & do_timer: timer_lst.append(('Reloaded Obs',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
             
+            if Obs_track_ID is not None:
+
+                # assuming only one obs id, not csv
+                # assuming the obs in the same location in all datasets
+                # assuming the obs only in one type of obs var sub
+                # assuming the obs is only onces in this day
+                tmp_Obs_track_ID_cnt = 0
+                for tmp_secdataset_proc in [secdataset_proc]:
+                    for Obs_var_sub in Obs_var_lst_sub:
+                        tmp_Obs_track_ID_ind_lst = np.where(np.array([ss.strip().upper() for ss in Obs_dat_dict[tmp_secdataset_proc][Obs_var_sub]['STATION_IDENTIFIER']]) == Obs_track_ID.upper())[0]
+                        for tmp_Obs_track_ID_ind in tmp_Obs_track_ID_ind_lst:
+                            tmp_obs_lat = Obs_dat_dict[tmp_secdataset_proc][Obs_var_sub]['LATITUDE']
+                            tmp_obs_lon = Obs_dat_dict[tmp_secdataset_proc][Obs_var_sub]['LONGITUDE']
+
+                            tmp_Obs_track_ID_cnt+=1
+
+
+                            (obs_z_sel,obs_obs_sel,obs_mod_sel,obs_lon_sel,obs_lat_sel,
+                                obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel,obs_load_sel) = obs_reset_sel(Dataset_lst)
+                            # select the observation with ginput
+                            tmpobsloc = [(tmp_obs_lon,tmp_obs_lat)]
+                            #pdb.set_trace()
+                            # convert to the nearest model grid box
+                            # if fig zorder = -5
+                            obs_jj,obs_ii,__ = ind_from_lon_lat('Dataset 1',configd,xypos_dict, lon_d,lat_d, thd,rot_dict,tmpobsloc[0][0],tmpobsloc[0][1])
+                            obs_ii = int(obs_ii)
+                            obs_jj = int(obs_jj)
+                            sel_xlocval, sel_ylocval = tmpobsloc[0][0],tmpobsloc[0][1]
+                            obs_ax = 0
+                            # extract lat and lon,
+
+                            obs_lon = sel_xlocval # lon_d[1][obs_jj,obs_ii]
+                            obs_lat = sel_ylocval # lat_d[1][obs_jj,obs_ii]
+
+                            if Obs_pair_loc:
+                                ii = obs_ii
+                                jj = obs_jj
+
+                                # and reload slices, and hovmuller/time series
+                                reload_ew = True
+                                reload_ns = True
+                                reload_hov = True
+                                reload_ts = True
+
+                            # set some tmp dictionaries
+                            #(obs_z_sel,obs_obs_sel,obs_mod_sel,obs_lon_sel,obs_lat_sel,
+                            #    obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel,obs_load_sel) = obs_reset_sel(Dataset_lst, Fill = False)
+
+                            #pdb.set_trace()
+                            obs_z_sel,obs_obs_sel,obs_mod_sel,obs_lon_sel,obs_lat_sel,obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel,obs_load_sel = obs_load_selected_point(secdataset_proc, Dataset_lst, Obs_var_lst_sub, Obs_dat_dict, obs_lon, obs_lat)
+
+                            #save_figure_funct(extra_lab = 'ObsTrID_%s_%i'%(Obs_track_ID.strip(),tmp_Obs_track_ID_cnt))
+
             
             if verbose_debugging: print('Reloaded  ts data for ii = %s, jj = %s, zz = %s'%(ii,jj,zz), datetime.now(),'; dt = %s'%(datetime.now()-prevtime))
             prevtime = datetime.now()
@@ -4752,207 +4812,7 @@ def nemo_slice_zlev(config = 'amm7',
 
                                     #pdb.set_trace()
                                     obs_z_sel,obs_obs_sel,obs_mod_sel,obs_lon_sel,obs_lat_sel,obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel,obs_load_sel = obs_load_selected_point(secdataset_proc, Dataset_lst, Obs_var_lst_sub, Obs_dat_dict, obs_lon, obs_lat)
-                                    """
-                                    tmpobs_dist_sel = {}
-                                    (tmpobs_z_sel,tmpobs_obs_sel,tmpobs_mod_sel,tmpobs_lon_sel,tmpobs_lat_sel,
-                                        tmpobs_stat_id_sel,tmpobs_stat_type_sel,tmpobs_stat_time_sel,obs_load_sel) = obs_reset_sel(Dataset_lst, Fill = False)
-
                                     
-
-
-
-                                    # cycle through available Obs types
-                                    for ob_var in Obs_var_lst_sub:
-                                        tmpobs_z_sel[ob_var] = {}
-                                        tmpobs_obs_sel[ob_var] = {}
-                                        tmpobs_mod_sel[ob_var] = {}
-                                        tmpobs_lon_sel[ob_var] = {}
-                                        tmpobs_lat_sel[ob_var] = {}
-                                        tmpobs_dist_sel[ob_var] = {}
-
-                                        tmpobs_stat_id_sel[ob_var] = {}
-                                        tmpobs_stat_type_sel[ob_var] = {}
-                                        tmpobs_stat_time_sel[ob_var] = {}
-                                        # and data sets.
-                                        for tmp_datstr in Dataset_lst:
-
-                                            tmpobs_z_sel[ob_var][tmp_datstr] = np.ma.zeros((1))*np.ma.masked
-                                            tmpobs_obs_sel[ob_var][tmp_datstr] = np.ma.zeros((1))*np.ma.masked
-                                            tmpobs_mod_sel[ob_var][tmp_datstr] = np.ma.zeros((1))*np.ma.masked
-                                            tmpobs_lon_sel[ob_var][tmp_datstr] = np.ma.zeros((1))*np.ma.masked
-                                            tmpobs_lat_sel[ob_var][tmp_datstr] = np.ma.zeros((1))*np.ma.masked
-                                            #pdb.set_trace()
-                                            tmpobs_stat_id_sel[ob_var][tmp_datstr] = ''
-                                            tmpobs_stat_type_sel[ob_var][tmp_datstr] = np.ma.zeros((1))*np.ma.masked
-                                            tmpobs_stat_time_sel[ob_var][tmp_datstr] = np.ma.zeros((1))*np.ma.masked
-
-                                            tmpobs_dist_sel[ob_var][tmp_datstr] = tmp_obs_obs_dist
-
-
-
-                                            if Obs_dat_dict[tmp_datstr][ob_var]['loaded']:
-                                                # extract Obs: lon, lat, z OBS, mod,, stations info 
-
-                                                tmpobsx = Obs_dat_dict[tmp_datstr][ob_var]['LONGITUDE']
-                                                tmpobsy = Obs_dat_dict[tmp_datstr][ob_var]['LATITUDE']
-                                                tmpobs_obs = Obs_dat_dict[tmp_datstr][ob_var]['OBS'][:] 
-                                                tmpobs_mod = Obs_dat_dict[tmp_datstr][ob_var]['MOD_HX'][:] 
-                                                tmpobs_z = Obs_dat_dict[tmp_datstr][ob_var]['DEPTH'][:] 
-                                                tmpobs_stat_id = Obs_dat_dict[tmp_datstr][ob_var]['STATION_IDENTIFIER'][:] 
-                                                tmpobs_stat_type = Obs_dat_dict[tmp_datstr][ob_var]['STATION_TYPE'][:] 
-                                                tmpobs_stat_time = Obs_dat_dict[tmp_datstr][ob_var]['JULD_datetime'][:] 
-                                                tmpobs_z = Obs_dat_dict[tmp_datstr][ob_var]['DEPTH'][:] 
-
-                                                # if Obs data is 2d data, reshape to match 3d profile data. 
-                                                if len(tmpobs_obs.shape) == 1:
-
-                                                    tmpobs_obs = tmpobs_obs.reshape(-1,1)
-                                                    tmpobs_mod = tmpobs_mod.reshape(-1,1)
-                                                    tmpobs_z = tmpobs_z.reshape(-1,1)
-                                                # find distance from selected point to all obs in this Obs type    
-                                                tmp_obs_dist = np.sqrt((tmpobsx - obs_lon)**2 +(tmpobsy - obs_lat)**2)
-                                            
-                                                # find the minimum value and index
-                                                tmp_obs_obs_dist = tmp_obs_dist.min()
-                                                tmp_obs_obs_ind = tmp_obs_dist.argmin()
-
-                                                #record the profile and distance for that Obs
-                                                tmpobs_z_sel[ob_var][tmp_datstr] = tmpobs_z[tmp_obs_obs_ind]
-                                                tmpobs_obs_sel[ob_var][tmp_datstr] = tmpobs_obs[tmp_obs_obs_ind]
-                                                tmpobs_mod_sel[ob_var][tmp_datstr] = tmpobs_mod[tmp_obs_obs_ind]
-                                                tmpobs_lon_sel[ob_var][tmp_datstr] = tmpobsx[tmp_obs_obs_ind]
-                                                tmpobs_lat_sel[ob_var][tmp_datstr] = tmpobsy[tmp_obs_obs_ind]
-                                                #pdb.set_trace()
-                                                tmpobs_stat_id_sel[ob_var][tmp_datstr] = tmpobs_stat_id[tmp_obs_obs_ind].strip()
-                                                tmpobs_stat_type_sel[ob_var][tmp_datstr] = tmpobs_stat_type[tmp_obs_obs_ind]
-                                                tmpobs_stat_time_sel[ob_var][tmp_datstr] = tmpobs_stat_time[tmp_obs_obs_ind]
-
-                                                tmpobs_dist_sel[ob_var][tmp_datstr] = tmp_obs_obs_dist
-                                    '''
-                                    obs_dist_sel_cf_dict = {}
-                                    obs_dist_sel_cf_size_lst = []
-                                    for tmp_datstr in Dataset_lst:
-                                        obs_dist_sel_cf_dict[tmp_datstr] = np.array([tmpobs_dist_sel[ob_var][tmp_datstr] for ob_var in Obs_var_lst_sub])
-                                        obs_dist_sel_cf_size_lst.append(obs_dist_sel_cf_dict[tmp_datstr].size)
-
-                                    for tmp_datstr in Dataset_lst:
-                                    
-                                        # put all distances into one array
-                                        obs_dist_sel_cf_mat = obs_dist_sel_cf_dict[tmp_datstr]
-                                        #obs_dist_sel_cf_dict = {}
-                                        #for tmp_datstr in Dataset_lst:obs_dist_sel_cf_dict[tmp_datstr] = np.array([tmpobs_dist_sel[ob_var][tmp_datstr] for ob_var in Obs_var_lst_sub])
-
-                                        #if (obs_dist_sel_cf_mat).size>0:
-                                        if (obs_dist_sel_cf_mat).size>0:
-                                            
-                                            # select the Obs Obs type closest to the selected point
-                                            sel_Obs_var = Obs_var_lst_sub[obs_dist_sel_cf_mat.argmin()]
-                                            
-                                            #select obs data from Obs type closest to the selected point
-                                            obs_z_sel[tmp_datstr] = tmpobs_z_sel[sel_Obs_var][tmp_datstr]
-                                            obs_obs_sel[tmp_datstr] = tmpobs_obs_sel[sel_Obs_var][tmp_datstr]
-                                            obs_mod_sel[tmp_datstr] = tmpobs_mod_sel[sel_Obs_var][tmp_datstr]
-                                            obs_lon_sel[tmp_datstr] = tmpobs_lon_sel[sel_Obs_var][tmp_datstr]
-                                            obs_lat_sel[tmp_datstr] = tmpobs_lat_sel[sel_Obs_var][tmp_datstr]
-
-                                            obs_stat_id_sel[tmp_datstr] = tmpobs_stat_id_sel[sel_Obs_var][tmp_datstr]
-                                            obs_stat_type_sel[tmp_datstr] = tmpobs_stat_type_sel[sel_Obs_var][tmp_datstr]
-                                            obs_stat_time_sel[tmp_datstr] = tmpobs_stat_time_sel[sel_Obs_var][tmp_datstr]
-                                        else:
-                                            obs_z_sel[tmp_datstr] = np.ma.masked
-                                            obs_obs_sel[tmp_datstr] = np.ma.masked
-                                            obs_mod_sel[tmp_datstr] = np.ma.masked
-                                            obs_lon_sel[tmp_datstr] = np.ma.masked
-                                            obs_lat_sel[tmp_datstr] = np.ma.masked
-
-                                            obs_stat_id_sel[tmp_datstr] = ''
-                                            obs_stat_type_sel[tmp_datstr] = None
-                                            obs_stat_time_sel[tmp_datstr] = ''
-                             
-
-                                    del(tmpobs_z_sel)
-                                    del(tmpobs_obs_sel)
-                                    del(tmpobs_mod_sel)
-                                    del(tmpobs_lon_sel)
-                                    del(tmpobs_lat_sel)
-                                    del(tmpobs_dist_sel)
-
-                                    del(tmpobs_stat_id_sel)
-                                    del(tmpobs_stat_type_sel)
-                                    del(tmpobs_stat_time_sel)
-
-
-                                            ## append this data to an array to help select x and y lims
-                                            #for tmp_datstr in Dataset_lst:
-                                            #    tmp_pf_ylim_dat = np.ma.append(np.array(tmp_py_ylim),obs_z_sel[tmp_datstr])
-                                            #    #tmp_pf_xlim_dat = np.ma.append(np.ma.append(np.array(pf_xlim),obs_mod_sel)[tmp_datstr],obs_obs_sel)
-                                            #    tmp_pf_xlim_dat = np.ma.append(np.ma.append(np.array(pf_xlim),obs_mod_sel[tmp_datstr]),obs_obs_sel[tmp_datstr])
-                                            
-                                        #else:
-                                    if (np.array(obs_dist_sel_cf_size_lst) == 0).all():
-                                        
-                                        (obs_z_sel,obs_obs_sel,obs_mod_sel,obs_lon_sel,obs_lat_sel,
-                                            obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel) = obs_reset_sel(Dataset_lst)
-
-
-                                    '''
-                                    #if Obs_dat_dict[secdataset_proc][ob_var]['loaded']:
-                                    #pdb.set_trace()
-                                    # put all distances into one array
-                                    #obs_dist_sel_cf_mat = np.array([tmpobs_dist_sel[ob_var][secdataset_proc] for ob_var in Obs_var_lst_sub])
-                                    obs_dist_sel_cf_lst = []
-                                    for ob_var in Obs_var_lst_sub:
-                                        if Obs_dat_dict[secdataset_proc][ob_var]['loaded']:
-                                            obs_dist_sel_cf_lst.append(tmpobs_dist_sel[ob_var][secdataset_proc])
-                                        else:
-                                            obs_dist_sel_cf_lst.append(np.ma.masked)
-                                    obs_dist_sel_cf_mat = np.ma.array(obs_dist_sel_cf_lst)
-
-                                    #obs_dist_sel_cf_dict = {}
-                                    #for tmp_datstr in Dataset_lst:obs_dist_sel_cf_dict[tmp_datstr] = np.array([tmpobs_dist_sel[ob_var][tmp_datstr] for ob_var in Obs_var_lst_sub])
-
-                                    if ((obs_dist_sel_cf_mat).size>0) & (~obs_dist_sel_cf_mat.mask.any()):
-                                        
-                                        # select the Obs Obs type closest to the selected point
-                                        sel_Obs_var = Obs_var_lst_sub[obs_dist_sel_cf_mat.argmin()]
-                                        
-                                        #select obs data from Obs type closest to the selected point
-                                        obs_z_sel = tmpobs_z_sel[sel_Obs_var]
-                                        obs_obs_sel = tmpobs_obs_sel[sel_Obs_var]
-                                        obs_mod_sel = tmpobs_mod_sel[sel_Obs_var]
-                                        obs_lon_sel = tmpobs_lon_sel[sel_Obs_var]
-                                        obs_lat_sel = tmpobs_lat_sel[sel_Obs_var]
-
-                                        obs_stat_id_sel = tmpobs_stat_id_sel[sel_Obs_var]
-                                        obs_stat_type_sel = tmpobs_stat_type_sel[sel_Obs_var]
-                                        obs_stat_time_sel = tmpobs_stat_time_sel[sel_Obs_var]
-
-
-                                        del(tmpobs_z_sel)
-                                        del(tmpobs_obs_sel)
-                                        del(tmpobs_mod_sel)
-                                        del(tmpobs_lon_sel)
-                                        del(tmpobs_lat_sel)
-                                        del(tmpobs_dist_sel)
-
-                                        del(tmpobs_stat_id_sel)
-                                        del(tmpobs_stat_type_sel)
-                                        del(tmpobs_stat_time_sel)
-
-                                        '''
-                                        pdb.set_trace()
-                                        # append this data to an array to help select x and y lims
-                                        for tmp_datstr in Dataset_lst:
-                                            tmp_pf_ylim_dat = np.ma.append(np.array(tmp_py_ylim),obs_z_sel[tmp_datstr])
-                                            #tmp_pf_xlim_dat = np.ma.append(np.ma.append(np.array(pf_xlim),obs_mod_sel)[tmp_datstr],obs_obs_sel)
-                                            tmp_pf_xlim_dat = np.ma.append(np.ma.append(np.array(pf_xlim),obs_mod_sel[tmp_datstr]),obs_obs_sel[tmp_datstr])
-                                        '''
-                                        
-                                    else:
-                                        
-                                        (obs_z_sel,obs_obs_sel,obs_mod_sel,obs_lon_sel,obs_lat_sel,
-                                            obs_stat_id_sel,obs_stat_type_sel,obs_stat_time_sel) = obs_reset_sel(Dataset_lst)
-                                    """
                             elif mouse_info['button'].name == 'RIGHT':
 
                                 # Bring up a options window for Obs
@@ -7194,6 +7054,15 @@ def main():
         # setting up Observations dictionary
         Obs_dict_in = process_argparse_Obs_dict(args)
 
+        # Assume the first dataset (in the positional argument) is on the T grid.
+        # You can specify what it is (with --gr_1st U).
+
+        if (args.Obs_track_ID) is None:
+            Obs_track_ID = None
+        else:
+            Obs_track_ID = args.Obs_track_ID
+            #pdb.set_trace()
+
         # Do we allow the loading of tidal harmonic data?
         tide_harm_d = process_argparse_tide_harm_dict(args)
  
@@ -7219,6 +7088,7 @@ def main():
         # set up empty EOS dictionary
         EOS_d = process_argparse_EOS(args, dataset_lst)
         Obs_Type_load_dict = process_argparse_Obs_type_hide(args,argparse_bool_dict)
+
 
 
         define_time_dict = process_argparse_define_time(args, dataset_lst, fname_dict)
@@ -7251,6 +7121,7 @@ def main():
             Obs_AbsAnom = argparse_bool_dict['Obs_AbsAnom'], Obs_hide_edges = argparse_bool_dict['Obs_hide_edges'],
             Obs_pair_loc = argparse_bool_dict['Obs_pair_loc'], Obs_anom_clim = args.Obs_anom_clim,
             Obs_Type_load_dict = Obs_Type_load_dict,Obs_show_with_diff_var = argparse_bool_dict['Obs_show_with_diff_var'],
+            Obs_track_ID = Obs_track_ID,
             tide_harm_d = tide_harm_d,
             fig_dir = args.fig_dir, fig_lab = args.fig_lab,fig_cutout = argparse_bool_dict['fig_cutout'],
             verbose_debugging = argparse_bool_dict['verbose_debugging'],do_timer = argparse_bool_dict['do_mask'],do_memory = argparse_bool_dict['do_memory'],

@@ -8086,7 +8086,6 @@ def load_NEMO_nc_viewer_parser(nemo_slice_zlev_helptext):
     parser.add_argument('--do_addtimedim', type=str, required=False)
 
     parser.add_argument('--define_time', action='append', nargs='+',help = 'Allow time variable to be defined (intial time: "%Y%m%d%H%M%S"; freq(hr): 24) for files without info in time_counter (i.e. increment files). Requires: int(dataset number)#, str(grid)#, str(inial time), int(time freq) - # grid, or dataset and grid are optional.')
-    parser.add_argument('--Obs_type_hide', action='append', nargs='+',help = 'Set which observations are intially hidden, must be in the form of --Obs_type_hide S_argo S_ships S_gliders S_other')
     
 
     parser.add_argument('--trim_extra_files', type=int, required=False)
@@ -8132,7 +8131,10 @@ def load_NEMO_nc_viewer_parser(nemo_slice_zlev_helptext):
     parser.add_argument('--Obs_pair_loc', type=str, required=False)
     parser.add_argument('--Obs_AbsAnom', type=str, required=False)
     parser.add_argument('--Obs_anom_clim', type=float, required=False, nargs = 2,help = 'Display Options: clim. Requires: flt(ylim min) flt(ylim max)')
-    
+    parser.add_argument('--Obs_type_hide', action='append', nargs='+',help = 'Set which observations are intially hidden, must be in the form of --Obs_type_hide S_argo S_ships S_gliders S_other')
+    #parser.add_argument('--Obs_track_ID', action='append', nargs='+',help = 'Set ID of which observation to track')
+    parser.add_argument('--Obs_track_ID', type=str, required=False,help = 'Set ID of which observation to track')
+                         
     
     parser.add_argument('--tide_harm', action='append', nargs='+',help = 'Allow loading to tidal harmonic data, where 2 and 3 d variables have an extra dimension'+
                         "(default as --tide_harm dim per --tide_harm const 'M2,S2,N2,K1,O1,M4,Q1'--tide_harm tide_ii 0)" + 
