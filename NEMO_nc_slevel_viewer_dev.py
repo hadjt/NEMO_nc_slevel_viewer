@@ -66,7 +66,8 @@ from NEMO_nc_slevel_viewer_lib import process_argparse_bool
 from NEMO_nc_slevel_viewer_lib import process_argparse_fname_dict,process_argparse_configd
 from NEMO_nc_slevel_viewer_lib import process_argparse_dataset_lab_d,process_argparse_thd
 from NEMO_nc_slevel_viewer_lib import process_argparse_Obs_dict,process_argparse_rename_var
-from NEMO_nc_slevel_viewer_lib import process_argparse_forced_dim,process_argparse_EOS,process_argparse_Obs_type_hide
+from NEMO_nc_slevel_viewer_lib import process_argparse_forced_dim,process_argparse_EOS
+from NEMO_nc_slevel_viewer_lib import process_argparse_Obs_type_hide,process_argparse_tide_harm_dict
 
 
 from NEMO_nc_slevel_viewer_lib import obs_reset_sel 
@@ -126,6 +127,7 @@ def nemo_slice_zlev(config = 'amm7',
     Obs_dict = None, Obs_reloadmeth = 2,Obs_hide = False,
     Obs_hide_edges = None, Obs_pair_loc = None, Obs_AbsAnom = None,
     Obs_anom_clim = None,Obs_Type_load_dict = None,Obs_show_with_diff_var = None, 
+    tide_harm_d = None,
     do_MLD = True,do_mask = False,
     use_xarray_gdept = True,
     force_dim_d = None,xarr_rename_master_dict=None,
@@ -208,6 +210,11 @@ def nemo_slice_zlev(config = 'amm7',
             elif Obs_reloadmeth > 0:
 
                 Obs_dict = Obs_set_empty_dict(Obs_fname)
+
+    if tide_harm_d is None:
+        do_addtideharm = False
+    else:
+        do_addtideharm = tide_harm_d['do_addtideharm']
     if do_memory:
         do_timer = True
  
@@ -295,7 +302,8 @@ def nemo_slice_zlev(config = 'amm7',
     else:
         base_cmap = matplotlib.cm.viridis
         scnd_cmap = matplotlib.cm.coolwarm
-        cylc_cmap = matplotlib.cm.hsv
+        #cylc_cmap = matplotlib.cm.hsv
+        cylc_cmap = matplotlib.cm.twilight
 
     col_scl = 0
     curr_cmap = base_cmap
@@ -317,8 +325,8 @@ def nemo_slice_zlev(config = 'amm7',
     #clim_sym_but_norm_val = clim_sym
 
     # default initial indices
-    if ii is None: ii = 10
-    if jj is None: jj = 10
+    if ii is None: ii = 1 #0
+    if jj is None: jj = 1 #0
     if ti is None: ti = 0
     if zz is None: zz = 0
     if zz == 0: zi = 0
@@ -511,7 +519,8 @@ def nemo_slice_zlev(config = 'amm7',
                                                                                   xarr_rename_master_dict=xarr_rename_master_dict,
                                                                                   gr_1st = gr_1st,do_addtimedim = do_addtimedim,
                                                                                   do_all_WW3 = do_all_WW3,
-                                                                                  define_time_dict = define_time_dict)
+                                                                                  define_time_dict = define_time_dict,
+                                                                                  tide_harm_d = tide_harm_d)
     
     #pdb.set_trace()
     # tmp = xarr_dict['Dataset 1']['T'][0].groupby('time_counter.year').groupby('time_counter.month').mean('time_counter') 
@@ -577,16 +586,14 @@ def nemo_slice_zlev(config = 'amm7',
         th_d_ind = int(tmp_datstr[8:])
         if (thd[th_d_ind]['lat0'] is not None)&(thd[th_d_ind]['lat1'] is not None)&\
            (thd[th_d_ind]['lon0'] is not None)&(thd[th_d_ind]['lon1'] is not None):
-                #pdb.set_trace()
 
                 thd_lon_lat_ind = (lon_d[th_d_ind]>thd[th_d_ind]['lon0']) & (lon_d[th_d_ind]<=thd[th_d_ind]['lon1']) & (lat_d[th_d_ind]>thd[th_d_ind]['lat0']) & (lat_d[th_d_ind]<=thd[th_d_ind]['lat1'])  
+                
 
-
-                thd[th_d_ind]['x0'] = np.where(thd_lon_lat_ind.any(axis = 0))[0].min()
-                thd[th_d_ind]['x1'] = np.where(thd_lon_lat_ind.any(axis = 0))[0].max()
-                thd[th_d_ind]['y0'] = np.where(thd_lon_lat_ind.any(axis = 1))[0].min()
-                thd[th_d_ind]['y1'] = np.where(thd_lon_lat_ind.any(axis = 1))[0].max()
-
+                thd[th_d_ind]['x0'] = np.where(thd_lon_lat_ind.any(axis = 0))[0].min()*thd[th_d_ind]['dx']
+                thd[th_d_ind]['x1'] = np.where(thd_lon_lat_ind.any(axis = 0))[0].max()*thd[th_d_ind]['dx']
+                thd[th_d_ind]['y0'] = np.where(thd_lon_lat_ind.any(axis = 1))[0].min()*thd[th_d_ind]['dy']
+                thd[th_d_ind]['y1'] = np.where(thd_lon_lat_ind.any(axis = 1))[0].max()*thd[th_d_ind]['dy']
                 trim_lon_lat_with_thd = True
     
     if trim_lon_lat_with_thd:
@@ -1336,7 +1343,7 @@ def nemo_slice_zlev(config = 'amm7',
                       'Zoom',
                       'Axis', 'ColScl', 'Clim: Zoom','Clim: pair','Clim: sym',
                       'Surface', 'Near-Bed', 'Surface-Bed','Depth-Mean','Depth level',
-                      'Contours','Grad','Time Diff','Sec Grid','TS Diag','LD time','Fcst Diag','Vis curr','MLD','Obs','Xsect','Time-Dist','Save Figure','Help','Quit'] 
+                      'Contours','Grad','Time Diff','Sec Grid','TS Diag','LD time','TideHarm','Fcst Diag','Vis curr','MLD','Obs','Xsect','Time-Dist','Save Figure','Help','Quit'] 
     #'Reset zoom','Obs: sel','Obs: opt','Clim: Reset','Clim: Expand',
     
     Sec_regrid = False
@@ -1353,7 +1360,11 @@ def nemo_slice_zlev(config = 'amm7',
         func_names_lst.remove('Xsect')
     else:
         figxs = None
+    #pdb.set_trace()
+    if not do_addtideharm:
+        func_names_lst.remove('TideHarm')
 
+   
     figtd = None
 
 
@@ -1628,6 +1639,10 @@ def nemo_slice_zlev(config = 'amm7',
     else:
         func_but_text_han['Grad'].set_color('0.5')
         func_but_text_han['Grad'].set_text('Grad')
+
+
+    if do_addtideharm:
+        func_but_text_han['TideHarm'].set_text('Tide: %s'%tide_harm_d['const'][tide_harm_d['tide_ii']])
 
 
     reload_UV_map = False
@@ -1994,6 +2009,8 @@ def nemo_slice_zlev(config = 'amm7',
             arg_output_text = arg_output_text + 'flist2=$(echo "/dir2/file0[4-7]??_*.nc")\n'
             arg_output_text = arg_output_text + '\n'
             arg_output_text = arg_output_text + "justplot_date_ind='%s,%s'\n"%(time_datetime[ti].strftime(date_fmt),time_datetime[ti].strftime(date_fmt))
+            arg_output_text = arg_output_text + "justplot_z_meth_zz='ss:0,nb:0,df:0'\n"
+            arg_output_text = arg_output_text + "justplot_secdataset_proc='Dataset_1,Dataset_2,Dat2-Dat1'\n"
             
             arg_output_text = arg_output_text + '\n\n\n'
 
@@ -2306,7 +2323,7 @@ def nemo_slice_zlev(config = 'amm7',
                 # if data_inst_1 is None (i.e. first loop), or
                 #       if the time has changed, or
                 #       if the variable has changed
-                if  (data_inst is None)|(preload_data_ti != ti)|(preload_data_var != var)|(preload_data_ldi != ldi):
+                if (data_inst is None)|(preload_data_ti != ti)|(preload_data_var != var)|(preload_data_ldi != ldi):
 
                     data_inst = None
 
@@ -2316,7 +2333,7 @@ def nemo_slice_zlev(config = 'amm7',
                     
                     data_inst,preload_data_ti,preload_data_var,preload_data_ldi= reload_data_instances_time(var,thd,ldi,ti,
                         time_datetime_since_1970[ti],time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files,
-                        do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d,do_match_time=do_match_time)
+                        do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d,do_match_time=do_match_time, tide_harm_d = tide_harm_d)
                     #pdb.set_trace()
                     if do_memory & do_timer: timer_lst.append(('Reloaded data_inst',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
 
@@ -2346,14 +2363,14 @@ def nemo_slice_zlev(config = 'amm7',
                         if do_memory & do_timer: timer_lst.append(('Deleted data_inst_U',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                         data_inst_U,preload_data_ti_U,preload_data_var_U,preload_data_ldi_U = reload_data_instances_time(tmp_var_U,thd,ldi,ti,
                             time_datetime_since_1970[ti],time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files,
-                            do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d,do_match_time=do_match_time)
+                            do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d,do_match_time=do_match_time, tide_harm_d = tide_harm_d)
                         if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_U',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                         
                         data_inst_V = None
                         if do_memory & do_timer: timer_lst.append(('Deleted data_inst_V',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                         data_inst_V,preload_data_ti_V,preload_data_var_V,preload_data_ldi_V = reload_data_instances_time(tmp_var_V,thd,ldi,ti,
                             time_datetime_since_1970[ti],time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files,
-                            do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d,do_match_time=do_match_time)
+                            do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d,do_match_time=do_match_time, tide_harm_d = tide_harm_d)
                         if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_V',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
 
 
@@ -2364,7 +2381,7 @@ def nemo_slice_zlev(config = 'amm7',
                         if do_memory & do_timer: timer_lst.append(('Deleted data_inst_mld',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                         data_inst_mld,preload_data_ti_mld,preload_data_var_mld,preload_data_ldi_mld= reload_data_instances_time(MLD_var,thd,ldi,ti,
                             time_datetime_since_1970[ti],time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files,
-                            do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d,do_match_time=do_match_time)
+                            do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d,do_match_time=do_match_time, tide_harm_d = tide_harm_d)
                         reload_MLD = False
                         if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_mld',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                     
@@ -2379,6 +2396,14 @@ def nemo_slice_zlev(config = 'amm7',
                 func_but_text_han['Clim: sym'].set_color('k')                                
             elif clim_sym_but == 1:
                 func_but_text_han['Clim: sym'].set_color('r')          
+
+
+            if do_addtideharm:
+                if var in tide_harm_d['tide_var']:
+                    func_but_text_han['TideHarm'].set_color('k')
+                else:
+                    func_but_text_han['TideHarm'].set_color('0.5')
+
 
 
             ###################################################################################################
@@ -2400,7 +2425,7 @@ def nemo_slice_zlev(config = 'amm7',
                         hov_dat_dict['y'] = np.ma.zeros((nz,time_datetime.size))
 
                 else:
-                    
+                    #pdb.set_trace()
                     hov_dat_dict['x'] = time_datetime
                     hov_dat_dict['y'] =  grid_dict['Dataset 1']['gdept'][:,jj,ii]
                     #hov_dat_dict['Dataset 1'] = np.ma.zeros((hov_dat_dict['y'].shape+hov_dat_dict['x'].shape))*np.ma.masked
@@ -2451,7 +2476,7 @@ def nemo_slice_zlev(config = 'amm7',
 
                             (data_inst_Tm1,preload_data_ti_Tm1,preload_data_var_Tm1,preload_data_ldi_Tm1) = reload_data_instances_time(var,thd,ldi,ti-1,  
                                 time_datetime_since_1970[ti-1],time_d,var_d,var_grid, lon_d, lat_d, xarr_dict, grid_dict,var_dim,Dataset_lst,load_second_files,
-                                do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d,do_match_time=do_match_time)
+                                do_LBC = do_LBC, do_LBC_d = do_LBC_d,LBC_coord_d = LBC_coord_d, EOS_d=EOS_d,do_match_time=do_match_time, tide_harm_d = tide_harm_d)
                             # for tmp_datstr in Dataset_lst:  (data_inst[tmp_datstr] == data_inst_Tm1[tmp_datstr]).all()
                             if do_memory & do_timer: timer_lst.append(('Reloaded data_inst_Tm1',datetime.now(),psutil.Process(os.getpid()).memory_info().rss/1024/1024,))
                         #print('   Time_Diff_cnt_hovtime =',Time_Diff_cnt_hovtime)
@@ -2759,7 +2784,7 @@ def nemo_slice_zlev(config = 'amm7',
 
             # Choose the colormap depending on which dataset being shown
 
-            if var in ['baroc_phi','barot_phi','VolTran_e3_phi','VolTran_phi']:
+            if var in ['baroc_phi','barot_phi','VolTran_e3_phi','VolTran_phi', 'sossheig_phi']:
                 curr_cmap = cylc_cmap
                 clim_sym = True
             else:
@@ -6309,6 +6334,34 @@ def nemo_slice_zlev(config = 'amm7',
                         
 
 
+                        elif but_name == 'TideHarm':
+
+
+                            if mouse_info['button'].name == 'LEFT':
+
+                                tide_harm_d['tide_ii'] = tide_harm_d['tide_ii'] + 1
+                                if tide_harm_d['tide_ii'] == (tide_harm_d['n_tide']-1):
+                                    tide_harm_d['tide_ii'] = 0
+                            elif mouse_info['button'].name == 'RIGHT':
+
+                                tide_harm_d['tide_ii'] = tide_harm_d['tide_ii'] - 1
+                                if tide_harm_d['tide_ii'] == -1:
+                                    tide_harm_d['tide_ii'] = tide_harm_d['n_tide']-1
+
+
+                            #if var in tide_harm_d['tide_var']:
+                            #    func_but_text_han['TideHarm'].set_color('k')
+                            #else:
+                            #    func_but_text_han['TideHarm'].set_color('0.5')
+                            #print("button press tide_harm_d['tide_ii']",tide_harm_d['tide_ii'])
+                            func_but_text_han['TideHarm'].set_text('Tide: %s'%tide_harm_d['const'][tide_harm_d['tide_ii']])
+                            data_inst = None
+                            reload_map = True
+                            reload_ew = True
+                            reload_ns = True
+                            reload_hov = True
+                            reload_ts = True
+
                         elif but_name == 'LD time':
                             ldi+=1
                             if ldi == nldi: ldi = 0
@@ -7140,6 +7193,9 @@ def main():
 
         # setting up Observations dictionary
         Obs_dict_in = process_argparse_Obs_dict(args)
+
+        # Do we allow the loading of tidal harmonic data?
+        tide_harm_d = process_argparse_tide_harm_dict(args)
  
         # When comparing files/models, only variables that are common to both Datasets are shown. 
         # If comparing models with different names for the same variables, they won't be shown, 
@@ -7195,6 +7251,7 @@ def main():
             Obs_AbsAnom = argparse_bool_dict['Obs_AbsAnom'], Obs_hide_edges = argparse_bool_dict['Obs_hide_edges'],
             Obs_pair_loc = argparse_bool_dict['Obs_pair_loc'], Obs_anom_clim = args.Obs_anom_clim,
             Obs_Type_load_dict = Obs_Type_load_dict,Obs_show_with_diff_var = argparse_bool_dict['Obs_show_with_diff_var'],
+            tide_harm_d = tide_harm_d,
             fig_dir = args.fig_dir, fig_lab = args.fig_lab,fig_cutout = argparse_bool_dict['fig_cutout'],
             verbose_debugging = argparse_bool_dict['verbose_debugging'],do_timer = argparse_bool_dict['do_mask'],do_memory = argparse_bool_dict['do_memory'],
             do_ensemble = argparse_bool_dict['do_ensemble'],do_mask = argparse_bool_dict['do_mask'],
